@@ -15,6 +15,7 @@ type DataTableProps<Row> = {
   loading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: ReactNode;
 };
 
 // DataTable is a deliberately small table base: columns, rows, loading and empty states.
@@ -25,13 +26,16 @@ export function DataTable<Row>({
   loading = false,
   emptyTitle = 'Sin resultados',
   emptyDescription = 'No hay registros para mostrar.',
+  emptyAction,
 }: DataTableProps<Row>) {
   if (loading) {
     return <LoadingState label="Cargando tabla" />;
   }
 
   if (rows.length === 0) {
-    return <EmptyState title={emptyTitle} description={emptyDescription} icon="⌁" />;
+    return (
+      <EmptyState title={emptyTitle} description={emptyDescription} icon="⌁" action={emptyAction} />
+    );
   }
 
   return (

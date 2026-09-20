@@ -1,10 +1,12 @@
 import { appConfig } from '../config/app';
 
-// ApiError preserves the HTTP status so auth flows can distinguish a missing session from a server failure.
+// ApiError preserves public error metadata so domain forms can translate conflicts and validation failures.
 export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
+    readonly details?: unknown,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -27,12 +29,14 @@ export async function apiClient<T>(path: string, init: ApiInit = {}): Promise<T>
   const response = await fetch(`${appConfig.apiBaseUrl}${path}`, requestInit);
   const payload = (await response.json().catch(() => null)) as {
     message?: string | string[];
+    code?: string;
+    details?: unknown;
   } | null;
   if (!response.ok) {
     const message = Array.isArray(payload?.message)
       ? payload.message.join(', ')
       : payload?.message || 'No fue posible completar la solicitud.';
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, payload?.code, payload?.details);
   }
   return payload as T;
 }

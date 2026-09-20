@@ -15,8 +15,8 @@
 | UI Lativet                  | Referencia analizada; adaptación React completada         |
 | Owners backend              | COMPLETADO (Fase 4A)                                      |
 | Patients backend            | COMPLETADO (Fase 4A)                                      |
-| Owners frontend             | PENDIENTE FASE 4B                                         |
-| Patients frontend           | PENDIENTE FASE 4B                                         |
+| Owners frontend             | COMPLETADO (Fase 4B)                                      |
+| Patients frontend           | COMPLETADO (Fase 4B)                                      |
 | Agenda                      | Pendiente                                                 |
 | Clínica                     | Pendiente                                                 |
 | Inventario                  | Pendiente                                                 |
@@ -98,6 +98,19 @@ Fase 4A completada:
   borrado físico y no cascada a dependencias futuras.
 - El seed idempotente contiene 4 Owners y 6 Patients repartidos entre Norte y
   Sur. No se construyó frontend funcional ni se inició Fase 4B.
+
+Fase 4B completada:
+
+- Owners y Patients tienen rutas funcionales de listado, búsqueda, filtros,
+  paginación, detalle, creación, edición y archive lógico.
+- El frontend usa clientes API tipados, contratos Zod, permisos UX y estados
+  tenant-scoped que se limpian al cambiar de organización.
+- Se añadieron pruebas frontend de loading, empty, errores, conflictos,
+  permisos, formularios, archive, 404 cross-tenant y tenant switch.
+- La documentación de decisiones está en
+  `docs/migration/owners-patients-ui.md`.
+- Owners/Patients final review: PENDIENTE FASE 4C.
+- No se inició ningún módulo clínico, agenda, financiero o grooming.
 
 Para detener el entorno local:
 

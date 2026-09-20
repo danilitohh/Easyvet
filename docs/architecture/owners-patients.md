@@ -1,4 +1,4 @@
-# Owners y Patients (Fase 4A)
+# Owners y Patients (Fases 4A y 4B)
 
 ## Modelo
 
@@ -44,3 +44,28 @@ No se crean múltiples propietarios por paciente, catálogos de razas, historial
 de peso, eventos clínicos, storage de fotos ni módulos de agenda/clínica.
 `currentWeightKg` es una proyección conveniente y no sustituye las mediciones
 clínicas futuras.
+
+## Frontend de Fase 4B
+
+Las rutas funcionales son:
+
+- `/propietarios`, `/propietarios/nuevo`, `/propietarios/:ownerId` y
+  `/propietarios/:ownerId/editar`.
+- `/pacientes`, `/pacientes/nuevo`, `/pacientes/:patientId` y
+  `/pacientes/:patientId/editar`.
+
+Las páginas usan `ownersApi`/`patientsApi` y hooks de estado remoto propios; no
+hay `fetch` directo en los componentes. La búsqueda se debouncea 320 ms y los
+listados conservan filtros y paginación del backend.
+
+No se agregó TanStack Query: el proyecto no lo tenía instalado y los hooks
+manuales son suficientes para esta superficie. Cada hook incluye el
+`organizationId` activo como dependencia, limpia los datos inmediatamente al
+cambiar de organización y vuelve a consultar; esto evita mostrar datos de la
+organización anterior.
+
+Los permisos del frontend controlan botones y rutas (`AccessDenied`), pero el
+backend sigue siendo la autoridad. Los archivados se muestran con estado
+distinguible y confirmación accesible. La ficha de Patient solo muestra datos
+existentes, edad calculada y peso actual; no contiene tabs clínicas,
+facturación ni saldos.

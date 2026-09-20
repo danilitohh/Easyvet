@@ -133,7 +133,9 @@ export const MODULE_ROUTES = NAVIGATION_GROUPS.flatMap((group) => group.items);
 
 export function getRouteMeta(pathname: string): NavigationItem {
   return (
-    MODULE_ROUTES.find((route) => route.path === pathname) ?? {
+    MODULE_ROUTES.find(
+      (route) => route.path === pathname || pathname.startsWith(`${route.path}/`),
+    ) ?? {
       label: 'Página no encontrada',
       path: pathname,
       icon: '?',

@@ -66,7 +66,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
               <p className="nav-group__label">{group.label}</p>
               {group.items.map((item) => (
                 <NavLink
-                  end
+                  end={item.path !== '/propietarios' && item.path !== '/pacientes'}
                   key={item.path}
                   to={item.path}
                   title={collapsed ? item.label : undefined}

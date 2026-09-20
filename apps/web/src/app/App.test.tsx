@@ -19,11 +19,11 @@ describe('App shell', () => {
     expect(screen.getByRole('link', { name: /abrir agenda/i })).toHaveAttribute('href', '/agenda');
   });
 
-  it('renders a navigable placeholder and marks its route active', () => {
+  it('renders an access boundary for a route without an active membership', () => {
     renderApp('/pacientes');
 
-    expect(screen.getByRole('heading', { name: 'Pacientes' })).toBeInTheDocument();
-    expect(screen.getByText(/se implementará en una fase posterior/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /no tienes permisos/i })).toBeInTheDocument();
+    expect(screen.queryByText(/se implementará en una fase posterior/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Pacientes' })).toHaveAttribute('aria-current', 'page');
   });
 
