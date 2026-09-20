@@ -18,7 +18,10 @@
 | Owners frontend              | COMPLETADO (Fase 4B)                                      |
 | Patients frontend            | COMPLETADO (Fase 4B)                                      |
 | Owners/Patients final review | COMPLETADO (Fase 4C)                                      |
-| Agenda                       | Pendiente                                                 |
+| Agenda analysis/design       | COMPLETADO (Fase 5A)                                      |
+| Agenda backend               | PENDIENTE FASE 5B                                         |
+| Agenda frontend              | PENDIENTE FASE 5C                                         |
+| Agenda hardening             | PENDIENTE FASE 5D                                         |
 | Clínica                      | Pendiente                                                 |
 | Inventario                   | Pendiente                                                 |
 | Facturación                  | Pendiente                                                 |
@@ -138,6 +141,23 @@ Checkpoint 4D completado:
 - La migración se aplicó a las bases locales `easyvet_dev` y `easyvet_test`;
   también se sincronizó la base local previa `veterinary_saas` usada por el
   `.env` histórico. No se modificaron bases externas.
+
+Fase 5A — análisis y diseño de Agenda completada:
+
+- Se documentó la referencia legacy de Agenda, Reservas, disponibilidad,
+  Google Calendar, controles, seguimientos y dependencias conocidas.
+- Se propusieron las entidades y límites tenant-aware de Agenda, la política de
+  tiempo UTC, disponibilidad, conflictos y la máquina de estados de Appointment.
+- Se registraron por separado las decisiones decididas, recomendaciones,
+  decisiones de producto requeridas y trabajo postergado.
+- El árbol fuente `Backend/AGENDA` no está presente en este checkout; las
+  conclusiones legacy quedan marcadas según la evidencia de la auditoría y los
+  puntos `NEEDS REVIEW` no se convierten en comportamiento implícito.
+- No se modificaron `prisma/schema.prisma`, migraciones, endpoints, UI,
+  Owners/Patients ni permisos. Fase 5B no se inició.
+- PostgreSQL/Docker conserva el estado `VERIFICADO LOCALMENTE` registrado en el
+  checkpoint 4D; esta fase no simula verificación de producción ni de una base
+  compartida.
 
 Para detener el entorno local:
 
