@@ -146,13 +146,17 @@ Fase 5A — análisis y diseño de Agenda completada:
 
 - Se documentó la referencia legacy de Agenda, Reservas, disponibilidad,
   Google Calendar, controles, seguimientos y dependencias conocidas.
-- Se propusieron las entidades y límites tenant-aware de Agenda, la política de
-  tiempo UTC, disponibilidad, conflictos y la máquina de estados de Appointment.
-- Se registraron por separado las decisiones decididas, recomendaciones,
-  decisiones de producto requeridas y trabajo postergado.
-- El árbol fuente `Backend/AGENDA` no está presente en este checkout; las
-  conclusiones legacy quedan marcadas según la evidencia de la auditoría y los
-  puntos `NEEDS REVIEW` no se convierten en comportamiento implícito.
+- Checkpoint 5A.1 completado: se inspeccionó directamente el repositorio
+  Lativet en el commit `05fea495cb13208b27bf470b3570987fd501a81e`, mediante el
+  checkout read-only `C:\Users\danil\Downloads\Lativet-reference`, fuera de
+  Easyvet y en `detached HEAD`.
+- Se verificaron los paths reales de `Backend/AGENDA` y `Frontend/AGENDA`, el
+  DDL y campos de `appointments`, los nueve estados, reservas, disponibilidad,
+  conflictos, controles, Google Calendar, Peluquería y frontend.
+- Los cuatro documentos de Agenda separan ahora **VERIFIED LEGACY BEHAVIOR**,
+  **NEW EASYVET DESIGN DECISION**, **PRODUCT DECISION REQUIRED** y
+  **POSTPONED**, y corrigen las afirmaciones preliminares que no resistían la
+  lectura del código.
 - No se modificaron `prisma/schema.prisma`, migraciones, endpoints, UI,
   Owners/Patients ni permisos. Fase 5B no se inició.
 - PostgreSQL/Docker conserva el estado `VERIFICADO LOCALMENTE` registrado en el

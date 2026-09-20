@@ -1,29 +1,54 @@
 # Máquina de estados de Appointment
 
-## Propósito
+## Propósito y etiquetas
 
-Esta es la máquina propuesta para Fase 5B. No afirma que Lativet tuviera
-exactamente estos nombres: la auditoría solo confirma la distinción operacional
-entre citas activas, completadas, canceladas y no-asistió. La implementación
-debe usar un estado canónico y transiciones server-side, no cadenas libres
-enviadas por el frontend.
+El checkpoint 5A.1 verificó directamente el comportamiento de Lativet en
+`05fea495cb13208b27bf470b3570987fd501a81e`. La primera tabla es
+**VERIFIED LEGACY BEHAVIOR**. La máquina posterior es una **NEW EASYVET DESIGN
+DECISION** y no debe confundirse con el enum legacy.
 
-## Estados
+## Valores exactos observados en Lativet
 
-| Estado        | Significado                                                                | ¿Ocupa recurso? | ¿Terminal? |
-| ------------- | -------------------------------------------------------------------------- | --------------- | ---------- |
-| `SCHEDULED`   | Creada y pendiente de confirmación.                                        | Sí              | No         |
-| `CONFIRMED`   | Confirmada por una operación autorizada.                                   | Sí              | No         |
-| `IN_PROGRESS` | La atención comenzó o el paciente está siendo recibido.                    | Sí              | No         |
-| `COMPLETED`   | La cita operativa terminó. No implica que exista aún una consulta clínica. | No              | Sí         |
-| `CANCELLED`   | No ocurrirá; se conserva el motivo y el actor.                             | No              | Sí         |
-| `NO_SHOW`     | El paciente/cliente no se presentó después de la ventana definida.         | No              | Sí         |
+| Valor legacy           | Significado observado     | Transiciones observadas                | Propuesta Easyvet                                   |
+| ---------------------- | ------------------------- | -------------------------------------- | --------------------------------------------------- |
+| `scheduled`            | Cita agendada             | Inserción y actualización libre        | `SCHEDULED` inicial                                 |
+| `pending_confirmation` | Pendiente de confirmación | Actualización libre; visible en UI     | `CONFIRMED` o estado previo según decisión          |
+| `waiting_room`         | Cita en sala de espera    | PATCH directo; no hay entidad/cola     | `IN_PROGRESS` o estado operativo separado, decisión |
+| `confirmed`            | Confirmada                | PATCH directo                          | `CONFIRMED`                                         |
+| `confirmed_by_clinic`  | Confirmada por clínica    | PATCH directo                          | `CONFIRMED` con actor si se conserva                |
+| `confirmed_by_owner`   | Confirmada por owner      | PATCH directo                          | `CONFIRMED` con actor si se conserva                |
+| `completed`            | Atención terminada        | PATCH directo                          | `COMPLETED` terminal                                |
+| `cancelled`            | Cancelada                 | PATCH directo o DELETE físico desde UI | `CANCELLED` terminal, conservar fila                |
+| `no_show`              | No asistió                | PATCH directo                          | `NO_SHOW` terminal con tolerancia                   |
 
-`status` no debe mezclarse con el estado clínico de Patient ni con el resultado
-de una consulta. Un recordatorio o seguimiento tampoco es una transición de
-Appointment.
+El backend solo comprueba pertenencia a `APPOINTMENT_STATUSES`; no comprueba
+actor, tiempo, estado previo, terminalidad, motivo ni auditoría. La UI solo
+expone `scheduled` y `pending_confirmation`, aunque pruebas y API usan los
+demás valores. No existe una matriz legacy de transiciones.
 
-## Transiciones válidas
+## Estado y asistencia no son el mismo concepto
+
+`waiting_room` es un estado operativo de Appointment, no un modelo
+`WaitingRoom`. La respuesta de asistencia de Google vive en
+`google_attendee_response_status`, como valor externo separado. Attendance sync
+persiste `accepted`, `declined` o `needsAction` (según Google), pero el mapeo
+legacy devuelve `None` y no cambia el estado manual. Easyvet debe mantener esta
+separación.
+
+## Máquina propuesta para Easyvet
+
+**NEW EASYVET DESIGN DECISION** — Estados canónicos:
+
+| Estado        | Significado                            | ¿Ocupa recurso? | ¿Terminal? |
+| ------------- | -------------------------------------- | --------------- | ---------- |
+| `SCHEDULED`   | Creada y pendiente de confirmación     | Sí              | No         |
+| `CONFIRMED`   | Confirmada por actor autorizado        | Sí              | No         |
+| `IN_PROGRESS` | Atención iniciada o paciente recibido  | Sí              | No         |
+| `COMPLETED`   | Fin operativo                          | No              | Sí         |
+| `CANCELLED`   | No ocurrirá; se conservan motivo/actor | No              | Sí         |
+| `NO_SHOW`     | No se presentó tras tolerancia         | No              | Sí         |
+
+Transiciones recomendadas:
 
 ```text
 SCHEDULED ──confirm──> CONFIRMED ──start──> IN_PROGRESS ──complete──> COMPLETED
@@ -32,137 +57,64 @@ SCHEDULED ──confirm──> CONFIRMED ──start──> IN_PROGRESS ──co
     └──no_show (después)───┴──┴──no_show───────┘
 ```
 
-| Desde         | Hacia         | Condición mínima                                                                       |
-| ------------- | ------------- | -------------------------------------------------------------------------------------- |
-| `SCHEDULED`   | `CONFIRMED`   | Actor con permiso de confirmar; la cita sigue vigente y sin conflicto.                 |
-| `SCHEDULED`   | `IN_PROGRESS` | Atajo operativo autorizado para clínicas que no requieren confirmación previa.         |
-| `SCHEDULED`   | `CANCELLED`   | Actor autorizado, motivo opcional u obligatorio según política.                        |
-| `SCHEDULED`   | `NO_SHOW`     | Solo después de `startsAt` más la tolerancia definida y con permiso.                   |
-| `CONFIRMED`   | `IN_PROGRESS` | El profesional/recepción inicia la atención.                                           |
-| `CONFIRMED`   | `CANCELLED`   | Actor autorizado; conserva motivo y timestamp.                                         |
-| `CONFIRMED`   | `NO_SHOW`     | Vencida la tolerancia de llegada y sin inicio.                                         |
-| `IN_PROGRESS` | `COMPLETED`   | Actor autorizado; no crea automáticamente `ClinicalConsultation`.                      |
-| `IN_PROGRESS` | `CANCELLED`   | Corrección operativa excepcional antes de cerrar; requiere permiso explícito y motivo. |
+| Desde                     | Hacia         | Condición mínima                                   |
+| ------------------------- | ------------- | -------------------------------------------------- |
+| `SCHEDULED`               | `CONFIRMED`   | Permiso y cita vigente sin conflicto               |
+| `SCHEDULED`               | `IN_PROGRESS` | Atajo operativo autorizado, si producto lo permite |
+| `SCHEDULED` / `CONFIRMED` | `CANCELLED`   | Permiso, motivo según política                     |
+| `SCHEDULED` / `CONFIRMED` | `NO_SHOW`     | Inicio + tolerancia y permiso                      |
+| `CONFIRMED`               | `IN_PROGRESS` | Recepción/profesional inicia atención              |
+| `IN_PROGRESS`             | `COMPLETED`   | Actor autorizado                                   |
+| `IN_PROGRESS`             | `CANCELLED`   | Corrección excepcional, motivo y permiso explícito |
 
-El atajo `SCHEDULED → IN_PROGRESS` y la tolerancia exacta de no-asistencia son
-decisiones configurables por producto, no permisos para aceptar cualquier
-transición arbitraria.
+No se permiten transiciones desde terminales, cambio de tenant, ni completar
+sin atención iniciada salvo una corrección administrativa futura y auditada.
+La API debe devolver error estable sin mutar la fila en transición inválida.
 
-## Transiciones inválidas
+## Conflictos y estados activos
 
-- Cualquier estado terminal (`COMPLETED`, `CANCELLED`, `NO_SHOW`) hacia un
-  estado activo.
-- `CANCELLED → COMPLETED` o `NO_SHOW → COMPLETED`.
-- `COMPLETED → CANCELLED` como forma de borrar historia.
-- `SCHEDULED → COMPLETED` sin pasar por atención iniciada, salvo una operación
-  administrativa de corrección que deberá quedar auditada en una fase futura.
-- `CONFIRMED → COMPLETED` sin `IN_PROGRESS`, salvo que producto defina un atajo
-  explícito; no se debe introducir por conveniencia de UI.
-- Cambiar una cita de un tenant a otro, aunque el id exista en ambos.
-
-La API debe devolver un error estable de transición inválida y no alterar la
-fila. El frontend no debe ocultar una transición para hacerla parecer válida.
-
-## Citas activas y conflictos
-
-Para disponibilidad y solapamiento, los estados que ocupan recursos son
-`SCHEDULED`, `CONFIRMED` e `IN_PROGRESS`. Los estados terminales liberan el
-recurso para nuevas reservas. Una transacción debe volver a comprobar el estado
-y el rango temporal antes de insertar o reprogramar.
-
-La regla concreta de recurso (profesional, paciente, sede, consultorio,
-equipo/capacidad) está en decisión de producto. Esta máquina solo define que una
-cita activa participa en el conflicto; no convierte la sede completa en un
-recurso único.
+`SCHEDULED`, `CONFIRMED` e `IN_PROGRESS` ocupan recursos. Una transacción de
+creación o reprogramación debe recalcular disponibilidad y comprobar conflictos
+con la estrategia anti-carrera definida para PostgreSQL. El legado comparaba
+globalmente todas las citas activas; Easyvet debe decidir si el conflicto se
+aplica a profesional, Patient, sede, consultorio, equipo o capacidad.
 
 ## Cancelación
 
-Cancelar no elimina la cita. Debe:
+Cancelar no elimina Appointment. Debe validar tenant y permiso, comprobar que no
+sea terminal, cambiar a `CANCELLED` y guardar `cancelledAt`,
+`cancelledByMembershipId` y `cancellationReason` en una transacción. Libera el
+rango para nuevas reservas. Google, SMTP y recordatorios quedan fuera de 5B.
 
-1. validar tenant y permiso;
-2. comprobar que el estado no es terminal;
-3. cambiar a `CANCELLED` dentro de una transacción;
-4. guardar `cancelledAt`, `cancelledByMembershipId` y motivo;
-5. liberar el rango para conflictos posteriores;
-6. no enviar Google, SMTP ni recordatorios en 5B.
+El legado borra físicamente desde la UI y sincroniza Google antes del borrado;
+eso es una diferencia deliberada del diseño Easyvet.
 
-La política de cancelación tardía, quién puede cancelar y si se requiere motivo
-son decisiones de producto. Un evento de auditoría completo se posterga, pero
-los campos de cancelación no deben perderse.
+## Completar, no-show y reprogramar
 
-## Completar y no-asistencia
+`COMPLETED` cierra la reserva y no crea automáticamente una consulta clínica.
+`NO_SHOW` requiere tolerancia configurable. Reabrir terminales no es parte de
+5B. Antes de `IN_PROGRESS` se pueden editar Patient/Owner, profesional, sede,
+tipo, razón y rango, siempre revalidando. Desde `IN_PROGRESS` solo notas y
+cierre, salvo corrección administrativa futura. Reprogramar conserva la fila y
+su estado; no es DELETE + INSERT.
 
-Completar representa el fin operativo de la reserva; no crea por sí solo una
-consulta clínica, evolución, peso o factura. Esas relaciones se diseñarán en
-fases posteriores.
+## Permisos propuestos
 
-`NO_SHOW` es un resultado terminal de asistencia. Solo puede aplicarse después
-de una ventana de gracia definida y no debe disparar por sí mismo un correo o
-seguimiento. Si el usuario se presenta tarde, se permite iniciar la cita desde
-un estado activo mientras no se haya marcado no-asistencia.
+Son diseño, no permisos implementados en este checkpoint:
 
-Reabrir una cita terminal no se propone para 5B. Si la clínica necesita corregir
-un error, se requiere una acción administrativa explícita, motivo y auditoría
-antes de añadirla al modelo.
+`appointments.read`, `appointments.create`, `appointments.update`,
+`appointments.confirm`, `appointments.start`, `appointments.complete`,
+`appointments.cancel` y `appointments.manage_availability`.
 
-## Edición y reprogramación
+La UI no puede sustituir la guardia server-side. La membership activa y el
+tenant actual determinan el actor.
 
-### Antes de `IN_PROGRESS`
+## PRODUCT DECISION REQUIRED
 
-Se pueden editar, con permiso y comprobaciones tenant-aware:
-
-- `startsAt` y `endsAt`;
-- sede;
-- profesional asignado;
-- tipo;
-- paciente/propietario, respetando las invariantes;
-- razón y notas operativas.
-
-Toda modificación de horario, sede o profesional se trata como una
-reprogramación: recalcula timezone, availability, blocks y conflictos en la
-misma transacción. El estado se conserva; reprogramar no es cancelar + crear.
-
-### Desde `IN_PROGRESS`
-
-No se cambia el intervalo, sede, paciente ni profesional como edición normal.
-Solo se permiten notas operativas y el cierre de la transición, salvo una
-corrección administrativa futura.
-
-### Estados terminales
-
-No se edita el contexto operativo de una cita terminal. La consulta de historial
-puede mostrarla y filtros autorizados pueden ocultarla, pero no se reemplaza ni
-se elimina.
-
-5B no requiere una tabla de historial de reprogramaciones. Antes de ofrecer
-auditoría legal, se deberá decidir qué campos, actor, motivo y versiones se
-conservan; la API no debe prometer ese historial todavía.
-
-## Permisos operativos propuestos
-
-Los nombres son una propuesta para ampliar el catálogo existente, no permisos
-implementados en 5A:
-
-| Acción                   | Permiso sugerido                              | Nota                                                   |
-| ------------------------ | --------------------------------------------- | ------------------------------------------------------ |
-| Ver citas                | `appointments.read`                           | Siempre filtrado por `TenantContext`.                  |
-| Crear                    | `appointments.create`                         | Exige Patient/Owner registrados en el MVP recomendado. |
-| Editar/reprogramar       | `appointments.update`                         | No permite cambiar tenant.                             |
-| Confirmar/iniciar        | `appointments.confirm` / `appointments.start` | Producto debe decidir si se separan.                   |
-| Completar                | `appointments.complete`                       | No crea consulta clínica automáticamente.              |
-| Cancelar                 | `appointments.cancel`                         | Conserva motivo y actor.                               |
-| Gestionar disponibilidad | `appointments.manage_availability`            | Reglas y bloques de sede/profesional.                  |
-
-La capacidad de actuar como profesional se deriva de la membership activa y de
-la matriz de permisos; no se crea una entidad `Professional` ni se confía en la
-UI.
-
-## Decisiones pendientes relacionadas con la máquina
-
-- Si `CONFIRMED` es obligatorio o puede omitirse.
-- Duración de la tolerancia antes de `NO_SHOW`.
-- Si la cancelación tardía exige motivo y/o rol administrativo.
-- Si la sede permite citas sin profesional asignado.
-- Si el producto necesita reabrir estados terminales con auditoría.
-- Si el resultado de asistencia debe separarse del `status` en una futura
-  `AttendanceEvent`.
+- Si `CONFIRMED` es obligatorio o se permite iniciar desde `SCHEDULED`.
+- Tolerancia exacta de `NO_SHOW` y quién puede marcarlo.
+- Política de cancelación tardía y motivo obligatorio.
+- Si `waiting_room` será solo una vista derivada o un estado canónico adicional.
+- Si una cita sin profesional asignado ocupa un recurso de sede.
+- Si alguna corrección puede reabrir un estado terminal y qué auditoría exige.
+- Si attendance externo requerirá una futura entidad de eventos separada.

@@ -1,161 +1,126 @@
 # Decisiones de Agenda
 
-Este registro separa las decisiones ya fijadas de las recomendaciones técnicas
-y de las preguntas que requieren decisión de producto. Fase 5A solo documenta;
-no implementa ninguna de estas decisiones.
+## Estado del checkpoint 5A.1
+
+La fuente legacy de Agenda fue verificada directamente en el commit
+`05fea495cb13208b27bf470b3570987fd501a81e`, en un checkout read-only fuera de
+Easyvet. No se ejecutó el backend legacy ni se conectó una base. La evidencia
+detallada está en `docs/migration/agenda-reference.md`.
+
+Las etiquetas de este registro son **VERIFIED LEGACY BEHAVIOR**, **NEW EASYVET
+DESIGN DECISION**, **PRODUCT DECISION REQUIRED** y **POSTPONED**.
 
 ## DECIDIDO
 
-1. **Fase 5A es análisis y diseño.** No crea modelos Prisma, migraciones,
-   tablas, endpoints, UI funcional, integraciones ni dependencias nuevas.
-2. **Organization es el tenant.** `TenantContext` es la única fuente de
-   `organizationId`; no se acepta un tenant enviado por el cliente.
-3. **Appointment y ClinicalConsultation son conceptos distintos.** Una reserva
-   no es automáticamente una atención clínica.
-4. **Membership representa al actor profesional.** No se crea una entidad
-   `Professional` por pantalla.
-5. **Los tiempos nuevos siguen la convención Easyvet:** instantes UTC en base de
-   datos y zona de la organización para presentación/conversión.
-6. **La agenda debe ser tenant-aware.** Las relaciones a Patient, Owner,
-   ClinicLocation, Membership y catálogos deben comprobar organización con
-   claves o validaciones compuestas.
-7. **No se copian secretos ni tokens del legado.** `credentials.json`,
-   `token.json`, SMTP, cookies, sesiones y enlaces bearer se excluyen de la
-   migración.
-8. **No se replica el borrado físico en cascada de Lativet.** Las citas
-   históricas se conservan y las fichas de Owner/Patient se archivan según las
-   reglas ya adoptadas por Easyvet.
-9. **Google Calendar, SMTP, recordatorios, seguimientos, consultas clínicas,
-   reservas públicas y grooming no pertenecen al alcance de 5B.**
-10. **La máquina propuesta tiene seis estados canónicos:** `SCHEDULED`,
-    `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` y `NO_SHOW`.
-11. **No se copiarán estados o endpoints legacy que no estén demostrados.** La
-    ausencia del árbol `Backend/AGENDA` en este checkout queda registrada como
-    una limitación de evidencia y no se rellena con suposiciones.
+1. No se modifica `prisma/schema.prisma`, migraciones, endpoints, permisos ni
+   frontend en el checkpoint 5A.1.
+2. Fase 5B no inicia hasta resolver las decisiones de producto bloqueantes.
+3. Organization es la frontera de aislamiento; toda API futura será
+   tenant-aware y deny-by-default.
+4. Easyvet persistirá instantes UTC y presentará la zona horaria de la
+   Organization; no copiará `appointment_at` local ingenuo.
+5. Appointment será reserva operativa separada de Consultation, FollowUp,
+   Reminder y calendario externo.
+6. La cancelación Easyvet conservará la fila y su motivo/actor/tiempo; no se
+   copiará el DELETE físico de Lativet.
+7. No se creará una entidad `WaitingRoom`: el legacy la representa como estado
+   `waiting_room` y una vista operativa.
+8. Google queda fuera de 5B detrás de un futuro `CalendarProvider`; no se
+   copiarán credenciales, IDs ni archivos locales al núcleo.
+9. El resultado de asistencia de Google seguirá separado del estado de
+   Appointment.
+10. No se inventará integración Peluquería→Agenda: no fue observada en el
+    commit revisado.
+11. El checkout Lativet se mantiene fuera de Easyvet, detached y sin commits.
 
-## RECOMENDADO
+## VERIFIED LEGACY BEHAVIOR que condiciona el diseño
 
-### Modelo 5B
+- `appointments` requiere SQL `patient_id` y `owner_id`, pero permite
+  Owner-only mediante Patient placeholder, Patient-only derivando Owner y
+  `reserve_only` mediante Owner/Patient marcador. Por tanto, “ambos registros
+  reales siempre” no es un hecho legacy.
+- Los nueve estados exactos son `scheduled`, `pending_confirmation`,
+  `waiting_room`, `confirmed`, `confirmed_by_clinic`, `confirmed_by_owner`,
+  `completed`, `cancelled` y `no_show`; el backend no impone transiciones.
+- No hay columna `type`, catálogo `AppointmentType`, `ClinicLocation`,
+  `ScheduleBlock`, membership ni ubicación de Appointment.
+- `agenda_availability_rules` sí existe, pero es semanal, scope `general`, texto
+  libre de profesional y sin overrides persistidos.
+- El conflicto legacy es global entre citas activas y susceptible a carrera;
+  no filtra por profesional, Patient, sede, recurso o busy slots de Google.
+- Reservas son internas y provisionales dentro de `/api/appointments`, no public
+  booking ni una entidad `Reservation`.
+- Controles derivados desde Consultation enlazan `source_consultation_id` y
+  pueden borrarse físicamente al quitar el próximo control.
 
-Implementar, después de cerrar las decisiones de producto, únicamente:
+## NEW EASYVET DESIGN DECISION
 
-- `Appointment`;
-- `AppointmentType` como catálogo por organización;
-- `AvailabilityRule` para reglas civiles de sede/profesional;
-- `ScheduleBlock` para excepciones puntuales.
+### Modelo mínimo de 5B
 
-La propuesta completa de campos, relaciones, índices, constraints, tiempos,
-conflictos y eliminación está en `agenda-proposal.md`.
+Se recomienda implementar únicamente:
 
-### Identidad de la reserva
+- `Appointment` tenant-scoped con Patient/Owner, `ClinicLocation` según la
+  política presencial, `assignedMembershipId` nullable,
+  `createdByMembershipId`, `typeCode` acotado, estado canónico, `startsAt`,
+  `endsAt`, razón, notas, observaciones, timestamps y metadatos de cancelación.
+- `AvailabilityRule` solo si el MVP implementa slots y validación de
+  disponibilidad; tenant-aware, por sede/membership opcional y horarios locales.
 
-Para el primer corte interno se recomienda exigir Patient y Owner registrados,
-activos y del mismo tenant, y validar que el propietario coincida con el
-paciente. Esto evita importar la creación silenciosa de placeholders de
-`Reservas`. Un flujo de “cliente aún no registrado” debe ser una decisión y
-contrato separados, no campos anónimos añadidos por conveniencia.
+`AppointmentType` y `ScheduleBlock` no son requisitos automáticos. No se crean
+solo porque aparecían en la propuesta preliminar.
 
-Se recomienda exigir `ClinicLocation` en citas internas. Una llamada o
-teleconsulta puede requerir una excepción explícita si el producto lo decide.
+### Límites de identidad
 
-### Conflictos y disponibilidad
+- Recomendación: Owner y Patient activos, del mismo tenant, y sin placeholders.
+- `assignedMembershipId` reemplaza `professional_name`; no se crea
+  `Professional`.
+- `ClinicLocation` es capacidad nueva de SaaS. Su obligación en telehealth o
+  teléfono es PRODUCT DECISION REQUIRED.
+- No se vinculan Consultation/FollowUp en Prisma 5B sin un caso de uso y
+  módulo clínico implementado.
 
-- Bloquear solapamientos por Patient y por Membership asignada.
-- No tratar toda la sede como recurso único sin una capacidad o consultorio
-  definido.
-- Mantener disponibilidad y conflictos como validaciones diferentes.
-- Proteger la creación/reprogramación con transacción y bloqueo o una exclusión
-  PostgreSQL sobre rangos `tstzrange`; el `check-then-insert` sin bloqueo no es
-  suficiente.
-- Si la organización no tiene reglas, no generar slots automáticamente; una
-  creación interna autorizada puede validarse por conflicto hasta que producto
-  cierre la política.
+### Disponibilidad y conflicto
 
-### Estados y retención
+La API validará intervalos UTC, reglas semanales y conflictos dentro de una
+transacción con estrategia anti-carrera PostgreSQL. Los recursos exactos,
+comportamiento sin reglas y excepciones quedan en decisión de producto.
 
-Usar la máquina documentada en `appointment-state-machine.md`, conservar
-cancelaciones y no borrar citas por una operación normal. El cierre operativo
-no crea una consulta clínica automáticamente.
+### Máquina y API
 
-### Frontend futuro
-
-Para Fase 5C se recomienda evaluar primero FullCalendar con vistas día/semana/
-mes y el adaptador oficial React, manteniendo contratos y permisos propios de
-Easyvet. La documentación oficial indica integración React y licencia MIT para
-el paquete estándar: [FullCalendar React docs](https://fullcalendar.io/docs/react).
-No se instala en Fase 5A; antes de usarlo se debe revisar la versión, plugins,
-accesibilidad, bundle y licencia de cualquier vista premium. No usar el
-calendario para resolver conflictos: el backend sigue siendo la autoridad.
-
-### Integraciones futuras
-
-Google debe diseñarse como OAuth web por organización, sede, profesional o
-recurso solo después de la decisión de producto, con redirect canónico,
-state/PKCE cuando aplique, tokens cifrados, scopes mínimos, revocación e
-idempotencia. La frontera de código futura debe ser un contrato
-`CalendarProvider` detrás de Agenda, de modo que la cita funcione 100% sin
-Google y la sincronización externa no contamine el modelo core. No se debe
-importar el modelo de archivos global del legado.
+La máquina de `appointment-state-machine.md` es diseño nuevo; las rutas nuevas
+propuestas son `/api/v1/appointments`, `/api/v1/appointments/:id`,
+`/api/v1/appointments/:id/transitions` y `/api/v1/availability-rules`.
+No son rutas implementadas en 5A ni compatibilidad automática con el legacy.
 
 ## PRODUCT DECISION REQUIRED
 
-Estas decisiones deben responderse antes de cerrar contratos y migraciones de
-Fase 5B:
-
-1. **Reserva sin Patient/Owner:** ¿se rechaza hasta crear fichas, se permite un
-   provisional con datos mínimos, o se usa otro flujo? La recomendación técnica
-   es rechazarla en el MVP y no crear placeholders silenciosos.
-2. **Relación Owner:** ¿se almacena `ownerId` en Appointment para congelar el
-   contexto de reserva o se deriva siempre de Patient? No duplicar sin una
-   política de cambios de propietario.
-3. **Sede:** ¿ClinicLocation es obligatoria para llamadas/teleconsulta y para
-   reservas públicas, o solo para atención presencial?
-4. **Profesional:** ¿puede crearse una cita sin membership asignada? ¿Quién
-   puede reasignarla y quién puede ver todas las citas de una sede?
-5. **Conflicto:** ¿se bloquea por profesional, paciente, sede, consultorio,
-   equipo, capacidad o combinación? ¿Puede haber dos profesionales en la misma
-   sede al mismo tiempo?
-6. **Disponibilidad:** ¿qué significa “sin reglas”? ¿Se requieren turnos
-   partidos, intervalos nocturnos, festivos, vacaciones y excepciones DST?
-7. **Tipos:** ¿qué categorías son obligatorias y cuáles puede configurar cada
-   organización? ¿Se permite cambiar el nombre/categoría después de usarlo?
-8. **Estados:** ¿confirmación obligatoria, atajo directo a `IN_PROGRESS`,
-   tolerancia de no-show, cancelación tardía y motivo obligatorio?
-9. **Correcciones:** ¿un administrador puede reabrir un estado terminal? ¿Qué
-   historial de reprogramación y auditoría exige la clínica?
-10. **Permisos:** ¿qué roles actuales reciben read/create/update/cancel/
-    complete/manage-availability? ¿Se separa iniciar de confirmar?
-11. **Google:** ¿conexión por organización, sede, membership o calendario?
-    ¿Sincronización unidireccional o bidireccional? ¿Qué ocurre ante borrado o
-    conflicto externo?
-12. **Notificaciones:** ¿correo desde plataforma o credenciales de cada
-    clínica? ¿Qué eventos y preferencias se permitirán?
-13. **Reserva pública:** ¿se habilita en una fase posterior con token tenant,
-    rate limits, anti-abuso, consentimiento y disponibilidad publicada?
-14. **PII:** ¿qué datos mínimos se muestran a recepción, veterinaria, groomer y
-    cashier? La matriz actual de Owners/Patients no se amplía implícitamente.
-15. **Recurrencia:** ¿se requieren citas recurrentes o solo reglas de
-    disponibilidad? No generar series en 5B sin límites e idempotencia.
+1. ¿El MVP exige Owner + Patient registrados, o admite Owner-only/Patient-only?
+2. ¿Owner se deriva siempre desde Patient y cómo se rechaza un mismatch?
+3. ¿`ClinicLocation` es obligatorio para todas las citas o solo presenciales?
+4. ¿Puede existir una cita sin membership asignada (`Agenda general`)?
+5. ¿Qué `typeCode` iniciales se soportan y cuándo se justifica catálogo?
+6. ¿Qué estados Easyvet son obligatorios y cuál es la tolerancia de `NO_SHOW`?
+7. ¿Qué recursos producen conflicto y cómo se protege la concurrencia?
+8. ¿Qué ocurre cuando no hay AvailabilityRule? ¿Se requieren bloques/excepciones
+   en 5B?
+9. ¿Cancelación tardía exige motivo/rol? ¿Se permite corregir estados terminales?
+10. ¿Qué permisos de profesional permiten confirmar, iniciar y completar?
 
 ## POSTERGADO
 
-- Modelos y endpoints de `ClinicalConsultation`, `ClinicalFollowup` y
-  `ControlReminder`.
-- Envío de SMTP, plantillas, preferencias, rebotes, reintentos y jobs.
-- Google OAuth, sincronización, webhooks, busy slots y resolución de conflictos.
-- Reservas públicas, links anónimos, captcha/rate limit y consentimiento.
-- Calendario visual React, drag-and-drop, filtros avanzados y sala de espera
-  funcional; la ruta `/agenda` actual sigue siendo un placeholder.
-- Consultorios, equipos, recursos con capacidad y calendarios de terceros.
-- Recurrencia de citas y generación masiva de instancias.
-- Audit log inmutable y versionado legal de reprogramaciones.
-- Integración con grooming, facturación, caja, inventario y documentos.
-- Política final de retención, anonimización, exportación y borrado legal.
-- Decisión final de PII por rol y permisos clínicos/financieros adicionales.
+- Google Calendar, OAuth, busy slots, webhooks y attendance sync.
+- `AppointmentType` como tabla/catálogo; servicios, precios y facturación.
+- `ScheduleBlock`, vacaciones, almuerzo, incapacidad y festivos.
+- Reservas públicas, links anónimos, captcha/rate limit y consentimiento PII.
+- Recurrencia, generación masiva, consultorios/equipos y capacidad avanzada.
+- Waiting-room entity, Consultation/FollowUp/Reminder y grooming.
+- Auditoría legal/versionado completo de reprogramaciones.
+- UI React de calendario, drag/drop y filtros avanzados (Fase 5C).
 
 ## Criterio de salida de Fase 5A
 
-Fase 5A queda lista cuando este registro, la referencia legacy, la propuesta y
-la máquina de estados estén revisados; cuando PRODUCT DECISION REQUIRED tenga
-respuestas; y cuando Fase 5B pueda implementarse sin inventar estados, recursos,
-placeholders, contratos ni integraciones.
+El análisis y diseño de Agenda queda **COMPLETADO** porque la fuente directa,
+los paths, campos, estados, reservas, dependencias y diferencias ya están
+verificados y documentados. El estado de backend sigue **PENDIENTE FASE 5B**;
+resolver las decisiones de producto anteriores es condición de inicio. Este
+checkpoint se detiene aquí.

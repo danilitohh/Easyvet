@@ -1,286 +1,174 @@
-# Propuesta de arquitectura de Agenda para Easyvet
+# Propuesta revisada de arquitectura de Agenda para Easyvet
 
 ## Estado del documento
 
-Este es un diseño de Fase 5A. No crea modelos Prisma, migraciones, endpoints,
-contratos, componentes React ni tablas. Las entidades y campos son una propuesta
-para implementar después de cerrar las decisiones de producto de
-`agenda-decisions.md`.
+**Checkpoint 5A.1 completado.** La propuesta fue corregida después de leer
+directamente Lativet en el commit `05fea495cb13208b27bf470b3570987fd501a81e`.
+Los hechos del legado están en
+`docs/migration/agenda-reference.md`; este documento describe el diseño nuevo de
+Easyvet y no constituye implementación.
 
-## Principios de diseño
+Las etiquetas son: **VERIFIED LEGACY BEHAVIOR**, **NEW EASYVET DESIGN DECISION**,
+**PRODUCT DECISION REQUIRED** y **POSTPONED**.
 
-1. `Organization` es la frontera de tenant. Toda entidad de Agenda lleva
-   `organizationId` y toda consulta recibe el tenant desde `TenantContext`, no
-   desde el body, query, header o un id enviado por el cliente.
-2. Una cita es una reserva operativa; una consulta clínica es un registro de
-   atención. No deben ser la misma entidad.
-3. `Membership` representa al usuario que actúa como profesional o creador. No
-   se crea una tabla `Professional` en 5B.
-4. `ClinicLocation` es la sede operativa de una cita interna. La sede no
-   sustituye a `Organization` como límite de seguridad.
-5. Los instantes se persisten en UTC y se presentan en la zona horaria de la
-   organización. Las reglas recurrentes de disponibilidad usan fecha/hora
-   civil de la sede y se convierten con una política DST explícita.
-6. El backend es la autoridad para permisos, invariantes y conflictos. El
-   calendario del frontend solo representa datos ya autorizados.
+## Principios
 
-## Entidades mínimas propuestas para 5B
+- Organization es siempre la frontera de aislamiento; toda lectura y escritura
+  usa `TenantContext` y relaciones tenant-aware.
+- Persistir instantes en UTC y convertir a la zona horaria de la organización;
+  no repetir el `appointment_at` local ingenuo del legado.
+- Separar reserva operativa de consulta clínica, seguimiento, recordatorio y
+  calendario externo.
+- Validar invariantes y conflictos en servidor dentro de una transacción; la UI
+  solo mejora la experiencia.
+- No crear placeholders silenciosos ni copiar el fail-open de autorización del
+  legado.
 
-### 1. `Appointment`
+## Modelo mínimo exacto para Fase 5B
 
-Es la reserva operativa de una atención, visita, llamada o servicio futuro.
+### MVP REQUIRED: `Appointment`
 
-| Campo conceptual                                               | Requerido                | Decisión de diseño                                                                                                                                |
-| -------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                                                           | Sí                       | UUID estable; nunca se reutiliza.                                                                                                                 |
-| `organizationId`                                               | Sí                       | FK tenant-aware a `Organization`.                                                                                                                 |
-| `clinicLocationId`                                             | Sí para 5B interno       | FK compuesto con `organizationId` a `ClinicLocation`; se decide si teleconsulta/llamada puede omitirlo.                                           |
-| `patientId`                                                    | Sí en el MVP recomendado | FK compuesto al Patient de la misma organización.                                                                                                 |
-| `ownerId`                                                      | Sí en el MVP recomendado | FK compuesto al Owner de la misma organización y debe coincidir con el propietario del paciente. Si se decide derivarlo, no duplicar la relación. |
-| `appointmentTypeId`                                            | Sí                       | FK a catálogo `AppointmentType` del mismo tenant.                                                                                                 |
-| `assignedMembershipId`                                         | No al crear              | Membership profesional asignada; debe pertenecer a la organización y estar activa.                                                                |
-| `createdByMembershipId`                                        | Sí                       | Membership que creó la cita; permite autorización y auditoría mínima.                                                                             |
-| `startsAt` / `endsAt`                                          | Sí                       | Instantes UTC; `endsAt > startsAt`. Son la fuente de verdad temporal.                                                                             |
-| `status`                                                       | Sí                       | Máquina de estados de `appointment-state-machine.md`.                                                                                             |
-| `reason` / `notes`                                             | No                       | Texto operativo acotado; no sustituye historia clínica.                                                                                           |
-| `cancelledAt`, `cancelledByMembershipId`, `cancellationReason` | Condicional              | Se rellenan al cancelar y se conservan; no se borra la cita.                                                                                      |
-| `createdAt` / `updatedAt`                                      | Sí                       | Auditoría técnica de cambios.                                                                                                                     |
+**NEW EASYVET DESIGN DECISION** — Un único modelo tenant-scoped con estos campos:
 
-La recomendación de exigir Owner y Patient registrados evita copiar la reserva
-rápida placeholder del legado y mantiene las invariantes de Fase 4A/4C. Si el
-producto necesita capturar una llamada antes de crear una ficha, debe decidirse
-un flujo provisional explícito; no se deben introducir campos anónimos ni crear
-entidades ficticias por accidente.
+| Campo                                                          | Regla                                                                                                                                                                  |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`, `organizationId`                                         | Identidad y frontera tenant; `id` no se reutiliza entre organizaciones.                                                                                                |
+| `clinicLocationId`                                             | Requerido para cita presencial si producto confirma esa política; la necesidad para telehealth/teléfono es PRODUCT DECISION REQUIRED.                                  |
+| `patientId`, `ownerId`                                         | Recomendación MVP: ambos registros activos y del mismo tenant. Derivar Owner desde Patient o permitir Owner-only es PRODUCT DECISION REQUIRED; no placeholders legacy. |
+| `assignedMembershipId`                                         | Nullable para representar profesional; Membership sustituye el texto libre legacy. Permitir “Agenda general” sin membership requiere decisión.                         |
+| `createdByMembershipId`                                        | Requerido para actor de creación y trazabilidad operativa.                                                                                                             |
+| `typeCode`                                                     | Campo acotado en la cita, opcional hasta cerrar el catálogo. No se crea `AppointmentType` todavía.                                                                     |
+| `status`                                                       | Enum Easyvet gobernado por la máquina de `appointment-state-machine.md`, no cadenas arbitrarias.                                                                       |
+| `startsAt`, `endsAt`                                           | `DateTime` UTC; `endsAt > startsAt`; duración máxima/mínima será decisión de producto basada en 15–240 legacy.                                                         |
+| `reason`                                                       | Requerido, título/motivo visible.                                                                                                                                      |
+| `notes`, `observations`                                        | Notas operativas y observaciones separadas; límite de observaciones se fija en contrato.                                                                               |
+| `cancelledAt`, `cancelledByMembershipId`, `cancellationReason` | Recomendados para conservar cancelación en lugar de DELETE físico legacy.                                                                                              |
+| `createdAt`, `updatedAt`                                       | Auditoría temporal UTC.                                                                                                                                                |
 
-No se guarda `durationMinutes` como segunda fuente de verdad. La duración se
-calcula como `endsAt - startsAt`; si la interfaz necesita minutos, es una vista
-derivada.
+Las FK de Patient, Owner, Location y Membership deben impedir referencias
+cross-tenant. La combinación Owner/Patient debe validar que Patient pertenece al
+Owner elegido o aplicar la derivación que producto decida.
 
-### 2. `AppointmentType`
+### MVP condicional: `AvailabilityRule`
 
-Catálogo pequeño y configurable por organización para no codificar en un enum
-global los tipos de Lativet, cuya lista completa no fue verificable.
+**VERIFIED LEGACY BEHAVIOR** confirma que la disponibilidad es necesaria si 5B
+ofrece slots. **NEW EASYVET DESIGN DECISION**: implementar solo si el MVP
+incluye validación/generación de slots; de ser así, el modelo mínimo es:
 
-| Campo conceptual         | Requerido | Uso                                                                                                                                                  |
-| ------------------------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`, `organizationId`   | Sí        | Identidad y aislamiento.                                                                                                                             |
-| `code`                   | Sí        | Clave estable por organización; única junto con `organizationId`.                                                                                    |
-| `name`                   | Sí        | Etiqueta visible.                                                                                                                                    |
-| `systemCategory`         | Sí        | Categoría controlada por código, por ejemplo `CONSULTATION`, `VACCINATION`, `CONTROL`, `GROOMING` o `OTHER`; no representa aún una consulta clínica. |
-| `defaultDurationMinutes` | Sí        | Valor inicial de UI; el intervalo enviado al backend sigue siendo autoridad.                                                                         |
-| `active`                 | Sí        | Archivado lógico para no romper citas históricas.                                                                                                    |
+`id`, `organizationId`, `clinicLocationId` nullable según sede, `membershipId`
+nullable para “general”, `dayOfWeek`, `startLocalTime`, `endLocalTime`,
+`slotMinutes`, `active`, `createdAt`, `updatedAt`.
 
-No se agrega precio, recurso, Google id ni contenido clínico al catálogo de 5B.
+La regla debe ser semanal y tenant-aware. `location` libre y `scope=general`
+del legado no son contratos Easyvet. Si producto decide que 5B solo crea citas
+sin slots, `AvailabilityRule` se POSTERGA y se documenta como decisión explícita.
 
-### 3. `AvailabilityRule`
+## Modelos deliberadamente fuera de 5B
 
-Regla recurrente o fechada que describe cuándo se puede iniciar una cita en una
-sede y, opcionalmente, para una membership.
+- **POSTPONED — `AppointmentType`**: el legado no tiene columna ni catálogo
+  persistido; `typeCode` acotado en Appointment cubre el MVP sin otra tabla.
+- **POSTPONED — `ScheduleBlock`**: no se encontró bloqueo, vacaciones,
+  almuerzo, incapacidad ni override persistido. Solo se añade cuando exista una
+  política de excepciones y una UI que la necesite.
+- **POSTPONED**: Google/CalendarProvider, reservas públicas, recurrencia,
+  recursos/equipos, waiting-room entity, Consultation, FollowUp, Reminder,
+  auditoría legal de versiones, grooming y facturación.
 
-| Campo conceptual                           | Requerido          | Uso                                                                                                                             |
-| ------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `id`, `organizationId`, `clinicLocationId` | Sí                 | Frontera tenant y sede.                                                                                                         |
-| `membershipId`                             | No                 | Nulo para disponibilidad de sede; informado para horario de un profesional. Debe ser de la misma organización.                  |
-| `dayOfWeek`                                | Para regla semanal | Día civil según la zona de la sede.                                                                                             |
-| `effectiveFrom`, `effectiveTo`             | Según regla        | Vigencia civil inclusiva; debe validarse que no se invierta.                                                                    |
-| `localStartTime`, `localEndTime`           | Sí                 | Horario local; 5B no acepta intervalos nocturnos que crucen medianoche sin decisión adicional.                                  |
-| `slotMinutes`                              | Sí                 | Entre los límites que producto decida; el rango legacy 15–240 se documenta como referencia, no como constraint Easyvet todavía. |
-| `active`                                   | Sí                 | Archivado lógico.                                                                                                               |
+## Tiempo, disponibilidad y conflictos
 
-Si no existe ninguna regla, el comportamiento debe ser una decisión explícita,
-no una consecuencia accidental de un `if`. La propuesta segura es “no se
-ofrecen slots calculados” hasta que exista una regla, mientras que una cita
-creada por un usuario con permiso puede validarse solo por conflicto y horario.
+El intervalo canónico es `[startsAt, endsAt)`. Antes de insertar o reprogramar,
+el servidor debe:
 
-### 4. `ScheduleBlock`
+1. comprobar Organization y relaciones con FK compuesta;
+2. validar `endsAt > startsAt`, zona horaria y límites de duración;
+3. validar AvailabilityRule si está habilitada;
+4. excluir estados terminales;
+5. comprobar conflictos para los recursos decididos (como mínimo profesional,
+   Patient y sede/recurso cuando aplique);
+6. repetir la comprobación dentro de una transacción con una estrategia
+   anti-carrera definida (constraint/exclusion o lock/serialización compatible
+   con PostgreSQL).
 
-Excepción puntual de la disponibilidad: vacaciones, almuerzo, mantenimiento,
-feriado o bloqueo manual. Es opcional para el primer corte, pero se incluye en
-el diseño 5B porque sin excepciones una regla semanal no puede representar la
-operación real.
+No se copia el conflicto global de Lativet, que ignoraba profesional, Patient,
+Owner, location y busy slots y permitía doble reserva concurrente.
 
-| Campo conceptual                           | Requerido | Uso                                       |
-| ------------------------------------------ | --------- | ----------------------------------------- |
-| `id`, `organizationId`, `clinicLocationId` | Sí        | Tenant y sede.                            |
-| `membershipId`                             | No        | Bloqueo de una persona o de toda la sede. |
-| `startsAt`, `endsAt`                       | Sí        | UTC; `endsAt > startsAt`.                 |
-| `reason`                                   | No        | Motivo operativo no clínico.              |
-| `createdByMembershipId`                    | Sí        | Autor y autorización de la excepción.     |
-| `createdAt`                                | Sí        | Trazabilidad técnica.                     |
+**PRODUCT DECISION REQUIRED**: recursos exactos, comportamiento sin reglas,
+excepciones, slots partidos, buffers y si una cita sin profesional ocupa un
+recurso de sede.
 
-No representa una ausencia laboral legal ni un calendario externo; esas
-integraciones quedan fuera.
+## Estados, cancelación y reprogramación
 
-## Relaciones y claves tenant-aware
+La máquina propuesta en `appointment-state-machine.md` es **NEW EASYVET DESIGN
+DECISION**, no un enum legacy. Se recomienda conservar una cita cancelada con
+motivo/actor/tiempo, no borrar físicamente. Reprogramar cambia el intervalo en
+la misma cita y revalida disponibilidad/conflictos; no es DELETE + INSERT.
 
-```text
-Organization
-  ├──< ClinicLocation ───< AvailabilityRule
-  │          └──────────< ScheduleBlock
-  ├──< AppointmentType
-  ├──< Appointment >── Patient >── Owner
-  │        ├────────── AppointmentType
-  │        ├────────── ClinicLocation
-  │        └────────── Membership (assigned/created by)
-  └──< Membership
-```
+El legado permite cualquiera de nueve estados sin transición y la UI solo
+expone dos; Easyvet debe cerrar esa inconsistencia con endpoints server-side y
+pruebas de transición.
 
-Las relaciones a Patient, Owner, ClinicLocation, Membership y AppointmentType
-deben comprobar `(organizationId, id)` de forma compuesta. Un `findUnique({ id })`
-aislado no es válido para una entidad de Agenda.
+## Profesional, Owner/Patient y sede
 
-La recomendación de almacenar `ownerId` además de `patientId` se mantiene solo si
-el producto quiere congelar el contexto del responsable al reservar y consultar
-permisos sin depender de cambios futuros de propietario. Si Owner siempre se
-deriva de Patient y esa relación será inmutable, puede omitirse `ownerId`; la
-decisión debe quedar cerrada antes del esquema.
+- `assignedMembershipId` representa la membership activa, no una entidad
+  `Professional`. La licencia y el rol se validan en módulos de usuarios.
+- Recomendación MVP: Owner y Patient activos y tenant-matched. No se crean
+  `Mascota por registrar`, `Reserva agenda` ni `Espacio reservado` como datos de
+  dominio.
+- `ClinicLocation` es una capacidad existente de Easyvet y una decisión nueva,
+  no un campo legacy. Su obligatoriedad para no presenciales es PRODUCT
+  DECISION REQUIRED.
 
-## Profesional, membership y permisos
+## Contrato conceptual de API 5B
 
-No se crea `Professional`. Un profesional es una `Membership` activa con la
-capacidad correspondiente. La capacidad no debe inferirse únicamente de la
-etiqueta visual del rol: debe extenderse el catálogo de permisos existente con
-acciones de Agenda, por ejemplo:
+Estas son rutas nuevas propuestas, no rutas implementadas ni equivalentes
+automáticos de `/api/appointments` legacy:
 
-- `appointments.read`, `appointments.create`, `appointments.update`;
-- `appointments.cancel`, `appointments.confirm`, `appointments.complete`;
-- `appointments.manage_availability`.
+- `GET /api/v1/appointments` — lista paginada por rango local, estado, Patient,
+  Owner, sede, profesional y tipo; siempre tenant-scoped.
+- `POST /api/v1/appointments` — crea y valida invariantes/conflictos.
+- `GET /api/v1/appointments/:id` — detalle autorizado.
+- `PATCH /api/v1/appointments/:id` — edita datos antes de estado terminal o
+  atención; reprogramación con la misma transacción.
+- `POST /api/v1/appointments/:id/transitions` — transición explícita de estado.
+- `GET /api/v1/availability-rules` y `POST /api/v1/availability-rules` —
+  reglas activas del tenant.
+- `PATCH /api/v1/availability-rules/:id` y
+  `DELETE /api/v1/availability-rules/:id` — gestión autorizada.
 
-La matriz de roles y cualquier permiso para reasignar profesional, sede o estado
-es decisión de producto. El backend debe comprobar siempre tenant, membership
-activa y permiso; `useCan()` solo sirve para UX.
+Permisos sugeridos: `appointments.read`, `appointments.create`,
+`appointments.update`, `appointments.confirm`, `appointments.start`,
+`appointments.complete`, `appointments.cancel` y
+`appointments.manage_availability`. Son diseño, no permisos agregados en 5A.
 
-## Patient, Owner y ClinicLocation
+## Pruebas requeridas antes de cerrar 5B
 
-### Patient y Owner
+- FK/consultas cross-tenant devuelven `404` o error estable sin filtrar datos.
+- Patient/Owner mismatch, archivado y membership inactiva son rechazados.
+- `endsAt > startsAt`, duración, timezone y límites tienen contratos de error.
+- Inserción y reprogramación concurrentes no producen doble reserva según la
+  estrategia escogida.
+- Se prueban conflictos por profesional, Patient, sede/recurso y estados
+  terminales.
+- Cada transición válida/ inválida de la máquina tiene prueba server-side.
+- Cancelación conserva motivo/actor/tiempo y libera el intervalo.
+- No se crea Google, booking público, consulta, seguimiento ni placeholder.
 
-Para el MVP interno se recomienda exigir ambos registros existentes, activos y
-del mismo tenant. Además, el `ownerId` de la cita debe coincidir con el Owner del
-Patient. Esto evita que una combinación de ids válidos de distintas fichas cree
-una cita incoherente.
+## PRODUCT DECISION REQUIRED restante
 
-La reserva sin ficha clínica, los datos mínimos de un cliente desconocido y la
-conversión de un provisional a Owner/Patient son una decisión de producto
-separada. No se resuelven creando placeholders silenciosos.
+1. ¿MVP exige Owner y Patient registrados o permite Owner-only/Patient-only?
+2. ¿Owner se deriva siempre desde Patient y se ignora un Owner discordante?
+3. ¿Se requiere ClinicLocation para toda cita o solo presencial?
+4. ¿Puede existir “Agenda general” sin `assignedMembershipId`?
+5. ¿Qué `typeCode` iniciales se aceptan y cuándo se necesita catálogo?
+6. ¿Qué estados Easyvet son obligatorios y cuál es la tolerancia de `NO_SHOW`?
+7. ¿Qué recursos participan en conflicto y qué ocurre sin AvailabilityRule?
+8. ¿Se necesitan excepciones/bloques en 5B o se posponen?
+9. ¿Cancelación tardía requiere motivo/rol y qué edición permiten terminales?
 
-### ClinicLocation
+## Alcance y límite
 
-Una cita interna requiere sede para hacer explícita la operación multi-sucursal,
-el timezone de presentación y el futuro inventario de recursos. La sede no es
-el único recurso de conflicto: varias consultas pueden compartir sede si la
-capacidad lo permite. El modelo de salas/equipos/capacidades se posterga hasta
-que exista una decisión de producto.
-
-Si una persona recibe citas pero no tiene cuenta de Easyvet, no debe fabricarse
-una membership incompleta en 5B. Ese caso requiere decidir un participante
-externo o un recurso profesional separado, con su propio ciclo de vida y
-permisos. Hasta esa decisión, `assignedMembershipId` solo acepta memberships
-activas de la organización.
-
-## Tiempo, timezone y disponibilidad
-
-- `startsAt` y `endsAt` son instantes UTC, comparables sin ambigüedad.
-- `Organization.timezone` (y una eventual zona de `ClinicLocation`) define la
-  vista y la interpretación de reglas civiles.
-- Las reglas semanales guardan horas locales y día de semana; no guardan un UTC
-  fijo porque DST puede cambiarlo.
-- Se rechazan intervalos vacíos, invertidos y, inicialmente, intervalos que
-  cruzan medianoche sin una semántica aprobada.
-- La conversión en DST debe declarar qué hacer con una hora inexistente o
-  repetida; no se debe aceptar silenciosamente un desplazamiento.
-- Toda búsqueda por día local debe convertir el rango de la sede a UTC antes de
-  consultar.
-
-## Disponibilidad, conflictos y sobre-reserva
-
-La disponibilidad dice cuándo puede ofrecerse un slot; no sustituye al control
-de conflicto. La creación y reprogramación deben, en una transacción:
-
-1. validar tenant, estado, paciente, sede y membership;
-2. convertir el intervalo de la zona operativa a UTC;
-3. verificar `AvailabilityRule` y `ScheduleBlock` cuando el flujo los use;
-4. comprobar solapamientos de citas no terminales;
-5. persistir solo si todo sigue siendo válido.
-
-La regla legacy de bloquear globalmente todas las citas activas no se copia. La
-política propuesta es:
-
-- impedir dos citas solapadas para el mismo `assignedMembershipId`;
-- impedir dos citas solapadas para el mismo Patient;
-- aplicar una política de sede/consultorio/equipo únicamente cuando se haya
-  definido una capacidad o recurso concreto;
-- permitir citas sin profesional asignado si el producto lo aprueba, pero no
-  tratarlas como si reservaran a todos los profesionales.
-
-En PostgreSQL, una exclusión sobre rangos (`tstzrange`) es la defensa más fuerte
-para un mismo recurso. Prisma no expresa todas las exclusiones en el schema
-declarativo; si se adopta, requerirá SQL de migración revisado y pruebas. Como
-alternativa temporal, la aplicación debe bloquear la fila de un recurso o usar
-una transacción serializable. Un `check-then-insert` sin bloqueo no evita una
-condición de carrera.
-
-## Borrado, archivado y retención
-
-- Las citas no se borran físicamente por una operación normal.
-- Cancelar conserva la fila, quién canceló, cuándo y por qué.
-- `AppointmentType` y reglas se archivan para no invalidar el historial.
-- Un Owner o Patient archivado no debe borrar en cascada las citas históricas;
-  las consultas futuras decidirán si se ocultan, se muestran o se bloquean.
-- Los eventos de auditoría detallados y la política legal de retención son
-  posteriores, pero el diseño no debe impedirlos.
-
-Si Patient u Owner se archiva mientras tiene citas futuras, se conserva la
-relación histórica y se muestra al personal autorizado como ficha archivada. No
-se crean nuevas reservas ni se reprograma automáticamente; una excepción
-administrativa requiere decisión de producto. Esto evita que `archive` se
-convierta en un borrado indirecto de Agenda.
-
-## Consultas, filtros y calendario futuro
-
-Los casos de lectura de 5B deben soportar, al menos, rango de fecha local
-convertido a UTC, `clinicLocationId`, `assignedMembershipId`, `status`,
-`appointmentTypeId`, `patientId` y `ownerId`. La autorización se aplica antes de
-devolver filas y los filtros son criterios de búsqueda, no fronteras de
-seguridad.
-
-La UI de Fase 5C puede comenzar con vistas día, semana, mes y lista. Drag-and-
-drop no es requisito de 5B ni está demostrado en Lativet; si se añade, debe
-usar exactamente el caso de uso de reprogramación, con conflicto y auditoría
-idénticos a una edición normal.
-
-## Relaciones futuras deliberadamente fuera de 5B
-
-`ClinicalConsultation`, `ClinicalFollowup`, `ControlReminder`, notificaciones,
-Google Calendar, reservas públicas, sala de espera avanzada, grooming,
-recurrencia, recursos físicos, audit log inmutable y facturación podrán
-relacionarse con `Appointment` en fases posteriores. Ninguno debe forzar campos
-clínicos, OAuth, correo o JSON polimórfico dentro de la cita inicial.
-
-## Alcance exacto propuesto para Fase 5B
-
-Una vez resueltas las decisiones de producto, 5B debería implementar únicamente:
-
-1. `Appointment`, `AppointmentType`, `AvailabilityRule` y `ScheduleBlock` con
-   constraints e índices tenant-aware;
-2. contratos de alta, lectura paginada/filtrada, edición de horario y
-   cancelación, sin endpoints públicos. Como forma concreta a revisar antes de
-   implementar: `GET/POST /api/v1/appointments`,
-   `GET/PATCH /api/v1/appointments/:appointmentId`,
-   `POST /api/v1/appointments/:appointmentId/confirm`,
-   `POST /api/v1/appointments/:appointmentId/start`,
-   `POST /api/v1/appointments/:appointmentId/complete`,
-   `POST /api/v1/appointments/:appointmentId/cancel`, además de lecturas y
-   gestión protegida de `/api/v1/availability-rules` y
-   `/api/v1/schedule-blocks`. Son contratos propuestos, no endpoints creados;
-   los verbos exactos pueden cambiar al cerrar permisos y estados;
-3. permisos server-side y comprobaciones de `Organization`, `Membership`,
-   `ClinicLocation`, Owner y Patient;
-4. validación UTC/timezone, disponibilidad, bloques y conflictos transaccionales;
-5. la máquina de estados de `appointment-state-machine.md`;
-6. pruebas de tenant isolation, conflictos, carrera de creación, estados,
-   archivado y conversiones de zona horaria;
-7. documentación y contratos compartidos necesarios para la futura Fase 5C.
-
-5B no incluye Google Calendar, SMTP, recordatorios, seguimientos, consultas
-clínicas, reservas públicas, placeholders, drag-and-drop, calendario visual ni
-modificación de Owners/Patients fuera de las claves foráneas necesarias.
+La Fase 5B solo podrá implementar `Appointment` y, si la decisión de slots lo
+confirma, `AvailabilityRule`, sus contratos tenant-aware, permisos, invariantes,
+conflictos y pruebas. No incluye UI visual, Google, reservas públicas, bloques,
+catálogo de tipos ni integraciones laterales. Este documento no cambia Prisma ni
+crea migraciones.

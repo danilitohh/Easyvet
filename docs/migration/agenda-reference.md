@@ -1,278 +1,268 @@
-# Referencia de Agenda de Lativet
+# Referencia directa de Agenda de Lativet
 
-## Alcance y calidad de la evidencia
+## Checkpoint 5A.1
 
-Este documento reconstruye el comportamiento de Agenda para preparar la Fase 5B.
-La evidencia disponible en este checkout es la auditoría estática del repositorio
-Lativet y sus inventarios de módulos, reglas y modelo de datos. No se encontró el
-árbol fuente `Backend/AGENDA` ni `Frontend/AGENDA` dentro de Easyvet, no se abrió
-una base legacy y no se ejecutaron sus endpoints. Por tanto:
+**VERIFIED LEGACY BEHAVIOR** — La Agenda fue inspeccionada directamente en el
+checkout read-only de Lativet en:
 
-- los hechos marcados como **confirmados por auditoría** provienen de los
-  documentos enumerados abajo;
-- los nombres de archivos y rutas legacy son referencias del inventario, no una
-  copia ni una dependencia que deba reutilizarse;
-- los métodos HTTP, payloads exactos, enumeraciones completas y detalles de
-  autorización que no aparecen en la auditoría quedan como **NEEDS REVIEW**.
+`C:\Users\danil\Downloads\Lativet-reference`
 
-No se migran datos, secretos, credenciales de Google, tokens, sesiones ni
-placeholders con este documento.
+Commit exacto inspeccionado: `05fea495cb13208b27bf470b3570987fd501a81e`.
+El checkout está en `detached HEAD`. No se modificó ni ejecutó Lativet, no se
+conectó ninguna base legacy y no se copiaron `.git`, datos, SQLite, `.env` ni
+credenciales a Easyvet.
 
-## Fuentes consultadas
+Este documento separa hechos observados de decisiones nuevas de Easyvet:
 
-| Fuente                                | Uso en este análisis                                                                                                     |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `docs/migration/MODULE_MAP.md`        | Mapa de Agenda, Reservas, Google Calendar, Consultas, Control y Seguimientos; rutas legacy inventariadas y dependencias. |
-| `docs/migration/DATA_MODEL_LEGACY.md` | Tablas, campos conceptuales, relaciones, índices y límites del modelo legacy.                                            |
-| `docs/migration/BUSINESS_RULES.md`    | Validaciones de duración, disponibilidad, conflicto, reservas rápidas, controles y sincronización.                       |
-| `docs/migration/MIGRATION_RISKS.md`   | Riesgos de disponibilidad, recursos, placeholders, automatizaciones y preguntas abiertas.                                |
-| `docs/migration/AUDIT.md`             | Arquitectura monolítica, acoplamientos, Google Calendar, SMTP, bootstrap y dependencias.                                 |
-| `docs/migration/SECURITY_AUDIT.md`    | Riesgos de secretos Google/SMTP, callback OAuth, jobs públicos y aislamiento futuro.                                     |
-| `docs/architecture/dates.md`          | Convención Easyvet de persistir instantes UTC y presentar en la zona de la organización.                                 |
-| `docs/architecture/authorization.md`  | `TenantContext`, permisos server-side, memberships y política fail-closed.                                               |
-| `docs/architecture/multi-tenancy.md`  | Organization como frontera de aislamiento y consultas tenant-aware.                                                      |
-| `docs/architecture/module-pattern.md` | Secuencia esperada Prisma → API → contratos → UI → pruebas → documentación.                                              |
-| `MIGRATION_STATUS.md`                 | Estado de fases y límites ya aceptados por Easyvet.                                                                      |
+- **VERIFIED LEGACY BEHAVIOR**: comprobado en código, SQL o pruebas del commit.
+- **NEW EASYVET DESIGN DECISION**: diseño tenant-aware que no existe en Lativet.
+- **PRODUCT DECISION REQUIRED**: elección que no debe inferirse silenciosamente.
+- **POSTPONED**: fuera del alcance de Fase 5B.
 
-## Superficie legacy y dependencias
+## Paths reales revisados
 
-| Área               | Referencia legacy                                                         | Responsabilidad observada                                                                        | Dependencias                                                                                |
-| ------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| Agenda general     | `Frontend/AGENDA/Agenda_general`; `Backend/AGENDA/Agenda_general`         | Calendario, creación/edición, disponibilidad, sala de espera, confirmación y cancelación.        | `appointments`, `agenda_availability_rules`, propietarios, pacientes, usuarios y controles. |
-| Reservas           | `Frontend/AGENDA/Reservas`; `Backend/AGENDA/Reservas`                     | Flujo de reserva rápida y orquestación de propietario, paciente y cita.                          | Agenda y registros placeholder.                                                             |
-| Integración Google | `Frontend/AGENDA/Integracion_Google`; `Backend/AGENDA/Integracion_Google` | Configurar, conectar, desconectar, consultar ocupación, callback OAuth y sincronizar asistencia. | Citas, URL pública y configuración global; `credentials.json` y `token.json`.               |
-| Consultas          | `Backend/CONSULTORIO/Pacientes/Consultas`                                 | Puede derivar una cita de control y actualizar datos clínicos en la misma operación lógica.      | Paciente, propietario, historia, controles y seguimientos.                                  |
-| Control            | `Frontend/CONSULTORIO/Pacientes/Control`; backend de Consultas            | Recordatorio/cita de control derivado; la auditoría reporta duración por defecto de 30 minutos.  | Citas, consultas, paciente y propietario.                                                   |
-| Seguimientos       | `Frontend/SEGUIMIENTOS`; `Backend/SEGUIMIENTOS`                           | Series de seguimiento, tareas pendientes y correos.                                              | Paciente, consulta, historia, SMTP y job HTTP.                                              |
-| Dashboard          | `Frontend/COMPARTIDO/Inicio`; `Backend/COMPARTIDO/Inicio`                 | Agregados operativos que incluyen citas.                                                         | Bootstrap, permisos y múltiples dominios.                                                   |
-| Configuración      | `Backend/ADMINISTRACION/Configuracion`                                    | Zona horaria, SMTP, Google y otros ajustes globales.                                             | `settings`, `audit_log` y secretos.                                                         |
-| Usuarios/permisos  | `Backend/ADMINISTRACION/Usuarios`                                         | Selector de profesionales y perfiles heredados/granulares.                                       | `staff_users`, permisos y middleware.                                                       |
+| Área              | Paths inspeccionados                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Agenda backend    | `Backend/AGENDA/Agenda_general/{persistencia.py,rutas.py,servicios.py,validacion.py,README.md}`                                                                                            |
+| Reservas backend  | `Backend/AGENDA/Reservas/{persistencia.py,README.md}`                                                                                                                                      |
+| Google backend    | `Backend/AGENDA/Integracion_Google/{google_calendar.py,rutas.py,servicios.py,validacion.py,README.md}`                                                                                     |
+| Agenda frontend   | `Frontend/AGENDA/Agenda_general/Logica/interfaz.js`, `Vistas/vistas.html`, `Estilos/estilos.css`, `README.md`, `Recursos/`                                                                 |
+| Reservas frontend | `Frontend/AGENDA/Reservas/Logica/interfaz.js`, `Estilos/estilos.css`, `README.md`                                                                                                          |
+| Google frontend   | `Frontend/AGENDA/Integracion_Google/Logica/interfaz.js`, `Estilos/estilos.css`, `README.md`                                                                                                |
+| Dependencias      | `Backend/BASE_DE_DATOS/{database.py,contexto.py}`, Consultorio/Pacientes/Consultas, Seguimientos, Peluquería, Compartido, Administración/Usuarios, bootstrap y pruebas `Backend/Pruebas/`. |
 
-## Persistencia legacy reconstruida
+## `appointments`: DDL y campos exactos
 
-### `appointments`
+**VERIFIED LEGACY BEHAVIOR** — El DDL de SQLite declara `appointments` así:
 
-La auditoría identifica una tabla de citas con, al menos conceptualmente:
+| Campo legacy                      | Tipo / nulabilidad                                   | Significado                               | Usado o modificado por                      | Propuesta Easyvet                                                | Estado    |
+| --------------------------------- | ---------------------------------------------------- | ----------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------- | --------- |
+| `id`                              | `TEXT PRIMARY KEY`, requerido                        | Identidad de la cita                      | Persistencia, rutas, bootstrap              | `id` UUID tenant-aware                                           | PRESERVAR |
+| `patient_id`                      | `TEXT NOT NULL`, FK `patients(id)`                   | Paciente                                  | Crear/listar/editar, controles, reservas    | `patientId` + FK compuesta tenant                                | REDISEÑAR |
+| `owner_id`                        | `TEXT NOT NULL`, FK `owners(id)`                     | Propietario                               | Crear/listar/editar, reservas               | `ownerId`; derivación y requisito son PRODUCT DECISION REQUIRED  | REDISEÑAR |
+| `appointment_at`                  | `TEXT NOT NULL`                                      | Instantánea ISO local ingenua             | Agenda, conflictos, Google                  | `startsAt`/`endsAt` UTC con timezone de organización             | REDISEÑAR |
+| `reason`                          | `TEXT NOT NULL`                                      | Título/motivo visible                     | Formulario, Google, controles               | `reason` requerido                                               | PRESERVAR |
+| `status`                          | `TEXT NOT NULL`                                      | Estado operativo                          | PATCH de estado, filtros, conflictos        | Enum y máquina server-side                                       | REDISEÑAR |
+| `professional_name`               | `TEXT` nullable, texto libre                         | Nombre del profesional o `Agenda general` | Selector, disponibilidad, Google, controles | `assignedMembershipId` nullable; fallback sin cuenta es decisión | REDISEÑAR |
+| `duration_minutes`                | `INTEGER NOT NULL DEFAULT 30`                        | Duración; validador 15–240                | Slots, conflictos, Google                   | Derivada de `endsAt` o duración validada                         | REDISEÑAR |
+| `notes`                           | `TEXT` nullable                                      | Notas operativas                          | Formulario y Google                         | `notes`                                                          | PRESERVAR |
+| `observations`                    | `TEXT` nullable, actualización máxima 500 caracteres | Observación posterior                     | PATCH observations                          | `observations`                                                   | PRESERVAR |
+| `created_at` / `updated_at`       | `TEXT NOT NULL`                                      | Auditoría temporal básica                 | Inserción/actualización                     | `DateTime` UTC                                                   | REDISEÑAR |
+| `google_event_id`                 | `TEXT` nullable                                      | ID externo de Google                      | Insert/patch/cancel                         | Adaptador externo, no núcleo                                     | POSTERGAR |
+| `google_event_url`                | `TEXT` nullable                                      | URL externa                               | Bootstrap/detalle                           | Adaptador externo                                                | POSTERGAR |
+| `google_sync_status`              | `TEXT` nullable                                      | Resultado último sync                     | Sync y UI                                   | Adaptador externo con estado propio                              | POSTERGAR |
+| `google_sync_error`               | `TEXT` nullable                                      | Último error                              | Sync y UI                                   | Registro de integración futuro                                   | POSTERGAR |
+| `google_attendee_response_status` | `TEXT` nullable                                      | Respuesta de invitado Google              | Attendance sync                             | Separado de `status`; futuro                                     | POSTERGAR |
+| `source_consultation_id`          | `TEXT` nullable, índice runtime                      | Consulta que originó control              | Consultas, borrado y Google                 | Relación futura cuando exista consulta                           | POSTERGAR |
 
-- fecha/hora y duración;
-- tipo de cita;
-- estado;
-- observaciones;
-- profesional;
-- origen;
-- referencias a Google Calendar y a controles;
-- claves foráneas a paciente y propietario.
+No existe columna legacy `type`, `starts_at`, `ends_at`, `location`,
+`membership_id`, `cancelled_at` ni motivo/actor de cancelación. Todas las
+fechas son texto local ingenuo; el esquema no es PostgreSQL.
 
-La compatibilidad de propietario y paciente no estaba completamente protegida
-por la base; parte de la limpieza y de la consistencia se resolvía manualmente.
-No se dispone de un DDL legacy completo para afirmar nombres, nulabilidad,
-tipos, enum exacto ni política de borrado de cada columna.
+Índices observados: `appointment_at`, `patient_id`, `owner_id`, `status`,
+`(status, appointment_at)` y runtime `source_consultation_id`.
 
-### `agenda_availability_rules`
+## Disponibilidad real
 
-Representa reglas con fecha o día, hora de inicio, hora de fin y tamaño de
-slot. La auditoría confirma que no demuestra un modelo para múltiples recursos
-(profesionales, consultorios, equipos o sedes). También queda por verificar si
-las reglas son semanales, excepciones o ambas, y qué ocurre con días festivos y
-turnos partidos.
+**VERIFIED LEGACY BEHAVIOR** — `agenda_availability_rules` contiene:
 
-### Tablas y relaciones vecinas
+| Campo                       | Tipo / nulabilidad | Comportamiento                                              |
+| --------------------------- | ------------------ | ----------------------------------------------------------- |
+| `id`                        | `TEXT PRIMARY KEY` | Identidad                                                   |
+| `scope`                     | `TEXT NOT NULL`    | Se fuerza a `general` y las consultas filtran por ese valor |
+| `professional_name`         | `TEXT NOT NULL`    | Texto libre, por defecto `Agenda general`                   |
+| `day_of_week`               | `INTEGER NOT NULL` | 0–6                                                         |
+| `start_time` / `end_time`   | `TEXT NOT NULL`    | Hora local; fin debe ser posterior                          |
+| `slot_minutes`              | `INTEGER NOT NULL` | Por defecto 30; 15–240                                      |
+| `location`                  | `TEXT` nullable    | Texto libre de regla, no de cita                            |
+| `notes`                     | `TEXT` nullable    | Nota de regla                                               |
+| `created_at` / `updated_at` | `TEXT NOT NULL`    | Tiempos legacy                                              |
 
-| Tabla/artefacto                   | Relación con Agenda                                        | Tratamiento propuesto                                                                                             |
-| --------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `owners` / `patients`             | Destino de una cita; Reserva podía crear placeholders.     | Usar las entidades tenant-aware de Easyvet; no crear placeholders automáticamente en 5B sin decisión de producto. |
-| `clinical_consultations`          | Registro clínico posterior o cita de control derivada.     | Mantener `Appointment` separado; la consulta será una relación futura.                                            |
-| `control_reminders`               | Recordatorios derivados de una consulta/cita.              | Fuera de 5B; requiere job idempotente y política de notificación.                                                 |
-| `clinical_followups`              | Seguimientos programados y series de hasta 120 instancias. | Fuera de 5B; no confundir tarea clínica con reserva de agenda.                                                    |
-| `settings`                        | Zona horaria, SMTP y Google globales en el legado.         | No reutilizar configuración global como frontera de tenant.                                                       |
-| `credentials.json` / `token.json` | Credenciales y token OAuth en archivos locales.            | Nunca importar; integración SaaS requiere almacenamiento cifrado y scoping nuevo.                                 |
+Cuando hay reglas, una cita debe caber en una regla, comenzar alineada al slot
+y tener una duración múltiplo del slot. Sin reglas, la cita se acepta. El
+calendario de 14 días genera slots y marca ocupación; no es otra entidad.
 
-## HTTP y operaciones observables
+No se encontró tabla de sedes, recursos, vacaciones, almuerzo, incapacidad,
+festivos ni overrides. Las “excepciones” de UI solo omiten días al crear reglas
+individuales y no se persisten.
 
-El inventario de módulos confirma operaciones para:
+## Estados exactos y asistencia
 
-1. crear cita;
-2. crear y eliminar disponibilidad;
-3. actualizar estado y observaciones;
-4. enviar recordatorio;
-5. configurar, conectar, desconectar y callback de Google;
-6. consultar ocupación y sincronizar asistencia.
+**VERIFIED LEGACY BEHAVIOR** — `APPOINTMENT_STATUSES` contiene exactamente:
 
-La auditoría no conserva el contrato exacto de URL, verbo, parámetros, códigos
-de error ni payloads de cada operación. No se debe inferir que el endpoint
-legacy equivale a una ruta Easyvet. Esos contratos deben revisarse contra la
-fuente Lativet antes de importar comportamiento o diseñar compatibilidad.
+`scheduled`, `pending_confirmation`, `waiting_room`, `confirmed`,
+`confirmed_by_clinic`, `confirmed_by_owner`, `completed`, `cancelled`,
+`no_show`.
 
-La única ruta concreta identificada en la documentación es el job relacionado,
-`GET /api/jobs/control-reminders`, que pertenece a Seguimientos y no debe formar
-parte de la API de Agenda 5B.
+`ACTIVE_APPOINTMENT_STATUSES` contiene los seis primeros estados hasta
+`confirmed_by_owner`. El backend solo valida pertenencia al conjunto; no aplica
+una matriz de transiciones, actor, tiempo, terminalidad ni auditoría completa.
 
-## Validaciones y reglas confirmadas
+El frontend muestra y permite seleccionar explícitamente solo `scheduled`
+(“Agendada”) y `pending_confirmation` (“Por confirmar”); otros valores se
+normalizan a `scheduled` en el formulario. `waiting_room` es un estado, no una
+entidad ni una cola persistida. `completed`, `cancelled` y `no_show` se tratan
+como terminales en la UI.
 
-| Regla                                                                                           | Evidencia                                            | Estado para Easyvet                                                             |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Duración y slot entre 15 y 240 minutos.                                                         | `BUSINESS_RULES.md`, validación de `Agenda_general`. | Confirmada como legado; el límite exacto de producto queda por decidir.         |
-| Fin posterior al inicio.                                                                        | `BUSINESS_RULES.md`.                                 | Debe preservarse como invariant de dominio.                                     |
-| Si hay reglas, la cita cabe en una regla, se alinea al slot y su duración es múltiplo del slot. | Persistencia/validación legacy inventariada.         | Necesita redefinir zona horaria, recurso y excepciones en SaaS.                 |
-| Estados activos excluyen completada, cancelada y no-asistió.                                    | Contexto legacy y Agenda.                            | Debe reemplazarse por la máquina de estados explícita de Easyvet.               |
-| El conflicto compara todas las citas activas.                                                   | Persistencia legacy.                                 | No copiar sin decisión: puede bloquear por error todas las sedes/profesionales. |
-| Reserva rápida crea propietario/paciente placeholder.                                           | `Backend/AGENDA/Reservas`.                           | Producto debe decidir si permite reserva provisional; no se implementa aún.     |
-| Control derivado dura 30 minutos por defecto.                                                   | Persistencia de Consultas/Agenda.                    | Valor legacy, no contrato definitivo de 5B.                                     |
-| Un paciente fallecido no recibe recordatorios/seguimientos pendientes.                          | Pacientes y Seguimientos.                            | Regla clínica futura, fuera de Appointment 5B.                                  |
+`google_attendee_response_status` es una respuesta externa independiente. La
+función de mapeo devuelve `None`: aceptar/rechazar/necesitar acción en Google no
+cambia el `status` manual de la cita.
 
-## Estados y comportamiento observado
+## Tipos observados
 
-La evidencia distingue operativamente citas activas de citas completadas,
-canceladas y no-asistió, además de flujos de confirmación, sala de espera y
-sincronización de asistencia. No existe en los documentos un enum completo ni
-una matriz de transiciones verificable. Por eso no se asignan nombres adicionales
-como `DRAFT`, `IN_PROGRESS` o `RESCHEDULED` al legado. La propuesta controlada
-para Easyvet está en `docs/architecture/appointment-state-machine.md`.
+No existe `appointments.type` ni validación backend de tipo. El frontend ofrece
+exactamente: `Reserva de espacio`, `Consulta`, `Vacunacion`, `Desparasitacion`,
+`Cirugia / procedimiento`, `Laboratorio`, `Imagen diagnostica`, `Seguimiento`
+(etiquetado “Control”), `Peluquería` y `Otro`. Serializa `appointment_type`,
+pero backend lo ignora y, cuando aplica, antepone el texto a `reason`.
 
-## Clasificación de conceptos del legado
+Por tanto, esos valores son **OBSERVADO EN LATIVET (frontend solamente)**, no un
+enum persistido. Un `typeCode` acotado en Easyvet es **NEW EASYVET DESIGN
+DECISION**; un catálogo `AppointmentType` separado queda **POSTPONED**.
 
-La siguiente clasificación evita convertir cada pantalla o palabra del legado
-en una tabla nueva:
+## Reservas y Owner/Patient
 
-| Concepto         | Evidencia legacy                                                                                       | Clasificación para Easyvet                                                            |
-| ---------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Appointment      | Tabla `appointments` con fecha/hora, duración, tipo, estado y referencias.                             | **NECESARIO AHORA**; reserva operativa separada de consulta.                          |
-| Reservation      | Módulo `AGENDA/Reservas` que orquesta una cita y puede crear placeholders.                             | **LEGACY ESPECÍFICO** como flujo; no crear entidad paralela en 5B.                    |
-| AvailabilityRule | Tabla `agenda_availability_rules` con día/fecha, horas y slot.                                         | **NECESARIO AHORA** si 5B ofrece slots; reglas de recursos quedan por definir.        |
-| Professional     | Campo/selector de profesional y usuario asociado; no se demuestra tabla independiente.                 | **NECESARIO AHORA** mediante `Membership`; confirmar capacidades.                     |
-| Schedule         | No aparece como tabla independiente en la evidencia disponible.                                        | **NO APLICA** como entidad 5B; se representa con reglas y bloques.                    |
-| Block            | No se identificó una tabla legacy concluyente para descansos/vacaciones.                               | **NEEDS REVIEW**; `ScheduleBlock` es una recomendación de diseño, no un hecho legacy. |
-| Service          | No se identificó un catálogo de servicios de Agenda separado.                                          | **FUTURO**; no mezclar precios/facturación con AppointmentType.                       |
-| AppointmentType  | La tabla tiene “tipo”, pero la enumeración exacta no está documentada.                                 | **NECESARIO AHORA** como catálogo por organización, no enum fijo.                     |
-| Status           | Hay estados operativos activos, completada, cancelada y no-asistió; el enum exacto no está disponible. | **NECESARIO AHORA** mediante máquina explícita y validada.                            |
-| FollowUp         | `clinical_followups` programa tareas y series clínicas.                                                | **FUTURO**; no es una cita por defecto.                                               |
-| Reminder         | `control_reminders` y SMTP gestionan recordatorios derivados.                                          | **FUTURO**; módulo Notifications/Reminders separado.                                  |
+**VERIFIED LEGACY BEHAVIOR** — Reservas no es una tabla ni endpoint público
+separado. El checkbox “Solo reservar espacio” usa el mismo `POST /api/appointments`
+con `reserve_only=true`. El flujo crea o reutiliza:
 
-## Tipos de cita
+- Owner marcador: `Reserva agenda`.
+- Patient marcador: `Espacio reservado`, especie `Otros`, raza `Reserva`, sexo y
+  estado reproductivo `No aplica`, edad/peso cero y nota de marcador.
 
-La auditoría sí confirma el campo `type` en `appointments`, pero no conserva una
-lista de valores ni un enum fiable. “Control” y la duración de 30 minutos son
-comportamientos de citas derivadas; “consulta”, vacunación, cirugía, laboratorio
-y grooming aparecen como módulos clínicos o de servicio, no como una lista
-demostrada de `Appointment.type`. Por eso no se afirma que todos sean tipos
-legacy de Agenda.
+Los listados normales ocultan esos marcadores. No hay expiración, aprobación,
+link anónimo, rate limit ni booking público. Requiere el flujo autenticado
+interno y guarda una fila de `Appointment` con IDs marcador.
 
-La propuesta de Easyvet es un catálogo `AppointmentType` por organización con una
-categoría de sistema pequeña y un nombre configurable. Las categorías iniciales
-(por ejemplo `CONSULTATION`, `CONTROL`, `VACCINATION`, `GROOMING`, `SURGERY`,
-`LAB`, `OTHER`) son ejemplos para decisión de producto, no un enum que deba
-crearse automáticamente.
+La matriz real es:
 
-## Agenda general, personal, filtros y vistas
+| Entrada           | Resultado                                                                   |
+| ----------------- | --------------------------------------------------------------------------- |
+| Owner + Patient   | Cita normal; el Owner persistido se corrige al `owner_id` real del Patient. |
+| Owner sin Patient | Se crea Patient placeholder `Mascota por registrar`.                        |
+| Patient sin Owner | Se deriva Owner desde el Patient.                                           |
+| Sin Owner/Patient | Solo válido con `reserve_only`, usando marcadores.                          |
+| Reserva previa    | No hay entidad previa: la propia fila es una reserva provisional.           |
 
-La evidencia describe un calendario general, selector de profesionales y sala de
-espera, pero no demuestra contratos separados para “mi agenda”, agenda por sede
-o agenda personal. En Easyvet se deben diseñar filtros tenant-aware por rango de
-fecha local, sede, membership asignada, estado, tipo, Patient y Owner; la vista
-debe respetar los permisos y no usar el filtro como control de seguridad.
+Aunque las columnas SQL son NOT NULL, no todos los flujos requieren registros
+de dominio reales. Easyvet debe decidir explícitamente si el MVP exige Owner y
+Patient registrados; la recomendación es sí y sin placeholders silenciosos.
 
-No se encontró evidencia de drag-and-drop en el material auditado. Por tanto no
-es requisito de backend ni de la primera UI; si se incorpora, debe llamar al
-mismo caso de uso de reprogramación y pasar las mismas validaciones.
+## Profesional y ubicación
 
-La recomendación para Fase 5C es comenzar con vistas día, semana, mes y una lista
-operativa; no instalar una librería en Fase 5A.
+El legado solo guarda `professional_name` como texto libre. El selector se
+construye desde `staff_users` y también permite el fallback `Agenda general`;
+no se guarda user ID, rol ni licencia. **NEW EASYVET DESIGN DECISION**:
+`assignedMembershipId` nullable y `createdByMembershipId` para auditoría. Si una
+cita puede quedar sin profesional, es **PRODUCT DECISION REQUIRED**.
 
-## Peluquería, seguimiento y reservas públicas
+No hay `ClinicLocation`, consultorio, sala ni recurso en `appointments`.
+`location` existe únicamente en una regla de disponibilidad. `ClinicLocation`
+obligatorio para citas presenciales es diseño nuevo de SaaS; telehealth/teléfono
+requiere decisión de producto.
 
-- Peluquería permite ingresos con propietario/paciente o cliente/mascota
-  independientes, pero la auditoría no demuestra que cree citas de Agenda. La
-  integración futura debe decidir si usa `AppointmentType` de grooming o un
-  módulo de ingreso separado.
-- Seguimientos y controles pueden derivar citas y consultas sintéticas; no se
-  debe añadir `consultationId` ni `followupId` a Appointment 5B sin un caso de
-  uso definido.
-- No se encontró evidencia concluyente de una reserva pública sin autenticación
-  en el material disponible. El flujo `Reservas` observado parece interno y
-  crea placeholders. Un booking público se trata como módulo futuro con tenant,
-  tokens, rate limits, anti-abuso y consentimiento de PII.
+## Conflictos y carrera
 
-## Borrado de Owner/Patient y citas futuras
+La validación recorre todas las citas y considera activas solo las seis
+`ACTIVE_APPOINTMENT_STATUSES`. Detecta solapamiento por intervalo de inicio más
+duración, sin filtrar por profesional, paciente, owner, sede, sala, recurso ni
+busy slots de Google. No existe constraint de exclusión, lock de fila ni
+transacción serializable; una carrera de doble reserva permanece posible.
 
-La auditoría legacy menciona limpieza manual amplia al borrar un paciente, pero
-Easyvet ya usa archive en Owners/Patients y no debe trasladar esa cascada a
-Agenda. La política propuesta es conservar una cita histórica; para una cita
-futura cuyo Patient u Owner haya sido archivado, la API debe mantener la relación
-tenant-safe, mostrar un estado de ficha archivada a usuarios autorizados y
-bloquear nuevas reprogramaciones o reservas hasta que producto defina una
-excepción. No se cambia esta política en Fase 5A.
+Esto es comportamiento verificado, no una regla que deba copiarse. Easyvet
+necesita una política explícita de recursos y una protección transaccional.
 
-## PII y auditoría futura
+## Integraciones laterales
 
-Agenda solo necesita para operación el nombre identificador de Patient/Owner,
-tipo, sede, hora, estado y profesional, sujeto a permisos. GROOMER/CASHIER no
-deben recibir historia clínica, notas sensibles, dirección o contacto completo
-por defecto; la matriz exacta de permisos sigue `NEEDS REVIEW` y no se amplía
-ahora.
+### Consultas, controles y seguimientos
 
-Las acciones que deberían auditarse en una fase posterior son creación,
-cancelación, reprogramación, cambio de profesional/sede, transición a no-show y
-cualquier override de conflicto. No se crea `AuditLog` en esta fase.
+`save_consultation` puede crear/actualizar una cita de control con
+`source_consultation_id`, el Patient de la consulta, `scheduled` como estado
+inicial (o conserva un estado activo), duración 30, profesional de la consulta
+o `Agenda general`, y razón `Vacunacion`, `Desparasitacion` o `Control` más el
+nombre del paciente. `next_control_at` conserva hora; `next_control` usa
+09:00. Quitar el próximo control o borrar la consulta elimina físicamente la
+cita enlazada (cancelando Google antes si aplica). Seguimientos son tareas
+clínicas separadas; completar uno crea una consulta sintética, no una cita por
+defecto.
 
-## Side effects y acoplamientos
+### Peluquería
 
-- Guardar consultas puede actualizar paciente, peso, historia, recordatorio,
-  seguimiento y cita de control en una misma operación lógica.
-- Completar un seguimiento escribe una consulta clínica sintética.
-- Los envíos fallidos devuelven recordatorios a pendiente y conservan el error.
-- Borrar un paciente en el legado desencadena limpieza manual amplia, incluida
-  Agenda; Easyvet no debe convertir `archive` de Patient en borrado de citas.
-- Peluquería puede crear una consulta sintética de consentimiento y borrarla al
-  eliminar el ingreso.
-- Cambios de asistencia pueden escribir en Google Calendar.
-- Dashboard, bootstrap y caché legacy mezclan Agenda con PII de otros módulos.
-
-Estos efectos justifican mantener Appointment, Consultation, Followup,
-Reminder y Grooming como límites distintos en Easyvet.
-
-## Integraciones externas
+No se observaron llamadas de Peluquería a Agenda ni creación de appointments en
+este commit. Sus documentos tienen `service_at`, `next_visit_at` y
+`stylist_name`, pero no integran el calendario. Cualquier integración es
+**POSTPONED**.
 
 ### Google Calendar
 
-El legado usa OAuth/Calendar API, callback web, lectura de ocupación y
-sincronización de asistencia. Las credenciales y tokens se guardan en archivos
-locales globales. La auditoría también advierte que la URL puede derivarse de
-`Host`/`X-Forwarded-*`. Para Easyvet se requiere OAuth web con redirect canónico,
-state/PKCE cuando corresponda, scopes mínimos, cifrado, revocación, errores
-aislados por organización y política explícita de sincronización. Todo ello se
-posterga.
+**VERIFIED LEGACY BEHAVIOR**:
 
-### SMTP
+- OAuth usa `calendar.events`; credenciales y token se guardan en archivos de
+  configuración local y secretos globales (`credentials.json`, `token.json`).
+- Guardar/actualizar una cita crea o parchea un evento; borrar/cancelar lo marca
+  cancelado externamente y después elimina físicamente la fila local.
+- Summary, descripción, paciente, owner, motivo, profesional y notas se envían
+  a Google. Inicio/fin se calculan con duración y `agenda_timezone` (por defecto
+  `America/Bogota`); el email del owner puede ser attendee.
+- `busy-slots` consulta eventos no cancelados, pero no participa en la
+  validación local de conflictos.
+- Attendance sync persiste la respuesta del attendee y no altera `status`.
 
-SMTP envía recordatorios, seguimientos, documentos y otros mensajes desde una
-configuración global. La contraseña puede quedar duplicada en auditoría. Agenda
-5B no enviará correo; las notificaciones se diseñarán como un módulo posterior.
+La integración SaaS queda fuera de 5B y deberá usar un adaptador
+`CalendarProvider`, almacenamiento cifrado y credenciales tenant-scoped.
 
-## Incertidumbres que bloquean decisiones de producto
+## Rutas reales
 
-1. ¿Una cita exige paciente y propietario registrados o admite una reserva
-   provisional sin ficha clínica?
-2. ¿El propietario se guarda como relación explícita o se deriva siempre del
-   paciente?
-3. ¿El recurso de conflicto es profesional, paciente, sede, consultorio,
-   equipo, capacidad o una combinación?
-4. ¿Una sede comparte agenda y disponibilidad con las demás sedes de la
-   organización?
-5. ¿Puede una cita no tener profesional asignado al crearla?
-6. ¿Qué categorías y tipos de cita son configurables por organización?
-7. ¿Qué ocurre cuando una organización no tiene reglas de disponibilidad?
-8. ¿Se necesitan turnos partidos, reglas nocturnas, festivos y vacaciones?
-9. ¿Quién puede confirmar, cancelar, marcar no-asistencia o reabrir una cita?
-10. ¿Se requiere historial formal de reprogramaciones y cambios de recurso?
-11. ¿Google será por organización, sede, profesional o calendario/recurso?
-12. ¿La reserva pública tendrá tenant, rate limit, anti-abuso y consentimiento
-    de PII propios?
+**VERIFIED LEGACY BEHAVIOR**:
 
-## Conclusión de referencia
+`POST /api/appointments`, `POST /api/availability`,
+`DELETE /api/availability/<rule_id>`,
+`PATCH /api/appointments/<appointment_id>/status`,
+`PATCH /api/appointments/<appointment_id>/observations`,
+`POST /api/appointments/<appointment_id>/reminder`,
+`DELETE /api/appointments/<appointment_id>`, y alias
+`POST /api/appointments/<appointment_id>/delete`.
 
-La Agenda legacy combina calendario, reservas rápidas, disponibilidad, correo,
-Google y efectos clínicos. Para Easyvet, la unidad segura debe ser una cita
-tenant-scoped, separada de la consulta clínica, con tiempo UTC, recurso de
-conflicto explícito y sin copiar secretos ni placeholders de forma automática.
-Las decisiones pendientes se consolidan en
-`docs/architecture/agenda-decisions.md`.
+El bootstrap entrega la lista; no hay GET individual de cita. Las rutas de
+appointment/availability requieren autorización cuando el módulo de
+Administración está activo, aunque el legado puede fallar abierto si la
+configuración administrativa no existe. No se copia ese comportamiento.
+
+## Frontend real
+
+La UI custom ofrece `Mes`, `Semana`, `Día`, `Lista` y `Programador`; la vista
+por defecto es día y se guarda en localStorage. El timeline usa 06:00–21:00,
+snap de 15 minutos y datos de `agenda_calendar`. El modal permite buscar Owner y
+Patient, registro rápido, reserva de espacio, tipo frontend, profesional,
+inicio/fin o duración 15–240, razón, notas y los dos estados visibles. Hay
+detalle con observaciones, recordatorio WhatsApp, navegación al paciente,
+reprogramación y borrado físico. Drag/drop existe: abre el modal de
+reprogramación y guarda por el mismo upsert, sin endpoint especial ni lanes por
+recurso. Auto-refresh cada 30 segundos. No usa FullCalendar ni React Big
+Calendar y no hay booking público.
+
+## Diferencias que corrigen la propuesta preliminar de Fase 5A
+
+- La fuente ya no es “no disponible”: fue verificada en el commit exacto.
+- El enum legacy sí es conocido y contiene nueve valores; no había que inventar
+  nombres sin fuente.
+- No hay `AppointmentType` persistido ni catálogo demostrado.
+- Owner/Patient son NOT NULL en SQL, pero placeholders, Patient-only y reserva
+  marcador permiten flujos incompletos; no se debe afirmar “ambos registrados”
+  como hecho legacy.
+- No hay `ScheduleBlock`, location de cita ni profesional como entidad.
+- No hay integración observada Peluquería→Agenda.
+- La reserva legacy es interna y provisional, no public booking.
+- Cancelar/borrar es DELETE físico, mientras Easyvet propone conservar
+  `CANCELLED` como rediseño.
+
+## Gate de diseño para Easyvet
+
+**NEW EASYVET DESIGN DECISION**: el modelo mínimo revisado y el alcance de 5B
+están en `docs/architecture/agenda-proposal.md`. **PRODUCT DECISION REQUIRED**
+permanece para Owner/Patient registrado y derivación de Owner, ubicación para
+telehealth, citas sin profesional, matriz final de estados, conflictos por
+recurso, comportamiento sin reglas, excepciones, código de tipo y política de
+cancelación/reprogramación.
+
+No se implementa Agenda en este checkpoint.
