@@ -939,6 +939,59 @@ select.input {
   font-size: 0.7rem;
 }
 
+/* Authentication surfaces stay visually separate from the operational shell. */
+.auth-page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: var(--space-6);
+}
+.auth-page__brand {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 1.2rem;
+}
+.auth-card {
+  width: min(100%, 440px);
+  padding: clamp(var(--space-6), 6vw, var(--space-10));
+}
+.auth-card h1 {
+  margin: var(--space-2) 0;
+  color: var(--color-ink);
+  font-size: clamp(2rem, 6vw, 2.7rem);
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+.auth-card__intro {
+  margin: 0 0 var(--space-7);
+  color: var(--color-ink-muted);
+}
+.auth-card form,
+.organization-list {
+  display: grid;
+  gap: var(--space-4);
+}
+.form-error {
+  margin: 0;
+  color: var(--color-danger, #b42318);
+  font-size: 0.84rem;
+}
+.organization-list .button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  text-align: left;
+}
+.organization-list small {
+  color: var(--color-ink-muted);
+  font-size: 0.72rem;
+}
+
 /* Tablet and mobile collapse navigation without sacrificing route access. */
 @media (max-width: 1120px) {
   .app-shell {

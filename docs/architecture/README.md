@@ -1,14 +1,18 @@
 # Arquitectura base
 
-La Fase 1 establece un monorepo npm con un frontend React/Vite y un backend NestJS como monolito modular. PostgreSQL es la única base prevista y Prisma administrará cambios mediante migraciones versionadas explícitas cuando exista el primer modelo aprobado.
+Las Fases 1–3B establecen un monorepo npm con un frontend React/Vite y un
+backend NestJS como monolito modular. PostgreSQL es la única base prevista y
+Prisma administra cambios mediante migraciones versionadas explícitas.
 
 ## Principios
 
 - `apps/web` y `apps/api` son aplicaciones separadas con contratos TypeScript compartidos.
 - `packages/contracts` contiene tipos/esquemas que cruzan la frontera HTTP; no contiene dominio veterinario todavía.
 - `packages/config` solo expone primitivas de configuración compartidas.
-- El schema Prisma no contiene entidades ni migraciones iniciales; `Organization`, `User` y `Membership` se diseñarán antes de crear la primera tabla.
-- No se implementan todavía `Organization`, `Membership`, autenticación completa, storage, correo, calendarios ni módulos clínicos.
+- El schema Prisma contiene únicamente `Organization`, `ClinicLocation`,
+  `User`, `Membership` y `Session`; el dominio clínico llegará después.
+- La autenticación de Fase 3B usa sesiones HttpOnly. Storage, correo, calendarios,
+  permisos completos y módulos clínicos permanecen pendientes.
 - El API no modifica el esquema al iniciar.
 - Toda configuración productiva debe llegar por variables/secret manager; los defaults son exclusivamente locales.
 

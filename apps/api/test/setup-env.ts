@@ -2,5 +2,6 @@
 process.env.NODE_ENV = 'test';
 process.env.API_PORT = '3000';
 process.env.DATABASE_URL =
+  process.env.DATABASE_URL_TEST ??
   'postgresql://veterinary:veterinary_dev_only@localhost:5432/veterinary_saas';
 process.env.APP_ORIGIN = 'http://localhost:5173';

@@ -1,31 +1,31 @@
 # Estado de migración
 
-| Área              | Estado                                                 |
-| ----------------- | ------------------------------------------------------ |
-| Auditoría legacy  | Completada                                             |
-| Monorepo          | Completado                                             |
-| React/Vite        | App shell y base visual de Fase 2 completados          |
-| NestJS            | Infraestructura; Nest 12.0.3 verificado                |
-| PostgreSQL        | VERIFICADO LOCALMENTE                                  |
-| Prisma            | Modelo base y migración Fase 3A aplicados localmente   |
-| Core tenant model | COMPLETADO (Fase 3A)                                   |
-| Multi-tenancy     | Modelo base completado; aislamiento completo pendiente |
-| Autenticación     | PENDIENTE FASE 3B                                      |
-| Autorización      | PENDIENTE FASE 3C                                      |
-| UI Lativet        | Referencia analizada; adaptación React completada      |
-| Pacientes         | Pendiente                                              |
-| Agenda            | Pendiente                                              |
-| Clínica           | Pendiente                                              |
-| Inventario        | Pendiente                                              |
-| Facturación       | Pendiente                                              |
-| SaaS              | Pendiente                                              |
+| Área              | Estado                                                    |
+| ----------------- | --------------------------------------------------------- |
+| Auditoría legacy  | Completada                                                |
+| Monorepo          | Completado                                                |
+| React/Vite        | App shell y base visual de Fase 2 completados             |
+| NestJS            | Infraestructura; Nest 12.0.3 verificado                   |
+| PostgreSQL        | VERIFICADO LOCALMENTE                                     |
+| Prisma            | Modelo base y migraciones Fase 3A/3B aplicados localmente |
+| Core tenant model | COMPLETADO (Fase 3A)                                      |
+| Multi-tenancy     | Modelo base completado; aislamiento completo pendiente    |
+| Autenticación     | COMPLETADA (Fase 3B)                                      |
+| Autorización      | PENDIENTE FASE 3C                                         |
+| UI Lativet        | Referencia analizada; adaptación React completada         |
+| Pacientes         | Pendiente                                                 |
+| Agenda            | Pendiente                                                 |
+| Clínica           | Pendiente                                                 |
+| Inventario        | Pendiente                                                 |
+| Facturación       | Pendiente                                                 |
+| SaaS              | Pendiente                                                 |
 
 La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
 
 La Fase 2 queda detenida después del AppShell, navegación, dashboard demo y
-componentes UI compartidos. Fase 3A añadió únicamente el modelo multi-tenant
-fundamental; no se han creado autenticación real, permisos completos ni módulos
-veterinarios.
+componentes UI compartidos. Fase 3A añadió el modelo multi-tenant fundamental y
+Fase 3B añadió sesiones y autenticación real; permisos completos y módulos
+veterinarios siguen fuera de alcance.
 
 Checkpoint 2.5 verificado localmente:
 
@@ -55,6 +55,18 @@ Fase 3A completada:
   tres usuarios y cuatro memberships.
 - Autenticación, autorización completa y entidades clínicas permanecen
   pendientes.
+
+Fase 3B completada:
+
+- `Session` y la migración `20260920044322_add_session_auth` fueron añadidos sin
+  modificar la migración de Fase 3A.
+- Login, restauración de sesión, selección explícita de organización y logout
+  usan cookie HttpOnly con token aleatorio cuyo hash SHA-256 es el único valor en
+  PostgreSQL.
+- CSRF de navegador, contratos Zod compartidos y cliente API con credenciales
+  explícitas quedaron cubiertos por pruebas de integración y frontend.
+- Rate limiting de login, MFA, recuperación de contraseña, invitaciones y
+  permisos siguen pendientes para fases posteriores.
 
 Para detener el entorno local:
 

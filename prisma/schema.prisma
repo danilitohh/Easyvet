@@ -50,6 +50,7 @@ model User {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
   memberships  Membership[]
+  sessions     Session[]
 
   @@map("users")
 }
@@ -65,11 +66,32 @@ model Membership {
   updatedAt      DateTime         @updatedAt @map("updated_at")
   user           User             @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  activeSessions Session[]        @relation("SessionActiveMembership")
 
   @@unique([userId, organizationId])
   @@index([organizationId])
   @@index([userId])
   @@map("memberships")
+}
+
+// Session stores only a hash of the random browser token and optional tenant context.
+model Session {
+  id                 String      @id @default(uuid()) @db.Uuid
+  userId             String      @map("user_id") @db.Uuid
+  tokenHash          String      @unique @map("token_hash")
+  activeMembershipId String?     @map("active_membership_id") @db.Uuid
+  expiresAt          DateTime    @map("expires_at")
+  revokedAt          DateTime?   @map("revoked_at")
+  lastSeenAt         DateTime?   @map("last_seen_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+  user               User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  activeMembership   Membership? @relation("SessionActiveMembership", fields: [activeMembershipId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([activeMembershipId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
 
 enum OrganizationStatus {

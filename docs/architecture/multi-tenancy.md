@@ -15,7 +15,8 @@ reemplaza a `Organization` como límite de seguridad.
 
 ## Regla de acceso
 
-En Fase 3A no se implementa `TenantContext`, filtros automáticos ni guards.
+Fase 3B añade un guard de sesión que valida la identidad y el contexto activo,
+pero todavía no implementa `TenantContext`, filtros automáticos ni permisos.
 Los servicios de organizaciones, memberships y sedes encapsulan el acceso a
 Prisma y dejan una frontera explícita para los futuros casos de uso tenant-aware.
 El acceso debe seguir la forma conceptual:

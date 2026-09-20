@@ -2,9 +2,8 @@
 
 ## Alcance
 
-Checkpoint 2.6 (19 de septiembre de 2026). Se revisó el stack base antes de
-iniciar el dominio SaaS. No se añadieron modelos Prisma, endpoints de dominio,
-autenticación ni uploads.
+Checkpoint 2.6 y Fase 3B (19–20 de septiembre de 2026). Se revisó el stack base
+antes de incorporar autenticación. No se añadieron uploads ni endpoints clínicos.
 
 ## Versiones y cambios
 
@@ -16,7 +15,7 @@ autenticación ni uploads.
 | TypeScript     | 5.9.2                       | 6.0.3                                                                 | `@nestjs/schematics@12` requiere TypeScript 6.                            |
 | Prisma         | 6.19.3 instalado            | 6.19.3                                                                | Se conserva la misma major; no se aplicó el downgrade sugerido por audit. |
 | Prisma CLI     | `dependencies`              | `devDependencies`                                                     | Es tooling; `@prisma/client` permanece en runtime.                        |
-| Password hash  | No implementado             | `argon2@0.44.0` en API runtime                                        | Estrategia Argon2id preparada para Fase 3B; no se implementó login.       |
+| Password hash  | No implementado             | `argon2@0.44.0` en API runtime                                        | Argon2id explícito para login y sesiones de Fase 3B.                      |
 | Jest           | 29.7.0                      | 30.5.2                                                                | Runner compatible con la configuración ESM requerida por NestJS 12.       |
 | Vitest         | 3.2.7                       | 3.2.7                                                                 | Se mantiene; la corrección disponible exige Vitest 5 (major).             |
 

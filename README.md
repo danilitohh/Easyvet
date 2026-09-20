@@ -75,8 +75,14 @@ La web queda en `http://localhost:5173`; el API en `http://localhost:3000`.
 npm run lint
 npm run typecheck
 npm run test
+npm run test:db
+npm run test:all
 npm run build
 ```
+
+`npm run test:db` ejecuta las pruebas de autenticación y modelo contra la base
+aislada `easyvet_test`; requiere PostgreSQL local y no debe apuntar a una base
+compartida. `npm run test:all` combina las pruebas normales con esa suite.
 
 El endpoint técnico es `GET http://localhost:3000/api/v1/health` y responde un contrato `{ "status": "ok" }`.
 
@@ -100,9 +106,9 @@ El API no crea ni altera el esquema durante el arranque. Todo cambio debe pasar 
 
 ## Fase actual
 
-La Fase 3A deja disponible el modelo multi-tenant fundamental y su seed local.
-Autenticación completa, permisos, dominio veterinario, integraciones y UI
-funcional permanecen pendientes según [MIGRATION_STATUS.md](MIGRATION_STATUS.md).
+La Fase 3B deja disponibles el modelo multi-tenant, sesiones y autenticación
+real según [MIGRATION_STATUS.md](MIGRATION_STATUS.md). Permisos, dominio
+veterinario e integraciones permanecen pendientes.
 
 Para revisar el shell visual:
 
@@ -110,4 +116,6 @@ Para revisar el shell visual:
 npm run dev:web
 ```
 
-Abre `http://localhost:5173/dashboard`. Las rutas de módulos muestran placeholders y los datos del dashboard son ficticios; no existe autenticación ni conexión a datos clínicos.
+Abre `http://localhost:5173/login`. Las rutas de módulos muestran placeholders y
+los datos del dashboard siguen siendo ficticios; no existe todavía conexión a
+datos clínicos ni motor de permisos.

@@ -1,9 +1,9 @@
 # Modelo de datos fundamental
 
-## Alcance de Fase 3A
+## Alcance de Fases 3A y 3B
 
-Esta fase define solamente el núcleo multi-tenant. Las entidades clínicas,
-autenticación, permisos completos y APIs CRUD quedan para fases posteriores.
+Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
+entidades clínicas, permisos completos y APIs CRUD quedan para fases posteriores.
 
 ```text
 User (identidad global)
@@ -13,6 +13,8 @@ User (identidad global)
           └── Organization (frontera del tenant)
                   │
                   └── ClinicLocation[] (sedes futuras)
+
+User ── Session (sesión opaca con contexto tenant opcional)
 ```
 
 ## Entidades
@@ -25,6 +27,9 @@ User (identidad global)
   rol de plataforma. No tiene `organizationId`.
 - `Membership`: vínculo explícito entre `User` y `Organization`. La combinación
   `userId + organizationId` es única.
+- `Session`: sesión de navegador asociada a un usuario. Guarda `tokenHash`,
+  expiración, revocación, `lastSeenAt` opcional y `activeMembershipId` opcional;
+  nunca almacena el token en claro.
 
 ## Estados y roles
 
@@ -45,16 +50,19 @@ User (identidad global)
 - UUID en todas las claves primarias.
 - `User.email` y `Organization.slug` tienen unique constraint.
 - `Membership(userId, organizationId)` tiene unique constraint compuesto.
-- Índices explícitos en `Membership.organizationId`, `Membership.userId` y
-  `ClinicLocation.organizationId`.
+- Índices explícitos en `Membership.organizationId`, `Membership.userId`,
+  `ClinicLocation.organizationId`, `Session.userId`,
+  `Session.activeMembershipId` y `Session.expiresAt`.
 - Los servicios normalizan emails a minúsculas antes de escribir o buscar.
 
 ## Delete behavior
 
-Las relaciones de `ClinicLocation` y `Membership` hacia sus padres usan
+Las relaciones de `ClinicLocation`, `Membership` y `Session.userId` hacia sus padres usan
 `ON DELETE RESTRICT` y `ON UPDATE CASCADE`. Se evita eliminar por cascada una
 organización, usuario o relación de acceso; el estado `ARCHIVED`/`SUSPENDED`
-debe usarse para conservar historial. Las migraciones no eliminan datos.
+debe usarse para conservar historial. `Session.activeMembershipId` usa
+`ON DELETE SET NULL` para preservar la sesión sin conservar un contexto inválido.
+Las migraciones no eliminan datos.
 
 ## Estrategia de pruebas
 
