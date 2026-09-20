@@ -38,7 +38,9 @@ Levantar PostgreSQL:
 docker compose up -d
 ```
 
-Aplicar la migración técnica de desarrollo de forma explícita:
+Todavía no existe una migración inicial: el schema Prisma permanece sin entidades hasta diseñar `Organization`, `User` y `Membership`.
+
+Cuando exista el primer modelo aprobado, crear y aplicar la migración de desarrollo de forma explícita:
 
 ```bash
 npm run prisma:migrate:dev -- --name init
@@ -77,7 +79,7 @@ apps/web       React + Vite
 apps/api       NestJS REST
 packages/contracts  contratos compartidos
 packages/config     esquemas de configuración compartida
-prisma          schema y migraciones versionadas
+prisma          schema sin entidades y migraciones futuras versionadas
 docs/architecture decisiones técnicas de base
 docs/migration documentación de la auditoría legacy
 ```
