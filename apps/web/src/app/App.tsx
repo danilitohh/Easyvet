@@ -17,6 +17,7 @@ import { OwnerFormPage } from '../features/owners/OwnerFormPage';
 import { PatientListPage } from '../features/patients/PatientListPage';
 import { PatientDetailPage } from '../features/patients/PatientDetailPage';
 import { PatientFormPage } from '../features/patients/PatientFormPage';
+import { AgendaPage } from '../features/agenda/AgendaPage';
 
 // Route declarations keep every product area addressable without hiding sections in the DOM.
 export function App() {
@@ -30,6 +31,22 @@ export function App() {
           <Route index element={<Navigate replace to="/dashboard" />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="health" element={<HealthPage />} />
+          <Route
+            path="agenda"
+            element={
+              <PermissionRoute permission={PERMISSION.APPOINTMENTS_READ}>
+                <AgendaPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="agenda/citas/:appointmentId"
+            element={
+              <PermissionRoute permission={PERMISSION.APPOINTMENTS_READ}>
+                <AgendaPage />
+              </PermissionRoute>
+            }
+          />
           <Route
             path="propietarios"
             element={
@@ -97,6 +114,7 @@ export function App() {
           {MODULE_ROUTES.filter(
             (route) =>
               route.path !== '/dashboard' &&
+              route.path !== '/agenda' &&
               route.path !== '/propietarios' &&
               route.path !== '/pacientes',
           ).map((route) => (

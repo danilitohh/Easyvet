@@ -20,7 +20,8 @@
 | Owners/Patients final review | COMPLETADO (Fase 4C)                                         |
 | Agenda analysis/design       | COMPLETADO (Fase 5A)                                         |
 | Agenda backend               | COMPLETADO (Fase 5B)                                         |
-| Agenda frontend              | PENDIENTE FASE 5C                                            |
+| Agenda frontend read-only    | COMPLETADO (Fase 5C.1)                                       |
+| Agenda operations            | PENDIENTE FASE 5C.2                                          |
 | Agenda hardening             | PENDIENTE FASE 5D                                            |
 | Clínica                      | Pendiente                                                    |
 | Inventario                   | Pendiente                                                    |
@@ -180,6 +181,17 @@ Fase 5B — backend de Agenda completada:
 - El seed idempotente contiene 3 AvailabilityRules y 6 Appointments ficticios.
 - Archivar Patient se bloquea cuando existen citas futuras bloqueantes.
 - La suite DB pasó 65 pruebas, incluida concurrencia real; Fase 5C no inició.
+
+Fase 5C.1 — frontend de Agenda de solo lectura completada:
+
+- `/agenda` muestra calendario mensual, semanal, diario y de lista conectado a
+  los endpoints reales de Agenda, con filtros tenant-safe y detalle de cita.
+- La URL conserva `view` y fecha civil; la zona horaria proviene de
+  `Organization.timezone` y no del navegador.
+- Se añadieron cancelación de peticiones, limpieza al cambiar de tenant,
+  estados de carga/error/vacío, responsive y accesibilidad básica.
+- Crear, editar, reprogramar y acciones operativas permanecen en PENDIENTE
+  FASE 5C.2; hardening permanece en PENDIENTE FASE 5D.
 
 Para detener el entorno local:
 

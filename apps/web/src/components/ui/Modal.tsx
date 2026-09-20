@@ -4,12 +4,13 @@ type ModalProps = {
   open: boolean;
   title: string;
   description?: string;
+  eyebrow?: string;
   onClose: () => void;
   children: ReactNode;
 };
 
 // Modal handles Escape, focus return, overlay dismissal and body scroll locking.
-export function Modal({ open, title, description, onClose, children }: ModalProps) {
+export function Modal({ open, title, description, eyebrow, onClose, children }: ModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -51,7 +52,7 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
       <section className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div className="modal__header">
           <div>
-            <p className="section-kicker">Demo workspace</p>
+            {eyebrow ? <p className="section-kicker">{eyebrow}</p> : null}
             <h2 id="modal-title">{title}</h2>
             {description ? <p>{description}</p> : null}
           </div>

@@ -32,7 +32,7 @@ describe('App shell', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Agenda' }));
 
-    expect(screen.getByRole('heading', { name: 'Agenda' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /no tienes permisos/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('aria-current', 'page');
   });
 

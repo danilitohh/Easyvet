@@ -16,4 +16,5 @@ export const PERMISSION = {
   PATIENTS_CREATE: 'patients.create',
   PATIENTS_UPDATE: 'patients.update',
   PATIENTS_ARCHIVE: 'patients.archive',
+  APPOINTMENTS_READ: 'appointments.read',
 } as const satisfies Record<string, Permission>;
