@@ -33,6 +33,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       const value = (payload as { code?: unknown }).code;
       if (typeof value === 'string' && value.trim()) return value;
     }
+    if (status === HttpStatus.BAD_REQUEST) return 'VALIDATION_ERROR';
     return `HTTP_${status}`;
   }
 

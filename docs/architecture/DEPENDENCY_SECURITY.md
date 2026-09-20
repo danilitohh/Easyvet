@@ -2,8 +2,9 @@
 
 ## Alcance
 
-Checkpoint 2.6 y Fases 3B–3C (19–20 de septiembre de 2026). Se revisó el stack base
-antes de incorporar autenticación. No se añadieron uploads ni endpoints clínicos.
+Checkpoint 2.6 y Fases 3B–4A (19–20 de septiembre de 2026). Se revisó el stack
+base antes de incorporar autenticación y el primer dominio de Owners/Patients.
+No se añadieron uploads ni endpoints clínicos.
 
 ## Versiones y cambios
 

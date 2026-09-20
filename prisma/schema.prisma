@@ -20,6 +20,8 @@ model Organization {
   updatedAt       DateTime           @updatedAt @map("updated_at")
   clinicLocations ClinicLocation[]
   memberships     Membership[]
+  owners          Owner[]
+  patients        Patient[]
 
   @@map("organizations")
 }
@@ -94,6 +96,71 @@ model Session {
   @@map("sessions")
 }
 
+// Owner is a tenant-scoped responsible person; archive preserves future history.
+model Owner {
+  id                       String       @id @default(uuid()) @db.Uuid
+  organizationId           String       @map("organization_id") @db.Uuid
+  firstName                String       @map("first_name")
+  lastName                 String?      @map("last_name")
+  documentType             String?      @map("document_type")
+  documentNumber           String?      @map("document_number")
+  documentNumberNormalized String?      @map("document_number_normalized")
+  email                    String?
+  phone                    String?
+  secondaryPhone           String?      @map("secondary_phone")
+  address                  String?
+  city                     String?
+  notes                    String?
+  status                   OwnerStatus  @default(ACTIVE)
+  archivedAt               DateTime?    @map("archived_at")
+  createdAt                DateTime     @default(now()) @map("created_at")
+  updatedAt                DateTime     @updatedAt @map("updated_at")
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patients                 Patient[]
+
+  // The composite key supports a tenant-safe Patient foreign key.
+  @@unique([id, organizationId], map: "owners_id_organization_id_key")
+  // Optional identifiers are normalized and unique within one organization.
+  @@unique([organizationId, documentType, documentNumberNormalized], map: "owners_org_document_key")
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, firstName])
+  @@index([organizationId, lastName])
+  @@map("owners")
+}
+
+// Patient is explicitly tenant-scoped even though it also references its Owner.
+model Patient {
+  id                 String        @id @default(uuid()) @db.Uuid
+  organizationId     String        @map("organization_id") @db.Uuid
+  ownerId            String        @map("owner_id") @db.Uuid
+  name               String
+  nameNormalized     String        @map("name_normalized")
+  species            String
+  breed              String?
+  sex                PatientSex    @default(UNKNOWN)
+  birthDate          DateTime?     @map("birth_date") @db.Date
+  birthDateEstimated Boolean       @default(false) @map("birth_date_estimated")
+  color              String?
+  microchipNumber    String?       @map("microchip_number")
+  currentWeightKg    Float?        @map("current_weight_kg")
+  sterilized         Boolean       @default(false)
+  notes              String?
+  status             PatientStatus @default(ACTIVE)
+  archivedAt         DateTime?     @map("archived_at")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  owner              Owner         @relation(fields: [ownerId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, ownerId])
+  @@index([organizationId, status])
+  @@index([organizationId, nameNormalized])
+  @@index([organizationId, microchipNumber])
+  @@map("patients")
+}
+
 enum OrganizationStatus {
   ACTIVE
   SUSPENDED
@@ -130,4 +197,20 @@ enum MembershipStatus {
   INVITED
   ACTIVE
   SUSPENDED
+}
+
+enum OwnerStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PatientStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PatientSex {
+  MALE
+  FEMALE
+  UNKNOWN
 }

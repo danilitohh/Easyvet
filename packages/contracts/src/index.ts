@@ -25,6 +25,14 @@ export const permissionSchema = z.enum([
   'locations.manage',
   'memberships.read',
   'memberships.manage',
+  'owners.read',
+  'owners.create',
+  'owners.update',
+  'owners.archive',
+  'patients.read',
+  'patients.create',
+  'patients.update',
+  'patients.archive',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -117,3 +125,135 @@ export type OrganizationCurrentResponse = z.infer<typeof organizationCurrentResp
 export type UpdateOrganizationRequest = z.infer<typeof updateOrganizationRequestSchema>;
 export type LocationResponse = z.infer<typeof locationResponseSchema>;
 export type MembershipResponse = z.infer<typeof membershipResponseSchema>;
+
+const ownerStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
+const patientStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
+const patientSexSchema = z.enum(['MALE', 'FEMALE', 'UNKNOWN']);
+const pageSchema = z.number().int().min(1);
+const pageSizeSchema = z.number().int().min(1).max(100);
+
+const ownerFieldsSchema = z.object({
+  id: z.string().uuid(),
+  firstName: z.string(),
+  lastName: z.string().nullable(),
+  documentType: z.string().nullable(),
+  documentNumber: z.string().nullable(),
+  email: z.string().email().nullable(),
+  phone: z.string().nullable(),
+  secondaryPhone: z.string().nullable(),
+  address: z.string().nullable(),
+  city: z.string().nullable(),
+  notes: z.string().nullable(),
+  status: ownerStatusSchema,
+  archivedAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+const patientSummarySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  species: z.string(),
+  status: patientStatusSchema,
+});
+
+export const ownerResponseSchema = ownerFieldsSchema.extend({
+  patients: z.array(patientSummarySchema).optional(),
+});
+
+const ownerSummarySchema = ownerFieldsSchema.pick({
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+  status: true,
+});
+
+export const patientResponseSchema = z.object({
+  id: z.string().uuid(),
+  ownerId: z.string().uuid(),
+  name: z.string(),
+  species: z.string(),
+  breed: z.string().nullable(),
+  sex: patientSexSchema,
+  birthDate: z.string().date().nullable(),
+  birthDateEstimated: z.boolean(),
+  color: z.string().nullable(),
+  microchipNumber: z.string().nullable(),
+  currentWeightKg: z.number().positive().nullable(),
+  sterilized: z.boolean(),
+  notes: z.string().nullable(),
+  status: patientStatusSchema,
+  archivedAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  owner: ownerSummarySchema,
+});
+
+const paginationSchema = z.object({
+  page: pageSchema,
+  pageSize: pageSizeSchema,
+  total: z.number().int().nonnegative(),
+  totalPages: z.number().int().nonnegative(),
+});
+
+export const ownersListResponseSchema = z.object({
+  data: z.array(ownerResponseSchema),
+  pagination: paginationSchema,
+});
+
+export const patientsListResponseSchema = z.object({
+  data: z.array(patientResponseSchema),
+  pagination: paginationSchema,
+});
+
+const optionalText = (max: number) => z.string().trim().max(max).nullable().optional();
+
+export const createOwnerRequestSchema = z
+  .object({
+    firstName: z.string().trim().min(1).max(120),
+    lastName: optionalText(120),
+    documentType: optionalText(40),
+    documentNumber: optionalText(80),
+    email: z.string().trim().email().max(320).nullable().optional(),
+    phone: optionalText(40),
+    secondaryPhone: optionalText(40),
+    address: optionalText(240),
+    city: optionalText(120),
+    notes: optionalText(2000),
+  })
+  .strict();
+
+export const updateOwnerRequestSchema = createOwnerRequestSchema.partial().strict();
+
+export const createPatientRequestSchema = z
+  .object({
+    ownerId: z.string().uuid(),
+    name: z.string().trim().min(1).max(160),
+    species: z.string().trim().min(1).max(80),
+    breed: optionalText(120),
+    sex: patientSexSchema.optional(),
+    birthDate: z.string().date().nullable().optional(),
+    birthDateEstimated: z.boolean().optional(),
+    color: optionalText(80),
+    microchipNumber: optionalText(80),
+    currentWeightKg: z.number().positive().max(1000).nullable().optional(),
+    sterilized: z.boolean().optional(),
+    notes: optionalText(2000),
+  })
+  .strict();
+
+export const updatePatientRequestSchema = createPatientRequestSchema
+  .omit({ ownerId: true })
+  .partial()
+  .strict();
+
+export type OwnerResponse = z.infer<typeof ownerResponseSchema>;
+export type PatientResponse = z.infer<typeof patientResponseSchema>;
+export type OwnersListResponse = z.infer<typeof ownersListResponseSchema>;
+export type PatientsListResponse = z.infer<typeof patientsListResponseSchema>;
+export type CreateOwnerRequest = z.infer<typeof createOwnerRequestSchema>;
+export type UpdateOwnerRequest = z.infer<typeof updateOwnerRequestSchema>;
+export type CreatePatientRequest = z.infer<typeof createPatientRequestSchema>;
+export type UpdatePatientRequest = z.infer<typeof updatePatientRequestSchema>;

@@ -1,9 +1,11 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A y 3B
+## Alcance de Fases 3A, 3B, 3C y 4A
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
-entidades clínicas, permisos completos y APIs CRUD quedan para fases posteriores.
+autorización por permisos y el primer dominio veterinario de propietarios y
+pacientes. Agenda, clínica, inventario, ventas y facturación siguen fuera de
+alcance.
 
 ```text
 User (identidad global)
@@ -15,6 +17,10 @@ User (identidad global)
                   └── ClinicLocation[] (sedes futuras)
 
 User ── Session (sesión opaca con contexto tenant opcional)
+
+Organization
+  ├── Owner[] ── Patient[]
+  └── Patient[] (tenant explícito para consultas seguras)
 ```
 
 ## Entidades
@@ -30,6 +36,12 @@ User ── Session (sesión opaca con contexto tenant opcional)
 - `Session`: sesión de navegador asociada a un usuario. Guarda `tokenHash`,
   expiración, revocación, `lastSeenAt` opcional y `activeMembershipId` opcional;
   nunca almacena el token en claro.
+- `Owner`: responsable clínico tenant-scoped. Usa nombre separado, contacto e
+  identificación opcional; `documentNumberNormalized` participa en la
+  unicidad por organización y tipo.
+- `Patient`: paciente tenant-scoped con un Owner principal. Conserva identidad
+  base, especie/raza como texto extensible, sexo, nacimiento opcional, snapshot
+  de peso y estado de archive; no contiene historia clínica.
 
 ## Estados y roles
 
@@ -43,7 +55,11 @@ User ── Session (sesión opaca con contexto tenant opcional)
   `PLATFORM_ADMIN` no concede automáticamente acceso a pacientes de ninguna
   organización.
 - `MembershipRole`: `OWNER`, `ADMIN`, `VETERINARIAN`, `ASSISTANT`, `RECEPTION`,
-  `GROOMER` y `CASHIER`. Estos roles aún no tienen un motor de permisos.
+  `GROOMER` y `CASHIER`. La matriz de permisos de Fase 4A añade capacidades
+  explícitas de Owner y Patient.
+- `OwnerStatus` y `PatientStatus`: `ACTIVE` o `ARCHIVED`; archivar conserva
+  datos y no ejecuta cascadas destructivas.
+- `PatientSex`: `MALE`, `FEMALE` o `UNKNOWN`. `sterilized` es independiente.
 
 ## Constraints e índices
 
@@ -53,9 +69,15 @@ User ── Session (sesión opaca con contexto tenant opcional)
 - Índices explícitos en `Membership.organizationId`, `Membership.userId`,
   `ClinicLocation.organizationId`, `Session.userId`,
   `Session.activeMembershipId` y `Session.expiresAt`.
+- Owner tiene unique compuesto por `organizationId + documentType +
+documentNumberNormalized`, más índices tenant/status y de nombre.
+- Patient tiene índices tenant/status, tenant/owner, tenant/nombre y
+  tenant/microchip. Una FK compuesta `(ownerId, organizationId)` impide asociar
+  un paciente con un Owner de otra organización incluso si falla una validación
+  de aplicación.
 - Los servicios normalizan emails a minúsculas antes de escribir o buscar.
 
-## Delete behavior
+## Delete y archive behavior
 
 Las relaciones de `ClinicLocation`, `Membership` y `Session.userId` hacia sus padres usan
 `ON DELETE RESTRICT` y `ON UPDATE CASCADE`. Se evita eliminar por cascada una
@@ -63,6 +85,13 @@ organización, usuario o relación de acceso; el estado `ARCHIVED`/`SUSPENDED`
 debe usarse para conservar historial. `Session.activeMembershipId` usa
 `ON DELETE SET NULL` para preservar la sesión sin conservar un contexto inválido.
 Las migraciones no eliminan datos.
+
+Owner y Patient no tienen `DELETE` físico en Fase 4A. `POST /owners/:id/archive`
+y `POST /patients/:id/archive` marcan `ARCHIVED` y `archivedAt`; no cascadan a
+pacientes ni a futuras dependencias clínicas. Los listados usan `ACTIVE` por
+defecto y aceptan `status=ARCHIVED` o `status=ALL`. Un detalle directo puede
+leer un recurso archivado si el usuario conserva el permiso y el tenant es el
+mismo.
 
 ## Estrategia de pruebas
 
@@ -74,5 +103,5 @@ modificar `veterinary_saas`. La migración se aplica a la base de pruebas con
 `prisma migrate deploy` antes de ejecutar la suite.
 
 La idempotencia del seed se verifica ejecutando `npm run db:seed` dos veces y
-comprobando que permanecen 2 organizaciones, 2 sedes, 3 usuarios y 4
-memberships.
+comprobando que permanecen 2 organizaciones, 2 sedes, 3 usuarios, 4
+memberships, 4 Owners y 6 Patients.

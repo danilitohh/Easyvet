@@ -1,4 +1,4 @@
-# Autorización y aislamiento multi-tenant (Fase 3C)
+# Autorización y aislamiento multi-tenant (Fases 3C y 4A)
 
 ## Authentication vs authorization
 
@@ -36,19 +36,21 @@ Los permisos son un catálogo type-safe en código; no existen tablas
 - `organization.read`, `organization.update`
 - `locations.read`, `locations.manage`
 - `memberships.read`, `memberships.manage`
+- `owners.read`, `owners.create`, `owners.update`, `owners.archive`
+- `patients.read`, `patients.create`, `patients.update`, `patients.archive`
 
 `@RequirePermissions(A, B)` usa semántica ALL. `PermissionGuard` resuelve la
 matriz por `TenantContext.role`; el frontend solo usa los permisos para UX.
 
-| Rol          | Permisos de Fase 3C                        |
-| ------------ | ------------------------------------------ |
-| OWNER        | Todos los permisos administrativos básicos |
-| ADMIN        | Igual que OWNER en esta fase               |
-| VETERINARIAN | `organization.read`, `locations.read`      |
-| ASSISTANT    | `organization.read`, `locations.read`      |
-| RECEPTION    | `organization.read`, `locations.read`      |
-| GROOMER      | `organization.read`, `locations.read`      |
-| CASHIER      | `organization.read`, `locations.read`      |
+| Rol          | Permisos de Owner/Patient                                  |
+| ------------ | ---------------------------------------------------------- |
+| OWNER        | Todos                                                      |
+| ADMIN        | Todos                                                      |
+| VETERINARIAN | `owners.read/create/update`; `patients.read/create/update` |
+| ASSISTANT    | `owners.read`; `patients.read/create/update`               |
+| RECEPTION    | `owners.read/create/update`; `patients.read/create/update` |
+| GROOMER      | `owners.read`; `patients.read`                             |
+| CASHIER      | `owners.read`; `patients.read`                             |
 
 OWNER y ADMIN comparten permisos ahora; OWNER queda reservado semánticamente
 para ownership, billing SaaS y operaciones irreversibles futuras. No se crean
@@ -73,6 +75,12 @@ membership; no existe bypass de tenant ni impersonation.
   `TenantContext.organizationId`.
 - `GET /api/v1/organization/memberships` y `/:membershipId`: lista y detalle con
   usuario mínimo (`id`, `email`, `status`), role y status.
+- `GET/POST /api/v1/owners`, `GET/PATCH /api/v1/owners/:ownerId` y
+  `POST /api/v1/owners/:ownerId/archive`: CRUD seguro, paginado, búsqueda y
+  archive por tenant.
+- `GET/POST /api/v1/patients`, `GET/PATCH /api/v1/patients/:patientId` y
+  `POST /api/v1/patients/:patientId/archive`: CRUD seguro, paginado, búsqueda y
+  archive por tenant. El Owner se valida dentro del mismo tenant.
 - `GET /api/v1/platform/context`: área separada para Platform Admin.
 
 Las consultas de recursos tenant reciben siempre `organizationId` en la firma y

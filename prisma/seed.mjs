@@ -44,6 +44,116 @@ const seedUsers = [
   },
 ];
 
+const seedOwners = [
+  {
+    id: '00000000-0000-4000-8000-000000000301',
+    organizationId: seedOrganizations[0].id,
+    firstName: 'Camila',
+    lastName: 'Rojas',
+    documentType: 'NATIONAL_ID',
+    documentNumber: 'DEMO-1001',
+    email: 'camila.rojas@demo.local',
+    phone: '+57 300 000 1001',
+    city: 'Bogotá',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000302',
+    organizationId: seedOrganizations[0].id,
+    firstName: 'Andrés',
+    lastName: 'Gil',
+    documentType: 'NATIONAL_ID',
+    documentNumber: 'DEMO-1002',
+    email: 'andres.gil@demo.local',
+    phone: '+57 300 000 1002',
+    city: 'Bogotá',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000303',
+    organizationId: seedOrganizations[1].id,
+    firstName: 'Valentina',
+    lastName: 'Mora',
+    documentType: 'NATIONAL_ID',
+    documentNumber: 'DEMO-2001',
+    email: 'valentina.mora@demo.local',
+    phone: '+57 300 000 2001',
+    city: 'Bogotá',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000304',
+    organizationId: seedOrganizations[1].id,
+    firstName: 'Sofía',
+    lastName: 'Torres',
+    documentType: 'NATIONAL_ID',
+    documentNumber: 'DEMO-2002',
+    email: 'sofia.torres@demo.local',
+    phone: '+57 300 000 2002',
+    city: 'Bogotá',
+  },
+];
+
+const seedPatients = [
+  {
+    id: '00000000-0000-4000-8000-000000000401',
+    organizationId: seedOrganizations[0].id,
+    ownerId: seedOwners[0].id,
+    name: 'Luna',
+    species: 'DOG',
+    breed: 'Mestiza',
+    sex: 'FEMALE',
+    currentWeightKg: 12.4,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000402',
+    organizationId: seedOrganizations[0].id,
+    ownerId: seedOwners[0].id,
+    name: 'Bruno',
+    species: 'DOG',
+    breed: 'Labrador',
+    sex: 'MALE',
+    currentWeightKg: 24.1,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000403',
+    organizationId: seedOrganizations[0].id,
+    ownerId: seedOwners[1].id,
+    name: 'Nala',
+    species: 'CAT',
+    breed: 'Criolla',
+    sex: 'FEMALE',
+    currentWeightKg: 4.2,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000404',
+    organizationId: seedOrganizations[1].id,
+    ownerId: seedOwners[2].id,
+    name: 'Milo',
+    species: 'CAT',
+    breed: 'Criollo',
+    sex: 'MALE',
+    currentWeightKg: 5.1,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000405',
+    organizationId: seedOrganizations[1].id,
+    ownerId: seedOwners[2].id,
+    name: 'Kira',
+    species: 'DOG',
+    breed: 'Beagle',
+    sex: 'FEMALE',
+    currentWeightKg: 9.8,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000406',
+    organizationId: seedOrganizations[1].id,
+    ownerId: seedOwners[3].id,
+    name: 'Simba',
+    species: 'DOG',
+    breed: 'Mestizo',
+    sex: 'MALE',
+    currentWeightKg: 17.6,
+  },
+];
+
 async function main() {
   // Hash the local-only demo credential with Argon2id; plaintext never reaches PostgreSQL.
   const passwordHash = await argon2.hash(demoPassword, { type: argon2.argon2id });
@@ -142,9 +252,74 @@ async function main() {
         status: 'ACTIVE',
       },
     });
+
+    for (const owner of seedOwners) {
+      const documentNumberNormalized = owner.documentNumber.toUpperCase();
+      await transaction.owner.upsert({
+        where: { id: owner.id },
+        update: {
+          organizationId: owner.organizationId,
+          firstName: owner.firstName,
+          lastName: owner.lastName,
+          documentType: owner.documentType,
+          documentNumber: owner.documentNumber,
+          documentNumberNormalized,
+          email: owner.email,
+          phone: owner.phone,
+          city: owner.city,
+          status: 'ACTIVE',
+          archivedAt: null,
+        },
+        create: {
+          id: owner.id,
+          organizationId: owner.organizationId,
+          firstName: owner.firstName,
+          lastName: owner.lastName,
+          documentType: owner.documentType,
+          documentNumber: owner.documentNumber,
+          documentNumberNormalized,
+          email: owner.email,
+          phone: owner.phone,
+          city: owner.city,
+          status: 'ACTIVE',
+        },
+      });
+    }
+
+    for (const patient of seedPatients) {
+      await transaction.patient.upsert({
+        where: { id: patient.id },
+        update: {
+          organizationId: patient.organizationId,
+          ownerId: patient.ownerId,
+          name: patient.name,
+          nameNormalized: patient.name.toLocaleLowerCase(),
+          species: patient.species,
+          breed: patient.breed,
+          sex: patient.sex,
+          currentWeightKg: patient.currentWeightKg,
+          status: 'ACTIVE',
+          archivedAt: null,
+        },
+        create: {
+          id: patient.id,
+          organizationId: patient.organizationId,
+          ownerId: patient.ownerId,
+          name: patient.name,
+          nameNormalized: patient.name.toLocaleLowerCase(),
+          species: patient.species,
+          breed: patient.breed,
+          sex: patient.sex,
+          currentWeightKg: patient.currentWeightKg,
+          status: 'ACTIVE',
+        },
+      });
+    }
   });
 
-  console.log('Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships.');
+  console.log(
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients.',
+  );
 }
 
 main()

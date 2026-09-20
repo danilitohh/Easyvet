@@ -8,6 +8,8 @@ deberán recibir explícitamente esa organización.
 
 ```text
 User ──< Membership >── Organization ──< ClinicLocation
+                              ├──< Owner ──< Patient
+                              └──< Patient
 ```
 
 Un `User` puede tener memberships en varias organizaciones. Una sede nunca
@@ -26,8 +28,13 @@ El acceso debe seguir la forma conceptual:
 useCase(input, organizationId) -> query where organizationId = organizationId
 ```
 
+Owner y Patient son las primeras entidades de dominio que aplican esta regla en
+Fase 4A. Para Patient, la relación `(ownerId, organizationId)` también está
+reforzada por una FK compuesta, además de la validación del servicio.
+
 No se deben aceptar consultas clínicas sin un `organizationId` explícito cuando
-esas entidades sean creadas en fases posteriores.
+esas entidades sean creadas en fases posteriores. En Fase 4A esto se aplica a
+`OwnersService`, `PatientsService` y sus búsquedas paginadas.
 
 Regla obligatoria para entidades futuras: ninguna consulta tenant-scoped puede
 usar únicamente un id de recurso. El patrón incorrecto es `findUnique({ id })`;

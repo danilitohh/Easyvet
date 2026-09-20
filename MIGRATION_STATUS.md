@@ -7,14 +7,16 @@
 | React/Vite                  | App shell y base visual de Fase 2 completados             |
 | NestJS                      | Infraestructura; Nest 12.0.3 verificado                   |
 | PostgreSQL                  | VERIFICADO LOCALMENTE                                     |
-| Prisma                      | Modelo base y migraciones Fase 3A/3B aplicados localmente |
+| Prisma                      | Modelos Fases 3A/3B/4A y migraciones aplicados localmente |
 | Core tenant model           | COMPLETADO (Fase 3A)                                      |
 | Multi-tenancy               | Fundación de aislamiento completada (Fase 3C)             |
 | Autenticación               | COMPLETADA (Fase 3B)                                      |
 | Autorización                | COMPLETADA (Fase 3C)                                      |
 | UI Lativet                  | Referencia analizada; adaptación React completada         |
-| Pacientes                   | Pendiente                                                 |
-| Owners                      | Pendiente                                                 |
+| Owners backend              | COMPLETADO (Fase 4A)                                      |
+| Patients backend            | COMPLETADO (Fase 4A)                                      |
+| Owners frontend             | PENDIENTE FASE 4B                                         |
+| Patients frontend           | PENDIENTE FASE 4B                                         |
 | Agenda                      | Pendiente                                                 |
 | Clínica                     | Pendiente                                                 |
 | Inventario                  | Pendiente                                                 |
@@ -83,6 +85,19 @@ Fase 3C completada:
   de organization; frontend `useCan`/`Can` solo para UX.
 - No se crearon tablas de permisos, RLS, audit log, impersonation ni entidades
   veterinarias.
+
+Fase 4A completada:
+
+- Se documentó la referencia legacy de propietarios y pacientes, incluyendo
+  reglas confirmadas, cascadas destructivas y puntos `NEEDS REVIEW`.
+- Se añadieron `Owner` y `Patient` tenant-scoped con estados `ACTIVE`/`ARCHIVED`,
+  índices de consulta y FK compuesta para impedir asociaciones cross-tenant.
+- La migración `20260920053505_add_owner_patient_domain` se aplicó localmente a
+  `veterinary_saas` y se preparó con `prisma migrate deploy` en `easyvet_test`.
+- Se añadieron APIs paginadas, buscables y autorizadas; archive reemplaza el
+  borrado físico y no cascada a dependencias futuras.
+- El seed idempotente contiene 4 Owners y 6 Patients repartidos entre Norte y
+  Sur. No se construyó frontend funcional ni se inició Fase 4B.
 
 Para detener el entorno local:
 

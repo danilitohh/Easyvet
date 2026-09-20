@@ -98,7 +98,9 @@ docs/architecture decisiones técnicas de base
 docs/migration documentación de la auditoría legacy
 ```
 
-No se crean todavía módulos de pacientes, propietarios, agenda, clínica, inventario, facturación, caja, SaaS, correo o calendarios.
+Owners y Patients ya tienen modelo, API tenant-safe y pruebas de backend desde
+Fase 4A; sus pantallas funcionales siguen pendientes junto con agenda, clínica,
+inventario, facturación, caja, SaaS, correo y calendarios.
 
 ## Regla de migraciones
 
@@ -106,10 +108,10 @@ El API no crea ni altera el esquema durante el arranque. Todo cambio debe pasar 
 
 ## Fase actual
 
-La Fase 3C deja disponibles el modelo multi-tenant, sesiones, autenticación y la
-fundación de autorización/aislamiento según
-[MIGRATION_STATUS.md](MIGRATION_STATUS.md). El dominio veterinario e
-integraciones permanecen pendientes.
+La Fase 4A deja disponibles el modelo multi-tenant, sesiones, autenticación,
+autorización/aislamiento y el backend de Owners/Patients según
+[MIGRATION_STATUS.md](MIGRATION_STATUS.md). El dominio veterinario restante y
+las pantallas funcionales de Owners/Patients permanecen pendientes de Fase 4B.
 
 Para revisar el shell visual:
 

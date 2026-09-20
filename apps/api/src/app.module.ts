@@ -12,6 +12,8 @@ import { MembershipsModule } from './memberships/memberships.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { UsersModule } from './users/users.module';
 import { CsrfOriginMiddleware } from './http/csrf-origin.middleware';
+import { OwnersModule } from './owners/owners.module';
+import { PatientsModule } from './patients/patients.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { CsrfOriginMiddleware } from './http/csrf-origin.middleware';
     UsersModule,
     MembershipsModule,
     LocationsModule,
+    OwnersModule,
+    PatientsModule,
   ],
   providers: [ApiExceptionFilter],
 })

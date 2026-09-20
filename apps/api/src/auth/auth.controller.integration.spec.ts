@@ -38,6 +38,10 @@ describeDatabase('real authentication and sessions', () => {
   let platformMemberUser: { id: string; email: string };
   let organizationNorthId: string;
   let organizationSouthId: string;
+  let ownerNorthId: string;
+  let ownerSouthId: string;
+  let patientNorthId: string;
+  let patientSouthId: string;
 
   async function login(email: string, agent = request.agent(app.getHttpServer())) {
     return agent.post('/api/v1/auth/login').send({ email, password }).expect(200);
@@ -220,11 +224,62 @@ describeDatabase('real authentication and sessions', () => {
     suspendedOrganizationMembershipId = memberships.find(
       (membership) => membership.organizationId === organizationSuspended.id,
     )!.id;
+
+    const [ownerNorth, ownerSouth] = await Promise.all([
+      prisma.owner.create({
+        data: {
+          organizationId: organizationOne.id,
+          firstName: 'North',
+          lastName: `Owner ${suffix}`,
+          documentType: 'TEST_ID',
+          documentNumber: `NORTH-${suffix}`,
+          documentNumberNormalized: `NORTH-${suffix}`.toUpperCase(),
+          email: `owner-north-${suffix}@example.local`,
+        },
+      }),
+      prisma.owner.create({
+        data: {
+          organizationId: organizationTwo.id,
+          firstName: 'South',
+          lastName: `Owner ${suffix}`,
+          documentType: 'TEST_ID',
+          documentNumber: `SOUTH-${suffix}`,
+          documentNumberNormalized: `SOUTH-${suffix}`.toUpperCase(),
+          email: `owner-south-${suffix}@example.local`,
+        },
+      }),
+    ]);
+    ownerNorthId = ownerNorth.id;
+    ownerSouthId = ownerSouth.id;
+    const [patientNorth, patientSouth] = await Promise.all([
+      prisma.patient.create({
+        data: {
+          organizationId: organizationOne.id,
+          ownerId: ownerNorth.id,
+          name: `North Patient ${suffix}`,
+          nameNormalized: `north patient ${suffix}`,
+          species: 'DOG',
+        },
+      }),
+      prisma.patient.create({
+        data: {
+          organizationId: organizationTwo.id,
+          ownerId: ownerSouth.id,
+          name: `South Patient ${suffix}`,
+          nameNormalized: `south patient ${suffix}`,
+          species: 'CAT',
+        },
+      }),
+    ]);
+    patientNorthId = patientNorth.id;
+    patientSouthId = patientSouth.id;
   });
 
   afterAll(async () => {
     if (!prisma) return;
     await prisma.session.deleteMany({ where: { userId: { in: createdUserIds } } });
+    await prisma.patient.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await prisma.owner.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await prisma.membership.deleteMany({ where: { userId: { in: createdUserIds } } });
     await prisma.clinicLocation.deleteMany({
       where: { organizationId: { in: createdOrganizationIds } },
@@ -250,6 +305,14 @@ describeDatabase('real authentication and sessions', () => {
       'locations.manage',
       'memberships.read',
       'memberships.manage',
+      'owners.read',
+      'owners.create',
+      'owners.update',
+      'owners.archive',
+      'patients.read',
+      'patients.create',
+      'patients.update',
+      'patients.archive',
     ]);
     expect(response.body.memberships).toHaveLength(1);
     expect(response.body).not.toHaveProperty('passwordHash');
@@ -443,6 +506,12 @@ describeDatabase('real authentication and sessions', () => {
     expect(loginResponse.body.activeMembership.permissions).toEqual([
       'organization.read',
       'locations.read',
+      'owners.read',
+      'owners.create',
+      'owners.update',
+      'patients.read',
+      'patients.create',
+      'patients.update',
     ]);
     await agent.get('/api/v1/organization/current').expect(200);
     await agent.patch('/api/v1/organization/current').send({ name: 'Forbidden' }).expect(403);
@@ -463,10 +532,155 @@ describeDatabase('real authentication and sessions', () => {
     expect(south.body.activeMembership.permissions).toEqual([
       'organization.read',
       'locations.read',
+      'owners.read',
+      'owners.create',
+      'owners.update',
+      'patients.read',
+      'patients.create',
+      'patients.update',
     ]);
     const me = await agent.get('/api/v1/auth/me').expect(200);
     expect(me.body.activeMembership.organization.id).toBe(organizationSouthId);
     expect(me.body.activeMembership.permissions).not.toContain('memberships.read');
+  });
+
+  it('lists and reads owners and patients only inside the active tenant', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const owners = await agent.get('/api/v1/owners').expect(200);
+    expect(owners.body.pagination).toMatchObject({ page: 1, pageSize: 20, total: 1 });
+    expect(owners.body.data[0].id).toBe(ownerNorthId);
+    const patients = await agent.get('/api/v1/patients').expect(200);
+    expect(patients.body.pagination.total).toBe(1);
+    expect(patients.body.data[0].id).toBe(patientNorthId);
+    await agent.get(`/api/v1/owners/${ownerSouthId}`).expect(404);
+    await agent.get(`/api/v1/patients/${patientSouthId}`).expect(404);
+    const ownerDetail = await agent.get(`/api/v1/owners/${ownerNorthId}`).expect(200);
+    expect(ownerDetail.body.patients[0].id).toBe(patientNorthId);
+  });
+
+  it('supports tenant-safe search and pagination without arbitrary tenant input', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const ownerSearch = await agent
+      .get('/api/v1/owners')
+      .query({ search: 'North', pageSize: 1 })
+      .expect(200);
+    expect(ownerSearch.body.data).toHaveLength(1);
+    expect(ownerSearch.body.data[0].id).toBe(ownerNorthId);
+    const patientSearch = await agent
+      .get('/api/v1/patients')
+      .query({ search: 'North' })
+      .expect(200);
+    expect(patientSearch.body.data.map((patient: { id: string }) => patient.id)).toEqual([
+      patientNorthId,
+    ]);
+    await agent.get(`/api/v1/owners?organizationId=${organizationSouthId}`).expect(400);
+  });
+
+  it('creates, rejects duplicate documents, updates and archives an owner', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const documentNumber = `CREATED-${suffix}`;
+    const created = await agent
+      .post('/api/v1/owners')
+      .send({
+        firstName: 'Created',
+        lastName: 'Owner',
+        documentType: 'TEST_ID',
+        documentNumber,
+        email: `created-${suffix}@example.local`,
+      })
+      .expect(201);
+    expect(created.body.status).toBe('ACTIVE');
+    await agent
+      .post('/api/v1/owners')
+      .send({ firstName: 'Duplicate', documentType: 'TEST_ID', documentNumber })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('RESOURCE_CONFLICT'));
+    const updated = await agent
+      .patch(`/api/v1/owners/${created.body.id}`)
+      .send({ phone: '+57 300 555 0101' })
+      .expect(200);
+    expect(updated.body.phone).toBe('+57 300 555 0101');
+    const archived = await agent.post(`/api/v1/owners/${created.body.id}/archive`).expect(201);
+    expect(archived.body.status).toBe('ARCHIVED');
+    const activeList = await agent.get('/api/v1/owners').expect(200);
+    expect(activeList.body.data.some((owner: { id: string }) => owner.id === created.body.id)).toBe(
+      false,
+    );
+    const archivedList = await agent
+      .get('/api/v1/owners')
+      .query({ status: 'ARCHIVED', search: 'Created' })
+      .expect(200);
+    expect(archivedList.body.data[0].id).toBe(created.body.id);
+  });
+
+  it('requires a same-tenant owner when creating and updating a patient', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    await agent
+      .post('/api/v1/patients')
+      .send({ ownerId: ownerSouthId, name: 'Invalid relation', species: 'DOG' })
+      .expect(404)
+      .expect(({ body }) => expect(body.code).toBe('RESOURCE_NOT_FOUND'));
+    await agent
+      .post('/api/v1/patients')
+      .send({
+        ownerId: ownerNorthId,
+        name: `Created Patient ${suffix}`,
+        species: 'DOG',
+        sex: 'UNKNOWN',
+        currentWeightKg: 3.5,
+        organizationId: organizationSouthId,
+      })
+      .expect(400);
+    const created = await agent
+      .post('/api/v1/patients')
+      .send({ ownerId: ownerNorthId, name: `Created Patient ${suffix}`, species: 'DOG' })
+      .expect(201);
+    const updated = await agent
+      .patch(`/api/v1/patients/${created.body.id}`)
+      .send({ name: `Updated Patient ${suffix}` })
+      .expect(200);
+    expect(updated.body.name).toBe(`Updated Patient ${suffix}`);
+    const archived = await agent.post(`/api/v1/patients/${created.body.id}/archive`).expect(201);
+    expect(archived.body.status).toBe('ARCHIVED');
+    const archivedList = await agent
+      .get('/api/v1/patients')
+      .query({ status: 'ARCHIVED', search: `Updated Patient ${suffix}` })
+      .expect(200);
+    expect(archivedList.body.data[0].id).toBe(created.body.id);
+  });
+
+  it('denies archive permission to a veterinarian role', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(platformMemberUser.email, agent);
+    await agent.post(`/api/v1/owners/${ownerNorthId}/archive`).expect(403);
+    await agent.post(`/api/v1/patients/${patientNorthId}/archive`).expect(403);
+  });
+
+  it('switches owner and patient visibility with the multi-organization session', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(multiUser.email, agent);
+    await agent
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiNorthMembershipId })
+      .expect(200);
+    const north = await agent.get('/api/v1/patients').expect(200);
+    expect(north.body.data.map((patient: { id: string }) => patient.id)).toContain(patientNorthId);
+    expect(north.body.data.map((patient: { id: string }) => patient.id)).not.toContain(
+      patientSouthId,
+    );
+    await agent
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiSouthMembershipId })
+      .expect(200);
+    const south = await agent.get('/api/v1/patients').expect(200);
+    expect(south.body.data.map((patient: { id: string }) => patient.id)).toContain(patientSouthId);
+    expect(south.body.data.map((patient: { id: string }) => patient.id)).not.toContain(
+      patientNorthId,
+    );
   });
 
   it('switches an authenticated session by membership id', async () => {
