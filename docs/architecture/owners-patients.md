@@ -69,3 +69,17 @@ backend sigue siendo la autoridad. Los archivados se muestran con estado
 distinguible y confirmación accesible. La ficha de Patient solo muestra datos
 existentes, edad calculada y peso actual; no contiene tabs clínicas,
 facturación ni saldos.
+
+## Cierre de Fase 4C
+
+La revisión final, la matriz legacy, las decisiones `NEEDS REVIEW`, las reglas
+de archive y los límites conocidos están en
+`docs/migration/owners-patients-final-review.md`. La secuencia comprobada para
+futuros módulos está en `docs/architecture/module-pattern.md`.
+
+Fase 4C deja como invariantes: todo acceso se acota por organización activa;
+Patient solo referencia Owners del mismo tenant; `status` y `archivedAt` son
+consistentes; el peso es un snapshot acotado; la fecha de nacimiento es civil y
+no futura; y un Owner con Patients activos no se puede archivar. Restore,
+responsables múltiples, historia clínica y redacción de PII por rol siguen
+requiriendo decisión de dominio.

@@ -8,6 +8,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OwnerStatus } from '@prisma/client';
@@ -66,7 +67,7 @@ export class CreateOwnerDto {
 }
 
 export class UpdateOwnerDto {
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @MinLength(1)
   @MaxLength(120)
@@ -123,6 +124,7 @@ export class OwnersQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(10000)
   page = 1;
 
   @IsOptional()

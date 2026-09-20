@@ -3,9 +3,19 @@ import { ApiError } from '../../services/apiClient';
 // Translate public API statuses into short, user-safe messages without exposing SQL or tenant data.
 export function errorMessage(error: unknown, fallback = 'No fue posible completar la solicitud.') {
   if (!(error instanceof ApiError)) return fallback;
-  if (error.code === 'RESOURCE_CONFLICT' || error.status === 409) {
+  if (error.code === 'OWNER_HAS_ACTIVE_PATIENTS') {
+    return 'No puedes archivar este propietario mientras tenga pacientes activos vinculados.';
+  }
+  if (error.code === 'PATIENT_NAME_CONFLICT') {
+    return 'Ya existe un paciente activo con ese nombre para este propietario.';
+  }
+  if (error.code === 'RESOURCE_ARCHIVED') {
+    return 'Este registro está archivado y no puede editarse hasta definir una restauración.';
+  }
+  if (error.code === 'RESOURCE_CONFLICT') {
     return 'Ya existe un propietario con ese documento en esta veterinaria.';
   }
+  if (error.status === 409) return 'No se pudo completar la operación porque existe un conflicto.';
   if (error.code === 'RESOURCE_NOT_FOUND' || error.status === 404) {
     return 'No encontramos este recurso.';
   }

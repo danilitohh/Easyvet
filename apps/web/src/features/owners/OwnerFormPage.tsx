@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   createOwnerRequestSchema,
+  updateOwnerRequestSchema,
   type CreateOwnerRequest,
   type UpdateOwnerRequest,
 } from '@veterinary-saas/contracts';
@@ -117,7 +118,10 @@ export function OwnerFormPage({ mode }: { mode: 'create' | 'edit' }) {
       city: nullable(form.city),
       notes: nullable(form.notes),
     };
-    const parsed = createOwnerRequestSchema.safeParse(payload);
+    const parsed =
+      mode === 'create'
+        ? createOwnerRequestSchema.safeParse(payload)
+        : updateOwnerRequestSchema.safeParse(payload);
     const nextErrors = parsed.success ? {} : fieldErrorMap(parsed.error);
     if (
       (payload.documentType && !payload.documentNumber) ||

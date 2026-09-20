@@ -1,28 +1,29 @@
 # Estado de migración
 
-| Área                        | Estado                                                    |
-| --------------------------- | --------------------------------------------------------- |
-| Auditoría legacy            | Completada                                                |
-| Monorepo                    | Completado                                                |
-| React/Vite                  | App shell y base visual de Fase 2 completados             |
-| NestJS                      | Infraestructura; Nest 12.0.3 verificado                   |
-| PostgreSQL                  | VERIFICADO LOCALMENTE                                     |
-| Prisma                      | Modelos Fases 3A/3B/4A y migraciones aplicados localmente |
-| Core tenant model           | COMPLETADO (Fase 3A)                                      |
-| Multi-tenancy               | Fundación de aislamiento completada (Fase 3C)             |
-| Autenticación               | COMPLETADA (Fase 3B)                                      |
-| Autorización                | COMPLETADA (Fase 3C)                                      |
-| UI Lativet                  | Referencia analizada; adaptación React completada         |
-| Owners backend              | COMPLETADO (Fase 4A)                                      |
-| Patients backend            | COMPLETADO (Fase 4A)                                      |
-| Owners frontend             | COMPLETADO (Fase 4B)                                      |
-| Patients frontend           | COMPLETADO (Fase 4B)                                      |
-| Agenda                      | Pendiente                                                 |
-| Clínica                     | Pendiente                                                 |
-| Inventario                  | Pendiente                                                 |
-| Facturación                 | Pendiente                                                 |
-| SaaS                        | Pendiente                                                 |
-| Multi-tenancy SaaS completo | EN PROGRESO                                               |
+| Área                         | Estado                                                    |
+| ---------------------------- | --------------------------------------------------------- |
+| Auditoría legacy             | Completada                                                |
+| Monorepo                     | Completado                                                |
+| React/Vite                   | App shell y base visual de Fase 2 completados             |
+| NestJS                       | Infraestructura; Nest 12.0.3 verificado                   |
+| PostgreSQL                   | VERIFICADO LOCALMENTE                                     |
+| Prisma                       | Modelos Fases 3A/3B/4A y migraciones aplicados localmente |
+| Core tenant model            | COMPLETADO (Fase 3A)                                      |
+| Multi-tenancy                | Fundación de aislamiento completada (Fase 3C)             |
+| Autenticación                | COMPLETADA (Fase 3B)                                      |
+| Autorización                 | COMPLETADA (Fase 3C)                                      |
+| UI Lativet                   | Referencia analizada; adaptación React completada         |
+| Owners backend               | COMPLETADO (Fase 4A)                                      |
+| Patients backend             | COMPLETADO (Fase 4A)                                      |
+| Owners frontend              | COMPLETADO (Fase 4B)                                      |
+| Patients frontend            | COMPLETADO (Fase 4B)                                      |
+| Owners/Patients final review | COMPLETADO (Fase 4C)                                      |
+| Agenda                       | Pendiente                                                 |
+| Clínica                      | Pendiente                                                 |
+| Inventario                   | Pendiente                                                 |
+| Facturación                  | Pendiente                                                 |
+| SaaS                         | Pendiente                                                 |
+| Multi-tenancy SaaS completo  | EN PROGRESO                                               |
 
 La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
 
@@ -109,8 +110,21 @@ Fase 4B completada:
   permisos, formularios, archive, 404 cross-tenant y tenant switch.
 - La documentación de decisiones está en
   `docs/migration/owners-patients-ui.md`.
-- Owners/Patients final review: PENDIENTE FASE 4C.
 - No se inició ningún módulo clínico, agenda, financiero o grooming.
+
+Fase 4C completada:
+
+- Se comparó el comportamiento de negocio legacy con Easyvet y se clasificaron
+  los comportamientos como preservados, rediseñados intencionalmente,
+  postergados o `NEEDS REVIEW`.
+- Se reforzaron fechas civiles, peso, nombres activos por Owner, payloads
+  estrictos, operaciones tenant-scoped, archive rules y la carrera archive/create.
+- La migración `20260920120000_harden_owner_patient_invariants` agrega checks de
+  lifecycle/peso y unicidad de paciente activo sin reescribir migraciones
+  aplicadas.
+- La revisión final está en `docs/migration/owners-patients-final-review.md` y
+  el patrón futuro en `docs/architecture/module-pattern.md`.
+- Agenda y Fase 5 permanecen pendientes; no se inició ningún módulo nuevo.
 
 Para detener el entorno local:
 

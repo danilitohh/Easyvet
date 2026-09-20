@@ -126,6 +126,7 @@ model Owner {
   @@index([organizationId, status])
   @@index([organizationId, firstName])
   @@index([organizationId, lastName])
+  // The migration also enforces status/archivedAt consistency at database level.
   @@map("owners")
 }
 
@@ -158,6 +159,7 @@ model Patient {
   @@index([organizationId, status])
   @@index([organizationId, nameNormalized])
   @@index([organizationId, microchipNumber])
+  // The migration adds an active-only unique index for owner/name legacy behavior.
   @@map("patients")
 }
 

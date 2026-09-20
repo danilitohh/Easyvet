@@ -138,18 +138,26 @@ describeDatabase('fundamental multi-tenant model', () => {
     execFileSync(process.execPath, [seedPath], { cwd: repositoryRoot, env: environment });
     execFileSync(process.execPath, [seedPath], { cwd: repositoryRoot, env: environment });
 
-    const [organizations, locations, users, memberships] = await Promise.all([
+    const [organizations, locations, users, memberships, owners, patients] = await Promise.all([
       prisma.organization.count({ where: { slug: { startsWith: 'veterinaria-demo-' } } }),
       prisma.clinicLocation.count({ where: { name: { startsWith: 'Sede ' } } }),
       prisma.user.count({ where: { email: { endsWith: '@demo.local' } } }),
       prisma.membership.count({ where: { user: { email: { endsWith: '@demo.local' } } } }),
+      prisma.owner.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
+      prisma.patient.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
     ]);
 
-    expect({ organizations, locations, users, memberships }).toEqual({
+    expect({ organizations, locations, users, memberships, owners, patients }).toEqual({
       organizations: 2,
       locations: 2,
       users: 3,
       memberships: 4,
+      owners: 4,
+      patients: 6,
     });
   });
 });

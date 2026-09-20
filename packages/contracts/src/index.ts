@@ -129,7 +129,8 @@ export type MembershipResponse = z.infer<typeof membershipResponseSchema>;
 const ownerStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
 const patientStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
 const patientSexSchema = z.enum(['MALE', 'FEMALE', 'UNKNOWN']);
-const pageSchema = z.number().int().min(1);
+// API pagination is bounded so a client cannot request arbitrarily expensive offsets.
+const pageSchema = z.number().int().min(1).max(10_000);
 const pageSizeSchema = z.number().int().min(1).max(100);
 
 const ownerFieldsSchema = z.object({
@@ -210,6 +211,14 @@ export const patientsListResponseSchema = z.object({
 
 const optionalText = (max: number) => z.string().trim().max(max).nullable().optional();
 
+// Birth dates are civil dates: future values are invalid without applying a timezone conversion.
+const birthDateSchema = z
+  .string()
+  .date()
+  .refine((value) => value <= new Date().toISOString().slice(0, 10), {
+    message: 'birthDate cannot be in the future',
+  });
+
 export const createOwnerRequestSchema = z
   .object({
     firstName: z.string().trim().min(1).max(120),
@@ -234,7 +243,7 @@ export const createPatientRequestSchema = z
     species: z.string().trim().min(1).max(80),
     breed: optionalText(120),
     sex: patientSexSchema.optional(),
-    birthDate: z.string().date().nullable().optional(),
+    birthDate: birthDateSchema.nullable().optional(),
     birthDateEstimated: z.boolean().optional(),
     color: optionalText(80),
     microchipNumber: optionalText(80),

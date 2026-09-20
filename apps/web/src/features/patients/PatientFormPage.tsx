@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   createPatientRequestSchema,
@@ -16,6 +16,7 @@ import { Select } from '../../components/ui/Select';
 import { TextInput } from '../../components/ui/TextInput';
 import { ApiError } from '../../services/apiClient';
 import { ResourceError } from '../shared/ResourceFeedback';
+import { useActiveOrganizationId } from '../shared/hooks';
 import { errorMessage } from '../shared/resourceUtils';
 import { useOwner, useOwners } from '../owners/useOwners';
 import { patientsApi } from './patientsApi';
@@ -88,6 +89,8 @@ export function PatientFormPage({ mode }: { mode: 'create' | 'edit' }) {
   const initialOwnerId = mode === 'create' ? (searchParams.get('ownerId') ?? undefined) : undefined;
   const patientState = usePatient(mode === 'edit' ? patientId : undefined);
   const selectedOwnerState = useOwner(initialOwnerId);
+  const organizationId = useActiveOrganizationId();
+  const previousOrganizationId = useRef(organizationId);
   const [ownerSearch, setOwnerSearch] = useState('');
   const ownerParams = useMemo(
     () => ({
@@ -106,6 +109,21 @@ export function PatientFormPage({ mode }: { mode: 'create' | 'edit' }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
+
+  // A create form cannot carry an Owner selection across an organization switch.
+  useEffect(() => {
+    if (
+      mode === 'create' &&
+      previousOrganizationId.current &&
+      previousOrganizationId.current !== organizationId
+    ) {
+      setSelectedOwnerId('');
+      setOwnerSearch('');
+      setErrors({});
+      setServerError(null);
+    }
+    previousOrganizationId.current = organizationId;
+  }, [mode, organizationId]);
 
   useEffect(() => {
     if (mode === 'edit' && patientState.patient) {
@@ -189,6 +207,7 @@ export function PatientFormPage({ mode }: { mode: 'create' | 'edit' }) {
         id={`patient-${field}`}
         type={type}
         value={form[field] as string}
+        {...(field === 'birthDate' ? { max: new Date().toISOString().slice(0, 10) } : {})}
         onChange={(event) => update(field, event.target.value as PatientFormState[typeof field])}
         aria-invalid={Boolean(errors[field])}
       />

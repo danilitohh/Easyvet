@@ -11,8 +11,10 @@ import {
   IsUUID,
   Max,
   MaxLength,
+  Matches,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { PatientSex, PatientStatus } from '@prisma/client';
 
@@ -42,6 +44,9 @@ export class CreatePatientDto {
 
   @IsOptional()
   @IsDateString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'birthDate must be a civil date in YYYY-MM-DD format',
+  })
   birthDate?: string | null;
 
   @IsOptional()
@@ -60,7 +65,7 @@ export class CreatePatientDto {
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   @Min(0.001)
   @Max(1000)
   currentWeightKg?: number | null;
@@ -76,13 +81,13 @@ export class CreatePatientDto {
 }
 
 export class UpdatePatientDto {
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @MinLength(1)
   @MaxLength(160)
   name?: string;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @MinLength(1)
   @MaxLength(80)
@@ -99,6 +104,9 @@ export class UpdatePatientDto {
 
   @IsOptional()
   @IsDateString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'birthDate must be a civil date in YYYY-MM-DD format',
+  })
   birthDate?: string | null;
 
   @IsOptional()
@@ -117,7 +125,7 @@ export class UpdatePatientDto {
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   @Min(0.001)
   @Max(1000)
   currentWeightKg?: number | null;
@@ -137,6 +145,7 @@ export class PatientsQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(10000)
   page = 1;
 
   @IsOptional()

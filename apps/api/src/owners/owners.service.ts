@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OwnerStatus, Prisma } from '@prisma/client';
+import { OwnerStatus, PatientStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../infrastructure/database/prisma.service';
 import { CreateOwnerDto, OwnersQueryDto, UpdateOwnerDto } from './owner.dto';
 
@@ -36,6 +36,7 @@ const ownerDetailSelect = {
 } satisfies Prisma.OwnerSelect;
 
 type OwnerDetailRecord = Prisma.OwnerGetPayload<{ select: typeof ownerDetailSelect }>;
+type DomainDatabase = PrismaService | Prisma.TransactionClient;
 
 function trimNullable(value: string | null | undefined): string | null | undefined {
   if (value === undefined || value === null) return value;
@@ -45,12 +46,26 @@ function trimNullable(value: string | null | undefined): string | null | undefin
 
 function normalizeIdentifier(value: string | null | undefined): string | null {
   const normalized = trimNullable(value);
-  return normalized ? normalized.toLocaleUpperCase() : null;
+  return normalized ? normalized.replace(/\s+/g, ' ').toUpperCase() : null;
 }
 
 function normalizeEmail(value: string | null | undefined): string | null {
   const normalized = trimNullable(value);
-  return normalized ? normalized.toLocaleLowerCase() : null;
+  return normalized ? normalized.toLowerCase() : null;
+}
+
+function archivedResource(): ConflictException {
+  return new ConflictException({
+    code: 'RESOURCE_ARCHIVED',
+    message: 'Archived resources cannot be edited until a restore policy exists',
+  });
+}
+
+function activePatientsPreventArchive(): ConflictException {
+  return new ConflictException({
+    code: 'OWNER_HAS_ACTIVE_PATIENTS',
+    message: 'Owner cannot be archived while active patients are linked',
+  });
 }
 
 function resourceNotFound(): NotFoundException {
@@ -131,6 +146,7 @@ export class OwnersService {
       select: ownerListSelect,
     });
     if (!current) throw resourceNotFound();
+    if (current.status === OwnerStatus.ARCHIVED) throw archivedResource();
 
     const data: Prisma.OwnerUpdateInput = {};
     if (input.firstName !== undefined)
@@ -154,7 +170,11 @@ export class OwnersService {
     }
 
     try {
-      await this.prisma.owner.update({ where: { id: ownerId }, data, select: { id: true } });
+      await this.prisma.owner.update({
+        where: { id_organizationId: { id: ownerId, organizationId } },
+        data,
+        select: { id: true },
+      });
       return this.findRequired(organizationId, ownerId);
     } catch (error) {
       this.rethrowConflict(error);
@@ -163,17 +183,21 @@ export class OwnersService {
   }
 
   async archiveForOrganization(organizationId: string, ownerId: string) {
-    const current = await this.prisma.owner.findFirst({
-      where: { id: ownerId, organizationId },
-      select: { id: true, status: true },
-    });
-    if (!current) throw resourceNotFound();
-    if (current.status === OwnerStatus.ARCHIVED) return this.findRequired(organizationId, ownerId);
+    await this.prisma.$transaction(async (tx) => {
+      const current = await this.lockOwner(tx, organizationId, ownerId);
+      if (!current) throw resourceNotFound();
+      if (current.status === OwnerStatus.ARCHIVED) return;
 
-    await this.prisma.owner.update({
-      where: { id: ownerId },
-      data: { status: OwnerStatus.ARCHIVED, archivedAt: new Date() },
-      select: { id: true },
+      const activePatients = await tx.patient.count({
+        where: { organizationId, ownerId, status: PatientStatus.ACTIVE },
+      });
+      if (activePatients > 0) throw activePatientsPreventArchive();
+
+      await tx.owner.update({
+        where: { id_organizationId: { id: ownerId, organizationId } },
+        data: { status: OwnerStatus.ARCHIVED, archivedAt: new Date() },
+        select: { id: true },
+      });
     });
     return this.findRequired(organizationId, ownerId);
   }
@@ -201,6 +225,23 @@ export class OwnersService {
     const owner = await this.findByIdForOrganization(organizationId, ownerId);
     if (!owner) throw resourceNotFound();
     return owner;
+  }
+
+  // Owner row locking serializes archive decisions with Patient creation for one tenant.
+  private async lockOwner(
+    database: DomainDatabase,
+    organizationId: string,
+    ownerId: string,
+  ): Promise<{ id: string; status: OwnerStatus } | null> {
+    const rows = await database.$queryRaw<Array<{ id: string; status: OwnerStatus }>>(
+      Prisma.sql`
+        SELECT "id", "status"
+        FROM "owners"
+        WHERE "id" = ${ownerId}::uuid AND "organization_id" = ${organizationId}::uuid
+        FOR UPDATE
+      `,
+    );
+    return rows[0] ?? null;
   }
 
   private resolveDocument(

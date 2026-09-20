@@ -224,6 +224,16 @@ describe('owners frontend', () => {
     expect(ownersApi.create).not.toHaveBeenCalled();
   });
 
+  it('disables Owner submit while the create request is pending', async () => {
+    vi.mocked(ownersApi.create).mockReturnValue(new Promise(() => undefined));
+    renderRoute('/propietarios/nuevo', <OwnerFormPage mode="create" />);
+    fireEvent.change(screen.getByLabelText('Nombre *'), { target: { value: 'Doble Click' } });
+    const submit = screen.getByRole('button', { name: 'Guardar propietario' });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+    await waitFor(() => expect(ownersApi.create).toHaveBeenCalledTimes(1));
+  });
+
   it('shows a friendly Owner document conflict', async () => {
     vi.mocked(ownersApi.create).mockRejectedValue(
       new ApiError('conflict', 409, 'RESOURCE_CONFLICT'),
@@ -487,5 +497,35 @@ describe('tenant switch cache safety', () => {
       expect(screen.queryByRole('heading', { name: 'Luna' })).not.toBeInTheDocument(),
     );
     expect(await screen.findByText('Recurso no encontrado')).toBeInTheDocument();
+  });
+
+  it('resets the selected Owner when a Patient create form changes organization', async () => {
+    let active = membership(northId);
+    mockedUseAuth.mockImplementation(() => ({ activeMembership: active }) as never);
+    vi.mocked(ownersApi.list).mockImplementation(async () =>
+      active.organization.id === northId
+        ? {
+            data: [owner],
+            pagination: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+          }
+        : { data: [], pagination: { page: 1, pageSize: 50, total: 0, totalPages: 0 } },
+    );
+    vi.mocked(ownersApi.findById).mockImplementation(async () => {
+      if (active.organization.id === northId) return owner;
+      throw new ApiError('not found', 404, 'RESOURCE_NOT_FOUND');
+    });
+    const view = renderRoute(
+      `/pacientes/nuevo?ownerId=${ownerId}`,
+      <PatientFormPage mode="create" />,
+    );
+    const ownerSelect = await screen.findByLabelText('Propietario *');
+    await waitFor(() => expect(ownerSelect).toHaveValue(ownerId));
+    active = membership(southId);
+    view.rerender(
+      <MemoryRouter initialEntries={[`/pacientes/nuevo?ownerId=${ownerId}`]}>
+        <PatientFormPage mode="create" />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByLabelText('Propietario *')).toHaveValue(''));
   });
 });

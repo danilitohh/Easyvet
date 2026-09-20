@@ -1,5 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PatientSex, PatientStatus, Prisma } from '@prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { OwnerStatus, PatientSex, PatientStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../infrastructure/database/prisma.service';
 import { CreatePatientDto, PatientsQueryDto, UpdatePatientDto } from './patient.dto';
 
@@ -34,6 +39,7 @@ const patientSelect = {
 } satisfies Prisma.PatientSelect;
 
 type PatientRecord = Prisma.PatientGetPayload<{ select: typeof patientSelect }>;
+type DomainDatabase = PrismaService | Prisma.TransactionClient;
 
 function trimNullable(value: string | null | undefined): string | null | undefined {
   if (value === undefined || value === null) return value;
@@ -42,12 +48,12 @@ function trimNullable(value: string | null | undefined): string | null | undefin
 }
 
 function normalizeName(value: string): string {
-  return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 function normalizeMicrochip(value: string | null | undefined): string | null {
   const normalized = trimNullable(value);
-  return normalized ? normalized.toLocaleUpperCase() : null;
+  return normalized ? normalized.toUpperCase() : null;
 }
 
 function resourceNotFound(): NotFoundException {
@@ -57,7 +63,37 @@ function resourceNotFound(): NotFoundException {
 function dateOnly(value: string | null | undefined): Date | null | undefined {
   if (value === undefined) return undefined;
   if (value === null) return null;
-  return new Date(`${value}T00:00:00.000Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new BadRequestException({
+      code: 'VALIDATION_ERROR',
+      message: 'birthDate must be a civil date in YYYY-MM-DD format',
+    });
+  }
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+    throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'birthDate is invalid' });
+  }
+  if (value > new Date().toISOString().slice(0, 10)) {
+    throw new BadRequestException({
+      code: 'VALIDATION_ERROR',
+      message: 'birthDate cannot be in the future',
+    });
+  }
+  return parsed;
+}
+
+function duplicatePatientName(): ConflictException {
+  return new ConflictException({
+    code: 'PATIENT_NAME_CONFLICT',
+    message: 'An active patient with this name already exists for this owner',
+  });
+}
+
+function archivedResource(): ConflictException {
+  return new ConflictException({
+    code: 'RESOURCE_ARCHIVED',
+    message: 'Archived resources cannot be edited until a restore policy exists',
+  });
 }
 
 // Owns explicit tenant-scoped Patient queries and archive transitions.
@@ -91,37 +127,57 @@ export class PatientsService {
   }
 
   async createForOrganization(organizationId: string, input: CreatePatientDto) {
-    await this.requireActiveOwner(organizationId, input.ownerId);
-    const patient = await this.prisma.patient.create({
-      data: {
-        organizationId,
-        ownerId: input.ownerId,
-        name: this.requireText(input.name, 'name'),
-        nameNormalized: normalizeName(input.name),
-        species: this.requireText(input.species, 'species'),
-        breed: trimNullable(input.breed) ?? null,
-        sex: input.sex ?? PatientSex.UNKNOWN,
-        birthDate: dateOnly(input.birthDate) ?? null,
-        birthDateEstimated: input.birthDateEstimated ?? false,
-        color: trimNullable(input.color) ?? null,
-        microchipNumber: normalizeMicrochip(input.microchipNumber) ?? null,
-        currentWeightKg: input.currentWeightKg ?? null,
-        sterilized: input.sterilized ?? false,
-        notes: trimNullable(input.notes) ?? null,
-      },
-      select: { id: true },
-    });
+    const name = this.requireText(input.name, 'name');
+    const nameNormalized = normalizeName(name);
+    let patient: { id: string };
+    try {
+      patient = await this.prisma.$transaction(async (tx) => {
+        await this.requireActiveOwner(tx, organizationId, input.ownerId);
+        await this.ensureNameAvailable(tx, organizationId, input.ownerId, nameNormalized);
+        return tx.patient.create({
+          data: {
+            organizationId,
+            ownerId: input.ownerId,
+            name,
+            nameNormalized,
+            species: this.requireText(input.species, 'species'),
+            breed: trimNullable(input.breed) ?? null,
+            sex: input.sex ?? PatientSex.UNKNOWN,
+            birthDate: dateOnly(input.birthDate) ?? null,
+            birthDateEstimated: input.birthDateEstimated ?? false,
+            color: trimNullable(input.color) ?? null,
+            microchipNumber: normalizeMicrochip(input.microchipNumber) ?? null,
+            currentWeightKg: input.currentWeightKg ?? null,
+            sterilized: input.sterilized ?? false,
+            notes: trimNullable(input.notes) ?? null,
+          },
+          select: { id: true },
+        });
+      });
+    } catch (error) {
+      this.rethrowConflict(error);
+      throw error;
+    }
     return this.findRequired(organizationId, patient.id);
   }
 
   async updateForOrganization(organizationId: string, patientId: string, input: UpdatePatientDto) {
     const current = await this.findByIdForOrganization(organizationId, patientId);
     if (!current) throw resourceNotFound();
+    if (current.status === PatientStatus.ARCHIVED) throw archivedResource();
 
     const data: Prisma.PatientUpdateInput = {};
     if (input.name !== undefined) {
-      data.name = this.requireText(input.name, 'name');
-      data.nameNormalized = normalizeName(input.name);
+      const name = this.requireText(input.name, 'name');
+      data.name = name;
+      data.nameNormalized = normalizeName(name);
+      await this.ensureNameAvailable(
+        this.prisma,
+        organizationId,
+        current.ownerId,
+        normalizeName(name),
+        patientId,
+      );
     }
     if (input.species !== undefined) data.species = this.requireText(input.species, 'species');
     if (input.breed !== undefined) data.breed = trimNullable(input.breed) ?? null;
@@ -135,7 +191,17 @@ export class PatientsService {
     if (input.sterilized !== undefined) data.sterilized = input.sterilized;
     if (input.notes !== undefined) data.notes = trimNullable(input.notes) ?? null;
 
-    await this.prisma.patient.update({ where: { id: patientId }, data, select: { id: true } });
+    let updated: { count: number };
+    try {
+      updated = await this.prisma.patient.updateMany({
+        where: { id: patientId, organizationId },
+        data,
+      });
+    } catch (error) {
+      this.rethrowConflict(error);
+      throw error;
+    }
+    if (updated.count !== 1) throw resourceNotFound();
     return this.findRequired(organizationId, patientId);
   }
 
@@ -148,11 +214,11 @@ export class PatientsService {
     if (current.status === PatientStatus.ARCHIVED)
       return this.findRequired(organizationId, patientId);
 
-    await this.prisma.patient.update({
-      where: { id: patientId },
+    const updated = await this.prisma.patient.updateMany({
+      where: { id: patientId, organizationId },
       data: { status: PatientStatus.ARCHIVED, archivedAt: new Date() },
-      select: { id: true },
     });
+    if (updated.count !== 1) throw resourceNotFound();
     return this.findRequired(organizationId, patientId);
   }
 
@@ -176,12 +242,50 @@ export class PatientsService {
     };
   }
 
-  private async requireActiveOwner(organizationId: string, ownerId: string): Promise<void> {
-    const owner = await this.prisma.owner.findFirst({
-      where: { id: ownerId, organizationId, status: 'ACTIVE' },
+  private async requireActiveOwner(
+    database: DomainDatabase,
+    organizationId: string,
+    ownerId: string,
+  ): Promise<void> {
+    const owner = await this.lockOwner(database, organizationId, ownerId);
+    if (!owner || owner.status !== OwnerStatus.ACTIVE) throw resourceNotFound();
+  }
+
+  private async ensureNameAvailable(
+    database: DomainDatabase,
+    organizationId: string,
+    ownerId: string,
+    nameNormalized: string,
+    excludedPatientId?: string,
+  ): Promise<void> {
+    const existing = await database.patient.findFirst({
+      where: {
+        organizationId,
+        ownerId,
+        nameNormalized,
+        status: PatientStatus.ACTIVE,
+        ...(excludedPatientId ? { NOT: { id: excludedPatientId } } : {}),
+      },
       select: { id: true },
     });
-    if (!owner) throw resourceNotFound();
+    if (existing) throw duplicatePatientName();
+  }
+
+  // Owner row locking serializes create-versus-archive lifecycle decisions for one tenant.
+  private async lockOwner(
+    database: DomainDatabase,
+    organizationId: string,
+    ownerId: string,
+  ): Promise<{ id: string; status: OwnerStatus } | null> {
+    const rows = await database.$queryRaw<Array<{ id: string; status: OwnerStatus }>>(
+      Prisma.sql`
+        SELECT "id", "status"
+        FROM "owners"
+        WHERE "id" = ${ownerId}::uuid AND "organization_id" = ${organizationId}::uuid
+        FOR UPDATE
+      `,
+    );
+    return rows[0] ?? null;
   }
 
   private async findRequired(organizationId: string, patientId: string): Promise<PatientRecord> {
@@ -193,7 +297,13 @@ export class PatientsService {
   private requireText(value: string, field: string): string {
     const result = value.trim();
     if (!result)
-      throw new ConflictException({ code: 'VALIDATION_ERROR', message: `${field} is required` });
+      throw new BadRequestException({ code: 'VALIDATION_ERROR', message: `${field} is required` });
     return result;
+  }
+
+  private rethrowConflict(error: unknown): void {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw duplicatePatientName();
+    }
   }
 }

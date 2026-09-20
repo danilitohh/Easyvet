@@ -36,6 +36,7 @@ describeDatabase('real authentication and sessions', () => {
   let locationSouthId: string;
   let limitedUser: { id: string; email: string };
   let platformMemberUser: { id: string; email: string };
+  let platformMemberMembershipId: string;
   let organizationNorthId: string;
   let organizationSouthId: string;
   let ownerNorthId: string;
@@ -223,6 +224,9 @@ describeDatabase('real authentication and sessions', () => {
     foreignMembershipId = memberships.find((membership) => membership.userId === foreign.id)!.id;
     suspendedOrganizationMembershipId = memberships.find(
       (membership) => membership.organizationId === organizationSuspended.id,
+    )!.id;
+    platformMemberMembershipId = memberships.find(
+      (membership) => membership.userId === platformMember.id,
     )!.id;
 
     const [ownerNorth, ownerSouth] = await Promise.all([
@@ -614,6 +618,142 @@ describeDatabase('real authentication and sessions', () => {
       .query({ status: 'ARCHIVED', search: 'Created' })
       .expect(200);
     expect(archivedList.body.data[0].id).toBe(created.body.id);
+    await agent
+      .patch(`/api/v1/owners/${created.body.id}`)
+      .send({ city: 'No edits after archive' })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('RESOURCE_ARCHIVED'));
+  });
+
+  it('does not create artificial conflicts for owners without documents', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const [first, second] = await Promise.all([
+      agent.post('/api/v1/owners').send({ firstName: `No Document One ${suffix}` }),
+      agent.post('/api/v1/owners').send({ firstName: `No Document Two ${suffix}` }),
+    ]);
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect(first.body.documentNumber).toBeNull();
+    expect(second.body.documentNumber).toBeNull();
+  });
+
+  it('blocks owner archive while active patients remain linked', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    await agent
+      .post(`/api/v1/owners/${ownerNorthId}/archive`)
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('OWNER_HAS_ACTIVE_PATIENTS'));
+    const owner = await agent.get(`/api/v1/owners/${ownerNorthId}`).expect(200);
+    expect(owner.body.status).toBe('ACTIVE');
+    expect(owner.body.archivedAt).toBeNull();
+  });
+
+  it('rejects future dates, invalid weights and active patient name duplicates', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const name = `Edge Patient ${suffix}`;
+    await agent
+      .post('/api/v1/patients')
+      .send({ ownerId: ownerNorthId, name, species: 'EXOTIC', birthDate: '2999-01-01' })
+      .expect(400);
+    await agent
+      .post('/api/v1/patients')
+      .send({ ownerId: ownerNorthId, name, species: 'EXOTIC', currentWeightKg: 0 })
+      .expect(400);
+    await agent
+      .post('/api/v1/patients')
+      .send({ ownerId: ownerNorthId, name, species: 'EXOTIC', currentWeightKg: 1001 })
+      .expect(400);
+    const created = await agent
+      .post('/api/v1/patients')
+      .send({
+        ownerId: ownerNorthId,
+        name,
+        species: 'EXOTIC',
+        microchipNumber: ' chip-01 ',
+        birthDate: '2024-02-29',
+      })
+      .expect(201);
+    expect(created.body.microchipNumber).toBe('CHIP-01');
+    await agent
+      .post('/api/v1/patients')
+      .send({ ownerId: ownerNorthId, name: `  ${name.toLowerCase()}  `, species: 'EXOTIC' })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('PATIENT_NAME_CONFLICT'));
+    const search = await agent.get('/api/v1/patients').query({ search: 'chip-01' }).expect(200);
+    expect(search.body.data.some((patient: { id: string }) => patient.id === created.body.id)).toBe(
+      true,
+    );
+  });
+
+  it('returns validation errors for null required updates and injected lifecycle fields', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    await agent.patch(`/api/v1/owners/${ownerNorthId}`).send({ firstName: null }).expect(400);
+    await agent.patch(`/api/v1/patients/${patientNorthId}`).send({ name: null }).expect(400);
+    await agent
+      .post('/api/v1/owners')
+      .send({ firstName: `Injected ${suffix}`, organizationId: organizationSouthId })
+      .expect(400);
+    await agent
+      .patch(`/api/v1/patients/${patientNorthId}`)
+      .send({ status: 'ARCHIVED' })
+      .expect(400);
+  });
+
+  it('keeps cross-tenant writes at 404 and enforces the composite database relation', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    await agent.patch(`/api/v1/owners/${ownerSouthId}`).send({ city: 'Bogotá' }).expect(404);
+    await agent.post(`/api/v1/patients/${patientSouthId}/archive`).expect(404);
+    await expect(
+      prisma.patient.create({
+        data: {
+          organizationId: organizationNorthId,
+          ownerId: ownerSouthId,
+          name: `Foreign relation ${suffix}`,
+          nameNormalized: `foreign relation ${suffix}`.toLowerCase(),
+          species: 'DOG',
+        },
+      }),
+    ).rejects.toMatchObject({ code: 'P2003' });
+  });
+
+  it('rejects oversized pagination/search and invalid sorting values', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    await agent.get('/api/v1/owners').query({ page: 10001 }).expect(400);
+    await agent
+      .get('/api/v1/patients')
+      .query({ search: 'x'.repeat(121) })
+      .expect(400);
+    await agent.get('/api/v1/owners').query({ sortBy: 'organizationId' }).expect(400);
+  });
+
+  it('denies direct Owner/Patient mutations to a read-only role', async () => {
+    await prisma.membership.update({
+      where: { id: platformMemberMembershipId },
+      data: { role: 'GROOMER' },
+    });
+    try {
+      const agent = request.agent(app.getHttpServer());
+      await login(platformMemberUser.email, agent);
+      await agent
+        .post('/api/v1/owners')
+        .send({ firstName: `Forbidden ${suffix}` })
+        .expect(403);
+      await agent
+        .patch(`/api/v1/patients/${patientNorthId}`)
+        .send({ name: `Forbidden ${suffix}` })
+        .expect(403);
+    } finally {
+      await prisma.membership.update({
+        where: { id: platformMemberMembershipId },
+        data: { role: 'VETERINARIAN' },
+      });
+    }
   });
 
   it('requires a same-tenant owner when creating and updating a patient', async () => {
@@ -651,6 +791,11 @@ describeDatabase('real authentication and sessions', () => {
       .query({ status: 'ARCHIVED', search: `Updated Patient ${suffix}` })
       .expect(200);
     expect(archivedList.body.data[0].id).toBe(created.body.id);
+    await agent
+      .patch(`/api/v1/patients/${created.body.id}`)
+      .send({ notes: 'No edits after archive' })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('RESOURCE_ARCHIVED'));
   });
 
   it('denies archive permission to a veterinarian role', async () => {
