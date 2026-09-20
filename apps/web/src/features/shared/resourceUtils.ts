@@ -6,9 +6,6 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'OWNER_HAS_ACTIVE_PATIENTS') {
     return 'No puedes archivar este propietario mientras tenga pacientes activos vinculados.';
   }
-  if (error.code === 'PATIENT_NAME_CONFLICT') {
-    return 'Ya existe un paciente activo con ese nombre para este propietario.';
-  }
   if (error.code === 'RESOURCE_ARCHIVED') {
     return 'Este registro está archivado y no puede editarse hasta definir una restauración.';
   }

@@ -15,8 +15,9 @@ organización.
 
 Patient conserva nombre, especie y raza como texto extensible, sexo explícito,
 nacimiento opcional con indicador de aproximación, color, microchip, peso actual
-como snapshot, esterilización, notas y estado. No contiene consultas, vacunas,
-historia, fotos ni peso longitudinal.
+como snapshot decimal, esterilización, notas y estado. El nombre no es único:
+dos Patients del mismo Owner pueden compartirlo y `Patient.id` es la identidad.
+No contiene consultas, vacunas, historia, fotos ni peso longitudinal.
 
 ## Consultas y respuestas
 
@@ -42,8 +43,9 @@ responsabilidad y auditoría formal quedan para fases posteriores.
 
 No se crean múltiples propietarios por paciente, catálogos de razas, historial
 de peso, eventos clínicos, storage de fotos ni módulos de agenda/clínica.
-`currentWeightKg` es una proyección conveniente y no sustituye las mediciones
-clínicas futuras.
+`currentWeightKg` es un snapshot operativo positivo almacenado como
+`NUMERIC(20,6)`. No tiene un límite veterinario específico por especie y no
+sustituye las mediciones clínicas futuras.
 
 ## Frontend de Fase 4B
 
@@ -77,9 +79,10 @@ de archive y los límites conocidos están en
 `docs/migration/owners-patients-final-review.md`. La secuencia comprobada para
 futuros módulos está en `docs/architecture/module-pattern.md`.
 
-Fase 4C deja como invariantes: todo acceso se acota por organización activa;
+Fase 4C/4D deja como invariantes: todo acceso se acota por organización activa;
 Patient solo referencia Owners del mismo tenant; `status` y `archivedAt` son
-consistentes; el peso es un snapshot acotado; la fecha de nacimiento es civil y
-no futura; y un Owner con Patients activos no se puede archivar. Restore,
+consistentes; el peso es un snapshot decimal positivo sin límite veterinario
+específico; la fecha de nacimiento es civil y no futura; los nombres de Patient
+no son únicos; y un Owner con Patients activos no se puede archivar. Restore,
 responsables múltiples, historia clínica y redacción de PII por rol siguen
 requiriendo decisión de dominio.

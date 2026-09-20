@@ -247,7 +247,7 @@ export const createPatientRequestSchema = z
     birthDateEstimated: z.boolean().optional(),
     color: optionalText(80),
     microchipNumber: optionalText(80),
-    currentWeightKg: z.number().positive().max(1000).nullable().optional(),
+    currentWeightKg: z.number().positive().nullable().optional(),
     sterilized: z.boolean().optional(),
     notes: optionalText(2000),
   })

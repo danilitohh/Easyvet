@@ -39,7 +39,7 @@ function toPatientResponse(patient: PatientRecord | PatientListItem): PatientRes
     birthDateEstimated: patient.birthDateEstimated,
     color: patient.color,
     microchipNumber: patient.microchipNumber,
-    currentWeightKg: patient.currentWeightKg,
+    currentWeightKg: patient.currentWeightKg === null ? null : Number(patient.currentWeightKg),
     sterilized: patient.sterilized,
     notes: patient.notes,
     status: patient.status,

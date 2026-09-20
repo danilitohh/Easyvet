@@ -67,7 +67,6 @@ export class CreatePatientDto {
   @Type(() => Number)
   @IsNumber({ allowInfinity: false, allowNaN: false })
   @Min(0.001)
-  @Max(1000)
   currentWeightKg?: number | null;
 
   @IsOptional()
@@ -127,7 +126,6 @@ export class UpdatePatientDto {
   @Type(() => Number)
   @IsNumber({ allowInfinity: false, allowNaN: false })
   @Min(0.001)
-  @Max(1000)
   currentWeightKg?: number | null;
 
   @IsOptional()

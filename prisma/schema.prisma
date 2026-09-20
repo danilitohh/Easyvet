@@ -144,7 +144,8 @@ model Patient {
   birthDateEstimated Boolean       @default(false) @map("birth_date_estimated")
   color              String?
   microchipNumber    String?       @map("microchip_number")
-  currentWeightKg    Float?        @map("current_weight_kg")
+  // Numeric(20,6) preserves decimal weight snapshots without a species-specific cap.
+  currentWeightKg    Decimal?      @db.Decimal(20, 6) @map("current_weight_kg")
   sterilized         Boolean       @default(false)
   notes              String?
   status             PatientStatus @default(ACTIVE)
@@ -159,7 +160,7 @@ model Patient {
   @@index([organizationId, status])
   @@index([organizationId, nameNormalized])
   @@index([organizationId, microchipNumber])
-  // The migration adds an active-only unique index for owner/name legacy behavior.
+  // Normalized names support search/order only; Patient.id remains the identity.
   @@map("patients")
 }
 

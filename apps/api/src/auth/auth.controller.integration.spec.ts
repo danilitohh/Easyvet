@@ -650,7 +650,7 @@ describeDatabase('real authentication and sessions', () => {
     expect(owner.body.archivedAt).toBeNull();
   });
 
-  it('rejects future dates, invalid weights and active patient name duplicates', async () => {
+  it('allows descriptive duplicate patient names and validates weight boundaries', async () => {
     const agent = request.agent(app.getHttpServer());
     await login(singleUser.email, agent);
     const name = `Edge Patient ${suffix}`;
@@ -665,6 +665,10 @@ describeDatabase('real authentication and sessions', () => {
     await agent
       .post('/api/v1/patients')
       .send({ ownerId: ownerNorthId, name, species: 'EXOTIC', currentWeightKg: 1001 })
+      .expect(201);
+    await agent
+      .post('/api/v1/patients')
+      .send({ ownerId: ownerNorthId, name, species: 'EXOTIC', currentWeightKg: -1 })
       .expect(400);
     const created = await agent
       .post('/api/v1/patients')
@@ -674,14 +678,38 @@ describeDatabase('real authentication and sessions', () => {
         species: 'EXOTIC',
         microchipNumber: ' chip-01 ',
         birthDate: '2024-02-29',
+        currentWeightKg: 1001.25,
       })
       .expect(201);
     expect(created.body.microchipNumber).toBe('CHIP-01');
-    await agent
+    expect(created.body.currentWeightKg).toBe(1001.25);
+    const duplicate = await agent
       .post('/api/v1/patients')
-      .send({ ownerId: ownerNorthId, name: `  ${name.toLowerCase()}  `, species: 'EXOTIC' })
-      .expect(409)
-      .expect(({ body }) => expect(body.code).toBe('PATIENT_NAME_CONFLICT'));
+      .send({
+        ownerId: ownerNorthId,
+        name: `  ${name.toLowerCase()}  `,
+        species: 'EXOTIC',
+        currentWeightKg: null,
+      })
+      .expect(201);
+    expect(duplicate.body.name).toBe(name.toLowerCase());
+    expect(duplicate.body.currentWeightKg).toBeNull();
+    const southAgent = request.agent(app.getHttpServer());
+    await login(multiUser.email, southAgent);
+    await southAgent
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiSouthMembershipId })
+      .expect(200);
+    const otherOrganization = await southAgent
+      .post('/api/v1/patients')
+      .send({ ownerId: ownerSouthId, name, species: 'EXOTIC', currentWeightKg: 1500.5 })
+      .expect(201);
+    expect(otherOrganization.body.name).toBe(name);
+    await agent
+      .patch(`/api/v1/patients/${created.body.id}`)
+      .send({ currentWeightKg: 2000.75 })
+      .expect(200)
+      .expect(({ body }) => expect(body.currentWeightKg).toBe(2000.75));
     const search = await agent.get('/api/v1/patients').query({ search: 'chip-01' }).expect(200);
     expect(search.body.data.some((patient: { id: string }) => patient.id === created.body.id)).toBe(
       true,

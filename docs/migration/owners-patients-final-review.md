@@ -10,22 +10,22 @@ eso no se inventan reglas fuera de la evidencia documentada.
 
 ## Matriz de comportamiento
 
-| Comportamiento                              | Lativet                                     | Easyvet                                                | Estado                      | Decisión                                        |
-| ------------------------------------------- | ------------------------------------------- | ------------------------------------------------------ | --------------------------- | ----------------------------------------------- |
-| Owner con nombre, identificación y contacto | Datos opcionales y búsqueda por contacto    | Campos tenant-scoped, búsqueda acotada y normalización | PRESERVADO                  | Mantener contrato de Fase 4A                    |
-| Separación nombre/apellido                  | No confirmada de forma fiable               | `firstName` obligatorio, `lastName` opcional           | REDISEÑADO INTENCIONALMENTE | Permite nombres de una sola palabra             |
-| Documento del Owner                         | Tipo+número opcionales, unicidad parcial    | Unicidad por organización, tipo y número normalizado   | PRESERVADO                  | Null no entra en conflicto                      |
-| Owner → Patients                            | Uno a muchos                                | Un Owner principal por Patient                         | PRESERVADO                  | Responsables adicionales POSTERGADO             |
-| Paciente duplicado por Owner+nombre         | Servicio legacy lo impedía                  | Índice único para pacientes ACTIVE y validación API    | PRESERVADO                  | Un nombre puede reutilizarse después de archive |
-| Especie/raza                                | Texto extensible                            | Texto validado, sin catálogo global                    | PRESERVADO                  | Soporta aves, conejos y exóticos                |
-| Sexo                                        | Valores legacy no formalizados              | `MALE`, `FEMALE`, `UNKNOWN`                            | REDISEÑADO INTENCIONALMENTE | No se mezcla con esterilización                 |
-| Fecha de nacimiento                         | Fecha/edad y aproximación                   | Fecha civil nullable, no futura, `birthDateEstimated`  | REDISEÑADO INTENCIONALMENTE | Sin conversiones de timezone                    |
-| Peso actual                                 | Positivo y derivado de historial clínico    | Snapshot positivo entre 0 y 1000 kg                    | REDISEÑADO INTENCIONALMENTE | Historial queda para clínica                    |
-| Microchip                                   | Buscable, unicidad no confirmada            | Normalizado para búsqueda, sin unicidad impuesta       | PRESERVADO                  | No se inventa regla global                      |
-| Borrado                                     | Cascada destructiva                         | Archive lógico sin cascada ni DELETE                   | REDISEÑADO INTENCIONALMENTE | Protege historial futuro                        |
-| Owner con Patients activos                  | No hay regla archive equivalente confirmada | Archive bloqueado con `OWNER_HAS_ACTIVE_PATIENTS`      | REDISEÑADO INTENCIONALMENTE | Evita estado incoherente                        |
-| Restore/reactivación                        | Eventos legacy no formalizados              | No implementado                                        | POSTERGADO                  | Requiere política de dominio                    |
-| Historia, fotos y preventivos               | Presentes en legacy                         | Fuera de Fase 4C                                       | POSTERGADO                  | No ampliar el primer dominio                    |
+| Comportamiento                              | Lativet                                     | Easyvet                                                             | Estado                      | Decisión                                           |
+| ------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------- | --------------------------- | -------------------------------------------------- |
+| Owner con nombre, identificación y contacto | Datos opcionales y búsqueda por contacto    | Campos tenant-scoped, búsqueda acotada y normalización              | PRESERVADO                  | Mantener contrato de Fase 4A                       |
+| Separación nombre/apellido                  | No confirmada de forma fiable               | `firstName` obligatorio, `lastName` opcional                        | REDISEÑADO INTENCIONALMENTE | Permite nombres de una sola palabra                |
+| Documento del Owner                         | Tipo+número opcionales, unicidad parcial    | Unicidad por organización, tipo y número normalizado                | PRESERVADO                  | Null no entra en conflicto                         |
+| Owner → Patients                            | Uno a muchos                                | Un Owner principal por Patient                                      | PRESERVADO                  | Responsables adicionales POSTERGADO                |
+| Paciente duplicado por Owner+nombre         | Servicio legacy lo impedía                  | Se permiten nombres descriptivos repetidos; `Patient.id` identifica | REDISEÑADO INTENCIONALMENTE | Dos Patients del mismo Owner pueden llamarse igual |
+| Especie/raza                                | Texto extensible                            | Texto validado, sin catálogo global                                 | PRESERVADO                  | Soporta aves, conejos y exóticos                   |
+| Sexo                                        | Valores legacy no formalizados              | `MALE`, `FEMALE`, `UNKNOWN`                                         | REDISEÑADO INTENCIONALMENTE | No se mezcla con esterilización                    |
+| Fecha de nacimiento                         | Fecha/edad y aproximación                   | Fecha civil nullable, no futura, `birthDateEstimated`               | REDISEÑADO INTENCIONALMENTE | Sin conversiones de timezone                       |
+| Peso actual                                 | Positivo y derivado de historial clínico    | Snapshot decimal positivo sin límite veterinario                    | REDISEÑADO INTENCIONALMENTE | Historial queda para clínica                       |
+| Microchip                                   | Buscable, unicidad no confirmada            | Normalizado para búsqueda, sin unicidad impuesta                    | PRESERVADO                  | No se inventa regla global                         |
+| Borrado                                     | Cascada destructiva                         | Archive lógico sin cascada ni DELETE                                | REDISEÑADO INTENCIONALMENTE | Protege historial futuro                           |
+| Owner con Patients activos                  | No hay regla archive equivalente confirmada | Archive bloqueado con `OWNER_HAS_ACTIVE_PATIENTS`                   | REDISEÑADO INTENCIONALMENTE | Evita estado incoherente                           |
+| Restore/reactivación                        | Eventos legacy no formalizados              | No implementado                                                     | POSTERGADO                  | Requiere política de dominio                       |
+| Historia, fotos y preventivos               | Presentes en legacy                         | Fuera de Fase 4C                                                    | POSTERGADO                  | No ampliar el primer dominio                       |
 
 ## Decisiones finales e invariantes
 
@@ -48,8 +48,12 @@ eso no se inventan reglas fuera de la evidencia documentada.
   producto a DOG/CAT.
 - `microchipNumber` se recorta y normaliza a mayúsculas. No se impone
   unicidad porque la auditoría legacy no aporta evidencia suficiente.
-- `currentWeightKg` es un snapshot actual, positivo y con máximo de 1000 kg;
-  no representa historial clínico.
+- `currentWeightKg` es un snapshot operativo positivo, almacenado como
+  `NUMERIC(20,6)` para conservar precisión. No impone un límite veterinario
+  específico de especie ni representa historial clínico.
+- `name` y `nameNormalized` son información descriptiva para búsqueda y orden.
+  No existe unicidad por nombre: dos Patients del mismo Owner pueden llamarse
+  igual y `Patient.id` es la identidad real.
 - `birthDate` es nullable, estrictamente `YYYY-MM-DD`, no puede ser futura y no
   se convierte con la zona horaria local.
 - Un Patient tiene un Owner principal. Cambio de Owner y múltiples
@@ -61,8 +65,9 @@ eso no se inventan reglas fuera de la evidencia documentada.
 
 `status` es la fuente de estado visible y `archivedAt` su evidencia temporal.
 Una migración nueva agrega checks para que `ACTIVE` implique `archivedAt IS
-NULL` y `ARCHIVED` implique `archivedAt IS NOT NULL`, además del límite de peso
-y el índice único de nombres activos por Owner.
+NULL` y `ARCHIVED` implique `archivedAt IS NOT NULL`. El peso solo exige ser
+positivo cuando existe y no hay índice único de nombres: `nameNormalized` queda
+para búsqueda/ordenamiento.
 
 ## Seguridad y tenant safety
 
@@ -82,6 +87,8 @@ y el índice único de nombres activos por Owner.
   humana antes de cambiar contratos.
 - Archive/create de Owner/Patient usa transacción y bloqueo de fila del Owner
   para serializar la carrera entre crear un Patient y archivar su Owner.
+- La eliminación de la unicidad por nombre se realizó en una migración nueva;
+  `nameNormalized` conserva únicamente su utilidad de consulta.
 
 ## Cache, UX y accesibilidad
 

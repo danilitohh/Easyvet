@@ -82,13 +82,6 @@ function dateOnly(value: string | null | undefined): Date | null | undefined {
   return parsed;
 }
 
-function duplicatePatientName(): ConflictException {
-  return new ConflictException({
-    code: 'PATIENT_NAME_CONFLICT',
-    message: 'An active patient with this name already exists for this owner',
-  });
-}
-
 function archivedResource(): ConflictException {
   return new ConflictException({
     code: 'RESOURCE_ARCHIVED',
@@ -129,35 +122,28 @@ export class PatientsService {
   async createForOrganization(organizationId: string, input: CreatePatientDto) {
     const name = this.requireText(input.name, 'name');
     const nameNormalized = normalizeName(name);
-    let patient: { id: string };
-    try {
-      patient = await this.prisma.$transaction(async (tx) => {
-        await this.requireActiveOwner(tx, organizationId, input.ownerId);
-        await this.ensureNameAvailable(tx, organizationId, input.ownerId, nameNormalized);
-        return tx.patient.create({
-          data: {
-            organizationId,
-            ownerId: input.ownerId,
-            name,
-            nameNormalized,
-            species: this.requireText(input.species, 'species'),
-            breed: trimNullable(input.breed) ?? null,
-            sex: input.sex ?? PatientSex.UNKNOWN,
-            birthDate: dateOnly(input.birthDate) ?? null,
-            birthDateEstimated: input.birthDateEstimated ?? false,
-            color: trimNullable(input.color) ?? null,
-            microchipNumber: normalizeMicrochip(input.microchipNumber) ?? null,
-            currentWeightKg: input.currentWeightKg ?? null,
-            sterilized: input.sterilized ?? false,
-            notes: trimNullable(input.notes) ?? null,
-          },
-          select: { id: true },
-        });
+    const patient = await this.prisma.$transaction(async (tx) => {
+      await this.requireActiveOwner(tx, organizationId, input.ownerId);
+      return tx.patient.create({
+        data: {
+          organizationId,
+          ownerId: input.ownerId,
+          name,
+          nameNormalized,
+          species: this.requireText(input.species, 'species'),
+          breed: trimNullable(input.breed) ?? null,
+          sex: input.sex ?? PatientSex.UNKNOWN,
+          birthDate: dateOnly(input.birthDate) ?? null,
+          birthDateEstimated: input.birthDateEstimated ?? false,
+          color: trimNullable(input.color) ?? null,
+          microchipNumber: normalizeMicrochip(input.microchipNumber) ?? null,
+          currentWeightKg: input.currentWeightKg ?? null,
+          sterilized: input.sterilized ?? false,
+          notes: trimNullable(input.notes) ?? null,
+        },
+        select: { id: true },
       });
-    } catch (error) {
-      this.rethrowConflict(error);
-      throw error;
-    }
+    });
     return this.findRequired(organizationId, patient.id);
   }
 
@@ -171,13 +157,6 @@ export class PatientsService {
       const name = this.requireText(input.name, 'name');
       data.name = name;
       data.nameNormalized = normalizeName(name);
-      await this.ensureNameAvailable(
-        this.prisma,
-        organizationId,
-        current.ownerId,
-        normalizeName(name),
-        patientId,
-      );
     }
     if (input.species !== undefined) data.species = this.requireText(input.species, 'species');
     if (input.breed !== undefined) data.breed = trimNullable(input.breed) ?? null;
@@ -191,16 +170,10 @@ export class PatientsService {
     if (input.sterilized !== undefined) data.sterilized = input.sterilized;
     if (input.notes !== undefined) data.notes = trimNullable(input.notes) ?? null;
 
-    let updated: { count: number };
-    try {
-      updated = await this.prisma.patient.updateMany({
-        where: { id: patientId, organizationId },
-        data,
-      });
-    } catch (error) {
-      this.rethrowConflict(error);
-      throw error;
-    }
+    const updated = await this.prisma.patient.updateMany({
+      where: { id: patientId, organizationId },
+      data,
+    });
     if (updated.count !== 1) throw resourceNotFound();
     return this.findRequired(organizationId, patientId);
   }
@@ -251,26 +224,6 @@ export class PatientsService {
     if (!owner || owner.status !== OwnerStatus.ACTIVE) throw resourceNotFound();
   }
 
-  private async ensureNameAvailable(
-    database: DomainDatabase,
-    organizationId: string,
-    ownerId: string,
-    nameNormalized: string,
-    excludedPatientId?: string,
-  ): Promise<void> {
-    const existing = await database.patient.findFirst({
-      where: {
-        organizationId,
-        ownerId,
-        nameNormalized,
-        status: PatientStatus.ACTIVE,
-        ...(excludedPatientId ? { NOT: { id: excludedPatientId } } : {}),
-      },
-      select: { id: true },
-    });
-    if (existing) throw duplicatePatientName();
-  }
-
   // Owner row locking serializes create-versus-archive lifecycle decisions for one tenant.
   private async lockOwner(
     database: DomainDatabase,
@@ -299,11 +252,5 @@ export class PatientsService {
     if (!result)
       throw new BadRequestException({ code: 'VALIDATION_ERROR', message: `${field} is required` });
     return result;
-  }
-
-  private rethrowConflict(error: unknown): void {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw duplicatePatientName();
-    }
   }
 }

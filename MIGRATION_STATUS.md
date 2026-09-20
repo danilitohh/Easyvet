@@ -126,6 +126,19 @@ Fase 4C completada:
   el patrón futuro en `docs/architecture/module-pattern.md`.
 - Agenda y Fase 5 permanecen pendientes; no se inició ningún módulo nuevo.
 
+Checkpoint 4D completado:
+
+- Se eliminó la unicidad de nombres de Patient mediante la nueva migración
+  `20260920140000_relax_patient_name_and_weight_invariants`; `Patient.id` es la
+  identidad y `nameNormalized` queda únicamente para búsqueda/ordenamiento.
+- Se retiró el límite veterinario `currentWeightKg <= 1000` y el snapshot pasó a
+  `NUMERIC(20,6)` con la única invariante de ser positivo cuando existe.
+- Se verificaron dos Patients con el mismo nombre bajo el mismo Owner y en
+  organizaciones distintas; PII para GROOMER/CASHIER sigue `NEEDS REVIEW`.
+- La migración se aplicó a las bases locales `easyvet_dev` y `easyvet_test`;
+  también se sincronizó la base local previa `veterinary_saas` usada por el
+  `.env` histórico. No se modificaron bases externas.
+
 Para detener el entorno local:
 
 ```bash
