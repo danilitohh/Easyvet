@@ -6,3 +6,106 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// Organization is the tenant boundary for every future veterinary domain entity.
+model Organization {
+  id              String             @id @default(uuid()) @db.Uuid
+  name            String
+  slug            String             @unique
+  status          OrganizationStatus @default(ACTIVE)
+  timezone        String             @default("UTC")
+  locale          String             @default("es-CO")
+  currencyCode    String             @default("COP") @map("currency_code")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  clinicLocations ClinicLocation[]
+  memberships     Membership[]
+
+  @@map("organizations")
+}
+
+// A physical clinic location belongs to an organization but is not a tenant boundary.
+model ClinicLocation {
+  id             String               @id @default(uuid()) @db.Uuid
+  organizationId String               @map("organization_id") @db.Uuid
+  name           String
+  status         ClinicLocationStatus @default(ACTIVE)
+  address        String?
+  city           String?
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@map("clinic_locations")
+}
+
+// User is a global platform identity; organization access is represented by Membership.
+model User {
+  id           String       @id @default(uuid()) @db.Uuid
+  email        String       @unique
+  passwordHash String       @map("password_hash")
+  status       UserStatus   @default(ACTIVE)
+  platformRole PlatformRole @default(USER) @map("platform_role")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  memberships  Membership[]
+
+  @@map("users")
+}
+
+// Membership is the explicit many-to-many link between a global user and a tenant.
+model Membership {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  role           MembershipRole   @default(RECEPTION)
+  status         MembershipStatus @default(INVITED)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum ClinicLocationStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum PlatformRole {
+  USER
+  PLATFORM_ADMIN
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  VETERINARIAN
+  ASSISTANT
+  RECEPTION
+  GROOMER
+  CASHIER
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+}

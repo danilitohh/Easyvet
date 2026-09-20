@@ -18,6 +18,9 @@
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:seed": "prisma db seed --schema prisma/schema.prisma",
+    "db:reset": "prisma migrate reset --schema prisma/schema.prisma",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -40,6 +43,7 @@
     "@typescript-eslint/parser": "^8.42.0",
     "@vitejs/plugin-react-swc": "^4.0.1",
     "concurrently": "^9.2.1",
+    "dotenv": "^16.6.1",
     "eslint": "^9.35.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

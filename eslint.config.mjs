@@ -36,6 +36,12 @@ export default [
     },
   },
   {
+    files: ['prisma/**/*.mjs'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     files: ['apps/web/src/**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooks,

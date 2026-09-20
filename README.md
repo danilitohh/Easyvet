@@ -38,13 +38,21 @@ Levantar PostgreSQL:
 docker compose up -d
 ```
 
-Todavía no existe una migración inicial: el schema Prisma permanece sin entidades hasta diseñar `Organization`, `User` y `Membership`.
-
-Cuando exista el primer modelo aprobado, crear y aplicar la migración de desarrollo de forma explícita:
+La migración inicial del dominio multi-tenant crea `Organization`,
+`ClinicLocation`, `User` y `Membership`. Aplicarla en el PostgreSQL local de
+desarrollo de forma explícita:
 
 ```bash
-npm run prisma:migrate:dev -- --name init
+npm run db:migrate
+npm run db:seed
 ```
+
+El seed es ficticio e idempotente. Sus usuarios usan una contraseña local demo
+(`EASYVET_DEMO_PASSWORD`, por defecto `EasyvetDemo!2026`); la base solo recibe
+hashes Argon2id. Nunca reutilizarla en producción.
+
+`npm run db:reset` es DESTRUCTIVO y queda reservado exclusivamente para
+desarrollo local.
 
 Iniciar aplicaciones por separado:
 
@@ -79,7 +87,7 @@ apps/web       React + Vite
 apps/api       NestJS REST
 packages/contracts  contratos compartidos
 packages/config     esquemas de configuración compartida
-prisma          schema sin entidades y migraciones futuras versionadas
+prisma          schema multi-tenant y migraciones versionadas
 docs/architecture decisiones técnicas de base
 docs/migration documentación de la auditoría legacy
 ```
@@ -92,7 +100,9 @@ El API no crea ni altera el esquema durante el arranque. Todo cambio debe pasar 
 
 ## Fase actual
 
-La Fase 2 deja disponible el AppShell visual, la navegación React Router, el dashboard demo y placeholders de módulos. Multi-tenancy, autenticación completa, dominio veterinario, integraciones y UI funcional permanecen pendientes según [MIGRATION_STATUS.md](MIGRATION_STATUS.md).
+La Fase 3A deja disponible el modelo multi-tenant fundamental y su seed local.
+Autenticación completa, permisos, dominio veterinario, integraciones y UI
+funcional permanecen pendientes según [MIGRATION_STATUS.md](MIGRATION_STATUS.md).
 
 Para revisar el shell visual:
 

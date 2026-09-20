@@ -16,6 +16,7 @@ autenticación ni uploads.
 | TypeScript     | 5.9.2                       | 6.0.3                                                                 | `@nestjs/schematics@12` requiere TypeScript 6.                            |
 | Prisma         | 6.19.3 instalado            | 6.19.3                                                                | Se conserva la misma major; no se aplicó el downgrade sugerido por audit. |
 | Prisma CLI     | `dependencies`              | `devDependencies`                                                     | Es tooling; `@prisma/client` permanece en runtime.                        |
+| Password hash  | No implementado             | `argon2@0.44.0` en API runtime                                        | Estrategia Argon2id preparada para Fase 3B; no se implementó login.       |
 | Jest           | 29.7.0                      | 30.5.2                                                                | Runner compatible con la configuración ESM requerida por NestJS 12.       |
 | Vitest         | 3.2.7                       | 3.2.7                                                                 | Se mantiene; la corrección disponible exige Vitest 5 (major).             |
 
@@ -34,6 +35,8 @@ se añadió una configuración ESM acotada (`apps/api/tsconfig.test.json` y
 El resultado final de `npm audit` es **5 vulnerabilidades: 2 moderadas y 3
 altas**. Las entradas repetidas corresponden a los paquetes afectados y sus
 cadenas transitivas. No se ejecutó `npm audit fix --force`.
+
+La incorporación de `argon2@0.44.0` no añadió avisos al resultado del audit.
 
 ## Riesgo para el runtime actual
 
