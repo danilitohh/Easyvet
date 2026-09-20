@@ -33,6 +33,16 @@ export const permissionSchema = z.enum([
   'patients.create',
   'patients.update',
   'patients.archive',
+  'appointments.read',
+  'appointments.create',
+  'appointments.update',
+  'appointments.cancel',
+  'appointments.checkIn',
+  'appointments.start',
+  'appointments.complete',
+  'appointments.markNoShow',
+  'availability.read',
+  'availability.manage',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -266,3 +276,160 @@ export type CreateOwnerRequest = z.infer<typeof createOwnerRequestSchema>;
 export type UpdateOwnerRequest = z.infer<typeof updateOwnerRequestSchema>;
 export type CreatePatientRequest = z.infer<typeof createPatientRequestSchema>;
 export type UpdatePatientRequest = z.infer<typeof updatePatientRequestSchema>;
+
+const appointmentStatusSchema = z.enum([
+  'SCHEDULED',
+  'WAITING_ROOM',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED',
+  'NO_SHOW',
+]);
+
+const appointmentSummarySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  status: z.enum(['ACTIVE', 'ARCHIVED']),
+});
+
+const membershipSummarySchema = z.object({
+  id: z.string().uuid(),
+  role: membershipRoleSchema,
+  user: z.object({
+    id: z.string().uuid(),
+    email: z.string().email(),
+    status: z.enum(['ACTIVE', 'SUSPENDED']),
+  }),
+});
+
+export const appointmentResponseSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicLocationId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  ownerId: z.string().uuid(),
+  assignedMembershipId: z.string().uuid().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  status: appointmentStatusSchema,
+  startsAt: z.string().datetime({ offset: true }),
+  endsAt: z.string().datetime({ offset: true }),
+  reason: z.string(),
+  notes: z.string().nullable(),
+  observations: z.string().nullable(),
+  ownerConfirmedAt: z.string().datetime({ offset: true }).nullable(),
+  clinicConfirmedAt: z.string().datetime({ offset: true }).nullable(),
+  cancelledAt: z.string().datetime({ offset: true }).nullable(),
+  cancelledByMembershipId: z.string().uuid().nullable(),
+  cancellationReason: z.string().nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+  patient: appointmentSummarySchema,
+  owner: z.object({
+    id: z.string().uuid(),
+    firstName: z.string(),
+    lastName: z.string().nullable(),
+    status: z.enum(['ACTIVE', 'ARCHIVED']),
+  }),
+  clinicLocation: locationResponseSchema,
+  assignedMembership: membershipSummarySchema.nullable(),
+});
+
+export const appointmentListResponseSchema = z.object({
+  data: z.array(appointmentResponseSchema),
+});
+
+export const createAppointmentRequestSchema = z
+  .object({
+    clinicLocationId: z.string().uuid(),
+    patientId: z.string().uuid(),
+    ownerId: z.string().uuid(),
+    assignedMembershipId: z.string().uuid().nullable().optional(),
+    startsAt: z.string().datetime({ offset: true }),
+    endsAt: z.string().datetime({ offset: true }),
+    reason: z.string().trim().min(1).max(500),
+    notes: optionalText(2000),
+  })
+  .strict();
+
+export const rescheduleAppointmentRequestSchema = z
+  .object({
+    startsAt: z.string().datetime({ offset: true }),
+    endsAt: z.string().datetime({ offset: true }),
+  })
+  .strict();
+
+export const cancelAppointmentRequestSchema = z
+  .object({
+    cancellationReason: optionalText(500),
+  })
+  .strict();
+
+export const updateAppointmentRequestSchema = z
+  .object({
+    reason: z.string().trim().min(1).max(500).optional(),
+    notes: optionalText(2000),
+    assignedMembershipId: z.string().uuid().nullable().optional(),
+  })
+  .strict();
+
+export const appointmentListQuerySchema = z
+  .object({
+    from: z.string().datetime({ offset: true }),
+    to: z.string().datetime({ offset: true }),
+    clinicLocationId: z.string().uuid().optional(),
+    assignedMembershipId: z.string().uuid().optional(),
+    patientId: z.string().uuid().optional(),
+    status: appointmentStatusSchema.optional(),
+  })
+  .strict();
+
+export const availabilityRuleResponseSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicLocationId: z.string().uuid(),
+  membershipId: z.string().uuid().nullable(),
+  dayOfWeek: z.number().int().min(0).max(6),
+  startLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  endLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  slotMinutes: z.number().int().min(15).max(240),
+  notes: z.string().nullable(),
+  isActive: z.boolean(),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+});
+
+export const availabilityRuleRequestSchema = z
+  .object({
+    clinicLocationId: z.string().uuid(),
+    membershipId: z.string().uuid().nullable().optional(),
+    dayOfWeek: z.number().int().min(0).max(6),
+    startLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    endLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    slotMinutes: z.number().int().min(15).max(240).default(30),
+    notes: optionalText(2000),
+  })
+  .strict();
+
+export const availableSlotsResponseSchema = z.object({
+  mode: z.enum(['RULES', 'UNRESTRICTED']),
+  timezone: z.string(),
+  date: z.string().date(),
+  slots: z.array(
+    z.object({
+      startsAt: z.string().datetime({ offset: true }),
+      endsAt: z.string().datetime({ offset: true }),
+    }),
+  ),
+});
+
+export type AppointmentStatusValue = z.infer<typeof appointmentStatusSchema>;
+export type AppointmentResponse = z.infer<typeof appointmentResponseSchema>;
+export type AppointmentListResponse = z.infer<typeof appointmentListResponseSchema>;
+export type CreateAppointmentRequest = z.infer<typeof createAppointmentRequestSchema>;
+export type RescheduleAppointmentRequest = z.infer<typeof rescheduleAppointmentRequestSchema>;
+export type CancelAppointmentRequest = z.infer<typeof cancelAppointmentRequestSchema>;
+export type UpdateAppointmentRequest = z.infer<typeof updateAppointmentRequestSchema>;
+export type AppointmentListQuery = z.infer<typeof appointmentListQuerySchema>;
+export type AvailabilityRuleResponse = z.infer<typeof availabilityRuleResponseSchema>;
+export type AvailabilityRuleRequest = z.infer<typeof availabilityRuleRequestSchema>;
+export type AvailableSlotsResponse = z.infer<typeof availableSlotsResponseSchema>;

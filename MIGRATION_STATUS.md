@@ -1,32 +1,32 @@
 # Estado de migración
 
-| Área                         | Estado                                                    |
-| ---------------------------- | --------------------------------------------------------- |
-| Auditoría legacy             | Completada                                                |
-| Monorepo                     | Completado                                                |
-| React/Vite                   | App shell y base visual de Fase 2 completados             |
-| NestJS                       | Infraestructura; Nest 12.0.3 verificado                   |
-| PostgreSQL                   | VERIFICADO LOCALMENTE                                     |
-| Prisma                       | Modelos Fases 3A/3B/4A y migraciones aplicados localmente |
-| Core tenant model            | COMPLETADO (Fase 3A)                                      |
-| Multi-tenancy                | Fundación de aislamiento completada (Fase 3C)             |
-| Autenticación                | COMPLETADA (Fase 3B)                                      |
-| Autorización                 | COMPLETADA (Fase 3C)                                      |
-| UI Lativet                   | Referencia analizada; adaptación React completada         |
-| Owners backend               | COMPLETADO (Fase 4A)                                      |
-| Patients backend             | COMPLETADO (Fase 4A)                                      |
-| Owners frontend              | COMPLETADO (Fase 4B)                                      |
-| Patients frontend            | COMPLETADO (Fase 4B)                                      |
-| Owners/Patients final review | COMPLETADO (Fase 4C)                                      |
-| Agenda analysis/design       | COMPLETADO (Fase 5A)                                      |
-| Agenda backend               | PENDIENTE FASE 5B                                         |
-| Agenda frontend              | PENDIENTE FASE 5C                                         |
-| Agenda hardening             | PENDIENTE FASE 5D                                         |
-| Clínica                      | Pendiente                                                 |
-| Inventario                   | Pendiente                                                 |
-| Facturación                  | Pendiente                                                 |
-| SaaS                         | Pendiente                                                 |
-| Multi-tenancy SaaS completo  | EN PROGRESO                                               |
+| Área                         | Estado                                                       |
+| ---------------------------- | ------------------------------------------------------------ |
+| Auditoría legacy             | Completada                                                   |
+| Monorepo                     | Completado                                                   |
+| React/Vite                   | App shell y base visual de Fase 2 completados                |
+| NestJS                       | Infraestructura; Nest 12.0.3 verificado                      |
+| PostgreSQL                   | VERIFICADO LOCALMENTE                                        |
+| Prisma                       | Modelos Fases 3A/3B/4A/5B y migraciones aplicados localmente |
+| Core tenant model            | COMPLETADO (Fase 3A)                                         |
+| Multi-tenancy                | Fundación de aislamiento completada (Fase 3C)                |
+| Autenticación                | COMPLETADA (Fase 3B)                                         |
+| Autorización                 | COMPLETADA (Fase 3C)                                         |
+| UI Lativet                   | Referencia analizada; adaptación React completada            |
+| Owners backend               | COMPLETADO (Fase 4A)                                         |
+| Patients backend             | COMPLETADO (Fase 4A)                                         |
+| Owners frontend              | COMPLETADO (Fase 4B)                                         |
+| Patients frontend            | COMPLETADO (Fase 4B)                                         |
+| Owners/Patients final review | COMPLETADO (Fase 4C)                                         |
+| Agenda analysis/design       | COMPLETADO (Fase 5A)                                         |
+| Agenda backend               | COMPLETADO (Fase 5B)                                         |
+| Agenda frontend              | PENDIENTE FASE 5C                                            |
+| Agenda hardening             | PENDIENTE FASE 5D                                            |
+| Clínica                      | Pendiente                                                    |
+| Inventario                   | Pendiente                                                    |
+| Facturación                  | Pendiente                                                    |
+| SaaS                         | Pendiente                                                    |
+| Multi-tenancy SaaS completo  | EN PROGRESO                                                  |
 
 La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
 
@@ -157,11 +157,29 @@ Fase 5A — análisis y diseño de Agenda completada:
   **NEW EASYVET DESIGN DECISION**, **PRODUCT DECISION REQUIRED** y
   **POSTPONED**, y corrigen las afirmaciones preliminares que no resistían la
   lectura del código.
-- No se modificaron `prisma/schema.prisma`, migraciones, endpoints, UI,
-  Owners/Patients ni permisos. Fase 5B no se inició.
+- En ese checkpoint no se modificaron `prisma/schema.prisma`, migraciones,
+  endpoints, UI, Owners/Patients ni permisos; Fase 5B no se había iniciado aún.
 - PostgreSQL/Docker conserva el estado `VERIFICADO LOCALMENTE` registrado en el
   checkpoint 4D; esta fase no simula verificación de producción ni de una base
   compartida.
+
+Fase 5B — backend de Agenda completada:
+
+- Se añadió la migración `20260920150000_add_agenda_backend` sin modificar
+  migraciones previas. Se aplicó únicamente a `easyvet_dev` y `easyvet_test`;
+  la base histórica `veterinary_saas` no se utilizó.
+- Se crearon `Appointment` y `AvailabilityRule` con FK compuestas tenant-safe,
+  `TIMESTAMPTZ(3)`, validación de horas civiles y enum de estados explícitos.
+- `btree_gist` y exclusion constraints PostgreSQL protegen solapamientos
+  concurrentes por Patient y Membership usando `[start, end)`.
+- Se implementaron endpoints de listado/detalle/creación, edición limitada,
+  reprogramación, cancelación, acciones de estado, confirmación, reglas de
+  disponibilidad y slots.
+- Se añadieron contratos Zod, permisos tipados y matriz por rol. No se creó
+  tabla de permisos ni Professional.
+- El seed idempotente contiene 3 AvailabilityRules y 6 Appointments ficticios.
+- Archivar Patient se bloquea cuando existen citas futuras bloqueantes.
+- La suite DB pasó 65 pruebas, incluida concurrencia real; Fase 5C no inició.
 
 Para detener el entorno local:
 

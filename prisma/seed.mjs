@@ -154,6 +154,123 @@ const seedPatients = [
   },
 ];
 
+const seedAvailabilityRules = [
+  {
+    id: '00000000-0000-4000-8000-000000000501',
+    organizationId: seedOrganizations[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    membershipId: null,
+    dayOfWeek: 2,
+    startLocalTime: '08:00',
+    endLocalTime: '18:00',
+    slotMinutes: 30,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000502',
+    organizationId: seedOrganizations[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    membershipId: seedUsers[2].membershipId,
+    dayOfWeek: 2,
+    startLocalTime: '09:00',
+    endLocalTime: '17:00',
+    slotMinutes: 30,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000503',
+    organizationId: seedOrganizations[1].id,
+    clinicLocationId: seedOrganizations[1].locationId,
+    membershipId: null,
+    dayOfWeek: 2,
+    startLocalTime: '08:00',
+    endLocalTime: '18:00',
+    slotMinutes: 30,
+  },
+];
+
+const seedAppointments = [
+  {
+    id: '00000000-0000-4000-8000-000000000601',
+    organizationId: seedOrganizations[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    patientId: seedPatients[0].id,
+    ownerId: seedOwners[0].id,
+    assignedMembershipId: seedUsers[2].membershipId,
+    createdByMembershipId: seedUsers[0].membershipId,
+    status: 'SCHEDULED',
+    startsAt: '2030-01-08T14:00:00.000Z',
+    endsAt: '2030-01-08T14:30:00.000Z',
+    reason: 'Control general',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000602',
+    organizationId: seedOrganizations[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    patientId: seedPatients[1].id,
+    ownerId: seedOwners[0].id,
+    assignedMembershipId: null,
+    createdByMembershipId: seedUsers[0].membershipId,
+    status: 'WAITING_ROOM',
+    startsAt: '2030-01-08T15:00:00.000Z',
+    endsAt: '2030-01-08T15:30:00.000Z',
+    reason: 'Vacunación',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000603',
+    organizationId: seedOrganizations[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    patientId: seedPatients[2].id,
+    ownerId: seedOwners[1].id,
+    assignedMembershipId: seedUsers[0].membershipId,
+    createdByMembershipId: seedUsers[0].membershipId,
+    status: 'COMPLETED',
+    startsAt: '2030-01-07T14:00:00.000Z',
+    endsAt: '2030-01-07T14:30:00.000Z',
+    reason: 'Consulta completada',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000604',
+    organizationId: seedOrganizations[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    patientId: seedPatients[2].id,
+    ownerId: seedOwners[1].id,
+    assignedMembershipId: seedUsers[0].membershipId,
+    createdByMembershipId: seedUsers[0].membershipId,
+    status: 'CANCELLED',
+    startsAt: '2030-01-08T16:00:00.000Z',
+    endsAt: '2030-01-08T16:30:00.000Z',
+    reason: 'Cirugía cancelada',
+    cancelledAt: '2029-12-20T12:00:00.000Z',
+    cancelledByMembershipId: seedUsers[0].membershipId,
+    cancellationReason: 'Reprogramada por el cliente',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000605',
+    organizationId: seedOrganizations[1].id,
+    clinicLocationId: seedOrganizations[1].locationId,
+    patientId: seedPatients[3].id,
+    ownerId: seedOwners[2].id,
+    assignedMembershipId: '00000000-0000-4000-8000-000000000204',
+    createdByMembershipId: '00000000-0000-4000-8000-000000000202',
+    status: 'SCHEDULED',
+    startsAt: '2030-01-08T14:00:00.000Z',
+    endsAt: '2030-01-08T14:30:00.000Z',
+    reason: 'Consulta Sur',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000606',
+    organizationId: seedOrganizations[1].id,
+    clinicLocationId: seedOrganizations[1].locationId,
+    patientId: seedPatients[4].id,
+    ownerId: seedOwners[2].id,
+    assignedMembershipId: null,
+    createdByMembershipId: '00000000-0000-4000-8000-000000000202',
+    status: 'COMPLETED',
+    startsAt: '2030-01-07T14:00:00.000Z',
+    endsAt: '2030-01-07T14:30:00.000Z',
+    reason: 'Control Sur',
+  },
+];
+
 async function main() {
   // Hash the local-only demo credential with Argon2id; plaintext never reaches PostgreSQL.
   const passwordHash = await argon2.hash(demoPassword, { type: argon2.argon2id });
@@ -315,10 +432,36 @@ async function main() {
         },
       });
     }
+
+    for (const rule of seedAvailabilityRules) {
+      await transaction.availabilityRule.upsert({
+        where: { id: rule.id },
+        update: { ...rule, isActive: true, notes: null },
+        create: { ...rule, isActive: true, notes: null },
+      });
+    }
+
+    for (const appointment of seedAppointments) {
+      await transaction.appointment.upsert({
+        where: { id: appointment.id },
+        update: {
+          ...appointment,
+          startsAt: new Date(appointment.startsAt),
+          endsAt: new Date(appointment.endsAt),
+          cancelledAt: appointment.cancelledAt ? new Date(appointment.cancelledAt) : null,
+        },
+        create: {
+          ...appointment,
+          startsAt: new Date(appointment.startsAt),
+          endsAt: new Date(appointment.endsAt),
+          cancelledAt: appointment.cancelledAt ? new Date(appointment.cancelledAt) : null,
+        },
+      });
+    }
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients.',
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments.',
   );
 }
 

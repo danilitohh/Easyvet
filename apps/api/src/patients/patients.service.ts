@@ -89,6 +89,13 @@ function archivedResource(): ConflictException {
   });
 }
 
+function futureAppointmentsPreventArchive(): ConflictException {
+  return new ConflictException({
+    code: 'PATIENT_HAS_FUTURE_APPOINTMENTS',
+    message: 'Patient cannot be archived while future appointments remain active',
+  });
+}
+
 // Owns explicit tenant-scoped Patient queries and archive transitions.
 @Injectable()
 export class PatientsService {
@@ -179,19 +186,28 @@ export class PatientsService {
   }
 
   async archiveForOrganization(organizationId: string, patientId: string) {
-    const current = await this.prisma.patient.findFirst({
-      where: { id: patientId, organizationId },
-      select: { id: true, status: true },
+    await this.prisma.$transaction(async (tx) => {
+      const current = await tx.patient.findFirst({
+        where: { id: patientId, organizationId },
+        select: { id: true, status: true },
+      });
+      if (!current) throw resourceNotFound();
+      if (current.status === PatientStatus.ARCHIVED) return;
+      const futureAppointments = await tx.appointment.count({
+        where: {
+          organizationId,
+          patientId,
+          startsAt: { gt: new Date() },
+          status: { in: ['SCHEDULED', 'WAITING_ROOM', 'IN_PROGRESS', 'COMPLETED'] },
+        },
+      });
+      if (futureAppointments > 0) throw futureAppointmentsPreventArchive();
+      const updated = await tx.patient.updateMany({
+        where: { id: patientId, organizationId },
+        data: { status: PatientStatus.ARCHIVED, archivedAt: new Date() },
+      });
+      if (updated.count !== 1) throw resourceNotFound();
     });
-    if (!current) throw resourceNotFound();
-    if (current.status === PatientStatus.ARCHIVED)
-      return this.findRequired(organizationId, patientId);
-
-    const updated = await this.prisma.patient.updateMany({
-      where: { id: patientId, organizationId },
-      data: { status: PatientStatus.ARCHIVED, archivedAt: new Date() },
-    });
-    if (updated.count !== 1) throw resourceNotFound();
     return this.findRequired(organizationId, patientId);
   }
 

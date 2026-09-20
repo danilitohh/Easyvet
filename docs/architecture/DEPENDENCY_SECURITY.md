@@ -19,6 +19,7 @@ No se añadieron uploads ni endpoints clínicos.
 | Password hash  | No implementado             | `argon2@0.44.0` en API runtime                                        | Argon2id explícito para login y sesiones de Fase 3B.                      |
 | Jest           | 29.7.0                      | 30.5.2                                                                | Runner compatible con la configuración ESM requerida por NestJS 12.       |
 | Vitest         | 3.2.7                       | 3.2.7                                                                 | Se mantiene; la corrección disponible exige Vitest 5 (major).             |
+| Luxon          | No usado                    | 3.7.x en API runtime                                                  | Conversión DST segura para horas civiles de AvailabilityRule.             |
 
 NestJS 12 mantiene la aplicación CommonJS sobre el Node actual. Para los tests
 se añadió una configuración ESM acotada (`apps/api/tsconfig.test.json` y
@@ -32,11 +33,12 @@ se añadió una configuración ESM acotada (`apps/api/tsconfig.test.json` y
 | `prisma` → `@prisma/config` → `deepmerge-ts` | Alta                                                                   | Alta                                               | Alta                            | Dev/tooling        | Mantener Prisma 6.19.3; el fix propuesto por audit es un downgrade incompatible. Revisar cuando exista patch oficial compatible. |
 | `vitest` → `@vitest/mocker`                  | Moderada                                                               | Moderada                                           | Moderada                        | Dev/tooling        | Mantener Vitest 3.2.7; el fix requiere Vitest 5 y no es necesario para el runtime actual.                                        |
 
-El resultado final de `npm audit` es **5 vulnerabilidades: 2 moderadas y 3
+El resultado de `npm audit` durante Fase 5B es **5 vulnerabilidades: 2 moderadas y 3
 altas**. Las entradas repetidas corresponden a los paquetes afectados y sus
 cadenas transitivas. No se ejecutó `npm audit fix --force`.
 
-La incorporación de `argon2@0.44.0` no añadió avisos al resultado del audit.
+La incorporación de `argon2@0.44.0` y `luxon@3.7.x` no añadió avisos al resultado
+del audit.
 
 ## Riesgo para el runtime actual
 

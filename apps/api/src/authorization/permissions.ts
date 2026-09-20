@@ -27,6 +27,20 @@ export const PERMISSIONS = {
     UPDATE: 'patients.update',
     ARCHIVE: 'patients.archive',
   },
+  APPOINTMENTS: {
+    READ: 'appointments.read',
+    CREATE: 'appointments.create',
+    UPDATE: 'appointments.update',
+    CANCEL: 'appointments.cancel',
+    CHECK_IN: 'appointments.checkIn',
+    START: 'appointments.start',
+    COMPLETE: 'appointments.complete',
+    MARK_NO_SHOW: 'appointments.markNoShow',
+  },
+  AVAILABILITY: {
+    READ: 'availability.read',
+    MANAGE: 'availability.manage',
+  },
 } as const satisfies Record<string, Record<string, Permission>>;
 
 const OWNER_PATIENT_ADMIN_PERMISSIONS: readonly Permission[] = [
@@ -40,6 +54,19 @@ const OWNER_PATIENT_ADMIN_PERMISSIONS: readonly Permission[] = [
   'patients.archive',
 ];
 
+const APPOINTMENT_OWNER_ADMIN_PERMISSIONS: readonly Permission[] = [
+  'appointments.read',
+  'appointments.create',
+  'appointments.update',
+  'appointments.cancel',
+  'appointments.checkIn',
+  'appointments.start',
+  'appointments.complete',
+  'appointments.markNoShow',
+  'availability.read',
+  'availability.manage',
+];
+
 // OWNER and ADMIN are equal for this foundation; OWNER remains reserved for future ownership actions.
 export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
   OWNER: [
@@ -50,6 +77,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.MEMBERSHIPS.READ,
     PERMISSIONS.MEMBERSHIPS.MANAGE,
     ...OWNER_PATIENT_ADMIN_PERMISSIONS,
+    ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
   ],
   ADMIN: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -59,6 +87,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.MEMBERSHIPS.READ,
     PERMISSIONS.MEMBERSHIPS.MANAGE,
     ...OWNER_PATIENT_ADMIN_PERMISSIONS,
+    ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
   ],
   VETERINARIAN: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -69,6 +98,14 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.PATIENTS.READ,
     PERMISSIONS.PATIENTS.CREATE,
     PERMISSIONS.PATIENTS.UPDATE,
+    'appointments.read',
+    'appointments.create',
+    'appointments.update',
+    'appointments.checkIn',
+    'appointments.start',
+    'appointments.complete',
+    'appointments.markNoShow',
+    'availability.read',
   ],
   ASSISTANT: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -77,6 +114,11 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.PATIENTS.READ,
     PERMISSIONS.PATIENTS.CREATE,
     PERMISSIONS.PATIENTS.UPDATE,
+    'appointments.read',
+    'appointments.create',
+    'appointments.update',
+    'appointments.checkIn',
+    'availability.read',
   ],
   RECEPTION: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -87,18 +129,27 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.PATIENTS.READ,
     PERMISSIONS.PATIENTS.CREATE,
     PERMISSIONS.PATIENTS.UPDATE,
+    'appointments.read',
+    'appointments.create',
+    'appointments.update',
+    'appointments.cancel',
+    'appointments.checkIn',
+    'appointments.markNoShow',
+    'availability.read',
   ],
   GROOMER: [
     PERMISSIONS.ORGANIZATION.READ,
     PERMISSIONS.LOCATIONS.READ,
     PERMISSIONS.OWNERS.READ,
     PERMISSIONS.PATIENTS.READ,
+    'appointments.read',
   ],
   CASHIER: [
     PERMISSIONS.ORGANIZATION.READ,
     PERMISSIONS.LOCATIONS.READ,
     PERMISSIONS.OWNERS.READ,
     PERMISSIONS.PATIENTS.READ,
+    'appointments.read',
   ],
 };
 

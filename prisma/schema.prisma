@@ -9,35 +9,40 @@ datasource db {
 
 // Organization is the tenant boundary for every future veterinary domain entity.
 model Organization {
-  id              String             @id @default(uuid()) @db.Uuid
-  name            String
-  slug            String             @unique
-  status          OrganizationStatus @default(ACTIVE)
-  timezone        String             @default("UTC")
-  locale          String             @default("es-CO")
-  currencyCode    String             @default("COP") @map("currency_code")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
-  clinicLocations ClinicLocation[]
-  memberships     Membership[]
-  owners          Owner[]
-  patients        Patient[]
+  id                String             @id @default(uuid()) @db.Uuid
+  name              String
+  slug              String             @unique
+  status            OrganizationStatus @default(ACTIVE)
+  timezone          String             @default("UTC")
+  locale            String             @default("es-CO")
+  currencyCode      String             @default("COP") @map("currency_code")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  clinicLocations   ClinicLocation[]
+  memberships       Membership[]
+  owners            Owner[]
+  patients          Patient[]
+  appointments      Appointment[]
+  availabilityRules AvailabilityRule[]
 
   @@map("organizations")
 }
 
 // A physical clinic location belongs to an organization but is not a tenant boundary.
 model ClinicLocation {
-  id             String               @id @default(uuid()) @db.Uuid
-  organizationId String               @map("organization_id") @db.Uuid
-  name           String
-  status         ClinicLocationStatus @default(ACTIVE)
-  address        String?
-  city           String?
-  createdAt      DateTime             @default(now()) @map("created_at")
-  updatedAt      DateTime             @updatedAt @map("updated_at")
-  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  id                String               @id @default(uuid()) @db.Uuid
+  organizationId    String               @map("organization_id") @db.Uuid
+  name              String
+  status            ClinicLocationStatus @default(ACTIVE)
+  address           String?
+  city              String?
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  appointments      Appointment[]
+  availabilityRules AvailabilityRule[]
 
+  @@unique([id, organizationId], map: "clinic_locations_id_organization_id_key")
   @@index([organizationId])
   @@map("clinic_locations")
 }
@@ -59,18 +64,23 @@ model User {
 
 // Membership is the explicit many-to-many link between a global user and a tenant.
 model Membership {
-  id             String           @id @default(uuid()) @db.Uuid
-  userId         String           @map("user_id") @db.Uuid
-  organizationId String           @map("organization_id") @db.Uuid
-  role           MembershipRole   @default(RECEPTION)
-  status         MembershipStatus @default(INVITED)
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  activeSessions Session[]        @relation("SessionActiveMembership")
+  id                    String             @id @default(uuid()) @db.Uuid
+  userId                String             @map("user_id") @db.Uuid
+  organizationId        String             @map("organization_id") @db.Uuid
+  role                  MembershipRole     @default(RECEPTION)
+  status                MembershipStatus   @default(INVITED)
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  organization          Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  activeSessions        Session[]          @relation("SessionActiveMembership")
+  assignedAppointments  Appointment[]      @relation("AppointmentAssignedMembership")
+  createdAppointments   Appointment[]      @relation("AppointmentCreatedByMembership")
+  cancelledAppointments Appointment[]      @relation("AppointmentCancelledByMembership")
+  availabilityRules     AvailabilityRule[]
 
   @@unique([userId, organizationId])
+  @@unique([id, organizationId], map: "memberships_id_organization_id_key")
   @@index([organizationId])
   @@index([userId])
   @@map("memberships")
@@ -98,25 +108,26 @@ model Session {
 
 // Owner is a tenant-scoped responsible person; archive preserves future history.
 model Owner {
-  id                       String       @id @default(uuid()) @db.Uuid
-  organizationId           String       @map("organization_id") @db.Uuid
-  firstName                String       @map("first_name")
-  lastName                 String?      @map("last_name")
-  documentType             String?      @map("document_type")
-  documentNumber           String?      @map("document_number")
-  documentNumberNormalized String?      @map("document_number_normalized")
+  id                       String        @id @default(uuid()) @db.Uuid
+  organizationId           String        @map("organization_id") @db.Uuid
+  firstName                String        @map("first_name")
+  lastName                 String?       @map("last_name")
+  documentType             String?       @map("document_type")
+  documentNumber           String?       @map("document_number")
+  documentNumberNormalized String?       @map("document_number_normalized")
   email                    String?
   phone                    String?
-  secondaryPhone           String?      @map("secondary_phone")
+  secondaryPhone           String?       @map("secondary_phone")
   address                  String?
   city                     String?
   notes                    String?
-  status                   OwnerStatus  @default(ACTIVE)
-  archivedAt               DateTime?    @map("archived_at")
-  createdAt                DateTime     @default(now()) @map("created_at")
-  updatedAt                DateTime     @updatedAt @map("updated_at")
-  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  status                   OwnerStatus   @default(ACTIVE)
+  archivedAt               DateTime?     @map("archived_at")
+  createdAt                DateTime      @default(now()) @map("created_at")
+  updatedAt                DateTime      @updatedAt @map("updated_at")
+  organization             Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   patients                 Patient[]
+  appointments             Appointment[]
 
   // The composite key supports a tenant-safe Patient foreign key.
   @@unique([id, organizationId], map: "owners_id_organization_id_key")
@@ -145,7 +156,7 @@ model Patient {
   color              String?
   microchipNumber    String?       @map("microchip_number")
   // Numeric(20,6) preserves decimal weight snapshots without a species-specific cap.
-  currentWeightKg    Decimal?      @db.Decimal(20, 6) @map("current_weight_kg")
+  currentWeightKg    Decimal?      @map("current_weight_kg") @db.Decimal(20, 6)
   sterilized         Boolean       @default(false)
   notes              String?
   status             PatientStatus @default(ACTIVE)
@@ -154,7 +165,9 @@ model Patient {
   updatedAt          DateTime      @updatedAt @map("updated_at")
   organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   owner              Owner         @relation(fields: [ownerId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  appointments       Appointment[]
 
+  @@unique([id, organizationId], map: "patients_id_organization_id_key")
   @@index([organizationId])
   @@index([organizationId, ownerId])
   @@index([organizationId, status])
@@ -216,4 +229,75 @@ enum PatientSex {
   MALE
   FEMALE
   UNKNOWN
+}
+
+// Appointment is a tenant-scoped operational reservation, separate from clinical consultation.
+model Appointment {
+  id                      String            @id @default(uuid()) @db.Uuid
+  organizationId          String            @map("organization_id") @db.Uuid
+  clinicLocationId        String            @map("clinic_location_id") @db.Uuid
+  patientId               String            @map("patient_id") @db.Uuid
+  ownerId                 String            @map("owner_id") @db.Uuid
+  assignedMembershipId    String?           @map("assigned_membership_id") @db.Uuid
+  createdByMembershipId   String            @map("created_by_membership_id") @db.Uuid
+  status                  AppointmentStatus @default(SCHEDULED)
+  startsAt                DateTime          @map("starts_at") @db.Timestamptz(3)
+  endsAt                  DateTime          @map("ends_at") @db.Timestamptz(3)
+  reason                  String
+  notes                   String?
+  observations            String?
+  ownerConfirmedAt        DateTime?         @map("owner_confirmed_at") @db.Timestamptz(3)
+  clinicConfirmedAt       DateTime?         @map("clinic_confirmed_at") @db.Timestamptz(3)
+  cancelledAt             DateTime?         @map("cancelled_at") @db.Timestamptz(3)
+  cancelledByMembershipId String?           @map("cancelled_by_membership_id") @db.Uuid
+  cancellationReason      String?           @map("cancellation_reason")
+  createdAt               DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization            Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicLocation          ClinicLocation    @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  patient                 Patient           @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  owner                   Owner             @relation(fields: [ownerId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  assignedMembership      Membership?       @relation("AppointmentAssignedMembership", fields: [assignedMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership     Membership        @relation("AppointmentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  cancelledByMembership   Membership?       @relation("AppointmentCancelledByMembership", fields: [cancelledByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, organizationId], map: "appointments_id_organization_id_key")
+  @@index([organizationId, startsAt])
+  @@index([organizationId, status, startsAt])
+  @@index([organizationId, patientId, startsAt])
+  @@index([organizationId, assignedMembershipId, startsAt])
+  @@index([organizationId, clinicLocationId, startsAt])
+  @@map("appointments")
+}
+
+// AvailabilityRule stores a weekly civil-time window for one location or membership.
+model AvailabilityRule {
+  id               String         @id @default(uuid()) @db.Uuid
+  organizationId   String         @map("organization_id") @db.Uuid
+  clinicLocationId String         @map("clinic_location_id") @db.Uuid
+  membershipId     String?        @map("membership_id") @db.Uuid
+  dayOfWeek        Int            @map("day_of_week")
+  startLocalTime   String         @map("start_local_time") @db.VarChar(5)
+  endLocalTime     String         @map("end_local_time") @db.VarChar(5)
+  slotMinutes      Int            @default(30) @map("slot_minutes")
+  notes            String?
+  isActive         Boolean        @default(true) @map("is_active")
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicLocation   ClinicLocation @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  membership       Membership?    @relation(fields: [membershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId, clinicLocationId, dayOfWeek, isActive])
+  @@index([organizationId, membershipId, dayOfWeek, isActive])
+  @@map("availability_rules")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  WAITING_ROOM
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
 }

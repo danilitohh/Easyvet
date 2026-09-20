@@ -38,6 +38,10 @@ Los permisos son un catálogo type-safe en código; no existen tablas
 - `memberships.read`, `memberships.manage`
 - `owners.read`, `owners.create`, `owners.update`, `owners.archive`
 - `patients.read`, `patients.create`, `patients.update`, `patients.archive`
+- `appointments.read`, `appointments.create`, `appointments.update`,
+  `appointments.cancel`, `appointments.checkIn`, `appointments.start`,
+  `appointments.complete`, `appointments.markNoShow`
+- `availability.read`, `availability.manage`
 
 `@RequirePermissions(A, B)` usa semántica ALL. `PermissionGuard` resuelve la
 matriz por `TenantContext.role`; el frontend solo usa los permisos para UX.
@@ -51,6 +55,15 @@ matriz por `TenantContext.role`; el frontend solo usa los permisos para UX.
 | RECEPTION    | `owners.read/create/update`; `patients.read/create/update` |
 | GROOMER      | `owners.read`; `patients.read`                             |
 | CASHIER      | `owners.read`; `patients.read`                             |
+
+| Rol           | Permisos de Agenda                                                                       |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| OWNER / ADMIN | Todos los permisos de Agenda y disponibilidad                                            |
+| VETERINARIAN  | `appointments.read/create/update/checkIn/start/complete/markNoShow`; `availability.read` |
+| ASSISTANT     | `appointments.read/create/update/checkIn`; `availability.read`                           |
+| RECEPTION     | `appointments.read/create/update/cancel/checkIn/markNoShow`; `availability.read`         |
+| GROOMER       | `appointments.read`                                                                      |
+| CASHIER       | `appointments.read`                                                                      |
 
 OWNER y ADMIN comparten permisos ahora; OWNER queda reservado semánticamente
 para ownership, billing SaaS y operaciones irreversibles futuras. No se crean
@@ -81,6 +94,12 @@ membership; no existe bypass de tenant ni impersonation.
 - `GET/POST /api/v1/patients`, `GET/PATCH /api/v1/patients/:patientId` y
   `POST /api/v1/patients/:patientId/archive`: CRUD seguro, paginado, búsqueda y
   archive por tenant. El Owner se valida dentro del mismo tenant.
+- `GET/POST /api/v1/appointments`, detalle, edición limitada y acciones
+  explícitas de reprogramación, cancelación, check-in, inicio, completado,
+  no-show y confirmación; todos tenant-safe.
+- `GET/POST/PATCH/DELETE /api/v1/availability-rules` y
+  `GET /api/v1/agenda/available-slots`, protegidos por permisos de
+  disponibilidad y rango limitado.
 - `GET /api/v1/platform/context`: área separada para Platform Admin.
 
 Las consultas de recursos tenant reciben siempre `organizationId` en la firma y

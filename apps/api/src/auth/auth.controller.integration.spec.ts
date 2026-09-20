@@ -317,6 +317,16 @@ describeDatabase('real authentication and sessions', () => {
       'patients.create',
       'patients.update',
       'patients.archive',
+      'appointments.read',
+      'appointments.create',
+      'appointments.update',
+      'appointments.cancel',
+      'appointments.checkIn',
+      'appointments.start',
+      'appointments.complete',
+      'appointments.markNoShow',
+      'availability.read',
+      'availability.manage',
     ]);
     expect(response.body.memberships).toHaveLength(1);
     expect(response.body).not.toHaveProperty('passwordHash');
@@ -516,6 +526,14 @@ describeDatabase('real authentication and sessions', () => {
       'patients.read',
       'patients.create',
       'patients.update',
+      'appointments.read',
+      'appointments.create',
+      'appointments.update',
+      'appointments.checkIn',
+      'appointments.start',
+      'appointments.complete',
+      'appointments.markNoShow',
+      'availability.read',
     ]);
     await agent.get('/api/v1/organization/current').expect(200);
     await agent.patch('/api/v1/organization/current').send({ name: 'Forbidden' }).expect(403);
@@ -542,6 +560,14 @@ describeDatabase('real authentication and sessions', () => {
       'patients.read',
       'patients.create',
       'patients.update',
+      'appointments.read',
+      'appointments.create',
+      'appointments.update',
+      'appointments.checkIn',
+      'appointments.start',
+      'appointments.complete',
+      'appointments.markNoShow',
+      'availability.read',
     ]);
     const me = await agent.get('/api/v1/auth/me').expect(200);
     expect(me.body.activeMembership.organization.id).toBe(organizationSouthId);
