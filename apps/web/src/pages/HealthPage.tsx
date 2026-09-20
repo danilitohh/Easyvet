@@ -1,4 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Alert } from '../components/ui/Alert';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { LoadingState } from '../components/ui/LoadingState';
+import { PageHeader } from '../components/ui/PageHeader';
+import { appConfig } from '../config/app';
 import { fetchHealth } from '../services/health';
 
 type HealthState =
@@ -23,20 +30,37 @@ export function HealthPage() {
   }, []);
 
   return (
-    <section className="status-card" aria-labelledby="health-title">
-      <p className="eyebrow">API contract</p>
-      <h2 id="health-title">Service health</h2>
-      {health.status === 'loading' && <p role="status">Checking the API…</p>}
-      {health.status === 'ready' && (
-        <p className="status-ok" role="status">
-          API status: {health.value}
-        </p>
-      )}
-      {health.status === 'error' && (
-        <p className="status-error" role="alert">
-          API unavailable: {health.message}
-        </p>
-      )}
-    </section>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Technical check"
+        title="Service health"
+        description="A small diagnostic surface for the existing API contract."
+        action={
+          <Button as={Link} to="/dashboard" variant="secondary">
+            Back to dashboard
+          </Button>
+        }
+      />
+      <Card className="health-card">
+        <div className="health-card__heading">
+          <div>
+            <p className="section-kicker">GET /api/v1/health</p>
+            <h2 id="health-title">Connection status</h2>
+          </div>
+          <span className="health-card__mode">{appConfig.dataMode} mode</span>
+        </div>
+        {health.status === 'loading' && <LoadingState label="Checking the API" />}
+        {health.status === 'ready' && (
+          <Alert tone="success" role="status">
+            API status: {health.value}
+          </Alert>
+        )}
+        {health.status === 'error' && (
+          <Alert tone="error" role="alert">
+            API unavailable: {health.message}
+          </Alert>
+        )}
+      </Card>
+    </div>
   );
 }

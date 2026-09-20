@@ -92,4 +92,12 @@ El API no crea ni altera el esquema durante el arranque. Todo cambio debe pasar 
 
 ## Fase actual
 
-La Fase 1 deja preparada la infraestructura. Multi-tenancy, autenticación completa, dominio veterinario, integraciones y UI final permanecen pendientes según [MIGRATION_STATUS.md](MIGRATION_STATUS.md).
+La Fase 2 deja disponible el AppShell visual, la navegación React Router, el dashboard demo y placeholders de módulos. Multi-tenancy, autenticación completa, dominio veterinario, integraciones y UI funcional permanecen pendientes según [MIGRATION_STATUS.md](MIGRATION_STATUS.md).
+
+Para revisar el shell visual:
+
+```bash
+npm run dev:web
+```
+
+Abre `http://localhost:5173/dashboard`. Las rutas de módulos muestran placeholders y los datos del dashboard son ficticios; no existe autenticación ni conexión a datos clínicos.

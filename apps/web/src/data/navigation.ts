@@ -1,0 +1,143 @@
+export type NavigationItem = {
+  label: string;
+  path: string;
+  icon: string;
+  description: string;
+};
+
+export type NavigationGroup = {
+  label: string;
+  items: NavigationItem[];
+};
+
+// Navigation is data so the sidebar and route metadata share one stable source.
+export const NAVIGATION_GROUPS: NavigationGroup[] = [
+  {
+    label: 'Principal',
+    items: [
+      {
+        label: 'Dashboard',
+        path: '/dashboard',
+        icon: '⌂',
+        description: 'Vista general de la operación.',
+      },
+      {
+        label: 'Agenda',
+        path: '/agenda',
+        icon: '◷',
+        description: 'Agenda y disponibilidad futura.',
+      },
+    ],
+  },
+  {
+    label: 'Clínica',
+    items: [
+      {
+        label: 'Pacientes',
+        path: '/pacientes',
+        icon: '●',
+        description: 'Registro clínico de pacientes.',
+      },
+      {
+        label: 'Propietarios',
+        path: '/propietarios',
+        icon: '○',
+        description: 'Personas responsables de pacientes.',
+      },
+      {
+        label: 'Consultas',
+        path: '/consultas',
+        icon: '✦',
+        description: 'Consultas y evolución clínica.',
+      },
+      {
+        label: 'Historias clínicas',
+        path: '/historias-clinicas',
+        icon: '▤',
+        description: 'Historias clínicas longitudinales.',
+      },
+      { label: 'Vacunas', path: '/vacunas', icon: '＋', description: 'Esquemas preventivos.' },
+      {
+        label: 'Desparasitaciones',
+        path: '/desparasitaciones',
+        icon: '◌',
+        description: 'Controles antiparasitarios.',
+      },
+      {
+        label: 'Hospitalizaciones',
+        path: '/hospitalizaciones',
+        icon: '▣',
+        description: 'Hospitalización y ambulatorio.',
+      },
+      {
+        label: 'Cirugías',
+        path: '/cirugias',
+        icon: '◇',
+        description: 'Procedimientos quirúrgicos.',
+      },
+      { label: 'Exámenes', path: '/examenes', icon: '◫', description: 'Exámenes y resultados.' },
+    ],
+  },
+  {
+    label: 'Servicios',
+    items: [
+      {
+        label: 'Peluquería',
+        path: '/peluqueria',
+        icon: '✂',
+        description: 'Servicios de peluquería y spa.',
+      },
+    ],
+  },
+  {
+    label: 'Comercial',
+    items: [
+      {
+        label: 'Inventario',
+        path: '/inventario',
+        icon: '▥',
+        description: 'Productos y existencias.',
+      },
+      { label: 'Ventas', path: '/ventas', icon: '↗', description: 'Ventas y pedidos.' },
+      {
+        label: 'Facturación',
+        path: '/facturacion',
+        icon: '▧',
+        description: 'Documentos de venta.',
+      },
+      { label: 'Caja', path: '/caja', icon: '◒', description: 'Movimientos y cierres.' },
+    ],
+  },
+  {
+    label: 'Gestión',
+    items: [
+      { label: 'Informes', path: '/informes', icon: '▦', description: 'Indicadores y reportes.' },
+      {
+        label: 'Usuarios',
+        path: '/usuarios',
+        icon: '♙',
+        description: 'Acceso del equipo, más adelante.',
+      },
+      {
+        label: 'Configuración',
+        path: '/configuracion',
+        icon: '⚙',
+        description: 'Preferencias del producto.',
+      },
+    ],
+  },
+];
+
+// Flattened route metadata powers the page header without duplicating labels.
+export const MODULE_ROUTES = NAVIGATION_GROUPS.flatMap((group) => group.items);
+
+export function getRouteMeta(pathname: string): NavigationItem {
+  return (
+    MODULE_ROUTES.find((route) => route.path === pathname) ?? {
+      label: 'Página no encontrada',
+      path: pathname,
+      icon: '?',
+      description: 'La ruta solicitada no existe.',
+    }
+  );
+}
