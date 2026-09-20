@@ -8,13 +8,13 @@
     "build": "nest build",
     "lint": "eslint src test nest-cli.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "jest --runInBand"
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand"
   },
   "dependencies": {
-    "@nestjs/common": "^11.1.6",
-    "@nestjs/config": "^4.0.2",
-    "@nestjs/core": "^11.1.6",
-    "@nestjs/platform-express": "^11.1.6",
+    "@nestjs/common": "^12.0.3",
+    "@nestjs/config": "^12.0.0",
+    "@nestjs/core": "^12.0.3",
+    "@nestjs/platform-express": "^12.0.3",
     "@prisma/client": "^6.16.2",
     "@veterinary-saas/contracts": "0.1.0",
     "class-transformer": "^0.5.1",

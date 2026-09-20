@@ -5,7 +5,7 @@
 | Auditoría legacy | Completada                                        |
 | Monorepo         | Completado                                        |
 | React/Vite       | App shell y base visual de Fase 2 completados     |
-| NestJS           | Infraestructura                                   |
+| NestJS           | Infraestructura; Nest 12.0.3 verificado           |
 | PostgreSQL       | VERIFICADO LOCALMENTE                             |
 | Prisma           | Schema base sin entidades; migraciones pendientes |
 | Multi-tenancy    | Pendiente                                         |
@@ -29,6 +29,16 @@ Checkpoint 2.5 verificado localmente:
 - Conexión Prisma mediante `DATABASE_URL` del `.env` local, usando `prisma db execute` con `SELECT 1` y un `$queryRawUnsafe('SELECT 1')` técnico.
 - El esquema Prisma sigue sin modelos de dominio y la base pública contiene cero tablas.
 - NestJS respondió `HTTP 200` en `GET /api/v1/health`.
+
+Checkpoint 2.6 completado:
+
+- NestJS 11 fue actualizado coordinadamente a NestJS 12.0.3.
+- Prisma se mantuvo en la misma major y su CLI quedó clasificada como
+  `devDependency`; `@prisma/client` continúa como dependencia de runtime.
+- Las vulnerabilidades transitivas de `multer` desaparecieron tras la
+  actualización. El detalle del audit y las vulnerabilidades de tooling
+  pendientes está en `docs/architecture/DEPENDENCY_SECURITY.md`.
+- No se añadieron modelos, tablas ni módulos de dominio; Fase 3 no iniciada.
 
 Para detener el entorno local:
 
