@@ -6,7 +6,7 @@
 | Monorepo         | Completado                                        |
 | React/Vite       | Infraestructura                                   |
 | NestJS           | Infraestructura                                   |
-| PostgreSQL       | Infraestructura local definida                    |
+| PostgreSQL       | PENDIENTE DE VERIFICACIÓN LOCAL                   |
 | Prisma           | Schema base sin entidades; migraciones pendientes |
 | Multi-tenancy    | Pendiente                                         |
 | UI Lativet       | Pendiente                                         |
@@ -18,3 +18,5 @@
 | SaaS             | Pendiente                                         |
 
 “Infraestructura” no significa que una funcionalidad de negocio esté migrada.
+
+Docker Desktop no está disponible en el entorno actual; PostgreSQL no se ha iniciado ni verificado localmente.
