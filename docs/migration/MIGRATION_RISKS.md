@@ -6,18 +6,18 @@ Este registro identifica comportamiento que puede perderse o cambiarse accidenta
 
 ## Riesgos críticos
 
-| Riesgo | Comportamiento legado que puede perderse | Consecuencia | Tratamiento antes de migrar |
-|---|---|---|---|
-| Aislamiento multi-tenant inexistente | Todas las tablas, settings, secuencias, archivos, usuarios e integraciones son globales | Fuga cruzada entre clínicas | Definir el límite de organización y pruebas negativas para cada operación/consulta/job/archivo |
-| Factura como operación compuesta | Crear factura modifica documento, líneas, inventario, pagos y caja bajo una transacción compartida | Saldos, stock o caja divergentes | Especificar invariantes y casos de rollback; caracterizar create/update/delete |
-| Edición destructiva de factura | Editar revierte stock, elimina pagos/caja y reconstruye efectos | Pérdida de trazabilidad o duplicados | Decidir si se conserva o se reemplaza por documentos correctivos; no traducir literalmente sin decisión fiscal |
-| Borrados clínicos en cascada | Propietario/paciente/historia/consulta borran manualmente numerosos dependientes | Pérdida irreversible y violación de retención | Inventariar cascadas, definir soft-delete/anonimización/retención y autorización |
-| Rutinas automáticas de arranque | La inicialización puede cambiar esquema, hacer backfills y vaciar/restaurar inventario/facturación si falta un marcador | Pérdida masiva de datos | Excluir todo reset/corrección histórica; migraciones explícitas, revisables y reversibles |
-| Modelo clínico polimórfico | Subtipos viven en `clinical_consultations.document_reference` y contratos frontend | Campos clínicos omitidos o interpretados mal | Catalogar payloads por tipo y versionarlos antes de diseñar destino |
-| Firma ligada al documento | Hash, expiración, código, evidencia y contenido JSON funcionan como una cadena | Firma aplicada a versión incorrecta o evidencia incompleta | Definir contrato legal/técnico y pruebas de inmutabilidad |
-| Cierres no bloqueantes | El cierre es snapshot y las mutaciones posteriores lo invalidan | Cambiar semántica contable sin advertir | Decidir modelo de cierre/reapertura/corrección con experto contable |
-| Permisos heredados y modernos | Solo perfiles `@actions:v1` reciben control granular | Importar privilegios excesivos | Mapear cada usuario/rol a un modelo nuevo fail-closed; no copiar listas crudas |
-| Informes agregados | `reports` incluye colecciones clínicas/personales completas | Fugas de PII y tenant | Crear contratos mínimos de informe y políticas explícitas por campo |
+| Riesgo                               | Comportamiento legado que puede perderse                                                                                | Consecuencia                                               | Tratamiento antes de migrar                                                                                    |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Aislamiento multi-tenant inexistente | Todas las tablas, settings, secuencias, archivos, usuarios e integraciones son globales                                 | Fuga cruzada entre clínicas                                | Definir el límite de organización y pruebas negativas para cada operación/consulta/job/archivo                 |
+| Factura como operación compuesta     | Crear factura modifica documento, líneas, inventario, pagos y caja bajo una transacción compartida                      | Saldos, stock o caja divergentes                           | Especificar invariantes y casos de rollback; caracterizar create/update/delete                                 |
+| Edición destructiva de factura       | Editar revierte stock, elimina pagos/caja y reconstruye efectos                                                         | Pérdida de trazabilidad o duplicados                       | Decidir si se conserva o se reemplaza por documentos correctivos; no traducir literalmente sin decisión fiscal |
+| Borrados clínicos en cascada         | Propietario/paciente/historia/consulta borran manualmente numerosos dependientes                                        | Pérdida irreversible y violación de retención              | Inventariar cascadas, definir soft-delete/anonimización/retención y autorización                               |
+| Rutinas automáticas de arranque      | La inicialización puede cambiar esquema, hacer backfills y vaciar/restaurar inventario/facturación si falta un marcador | Pérdida masiva de datos                                    | Excluir todo reset/corrección histórica; migraciones explícitas, revisables y reversibles                      |
+| Modelo clínico polimórfico           | Subtipos viven en `clinical_consultations.document_reference` y contratos frontend                                      | Campos clínicos omitidos o interpretados mal               | Catalogar payloads por tipo y versionarlos antes de diseñar destino                                            |
+| Firma ligada al documento            | Hash, expiración, código, evidencia y contenido JSON funcionan como una cadena                                          | Firma aplicada a versión incorrecta o evidencia incompleta | Definir contrato legal/técnico y pruebas de inmutabilidad                                                      |
+| Cierres no bloqueantes               | El cierre es snapshot y las mutaciones posteriores lo invalidan                                                         | Cambiar semántica contable sin advertir                    | Decidir modelo de cierre/reapertura/corrección con experto contable                                            |
+| Permisos heredados y modernos        | Solo perfiles `@actions:v1` reciben control granular                                                                    | Importar privilegios excesivos                             | Mapear cada usuario/rol a un modelo nuevo fail-closed; no copiar listas crudas                                 |
+| Informes agregados                   | `reports` incluye colecciones clínicas/personales completas                                                             | Fugas de PII y tenant                                      | Crear contratos mínimos de informe y políticas explícitas por campo                                            |
 
 ## Riesgos altos por dominio
 
@@ -110,25 +110,25 @@ Este registro identifica comportamiento que puede perderse o cambiarse accidenta
 
 ## Elementos específicos de Lativet que no deben migrarse como producto
 
-| Elemento | Ubicación/tipo | Decisión recomendada |
-|---|---|---|
-| Nombre “Lativet” e identidad visual | `DEFAULT_SETTINGS`, plantillas, frontend, manifest, imágenes/logo | Convertir en branding configurable; no seed global |
-| Datos de contacto/dirección/correos de la clínica | settings, plantillas y potenciales datos runtime | Importar solo mediante proyecto de datos autorizado y por tenant; nunca como defaults |
-| Logo, avatares e imágenes propias | `Frontend/**/Recursos`, configuración y datos | Clasificar licencia/propiedad; no asumir activos universales |
-| Plantillas y textos legales colombianos | configuración y generadores documentales | Validar legalmente y versionar por país/organización |
-| Retención predeterminada de 15 años | `DEFAULT_SETTINGS` | Política configurable validada jurídicamente |
-| Timezone de Bogotá | `DEFAULT_SETTINGS` | Configuración de organización/sucursal |
-| Cuentas de caja fijas | constantes de base/Caja | Catálogo por organización con mapeo de importación |
-| Métodos de pago y categorías fijas | constantes de ventas/caja | Parametrizar; conservar códigos históricos mediante mapeo |
-| Categorías e iconos iniciales de catálogo | seeds/backfills/recursos | No tratar como catálogo universal |
-| Propietarios, pacientes, usuarios y documentos reales | bases y archivos ignorados | No se revisaron; no migrar sin autorización, minimización y plan específico |
-| PDFs/DOCX/exports/backups existentes | `data/exports`, `data/backups` | No copiar automáticamente; inventario y consentimiento explícito |
-| Credenciales/tokens/sesiones | entorno, settings, archivos Google, DB | Excluir y rotar/reautorizar |
-| Corrección financiera puntual | migración SQL de anulación/reverso | Excluir de schema, seed y proceso genérico |
-| Marcadores y backups de resets “one time” | tablas auxiliares/runtime | Excluir; son historia técnica, no dominio |
-| Placeholder owners/patients | reservas y compatibilidad de facturación | Clasificar y transformar con decisión humana |
-| Archivos generados de frontend | `Frontend/public` | No migrar; son build artifacts |
-| Cache `lativet_*` del navegador | localStorage/sessionStorage | No conservar ni importar |
+| Elemento                                              | Ubicación/tipo                                                    | Decisión recomendada                                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Nombre “Lativet” e identidad visual                   | `DEFAULT_SETTINGS`, plantillas, frontend, manifest, imágenes/logo | Convertir en branding configurable; no seed global                                    |
+| Datos de contacto/dirección/correos de la clínica     | settings, plantillas y potenciales datos runtime                  | Importar solo mediante proyecto de datos autorizado y por tenant; nunca como defaults |
+| Logo, avatares e imágenes propias                     | `Frontend/**/Recursos`, configuración y datos                     | Clasificar licencia/propiedad; no asumir activos universales                          |
+| Plantillas y textos legales colombianos               | configuración y generadores documentales                          | Validar legalmente y versionar por país/organización                                  |
+| Retención predeterminada de 15 años                   | `DEFAULT_SETTINGS`                                                | Política configurable validada jurídicamente                                          |
+| Timezone de Bogotá                                    | `DEFAULT_SETTINGS`                                                | Configuración de organización/sucursal                                                |
+| Cuentas de caja fijas                                 | constantes de base/Caja                                           | Catálogo por organización con mapeo de importación                                    |
+| Métodos de pago y categorías fijas                    | constantes de ventas/caja                                         | Parametrizar; conservar códigos históricos mediante mapeo                             |
+| Categorías e iconos iniciales de catálogo             | seeds/backfills/recursos                                          | No tratar como catálogo universal                                                     |
+| Propietarios, pacientes, usuarios y documentos reales | bases y archivos ignorados                                        | No se revisaron; no migrar sin autorización, minimización y plan específico           |
+| PDFs/DOCX/exports/backups existentes                  | `data/exports`, `data/backups`                                    | No copiar automáticamente; inventario y consentimiento explícito                      |
+| Credenciales/tokens/sesiones                          | entorno, settings, archivos Google, DB                            | Excluir y rotar/reautorizar                                                           |
+| Corrección financiera puntual                         | migración SQL de anulación/reverso                                | Excluir de schema, seed y proceso genérico                                            |
+| Marcadores y backups de resets “one time”             | tablas auxiliares/runtime                                         | Excluir; son historia técnica, no dominio                                             |
+| Placeholder owners/patients                           | reservas y compatibilidad de facturación                          | Clasificar y transformar con decisión humana                                          |
+| Archivos generados de frontend                        | `Frontend/public`                                                 | No migrar; son build artifacts                                                        |
+| Cache `lativet_*` del navegador                       | localStorage/sessionStorage                                       | No conservar ni importar                                                              |
 
 ## Dependencias frontend–backend que requieren pruebas de caracterización
 

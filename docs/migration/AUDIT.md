@@ -19,17 +19,17 @@ La reimplementación futura no debe tratar Lativet como un conjunto de CRUD inde
 
 ## Tecnologías actuales
 
-| Capa | Tecnología encontrada | Observaciones |
-|---|---|---|
-| Frontend | HTML, CSS y JavaScript sin framework | Fuentes modulares; salida ensamblada en `Frontend/public/` |
-| Backend | Python 3, Flask 3.x | Aplicación WSGI con fábrica en `Backend/COMPARTIDO/Rutas/web.py` |
-| Base local | SQLite | FK activas, WAL, `busy_timeout`, backups a archivo |
-| Base remota | PostgreSQL mediante `psycopg` | Adaptador propio; selección por variables de entorno |
-| Plataforma documentada | Supabase Postgres | Migraciones SQL manuales y endurecimiento RLS parcial |
-| Documentos | ReportLab, Pillow y generación DOCX propia | PDFs, fórmulas, consentimientos, historias, informes y otros comprobantes |
-| Integraciones | Google Calendar OAuth, SMTP | Credenciales/tokens en archivos para Google; secreto SMTP en configuración |
-| Entrega | Vercel y ejecución Flask local | `vercel.json`, directorio temporal para serverless, PWA |
-| Pruebas | pytest/unittest y Node test runner | 25 archivos Python de prueba; pruebas frontend y verificadores de build |
+| Capa                   | Tecnología encontrada                      | Observaciones                                                              |
+| ---------------------- | ------------------------------------------ | -------------------------------------------------------------------------- |
+| Frontend               | HTML, CSS y JavaScript sin framework       | Fuentes modulares; salida ensamblada en `Frontend/public/`                 |
+| Backend                | Python 3, Flask 3.x                        | Aplicación WSGI con fábrica en `Backend/COMPARTIDO/Rutas/web.py`           |
+| Base local             | SQLite                                     | FK activas, WAL, `busy_timeout`, backups a archivo                         |
+| Base remota            | PostgreSQL mediante `psycopg`              | Adaptador propio; selección por variables de entorno                       |
+| Plataforma documentada | Supabase Postgres                          | Migraciones SQL manuales y endurecimiento RLS parcial                      |
+| Documentos             | ReportLab, Pillow y generación DOCX propia | PDFs, fórmulas, consentimientos, historias, informes y otros comprobantes  |
+| Integraciones          | Google Calendar OAuth, SMTP                | Credenciales/tokens en archivos para Google; secreto SMTP en configuración |
+| Entrega                | Vercel y ejecución Flask local             | `vercel.json`, directorio temporal para serverless, PWA                    |
+| Pruebas                | pytest/unittest y Node test runner         | 25 archivos Python de prueba; pruebas frontend y verificadores de build    |
 
 Dependencias declaradas: Flask, psycopg, clientes OAuth/Calendar de Google, ReportLab y Pillow. No hay React, TypeScript, NestJS, Prisma ni Zod en el sistema actual.
 
@@ -54,10 +54,10 @@ La separación existe en archivos, pero no en despliegues ni límites de datos: 
 Las fuentes están repartidas por módulos bajo `Frontend/`. `scripts/module_manifest.json` define un orden estricto y `scripts/build_project.py` ensambla los artefactos de `Frontend/public/`:
 
 | Artefacto generado | Bloques | Fuentes | Tamaño aproximado | Líneas aproximadas |
-|---|---:|---:|---:|---:|
-| `app.js` | 532 | 33 JS | 2,33 MB | 58.377 |
-| `styles.css` | 328 | 29 CSS | 747 KB | 32.182 |
-| `index.html` | 31 | 19 HTML | 285 KB | 4.775 |
+| ------------------ | ------: | ------: | ----------------: | -----------------: |
+| `app.js`           |     532 |   33 JS |           2,33 MB |             58.377 |
+| `styles.css`       |     328 |  29 CSS |            747 KB |             32.182 |
+| `index.html`       |      31 | 19 HTML |            285 KB |              4.775 |
 
 Los scripts comparten ámbito global; el orden del manifiesto es parte del comportamiento. La navegación principal cambia secciones mediante estado y manipulación del DOM, pero el servidor solo publica `/` para la aplicación. Las vistas principales no tienen rutas URL semánticas independientes. La excepción funcional es la página pública `/firmar/<token>`.
 

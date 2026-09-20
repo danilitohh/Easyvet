@@ -169,20 +169,20 @@ Estos controles no compensan los hallazgos siguientes.
 
 ## Inventario de posibles secretos — sin valores
 
-| Archivo/ubicación | Tipo | Estado observado | Acción futura |
-|---|---|---|---|
-| `Backend/COMPARTIDO/Rutas/web.py` | `ADMIN_SESSION_SECRET` / `FLASK_SECRET_KEY` y fallback fijo | Lectura de entorno; fallback versionado | No migrar fallback; exigir, separar y rotar claves |
-| `Backend/COMPARTIDO/Rutas/web.py` | `ADMIN_PASSWORD` | Lectura de entorno | No migrar valor; sustituir identidad compartida por usuario bootstrap seguro |
-| `Backend/COMPARTIDO/Rutas/web.py` | `CRON_SECRET` | Lectura de entorno; opcional | Hacer obligatorio o usar identidad de scheduler; rotar |
-| `Backend/COMPARTIDO/Servicios/api.py` | `DATABASE_URL`, variantes PostgreSQL | Lectura de entorno | No registrar/importar; credenciales mínimas por entorno y rotación |
-| `.env.example` | Ejemplos de DSN y secretos administrativos | Placeholders; no se confirmó valor productivo | Mantener solo placeholders no sensibles |
-| tabla `settings`; `Configuracion/persistencia.py` | `smtp_app_password` | Texto claro y posible copia en auditoría | Rotar, eliminar copias y mover a secret manager |
-| `Backend/AGENDA/Integracion_Google/credentials.json` | OAuth client id/client secret | Ruta esperada e ignorada; archivo no inspeccionado | No importar; credenciales OAuth nuevas por entorno/aplicación |
-| `Backend/AGENDA/Integracion_Google/token.json` | Access/refresh token OAuth | Ruta esperada e ignorada; archivo no inspeccionado | No importar; revocar y reconectar por tenant cifrado |
-| `vercel.json` y configuración de despliegue | Referencias a variables privadas | No se observaron valores productivos completos | Auditar panel e historial por separado; rotar si hubo exposición |
-| cookies Flask | Cookie de sesión firmada | Configurable; no es un secreto versionado | Regenerar claves y no reutilizar cookies/sesiones del legado |
-| tokens de firma en `document_signature_requests` | Bearer token y hash de código | Datos de base no inspeccionados | No copiar enlaces activos; expirar y regenerar tras migración |
-| hashes en `staff_users` | Hashes de contraseña | Datos de base no inspeccionados | Definir migración segura o reset obligatorio; nunca exponer |
+| Archivo/ubicación                                    | Tipo                                                        | Estado observado                                   | Acción futura                                                                |
+| ---------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `Backend/COMPARTIDO/Rutas/web.py`                    | `ADMIN_SESSION_SECRET` / `FLASK_SECRET_KEY` y fallback fijo | Lectura de entorno; fallback versionado            | No migrar fallback; exigir, separar y rotar claves                           |
+| `Backend/COMPARTIDO/Rutas/web.py`                    | `ADMIN_PASSWORD`                                            | Lectura de entorno                                 | No migrar valor; sustituir identidad compartida por usuario bootstrap seguro |
+| `Backend/COMPARTIDO/Rutas/web.py`                    | `CRON_SECRET`                                               | Lectura de entorno; opcional                       | Hacer obligatorio o usar identidad de scheduler; rotar                       |
+| `Backend/COMPARTIDO/Servicios/api.py`                | `DATABASE_URL`, variantes PostgreSQL                        | Lectura de entorno                                 | No registrar/importar; credenciales mínimas por entorno y rotación           |
+| `.env.example`                                       | Ejemplos de DSN y secretos administrativos                  | Placeholders; no se confirmó valor productivo      | Mantener solo placeholders no sensibles                                      |
+| tabla `settings`; `Configuracion/persistencia.py`    | `smtp_app_password`                                         | Texto claro y posible copia en auditoría           | Rotar, eliminar copias y mover a secret manager                              |
+| `Backend/AGENDA/Integracion_Google/credentials.json` | OAuth client id/client secret                               | Ruta esperada e ignorada; archivo no inspeccionado | No importar; credenciales OAuth nuevas por entorno/aplicación                |
+| `Backend/AGENDA/Integracion_Google/token.json`       | Access/refresh token OAuth                                  | Ruta esperada e ignorada; archivo no inspeccionado | No importar; revocar y reconectar por tenant cifrado                         |
+| `vercel.json` y configuración de despliegue          | Referencias a variables privadas                            | No se observaron valores productivos completos     | Auditar panel e historial por separado; rotar si hubo exposición             |
+| cookies Flask                                        | Cookie de sesión firmada                                    | Configurable; no es un secreto versionado          | Regenerar claves y no reutilizar cookies/sesiones del legado                 |
+| tokens de firma en `document_signature_requests`     | Bearer token y hash de código                               | Datos de base no inspeccionados                    | No copiar enlaces activos; expirar y regenerar tras migración                |
+| hashes en `staff_users`                              | Hashes de contraseña                                        | Datos de base no inspeccionados                    | Definir migración segura o reset obligatorio; nunca exponer                  |
 
 ## Datos sensibles tratados
 

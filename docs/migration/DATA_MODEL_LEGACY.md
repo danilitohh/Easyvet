@@ -47,59 +47,59 @@ La dirección anterior expresa cardinalidad conceptual. Varias relaciones se imp
 
 ### Configuración, seguridad y operación
 
-| Tabla | Clave | Propósito y campos relevantes | Relaciones / observaciones |
-|---|---|---|---|
-| `settings` | `key` | Pares globales de configuración; incluye valores de clínica, correo, agenda, plantillas y secretos | Sin tenant; la contraseña SMTP se almacena aquí |
-| `staff_users` | `id` | Usuario, email, rol, matrícula, permisos JSON, hash de contraseña, flags y timestamps | Email se valida como único desde la aplicación; `is_active` no se respeta efectivamente |
-| `audit_log` | identificador interno/registro | Tipo/id de entidad, acción, actor, payload JSON y fecha | Payload heterogéneo; puede contener PII y secretos; no es inmutable |
-| `administrative_reset_backups` | id | Copias lógicas relacionadas con reinicios administrativos | Función de entrega/operación heredada |
-| `one_time_data_migrations` | clave de migración | Marcadores de tareas automáticas ejecutadas | Controla cambios de datos desde el arranque |
-| `one_time_inventory_billing_reset_backup` | id/registro | Respaldo temporal de la rutina de reset de inventario/facturación | Específico de una transición histórica |
-| `owners_optional_contact_migration` | temporal | Soporte temporal para migrar contactos opcionales | No es entidad de producto |
+| Tabla                                     | Clave                          | Propósito y campos relevantes                                                                      | Relaciones / observaciones                                                              |
+| ----------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `settings`                                | `key`                          | Pares globales de configuración; incluye valores de clínica, correo, agenda, plantillas y secretos | Sin tenant; la contraseña SMTP se almacena aquí                                         |
+| `staff_users`                             | `id`                           | Usuario, email, rol, matrícula, permisos JSON, hash de contraseña, flags y timestamps              | Email se valida como único desde la aplicación; `is_active` no se respeta efectivamente |
+| `audit_log`                               | identificador interno/registro | Tipo/id de entidad, acción, actor, payload JSON y fecha                                            | Payload heterogéneo; puede contener PII y secretos; no es inmutable                     |
+| `administrative_reset_backups`            | id                             | Copias lógicas relacionadas con reinicios administrativos                                          | Función de entrega/operación heredada                                                   |
+| `one_time_data_migrations`                | clave de migración             | Marcadores de tareas automáticas ejecutadas                                                        | Controla cambios de datos desde el arranque                                             |
+| `one_time_inventory_billing_reset_backup` | id/registro                    | Respaldo temporal de la rutina de reset de inventario/facturación                                  | Específico de una transición histórica                                                  |
+| `owners_optional_contact_migration`       | temporal                       | Soporte temporal para migrar contactos opcionales                                                  | No es entidad de producto                                                               |
 
 ### Personas, pacientes y agenda
 
-| Tabla | Clave | Propósito y campos relevantes | Relaciones / constraints |
-|---|---|---|---|
-| `owners` | `id` | Nombre, identificación, teléfonos, email y dirección del responsable | Índice único parcial por tipo+número de identificación cuando existe |
-| `patients` | `id` | Identidad clínica, especie, raza, sexo, nacimiento/edad, peso, microchip, foto, estados preventivos y vital | FK `owner_id → owners.id`; no hay constraint de nombre único por propietario |
-| `patient_status_events` | `id` | Historial de fallecimiento/reactivación y responsable | Referencia a paciente; esquema creado en runtime |
-| `patient_weight_records` | `id` | Peso longitudinal capturado por consulta | FK a paciente y consulta; consulta única para evitar doble registro |
-| `appointments` | `id` | Fecha/hora, duración, tipo, estado, observaciones, profesional, origen y referencias Google/control | FK a paciente y propietario; dependencias también se limpian manualmente |
-| `agenda_availability_rules` | `id` | Regla de disponibilidad por fecha/día, horas y tamaño de slot | No modela por sí sola recursos múltiples de manera concluyente |
+| Tabla                       | Clave | Propósito y campos relevantes                                                                               | Relaciones / constraints                                                     |
+| --------------------------- | ----- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `owners`                    | `id`  | Nombre, identificación, teléfonos, email y dirección del responsable                                        | Índice único parcial por tipo+número de identificación cuando existe         |
+| `patients`                  | `id`  | Identidad clínica, especie, raza, sexo, nacimiento/edad, peso, microchip, foto, estados preventivos y vital | FK `owner_id → owners.id`; no hay constraint de nombre único por propietario |
+| `patient_status_events`     | `id`  | Historial de fallecimiento/reactivación y responsable                                                       | Referencia a paciente; esquema creado en runtime                             |
+| `patient_weight_records`    | `id`  | Peso longitudinal capturado por consulta                                                                    | FK a paciente y consulta; consulta única para evitar doble registro          |
+| `appointments`              | `id`  | Fecha/hora, duración, tipo, estado, observaciones, profesional, origen y referencias Google/control         | FK a paciente y propietario; dependencias también se limpian manualmente     |
+| `agenda_availability_rules` | `id`  | Regla de disponibilidad por fecha/día, horas y tamaño de slot                                               | No modela por sí sola recursos múltiples de manera concluyente               |
 
 ### Clínica y documentos
 
-| Tabla | Clave | Propósito y campos relevantes | Relaciones / constraints |
-|---|---|---|---|
-| `clinical_records` | `id` | Número, apertura, estado, datos clínicos base, profesional, finalización y retención | FK a paciente y propietario |
-| `clinical_evolutions` | `id` | Nota posterior, autor y fecha | FK `record_id → clinical_records.id` |
-| `clinical_consultations` | `id` | Fecha, tipo, título, resumen, indicaciones, adjuntos, consentimiento, profesional y `document_reference` | FK a historia, paciente y propietario; muchos subtipos viven en JSON/texto |
-| `control_reminders` | `id` | Control derivado de consulta, fecha, clase, estado de entrega y error | Consulta conceptualmente única; referencias parcialmente lógicas |
-| `clinical_followups` | `id` | Fecha programada, resultado, evolución, estado, contacto y próxima fecha | Unicidad por consulta+fecha programada |
-| `consents` | `id` | Tipo, texto/evidencia, responsable, paciente, profesional y fecha | FK a paciente/propietario; `record_id` y `consultation_id` se añadieron sin FK fuerte |
-| `document_signature_requests` | `id`; token único | Token, referencias clínicas, email, estado, hashes, código, intentos, firma, identidad, IP/UA, auditoría y expiraciones | FK/lazos a consulta, historia, paciente y propietario; token indexado |
-| `grooming_documents` | `id` | Cliente/mascota vinculados u opcionales, servicios JSON, fotos, rabia, estado y consentimiento JSON | Paciente/propietario pueden ser nulos; puede enlazar una consulta de consentimiento |
+| Tabla                         | Clave             | Propósito y campos relevantes                                                                                           | Relaciones / constraints                                                              |
+| ----------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `clinical_records`            | `id`              | Número, apertura, estado, datos clínicos base, profesional, finalización y retención                                    | FK a paciente y propietario                                                           |
+| `clinical_evolutions`         | `id`              | Nota posterior, autor y fecha                                                                                           | FK `record_id → clinical_records.id`                                                  |
+| `clinical_consultations`      | `id`              | Fecha, tipo, título, resumen, indicaciones, adjuntos, consentimiento, profesional y `document_reference`                | FK a historia, paciente y propietario; muchos subtipos viven en JSON/texto            |
+| `control_reminders`           | `id`              | Control derivado de consulta, fecha, clase, estado de entrega y error                                                   | Consulta conceptualmente única; referencias parcialmente lógicas                      |
+| `clinical_followups`          | `id`              | Fecha programada, resultado, evolución, estado, contacto y próxima fecha                                                | Unicidad por consulta+fecha programada                                                |
+| `consents`                    | `id`              | Tipo, texto/evidencia, responsable, paciente, profesional y fecha                                                       | FK a paciente/propietario; `record_id` y `consultation_id` se añadieron sin FK fuerte |
+| `document_signature_requests` | `id`; token único | Token, referencias clínicas, email, estado, hashes, código, intentos, firma, identidad, IP/UA, auditoría y expiraciones | FK/lazos a consulta, historia, paciente y propietario; token indexado                 |
+| `grooming_documents`          | `id`              | Cliente/mascota vinculados u opcionales, servicios JSON, fotos, rabia, estado y consentimiento JSON                     | Paciente/propietario pueden ser nulos; puede enlazar una consulta de consentimiento   |
 
 ### Ventas, inventario y caja
 
-| Tabla | Clave | Propósito y campos relevantes | Relaciones / constraints |
-|---|---|---|---|
-| `billing_clients` | `id` | Cliente de venta independiente del propietario clínico | Índice único parcial por identificación; evita crear fichas clínicas para venta mostrador |
-| `billing_providers` | `id` | Proveedor y contacto | Referenciado por catálogo y compras |
-| `billing_catalog_categories` | `id` | Nombre normalizado, orden/estado | Nombre normalizado con unicidad lógica/índice |
-| `billing_catalog_items` | `id` | Producto/servicio, categoría, proveedor, costo, margen, precio, stock, vencimiento, imagen y archivado | FK opcional a proveedor/categoría según versión; centro de inventario |
-| `billing_documents` | `id` | Tipo cotización/factura, secuencia/número, cliente, propietario/paciente, fechas, estado, totales y título PDF | Paciente se volvió nullable; índices de secuencia/número; FK a owner/client/patient según esquema |
-| `billing_document_items` | `id` | Línea, descripción, cantidad, precio, descuento/impuestos/totales | FK a documento y opcional a ítem de catálogo |
-| `billing_document_payments` | `id` | Abono, fecha, método, monto y datos de soporte | FK a documento; genera movimiento de caja relacionado |
-| `billing_cash_movements` | `id` | Secuencia, ingreso/gasto, cuenta, categoría, monto, vínculos, transferencias, anulaciones y reversos | FK lógica/real a documento/pago; índice único parcial por origen de reverso |
-| `billing_partner_loans` | `id` | Aporte o devolución de socios | Referencia un movimiento de caja |
-| `billing_cash_sessions` | `id` | Fecha/cuenta, apertura, arqueo, cierre, esperados, contados, diferencias y destinos | Única por fecha+cuenta |
-| `billing_month_closures` | `id` | Mes, snapshot JSON/totales, responsable y timestamps | `month_key` único; se elimina/invalida al mutar períodos afectados |
-| `billing_stock_movements` | `id` | Entrada/salida/ajuste, cantidad, saldo, fecha y origen | Referencias a ítem, documento o compra; kardex |
-| `billing_physical_counts` | `id` | Conteo por ítem, diferencia y responsable | Registro/snapshot por ítem; creado en runtime y migración posterior |
-| `billing_purchases` | `id` | Proveedor, fecha, totales, descuento global, estado y flag de afectar inventario | FK a proveedor; actualizar/borrar puede revertir stock |
-| `billing_purchase_items` | `id` | Ítem comprado, cantidad, coste y total | FK a compra con `ON DELETE CASCADE`; FK al catálogo |
+| Tabla                        | Clave | Propósito y campos relevantes                                                                                  | Relaciones / constraints                                                                          |
+| ---------------------------- | ----- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `billing_clients`            | `id`  | Cliente de venta independiente del propietario clínico                                                         | Índice único parcial por identificación; evita crear fichas clínicas para venta mostrador         |
+| `billing_providers`          | `id`  | Proveedor y contacto                                                                                           | Referenciado por catálogo y compras                                                               |
+| `billing_catalog_categories` | `id`  | Nombre normalizado, orden/estado                                                                               | Nombre normalizado con unicidad lógica/índice                                                     |
+| `billing_catalog_items`      | `id`  | Producto/servicio, categoría, proveedor, costo, margen, precio, stock, vencimiento, imagen y archivado         | FK opcional a proveedor/categoría según versión; centro de inventario                             |
+| `billing_documents`          | `id`  | Tipo cotización/factura, secuencia/número, cliente, propietario/paciente, fechas, estado, totales y título PDF | Paciente se volvió nullable; índices de secuencia/número; FK a owner/client/patient según esquema |
+| `billing_document_items`     | `id`  | Línea, descripción, cantidad, precio, descuento/impuestos/totales                                              | FK a documento y opcional a ítem de catálogo                                                      |
+| `billing_document_payments`  | `id`  | Abono, fecha, método, monto y datos de soporte                                                                 | FK a documento; genera movimiento de caja relacionado                                             |
+| `billing_cash_movements`     | `id`  | Secuencia, ingreso/gasto, cuenta, categoría, monto, vínculos, transferencias, anulaciones y reversos           | FK lógica/real a documento/pago; índice único parcial por origen de reverso                       |
+| `billing_partner_loans`      | `id`  | Aporte o devolución de socios                                                                                  | Referencia un movimiento de caja                                                                  |
+| `billing_cash_sessions`      | `id`  | Fecha/cuenta, apertura, arqueo, cierre, esperados, contados, diferencias y destinos                            | Única por fecha+cuenta                                                                            |
+| `billing_month_closures`     | `id`  | Mes, snapshot JSON/totales, responsable y timestamps                                                           | `month_key` único; se elimina/invalida al mutar períodos afectados                                |
+| `billing_stock_movements`    | `id`  | Entrada/salida/ajuste, cantidad, saldo, fecha y origen                                                         | Referencias a ítem, documento o compra; kardex                                                    |
+| `billing_physical_counts`    | `id`  | Conteo por ítem, diferencia y responsable                                                                      | Registro/snapshot por ítem; creado en runtime y migración posterior                               |
+| `billing_purchases`          | `id`  | Proveedor, fecha, totales, descuento global, estado y flag de afectar inventario                               | FK a proveedor; actualizar/borrar puede revertir stock                                            |
+| `billing_purchase_items`     | `id`  | Ítem comprado, cantidad, coste y total                                                                         | FK a compra con `ON DELETE CASCADE`; FK al catálogo                                               |
 
 ## Relaciones fuertes y relaciones lógicas
 
