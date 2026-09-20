@@ -1,0 +1,2 @@
+# This lock records the database provider used by versioned Prisma migrations.
+provider = "postgresql"

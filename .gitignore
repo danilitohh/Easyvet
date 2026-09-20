@@ -1,0 +1,28 @@
+# Dependencies and generated build output.
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+.turbo/
+
+# Environment files: keep only the documented template.
+.env
+.env.*
+!.env.example
+
+# Local logs, temporary files and editor metadata.
+*.log
+*.tmp
+*.temp
+.DS_Store
+.idea/
+
+# Local PostgreSQL/Prisma artifacts.
+prisma/*.db
+prisma/*.db-journal
+
+# Test and tool caches.
+.eslintcache
+*.tsbuildinfo
+reports/

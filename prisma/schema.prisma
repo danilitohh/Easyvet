@@ -1,0 +1,14 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Technical probe only; veterinary domain entities start in a later phase.
+model InfrastructureCheck {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+}
