@@ -133,12 +133,12 @@ async function main() {
           organizationId: seedOrganizations[1].id,
         },
       },
-      update: { role: 'OWNER', status: 'ACTIVE' },
+      update: { role: 'VETERINARIAN', status: 'ACTIVE' },
       create: {
         id: '00000000-0000-4000-8000-000000000204',
         userId: seedUsers[2].id,
         organizationId: seedOrganizations[1].id,
-        role: 'OWNER',
+        role: 'VETERINARIAN',
         status: 'ACTIVE',
       },
     });

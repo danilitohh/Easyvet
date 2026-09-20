@@ -1,31 +1,33 @@
 # Estado de migración
 
-| Área              | Estado                                                    |
-| ----------------- | --------------------------------------------------------- |
-| Auditoría legacy  | Completada                                                |
-| Monorepo          | Completado                                                |
-| React/Vite        | App shell y base visual de Fase 2 completados             |
-| NestJS            | Infraestructura; Nest 12.0.3 verificado                   |
-| PostgreSQL        | VERIFICADO LOCALMENTE                                     |
-| Prisma            | Modelo base y migraciones Fase 3A/3B aplicados localmente |
-| Core tenant model | COMPLETADO (Fase 3A)                                      |
-| Multi-tenancy     | Modelo base completado; aislamiento completo pendiente    |
-| Autenticación     | COMPLETADA (Fase 3B)                                      |
-| Autorización      | PENDIENTE FASE 3C                                         |
-| UI Lativet        | Referencia analizada; adaptación React completada         |
-| Pacientes         | Pendiente                                                 |
-| Agenda            | Pendiente                                                 |
-| Clínica           | Pendiente                                                 |
-| Inventario        | Pendiente                                                 |
-| Facturación       | Pendiente                                                 |
-| SaaS              | Pendiente                                                 |
+| Área                        | Estado                                                    |
+| --------------------------- | --------------------------------------------------------- |
+| Auditoría legacy            | Completada                                                |
+| Monorepo                    | Completado                                                |
+| React/Vite                  | App shell y base visual de Fase 2 completados             |
+| NestJS                      | Infraestructura; Nest 12.0.3 verificado                   |
+| PostgreSQL                  | VERIFICADO LOCALMENTE                                     |
+| Prisma                      | Modelo base y migraciones Fase 3A/3B aplicados localmente |
+| Core tenant model           | COMPLETADO (Fase 3A)                                      |
+| Multi-tenancy               | Fundación de aislamiento completada (Fase 3C)             |
+| Autenticación               | COMPLETADA (Fase 3B)                                      |
+| Autorización                | COMPLETADA (Fase 3C)                                      |
+| UI Lativet                  | Referencia analizada; adaptación React completada         |
+| Pacientes                   | Pendiente                                                 |
+| Owners                      | Pendiente                                                 |
+| Agenda                      | Pendiente                                                 |
+| Clínica                     | Pendiente                                                 |
+| Inventario                  | Pendiente                                                 |
+| Facturación                 | Pendiente                                                 |
+| SaaS                        | Pendiente                                                 |
+| Multi-tenancy SaaS completo | EN PROGRESO                                               |
 
 La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
 
 La Fase 2 queda detenida después del AppShell, navegación, dashboard demo y
 componentes UI compartidos. Fase 3A añadió el modelo multi-tenant fundamental y
-Fase 3B añadió sesiones y autenticación real; permisos completos y módulos
-veterinarios siguen fuera de alcance.
+Fase 3B añadió sesiones y autenticación real; Fase 3C añadió la fundación de
+autorización y aislamiento. Los módulos veterinarios siguen fuera de alcance.
 
 Checkpoint 2.5 verificado localmente:
 
@@ -53,8 +55,8 @@ Fase 3A completada:
 - Migración Prisma inicial del dominio aplicada únicamente al PostgreSQL local.
 - Seed ficticio e idempotente verificado para dos organizaciones, dos sedes,
   tres usuarios y cuatro memberships.
-- Autenticación, autorización completa y entidades clínicas permanecen
-  pendientes.
+- Autorización completa y entidades clínicas permanecen pendientes en este
+  punto histórico de Fase 3A.
 
 Fase 3B completada:
 
@@ -67,6 +69,20 @@ Fase 3B completada:
   explícitas quedaron cubiertos por pruebas de integración y frontend.
 - Rate limiting de login, MFA, recuperación de contraseña, invitaciones y
   permisos siguen pendientes para fases posteriores.
+
+Fase 3C completada:
+
+- Autenticación global deny-by-default con `@Public()` únicamente para health y
+  login.
+- `TenantContext`, `TenantContextGuard`, `@CurrentTenant()`, permisos tipados,
+  matriz role-permission, `@RequirePermissions()` y `PermissionGuard`.
+- Separación `PlatformAdminGuard`/`/platform/context` sin bypass tenant.
+- APIs tenant-safe de organization actual, locations y memberships con política
+  cross-tenant `404 RESOURCE_NOT_FOUND`.
+- Permisos efectivos incluidos en `/auth/me` y recalculados después de cambiar
+  de organization; frontend `useCan`/`Can` solo para UX.
+- No se crearon tablas de permisos, RLS, audit log, impersonation ni entidades
+  veterinarias.
 
 Para detener el entorno local:
 

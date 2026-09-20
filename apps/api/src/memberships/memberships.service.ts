@@ -32,4 +32,31 @@ export class MembershipsService {
       orderBy: { createdAt: 'asc' },
     });
   }
+
+  // Returns only membership data visible inside the current tenant.
+  findForOrganization(organizationId: string) {
+    return this.prisma.membership.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        role: true,
+        status: true,
+        user: { select: { id: true, email: true, status: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  // The tenant filter is part of the lookup, preventing IDOR across organizations.
+  findByIdForOrganization(organizationId: string, membershipId: string) {
+    return this.prisma.membership.findFirst({
+      where: { id: membershipId, organizationId },
+      select: {
+        id: true,
+        role: true,
+        status: true,
+        user: { select: { id: true, email: true, status: true } },
+      },
+    });
+  }
 }

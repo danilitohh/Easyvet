@@ -15,10 +15,11 @@ reemplaza a `Organization` como límite de seguridad.
 
 ## Regla de acceso
 
-Fase 3B añade un guard de sesión que valida la identidad y el contexto activo,
-pero todavía no implementa `TenantContext`, filtros automáticos ni permisos.
-Los servicios de organizaciones, memberships y sedes encapsulan el acceso a
-Prisma y dejan una frontera explícita para los futuros casos de uso tenant-aware.
+Fase 3B añade un guard de sesión y Fase 3C añade `TenantContextGuard`,
+`PermissionGuard` y `PlatformAdminGuard`. El contexto siempre se deriva de la
+membership activa de la sesión; no se acepta un tenant enviado por el cliente.
+Los servicios de organizaciones, memberships y sedes reciben explícitamente
+`organizationId` para cada consulta tenant-aware.
 El acceso debe seguir la forma conceptual:
 
 ```text
@@ -27,6 +28,14 @@ useCase(input, organizationId) -> query where organizationId = organizationId
 
 No se deben aceptar consultas clínicas sin un `organizationId` explícito cuando
 esas entidades sean creadas en fases posteriores.
+
+Regla obligatoria para entidades futuras: ninguna consulta tenant-scoped puede
+usar únicamente un id de recurso. El patrón incorrecto es `findUnique({ id })`;
+el patrón correcto es conceptualmente:
+
+```text
+findFirst({ id, organizationId: tenant.organizationId })
+```
 
 ## Plataforma versus organización
 
@@ -37,5 +46,6 @@ mezclarse y el primero no implica visibilidad global de datos clínicos.
 ## Ubicación de la estrategia
 
 Los servicios Nest de esta fase son límites pequeños de persistencia; no se
-introduce un repository pattern genérico. La regla de aislamiento permanece
-en los casos de uso explícitos hasta que Fase 3C defina guards y permisos.
+introduce un repository pattern genérico. La regla de aislamiento permanece en
+los casos de uso explícitos; Fase 3C no crea un repositorio genérico ni un motor
+de permisos dinámico.

@@ -15,7 +15,9 @@ export async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api/v1');
   app.enableCors({ origin, credentials: true });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+  );
   app.useGlobalFilters(new ApiExceptionFilter());
   await app.listen(port);
 }

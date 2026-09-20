@@ -1,22 +1,12 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import type { AuthMeResponse, LoginResponse, LogoutResponse } from '@veterinary-saas/contracts';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginRequestDto, SwitchOrganizationRequestDto } from './auth.dto';
 import { AuthenticatedRequest } from './auth.types';
-import { SessionAuthGuard } from './session-auth.guard';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
+import { Public } from '../authorization/public.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -27,6 +17,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @Public()
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() body: LoginRequestDto,
@@ -38,14 +29,12 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(SessionAuthGuard)
   async me(@Req() request: AuthenticatedRequest): Promise<AuthMeResponse> {
     return this.auth.me(request.auth!);
   }
 
   @Post('switch-organization')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(SessionAuthGuard)
   async switchOrganization(
     @Req() request: AuthenticatedRequest,
     @Body() body: SwitchOrganizationRequestDto,

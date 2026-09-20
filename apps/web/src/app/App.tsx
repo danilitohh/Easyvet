@@ -7,6 +7,7 @@ import { ModulePage } from '../pages/ModulePage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { LoginPage } from '../pages/LoginPage';
 import { OrganizationSelectorPage } from '../pages/OrganizationSelectorPage';
+import { AccessDeniedPage } from '../pages/AccessDeniedPage';
 import { AuthBoundary } from './AuthBoundary';
 
 // Route declarations keep every product area addressable without hiding sections in the DOM.
@@ -16,6 +17,7 @@ export function App() {
       <Route path="login" element={<LoginPage />} />
       <Route element={<AuthBoundary />}>
         <Route path="seleccionar-organizacion" element={<OrganizationSelectorPage />} />
+        <Route path="acceso-denegado" element={<AccessDeniedPage />} />
         <Route element={<AppShell />}>
           <Route index element={<Navigate replace to="/dashboard" />} />
           <Route path="dashboard" element={<DashboardPage />} />

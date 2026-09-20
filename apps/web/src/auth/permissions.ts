@@ -1,0 +1,11 @@
+import type { Permission } from '@veterinary-saas/contracts';
+
+// Frontend constants mirror the server catalog only to improve navigation affordances.
+export const PERMISSION = {
+  ORGANIZATION_READ: 'organization.read',
+  ORGANIZATION_UPDATE: 'organization.update',
+  LOCATIONS_READ: 'locations.read',
+  LOCATIONS_MANAGE: 'locations.manage',
+  MEMBERSHIPS_READ: 'memberships.read',
+  MEMBERSHIPS_MANAGE: 'memberships.manage',
+} as const satisfies Record<string, Permission>;

@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { BrandMark } from '../brand/BrandMark';
 import { NAVIGATION_GROUPS } from '../../data/navigation';
 import { appConfig } from '../../config/app';
+import { useCan } from '../../auth/useCan';
+import { PERMISSION } from '../../auth/permissions';
 
 type SidebarProps = {
   open: boolean;
@@ -12,6 +14,16 @@ type SidebarProps = {
 
 // Sidebar translates the legacy app switcher into real route navigation.
 export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarProps) {
+  const canReadMemberships = useCan(PERMISSION.MEMBERSHIPS_READ);
+  const canUpdateOrganization = useCan(PERMISSION.ORGANIZATION_UPDATE);
+  const visibleGroups = NAVIGATION_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (item.path === '/usuarios') return canReadMemberships;
+      if (item.path === '/configuracion') return canUpdateOrganization;
+      return true;
+    }),
+  })).filter((group) => group.items.length > 0);
   return (
     <>
       <button
@@ -49,7 +61,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
         </div>
 
         <nav className="sidebar__nav" aria-label="Navegación principal">
-          {NAVIGATION_GROUPS.map((group) => (
+          {visibleGroups.map((group) => (
             <div className="nav-group" key={group.label}>
               <p className="nav-group__label">{group.label}</p>
               {group.items.map((item) => (

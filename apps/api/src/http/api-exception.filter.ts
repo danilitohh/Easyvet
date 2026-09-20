@@ -21,11 +21,19 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const message = this.readMessage(exceptionResponse, status);
     const body: ErrorBody = {
       statusCode: status,
-      code: `HTTP_${status}`,
+      code: this.readCode(exceptionResponse, status),
       message,
     };
 
     response.status(status).json({ ...body, path: request.url });
+  }
+
+  private readCode(payload: unknown, status: number): string {
+    if (typeof payload === 'object' && payload !== null && 'code' in payload) {
+      const value = (payload as { code?: unknown }).code;
+      if (typeof value === 'string' && value.trim()) return value;
+    }
+    return `HTTP_${status}`;
   }
 
   private readMessage(payload: unknown, status: number): string | string[] {

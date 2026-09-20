@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthorizationModule } from '../authorization/authorization.module';
 import { PrismaModule } from '../infrastructure/database/prisma.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
@@ -10,7 +12,7 @@ import { SessionsService } from './sessions.service';
 
 // Authentication owns credentials and session lifecycle; authorization stays in Fase 3C.
 @Module({
-  imports: [PrismaModule, UsersModule],
+  imports: [PrismaModule, UsersModule, AuthorizationModule],
   controllers: [AuthController],
   providers: [
     AuthService,
@@ -18,6 +20,7 @@ import { SessionsService } from './sessions.service';
     SessionAuthGuard,
     SessionCookieService,
     SessionsService,
+    { provide: APP_GUARD, useClass: SessionAuthGuard },
   ],
   exports: [AuthService, SessionAuthGuard, SessionCookieService, SessionsService],
 })

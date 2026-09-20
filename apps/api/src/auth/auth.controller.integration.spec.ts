@@ -30,6 +30,14 @@ describeDatabase('real authentication and sessions', () => {
   let multiMembershipIds: string[];
   let foreignMembershipId: string;
   let suspendedOrganizationMembershipId: string;
+  let multiNorthMembershipId: string;
+  let multiSouthMembershipId: string;
+  let locationNorthId: string;
+  let locationSouthId: string;
+  let limitedUser: { id: string; email: string };
+  let platformMemberUser: { id: string; email: string };
+  let organizationNorthId: string;
+  let organizationSouthId: string;
 
   async function login(email: string, agent = request.agent(app.getHttpServer())) {
     return agent.post('/api/v1/auth/login').send({ email, password }).expect(200);
@@ -59,7 +67,9 @@ describeDatabase('real authentication and sessions', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+    );
     app.useGlobalFilters(new ApiExceptionFilter());
     await app.init();
     passwordService = app.get(PasswordService);
@@ -91,8 +101,28 @@ describeDatabase('real authentication and sessions', () => {
       organizationForeign.id,
       organizationSuspended.id,
     );
+    organizationNorthId = organizationOne.id;
+    organizationSouthId = organizationTwo.id;
+    const [locationNorth, locationSouth] = await Promise.all([
+      prisma.clinicLocation.create({
+        data: {
+          organizationId: organizationOne.id,
+          name: `North Location ${suffix}`,
+          city: 'Bogotá',
+        },
+      }),
+      prisma.clinicLocation.create({
+        data: {
+          organizationId: organizationTwo.id,
+          name: `South Location ${suffix}`,
+          city: 'Bogotá',
+        },
+      }),
+    ]);
+    locationNorthId = locationNorth.id;
+    locationSouthId = locationSouth.id;
 
-    const [single, multi, admin, suspended, foreign] = await Promise.all([
+    const [single, multi, admin, suspended, foreign, limited, platformMember] = await Promise.all([
       prisma.user.create({ data: { email: `auth-single-${suffix}@example.local`, passwordHash } }),
       prisma.user.create({ data: { email: `auth-multi-${suffix}@example.local`, passwordHash } }),
       prisma.user.create({
@@ -110,12 +140,30 @@ describeDatabase('real authentication and sessions', () => {
         },
       }),
       prisma.user.create({ data: { email: `auth-foreign-${suffix}@example.local`, passwordHash } }),
+      prisma.user.create({ data: { email: `auth-limited-${suffix}@example.local`, passwordHash } }),
+      prisma.user.create({
+        data: {
+          email: `auth-platform-member-${suffix}@example.local`,
+          passwordHash,
+          platformRole: PlatformRole.PLATFORM_ADMIN,
+        },
+      }),
     ]);
-    createdUserIds.push(single.id, multi.id, admin.id, suspended.id, foreign.id);
+    createdUserIds.push(
+      single.id,
+      multi.id,
+      admin.id,
+      suspended.id,
+      foreign.id,
+      limited.id,
+      platformMember.id,
+    );
     singleUser = single;
     multiUser = multi;
     adminUser = admin;
     suspendedUser = suspended;
+    limitedUser = limited;
+    platformMemberUser = platformMember;
 
     const memberships = await prisma.membership.createManyAndReturn({
       data: [
@@ -139,6 +187,18 @@ describeDatabase('real authentication and sessions', () => {
           role: 'ASSISTANT',
           status: 'ACTIVE',
         },
+        {
+          userId: limited.id,
+          organizationId: organizationOne.id,
+          role: 'RECEPTION',
+          status: 'ACTIVE',
+        },
+        {
+          userId: platformMember.id,
+          organizationId: organizationOne.id,
+          role: 'VETERINARIAN',
+          status: 'ACTIVE',
+        },
       ],
     });
     singleMembershipId = memberships.find((membership) => membership.userId === single.id)!.id;
@@ -148,6 +208,14 @@ describeDatabase('real authentication and sessions', () => {
           membership.userId === multi.id && membership.organizationId !== organizationSuspended.id,
       )
       .map((membership) => membership.id);
+    multiNorthMembershipId = memberships.find(
+      (membership) =>
+        membership.userId === multi.id && membership.organizationId === organizationOne.id,
+    )!.id;
+    multiSouthMembershipId = memberships.find(
+      (membership) =>
+        membership.userId === multi.id && membership.organizationId === organizationTwo.id,
+    )!.id;
     foreignMembershipId = memberships.find((membership) => membership.userId === foreign.id)!.id;
     suspendedOrganizationMembershipId = memberships.find(
       (membership) => membership.organizationId === organizationSuspended.id,
@@ -158,6 +226,9 @@ describeDatabase('real authentication and sessions', () => {
     if (!prisma) return;
     await prisma.session.deleteMany({ where: { userId: { in: createdUserIds } } });
     await prisma.membership.deleteMany({ where: { userId: { in: createdUserIds } } });
+    await prisma.clinicLocation.deleteMany({
+      where: { organizationId: { in: createdOrganizationIds } },
+    });
     await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
     await prisma.organization.deleteMany({ where: { id: { in: createdOrganizationIds } } });
     await app?.close();
@@ -172,6 +243,14 @@ describeDatabase('real authentication and sessions', () => {
       platformRole: 'USER',
     });
     expect(response.body.activeMembership.id).toBe(singleMembershipId);
+    expect(response.body.activeMembership.permissions).toEqual([
+      'organization.read',
+      'organization.update',
+      'locations.read',
+      'locations.manage',
+      'memberships.read',
+      'memberships.manage',
+    ]);
     expect(response.body.memberships).toHaveLength(1);
     expect(response.body).not.toHaveProperty('passwordHash');
     expect(response.body).not.toHaveProperty('token');
@@ -243,6 +322,151 @@ describeDatabase('real authentication and sessions', () => {
 
   it('rejects /me when no session cookie is present', async () => {
     await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
+  });
+
+  it('keeps health public while requiring a session for tenant APIs', async () => {
+    await request(app.getHttpServer()).get('/api/v1/health').expect(200).expect({ status: 'ok' });
+    await request(app.getHttpServer())
+      .get('/api/v1/organization/current')
+      .expect(401)
+      .expect(({ body }) => expect(body.code).toBe('AUTHENTICATION_REQUIRED'));
+  });
+
+  it('requires an active organization after authentication', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(multiUser.email, agent);
+    await agent
+      .get('/api/v1/organization/current')
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe('ACTIVE_ORGANIZATION_REQUIRED'));
+  });
+
+  it('reads the current organization from the selected membership', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const response = await agent.get('/api/v1/organization/current').expect(200);
+    expect(response.body).toMatchObject({ id: organizationNorthId, slug: `auth-north-${suffix}` });
+  });
+
+  it('allows an owner to update safe organization fields and rejects organizationId', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const updated = await agent
+      .patch('/api/v1/organization/current')
+      .send({ name: `Updated North ${suffix}`, timezone: 'America/Bogota' })
+      .expect(200);
+    expect(updated.body.name).toBe(`Updated North ${suffix}`);
+    await agent
+      .patch('/api/v1/organization/current')
+      .send({ organizationId: organizationSouthId, name: 'Should reject' })
+      .expect(400);
+    await prisma.organization.update({
+      where: { id: organizationNorthId },
+      data: { name: `Auth North ${suffix}` },
+    });
+  });
+
+  it('isolates locations by tenant and ignores organizationId query injection', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const list = await agent
+      .get(`/api/v1/organization/locations?organizationId=${organizationSouthId}`)
+      .expect(200);
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0].id).toBe(locationNorthId);
+    await agent.get(`/api/v1/organization/locations/${locationSouthId}`).expect(404);
+  });
+
+  it('lists only memberships from the active organization without sensitive fields', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(singleUser.email, agent);
+    const response = await agent.get('/api/v1/organization/memberships').expect(200);
+    expect(response.body).toHaveLength(4);
+    expect(
+      response.body.some((membership: { id: string }) => membership.id === foreignMembershipId),
+    ).toBe(false);
+    expect(
+      response.body.some(
+        (membership: { user: { id: string } }) => membership.user.id === singleUser.id,
+      ),
+    ).toBe(true);
+    expect(response.body[0]).not.toHaveProperty('passwordHash');
+    expect(response.body[0]).not.toHaveProperty('tokenHash');
+  });
+
+  it('denies membership listing to a reception role', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(limitedUser.email, agent);
+    await agent
+      .get('/api/v1/organization/memberships')
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe('INSUFFICIENT_PERMISSION'));
+  });
+
+  it('allows ADMIN organization updates and denies VETERINARIAN updates', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(multiUser.email, agent);
+    await agent
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiNorthMembershipId })
+      .expect(200);
+    await agent
+      .patch('/api/v1/organization/current')
+      .send({ timezone: 'America/Bogota' })
+      .expect(200);
+    await agent
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiSouthMembershipId })
+      .expect(200);
+    await agent
+      .patch('/api/v1/organization/current')
+      .send({ timezone: 'America/Bogota' })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe('INSUFFICIENT_PERMISSION'));
+  });
+
+  it('exposes only technical context to platform administrators', async () => {
+    const admin = request.agent(app.getHttpServer());
+    await login(adminUser.email, admin);
+    const platformContext = await admin.get('/api/v1/platform/context').expect(200);
+    expect(platformContext.body).toEqual({ userId: adminUser.id, platformRole: 'PLATFORM_ADMIN' });
+    await admin.get('/api/v1/organization/current').expect(403);
+
+    const normalUser = request.agent(app.getHttpServer());
+    await login(singleUser.email, normalUser);
+    await normalUser.get('/api/v1/platform/context').expect(403);
+  });
+
+  it('does not give a platform role a tenant bypass, even with a membership', async () => {
+    const agent = request.agent(app.getHttpServer());
+    const loginResponse = await login(platformMemberUser.email, agent);
+    expect(loginResponse.body.activeMembership.permissions).toEqual([
+      'organization.read',
+      'locations.read',
+    ]);
+    await agent.get('/api/v1/organization/current').expect(200);
+    await agent.patch('/api/v1/organization/current').send({ name: 'Forbidden' }).expect(403);
+  });
+
+  it('recalculates effective permissions after switching organizations', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(multiUser.email, agent);
+    const north = await agent
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiNorthMembershipId })
+      .expect(200);
+    expect(north.body.activeMembership.permissions).toContain('memberships.read');
+    const south = await agent
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiSouthMembershipId })
+      .expect(200);
+    expect(south.body.activeMembership.permissions).toEqual([
+      'organization.read',
+      'locations.read',
+    ]);
+    const me = await agent.get('/api/v1/auth/me').expect(200);
+    expect(me.body.activeMembership.organization.id).toBe(organizationSouthId);
+    expect(me.body.activeMembership.permissions).not.toContain('memberships.read');
   });
 
   it('switches an authenticated session by membership id', async () => {

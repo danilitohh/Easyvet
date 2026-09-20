@@ -106,9 +106,10 @@ El API no crea ni altera el esquema durante el arranque. Todo cambio debe pasar 
 
 ## Fase actual
 
-La Fase 3B deja disponibles el modelo multi-tenant, sesiones y autenticación
-real según [MIGRATION_STATUS.md](MIGRATION_STATUS.md). Permisos, dominio
-veterinario e integraciones permanecen pendientes.
+La Fase 3C deja disponibles el modelo multi-tenant, sesiones, autenticación y la
+fundación de autorización/aislamiento según
+[MIGRATION_STATUS.md](MIGRATION_STATUS.md). El dominio veterinario e
+integraciones permanecen pendientes.
 
 Para revisar el shell visual:
 

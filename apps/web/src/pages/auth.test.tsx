@@ -20,6 +20,7 @@ const membership = {
     name: 'Clínica Norte',
     slug: 'clinica-norte',
   },
+  permissions: ['organization.read', 'locations.read'] as const,
 };
 
 function renderLogin() {

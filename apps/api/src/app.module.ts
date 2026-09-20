@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { AuthModule } from './auth/auth.module';
+import { PlatformModule } from './platform/platform.module';
 import { validateEnvironment } from './config/env';
 import { ApiExceptionFilter } from './http/api-exception.filter';
 import { HealthModule } from './health/health.module';
@@ -22,6 +23,7 @@ import { CsrfOriginMiddleware } from './http/csrf-origin.middleware';
     PrismaModule,
     HealthModule,
     AuthModule,
+    PlatformModule,
     OrganizationsModule,
     UsersModule,
     MembershipsModule,

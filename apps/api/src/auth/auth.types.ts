@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import type { Permission } from '@veterinary-saas/contracts';
 
 export type AuthenticatedUser = {
   id: string;
@@ -15,6 +16,7 @@ export type AuthenticatedMembership = {
     name: string;
     slug: string;
   };
+  permissions: Permission[];
 };
 
 // This context is request-local and intentionally omits passwordHash, tokenHash, and session internals.

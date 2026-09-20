@@ -7,6 +7,7 @@ import {
   AuthenticatedRequestContext,
   AuthenticatedUser,
 } from './auth.types';
+import { permissionsForRole } from '../authorization/permissions';
 
 type SessionWithContext = Prisma.SessionGetPayload<{
   include: {
@@ -181,6 +182,7 @@ export class SessionsService {
         name: membership.organization.name,
         slug: membership.organization.slug,
       },
+      permissions: permissionsForRole(membership.role),
     };
   }
 }

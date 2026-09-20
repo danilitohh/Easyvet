@@ -33,4 +33,11 @@ export class LocationsService {
       orderBy: { createdAt: 'asc' },
     });
   }
+
+  // Filters by both resource id and tenant id so cross-tenant ids resolve as not found.
+  findByIdForOrganization(organizationId: string, locationId: string) {
+    return this.prisma.clinicLocation.findFirst({
+      where: { id: locationId, organizationId },
+    });
+  }
 }
