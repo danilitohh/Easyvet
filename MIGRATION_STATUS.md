@@ -193,6 +193,27 @@ Fase 5C.1 — frontend de Agenda de solo lectura completada:
 - Crear, editar, reprogramar y acciones operativas permanecen en PENDIENTE
   FASE 5C.2; hardening permanece en PENDIENTE FASE 5D.
 
+Checkpoint 5C.1.1 cerrado:
+
+- El `.env` local y `.env.example` usan `easyvet_dev` para desarrollo; las
+  pruebas DB mantienen `easyvet_test`. `veterinary_saas` quedó fuera del flujo
+  normal, de migraciones y de QA, sin modificaciones en este checkpoint.
+- El flujo documentado `npm run dev` arrancó sin sobrescribir `DATABASE_URL`;
+  `GET /api/v1/health` respondió `200` y Agenda cargó sin error de tabla
+  `Appointment` ausente.
+- QA móvil en viewport emulado de 390 px cubrió navegación, filtros,
+  Day/List/Month, detalle, cierre, scroll y ausencia de overflow horizontal.
+- QA multi-tenant `multi@demo.local` cubrió Norte → Sur → Norte: el detalle se
+  cerró, los filtros y eventos se revalidaron por tenant, Sur no mostró citas
+  Norte y la recuperación a Norte cargó sus cuatro citas. El deep link de una
+  cita Norte bajo Sur mostró `Recurso no encontrado`.
+- La cita seed `2030-01-08T14:00:00.000Z` se verificó visualmente como
+  09:00 en `America/Bogota`. El build conserva el warning del chunk web de
+  aproximadamente 742.69 kB (220.13 kB gzip); code-splitting queda recomendado
+  para un checkpoint posterior.
+- No se implementaron mutaciones de Agenda ni se requirió un test de regresión
+  adicional durante esta pasada.
+
 Para detener el entorno local:
 
 ```bash

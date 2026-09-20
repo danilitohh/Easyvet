@@ -28,7 +28,7 @@ del repositorio se ejecuta como parte del checkpoint de esta fase.
 ## Manual QA realizado
 
 Con `owner.norte@demo.local` y la contraseña local del seed, contra la base
-`easyvet_dev` (inyectando `DATABASE_URL` al iniciar el API), se verificaron:
+`easyvet_dev`, se verificaron:
 
 - login y navegación desde Dashboard a `/agenda`;
 - mes con cuatro citas seed y estados `SCHEDULED`, `WAITING_ROOM`,
@@ -39,17 +39,30 @@ Con `owner.norte@demo.local` y la contraseña local del seed, contra la base
 - detalle de Patient, Owner, sede, profesional, estado, duración y
   confirmaciones.
 
+El checkpoint 5C.1.1 añadió la pasada manual siguiente:
+
+- En viewport emulado de 390 px, la navegación móvil, filtros, selector de
+  vista, Day/List/Month, detalle, cierre y scroll funcionaron sin overflow
+  horizontal (`scrollWidth` 375 px frente a `innerWidth` 390 px).
+- El usuario `multi@demo.local` cambió Norte → Sur → Norte. Sur mostró solo sus
+  dos citas y sus filtros tenant-specific; el detalle Norte se cerró al
+  cambiar, no quedaron eventos Norte renderizados y la agenda Norte se
+  recuperó al volver.
+- El deep link de la cita Norte `00000000-0000-4000-8000-000000000601` bajo
+  Sur devolvió `Recurso no encontrado` (404 lógico tenant-safe).
+- La cita Norte respondió `2030-01-08T14:00:00.000Z`/`14:30:00.000Z` y se
+  mostró como 09:00–09:30 en `America/Bogota`, confirmando que la hora visual
+  usa `Organization.timezone` y no la zona del navegador.
+
 El smoke también encontró y corrigió un ciclo de actualización de FullCalendar
 al sincronizar `datesSet`; después de la corrección la pantalla dejó de quedar
-en blanco. La comprobación visual de viewport móvil de 390 px y el cambio de
-tenant mediante usuario multi-organización quedan para la pasada manual de
-regresión/hardening.
+en blanco. La verificación responsive y el cambio de tenant quedan registrados
+en el checkpoint 5C.1.1.
 
-El `.env` local por defecto todavía apunta a la base histórica
-`veterinary_saas`, donde la migración de Agenda no está aplicada; contra esa
-base el endpoint de citas devuelve 500 por tabla ausente. No se modificó esa
-base ni el backend: la verificación se hizo sobre `easyvet_dev`, que es la base
-local aprobada por Fase 5B.
+La base histórica `veterinary_saas` no se modificó ni se utiliza para desarrollo
+o QA. El flujo local normal apunta a `easyvet_dev`; las pruebas DB apuntan a
+`easyvet_test`. No se añadieron mutaciones de Agenda ni se requirió un test de
+regresión adicional durante este checkpoint.
 
 ## Fuera de alcance
 

@@ -67,6 +67,19 @@ explícitos, `aria-live` para el período, estados `role="status"`, etiquetas
 descriptivas en eventos y foco gestionado por el modal existente. La grilla se
 reorganiza para tablet y 390 px sin habilitar operaciones táctiles de arrastre.
 
+El checkpoint 5C.1.1 verificó con viewport emulado de 390 px que Day/List/Month,
+filtros, navegación móvil, detalle y scroll no producen overflow horizontal.
+También se verificó el aislamiento Norte → Sur → Norte y el deep link cross-tenant
+con respuesta lógica `Recurso no encontrado`.
+
+## Advertencia de bundle
+
+El build de producción mantiene el warning de Vite por el chunk principal de
+la web (aproximadamente 742.69 kB sin comprimir y 220.13 kB gzip). FullCalendar
+es el principal contribuyente esperado. No se hizo un refactor agresivo en este
+checkpoint; se recomienda evaluar code-splitting/lazy loading del calendario en
+un checkpoint posterior.
+
 ## Dependencias diferidas
 
 Crear, editar, reprogramar, cancelar, check-in, iniciar, completar, marcar

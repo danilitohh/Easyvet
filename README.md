@@ -47,6 +47,11 @@ npm run db:migrate
 npm run db:seed
 ```
 
+El desarrollo local de Easyvet utiliza exclusivamente la base `easyvet_dev`.
+Las pruebas de integración utilizan la base aislada `easyvet_test` mediante
+`DATABASE_URL_TEST`. La base histórica `veterinary_saas` no forma parte del
+flujo normal de desarrollo, migraciones ni QA.
+
 El seed es ficticio e idempotente. Sus usuarios usan una contraseña local demo
 (`EASYVET_DEMO_PASSWORD`, por defecto `EasyvetDemo!2026`); la base solo recibe
 hashes Argon2id. Nunca reutilizarla en producción.
@@ -108,10 +113,11 @@ El API no crea ni altera el esquema durante el arranque. Todo cambio debe pasar 
 
 ## Fase actual
 
-La Fase 4B deja disponibles el modelo multi-tenant, sesiones,
-autenticación, autorización/aislamiento y los flujos funcionales de
-Owners/Patients según [MIGRATION_STATUS.md](MIGRATION_STATUS.md). El dominio
-veterinario restante permanece pendiente de Fase 4C.
+La Fase 5C.1 deja disponible la Agenda clínica de solo lectura, además del
+modelo multi-tenant, sesiones, autenticación, autorización/aislamiento y los
+flujos funcionales de Owners/Patients según
+[MIGRATION_STATUS.md](MIGRATION_STATUS.md). Las operaciones de Agenda y el
+resto del dominio veterinario permanecen pendientes de sus fases respectivas.
 
 Para revisar el shell visual:
 
