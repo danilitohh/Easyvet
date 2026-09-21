@@ -243,3 +243,29 @@ posible.
    subtipos.
 5. El borrado físico y los strings proyectados no deben copiarse sin una
    decisión explícita de retención y reconstrucción en Easyvet.
+
+## Resolución del Design Gate 6E.1.1
+
+Lo anterior describe **VERIFIED LEGACY BEHAVIOR**. Las siguientes decisiones
+son el contrato **NEW EASYVET DESIGN DECISION** y no una afirmación de que el
+legacy ya las implemente:
+
+- Vaccination y Deworming siempre requieren ClinicalEncounter; no hay evento
+  standalone en el MVP.
+- Ambos agregados independientes usan `PreventiveRecordStatus` común:
+  `DRAFT`, `FINALIZED`, `VOIDED`. El `status` legacy se rediseña
+  intencionalmente; Easyvet no tendrá `applicationStatus` en 6E.2.
+- `administeredOn` y `nextDueOn` son fechas civiles. `expiryOn` existe solo en
+  Vaccination y es nullable. No se crea Reminder, Appointment, FollowUp ni
+  Notification desde `nextDueOn`.
+- El laboratorio legacy se nombra `laboratoryName`; la dosis es
+  `doseText`; el `deworming_last_date` y el intervalo redundante no se copian.
+- No se incorporan proyecciones `vaccinationStatus`/`dewormingStatus` a
+  Patient, ni FK a inventario, ni certificados en 6E.2.
+- Los estados del Encounter padre, Patient archivado, snapshots, Membership
+  responsable/administeredBy, CAS, auditoría y locks siguen el contrato
+  literal de `docs/architecture/preventive-care-core-6e2.md`.
+
+Estas decisiones cierran las ambigüedades estructurales para 6E.2. La
+importación de registros legacy sin profesional o contexto completo queda
+**POSTERGADA** y no se resuelve inventando una Membership.

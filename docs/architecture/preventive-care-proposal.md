@@ -1,387 +1,376 @@
-# Propuesta de arquitectura de preventive care — Fase 6E.1
+# Propuesta cerrada de arquitectura — Preventive Care
 
-## Estado y límites
+## Alcance del checkpoint 6E.1.1
 
-Este documento es una propuesta para Easyvet basada en la referencia legacy de
-`05fea495cb13208b27bf470b3570987fd501a81e`. No modifica Prisma, migraciones,
-backend, frontend, permisos, seed ni APIs. La implementación queda fuera de
-6E.1 y no se inicia 6E.2.
+Este documento convierte el análisis de la Fase 6E.1 en el contrato de diseño
+que precede a Prisma. Es documentación únicamente: no crea modelos, migraciones,
+endpoints, permisos ni componentes React. La implementación queda expresamente
+fuera de este checkpoint y no inicia la Fase 6E.2.
 
-La intención es conservar el valor clínico de la historia legacy sin copiar el
-modelo polimórfico de texto ni sus efectos laterales implícitos.
+La fuente legacy inspeccionada es el commit
+`05fea495cb13208b27bf470b3570987fd501a81e` del checkout read-only de Lativet.
 
-## Objetivos
+## Decisiones estructurales cerradas
 
-- Registrar múltiples vacunaciones y desparasitaciones por paciente y
-  `ClinicalEncounter`.
-- Mantener aislamiento por `Organization` mediante FKs compuestas y servicios
-  tenant-safe.
-- Separar el evento preventivo de `Patient` y de `Inventory`.
-- Conservar una fecha clínica civil sin inventar horas o zonas horarias.
-- Congelar identidad clínica y profesional cuando el evento se finalice.
-- Permitir borradores y anulación explícita sin borrar evidencia finalizada.
-- Exponer recordatorios/`nextDueDate` como datos clínicos, dejando citas,
-  correo, certificados e inventario como integraciones explícitas.
+- `Vaccination` y `Deworming` son modelos/tablas independientes.
+- Ambos requieren siempre un `ClinicalEncounter` de la misma organización y
+  Patient. No existe evento preventivo standalone en el MVP.
+- Un Encounter admite `0..N` Vaccinations y `0..N` Dewormings. No hay unicidad
+  artificial por Patient, producto, fecha o Encounter.
+- Ambos usan el enum conceptual común `PreventiveRecordStatus` con
+  `DRAFT`, `FINALIZED` y `VOIDED`; no se crea `applicationStatus`.
+- Las fechas clínicas son civiles (`DATE` conceptual). Los timestamps técnicos
+  son UTC.
+- Los snapshots se crean únicamente al finalizar y nunca se rehidratan desde
+  entidades actuales.
+- No se agregan proyecciones preventivas a `Patient`.
+- No hay integración de inventario, recordatorios, citas, documentos, storage,
+  firma ni notificaciones en 6E.2.
 
-## No objetivos de 6E.1
+## Relación y estados del Encounter padre
 
-- Crear `Vaccination`, `Deworming`, enums o migraciones Prisma.
-- Crear endpoints, DTOs, React, seed, jobs, emails, PDFs o certificados reales.
-- Inventar un catálogo de vacunas, antiparasitarios, fabricantes, rutas o dosis.
-- Descontar inventario, reservar lotes, vender, facturar o dispensar.
-- Resolver regulación por país, firma digital o medicamentos/biológicos
-  controlados.
+### Creación y edición
 
-## Agregado y relación con Clinical Core
+El endpoint de creación siempre crea un preventivo en `DRAFT` y solo acepta un
+Encounter cuyo estado sea `DRAFT` o `FINALIZED`. Un Encounter `VOIDED` rechaza
+la creación.
 
-La recomendación es modelar dos satélites explícitos, no un `PreventiveEvent`
-con JSON ni otra consulta polimórfica:
+Un preventivo `DRAFT` puede actualizarse mientras el Encounter no esté
+`VOIDED`; un preventivo `FINALIZED` o `VOIDED` no admite PATCH.
 
-```text
-Organization
-└── Patient
-    └── ClinicalRecord (lazy, existente)
-        └── ClinicalEncounter (requerido)
-            ├── Vaccination 0..N
-            └── Deworming 0..N
-```
+### Finalización
 
-Cada entidad guarda `organizationId`, `clinicalEncounterId` y `patientId`.
-`patientId` es una redundancia controlada para listas tenant-safe y debe estar
-validada por FK compuesta contra el Patient del Encounter. No se duplica
-`clinicalRecordId`: se deriva desde el Encounter.
+La finalización de un preventivo `DRAFT` solo procede si el Encounter está
+`DRAFT` o `FINALIZED`. Si el Encounter está `VOIDED`, la operación falla.
 
-### Alternativas evaluadas
+### Anulación del padre
 
-| Alternativa                                      | Ventaja                                                                    | Coste/riesgo                                                                        | Resultado       |
-| ------------------------------------------------ | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------- |
-| A. Tablas `Vaccination` y `Deworming` separadas  | Campos explícitos, checks específicos y políticas distintas de lote/estado | Dos contratos y listas que deben compartir convenciones                             | **Recomendada** |
-| B. `PreventiveEvent` base + detalles             | Línea de tiempo SQL común y campos compartidos                             | Herencia/FKs más complejas; lifecycle y estados divergentes; puede terminar en JSON | No para MVP     |
-| C. Un `PreventiveEvent` con `type` + `data Json` | Alta velocidad inicial                                                     | Pierde integridad, validación, índices y claridad clínica; repite el legacy         | Rechazada       |
+Si un preventivo ya `FINALIZED` tiene un Encounter que posteriormente pasa a
+`VOIDED`, el preventivo permanece `FINALIZED`; nunca se auto-anula. La lectura y
+los DTOs exponen `parentEncounterStatus` para hacer visible esa relación, igual
+que en `Prescription`.
 
-Una línea de tiempo combinada puede componerse en API/frontend sin introducir la
-tabla genérica que se rechaza para persistencia.
-
-### Encounter requerido y multiplicidad
-
-Recomendación MVP: todo evento preventivo requiere un `ClinicalEncounter` de
-la misma organización y Patient. Un Encounter admite `0..N` vacunaciones y
-`0..N` desparasitaciones; no se impone unicidad por producto, fecha o dosis.
-Una repetición crea otro evento, nunca reabre uno finalizado.
-
-Un flujo administrativo/retrospectivo sin Encounter es una decisión de producto
-pendiente. Si se aprueba, debe ser un tipo de Encounter mínimo y auditable, no
-una FK nullable silenciosa.
-
-## Lifecycle y estados
-
-Ambos satélites comparten el lifecycle de evidencia:
+## Lifecycle preventivo
 
 ```text
 DRAFT ──finalize──> FINALIZED ──void(reason)──> VOIDED
 ```
 
-- `DRAFT`: editable; puede ser creado por un asistente con permisos clínicos.
-- `FINALIZED`: datos clínicos, profesional y snapshots inmutables.
-- `VOIDED`: terminal; conserva contenido, razón, actor y timestamps.
-- No hay `DELETE` de un evento creado.
+- `DRAFT`: editable, sin obligación de campos clínicos finales.
+- `FINALIZED`: hecho clínico consolidado, con profesional y snapshots.
+- `VOIDED`: terminal, conserva evidencia y motivo; no se reabre.
+- No existe endpoint DELETE, ni siquiera para drafts abandonados.
+- `VOID` requiere Practitioner autorizado, `expectedVersion` y `voidReason`.
 
-Un draft puede guardar campos todavía incompletos (por ejemplo lote,
-vencimiento, notas o próxima fecha) siempre que las referencias tenant-safe y
-el Encounter sean válidos. Finalizar exige el mínimo clínico del dominio:
-producto, fecha aplicable, Patient activo y Practitioner responsable. Lote,
-vencimiento, matrícula, firma y requisitos de biológicos solo se vuelven
-obligatorios mediante una decisión de jurisdicción explícita.
+El enum común `PreventiveRecordStatus` es correcto porque los tres valores
+tienen exactamente la misma semántica en ambos dominios. No se introduce una
+segunda dimensión de estado.
 
-La vacunación además necesita un estado clínico separado, porque el legacy
-mezcla aplicación, próxima dosis, no aplicación y contraindicación en la misma
-consulta. Se propone `applicationStatus` con valores inicialmente
-`APPLIED`, `PLANNED`, `NOT_APPLIED`, `CONTRAINDICATED`, sujetos a confirmación de
-producto. `Deworming` representa una administración; no se agrega un estado
-clínico adicional hasta que producto defina eventos planificados o rechazados.
+## Decisión sobre el `status` legacy
 
-Reglas recomendadas:
+La UI legacy ofrecía `Aplicada`, `Proxima`, `No aplicada` y `Contraindicada`,
+pero esos valores se serializaban dentro de una consulta genérica y no forman
+un lifecycle clínico persistente. En Easyvet se rediseñan intencionalmente:
 
-- `Vaccination.applicationStatus = APPLIED` exige `administeredOn`.
-- `PLANNED` exige `plannedOn` o `nextDueOn`, pero no inventa una aplicación.
-- `NOT_APPLIED` y `CONTRAINDICATED` conservan la fecha de decisión y notas,
-  pero no crean una dosis administrada.
-- `Deworming` exige `administeredOn` al finalizar.
+- `DRAFT` significa registro no consolidado.
+- `FINALIZED` significa aplicación/administración registrada como hecho.
+- `VOIDED` significa evidencia invalidada, conservada para auditoría.
+- `nextDueOn` expresa planificación futura.
 
-La fecha clínica es `Date` (día civil de la organización), no
-`DateTime`/`timestamptz`. `createdAt`, `updatedAt`, `finalizedAt` y `voidedAt`
-son timestamps técnicos en UTC. `nextDueOn` también es `Date`; si una futura
-cita requiere hora, Agenda tendrá su propio timestamp convertido desde
-`Organization.timezone`.
+No habrá `applicationStatus` en 6E.2. Eventos planificados, no aplicados o
+contraindicados requieren un diseño de producto posterior; no se simulan con
+una falsa administración.
 
-## Modelo conceptual común
+## Fechas y reglas temporales
 
-Los nombres son contrato de diseño, no cambios de esquema autorizados.
+| Campo                     | Tipo conceptual                   | Semántica                                                             |
+| ------------------------- | --------------------------------- | --------------------------------------------------------------------- |
+| `administeredOn`          | `DATE` nullable en draft          | Fecha civil del hecho. Obligatoria al finalizar.                      |
+| `nextDueOn`               | `DATE` nullable                   | Planificación clínica; si existe, debe ser `>= administeredOn`.       |
+| `expiryOn`                | `DATE` nullable, solo Vaccination | Snapshot del vencimiento informado. Nunca es obligatorio globalmente. |
+| `createdAt`, `updatedAt`  | `TIMESTAMPTZ` UTC                 | Auditoría técnica.                                                    |
+| `finalizedAt`, `voidedAt` | `TIMESTAMPTZ` UTC nullable        | Timestamps de transiciones.                                           |
 
-| Campo                                            | Propósito e invariante                                                                      |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `id`                                             | UUID estable.                                                                               |
-| `organizationId`                                 | Tenant propietario; participa en todas las consultas y FKs.                                 |
-| `clinicalEncounterId`                            | Encounter requerido, del mismo Patient y tenant.                                            |
-| `patientId`                                      | Redundancia para lectura; debe coincidir con Encounter.                                     |
-| `status`                                         | `DRAFT`, `FINALIZED`, `VOIDED`.                                                             |
-| `version`                                        | Compare-and-set para update/finalize/void. Inicial `1`, siempre positiva.                   |
-| `recordedByMembershipId`                         | Actor que crea/edita; puede ser asistente.                                                  |
-| `administeredByMembershipId`                     | Practitioner responsable de una administración; requerido al finalizar un evento aplicado.  |
-| `professionalDisplayNameSnapshot`                | Nombre histórico que se imprime/conserva.                                                   |
-| `professionalLicenseSnapshot`                    | Matrícula/licencia histórica, nullable solo si política local lo permite.                   |
-| `patientNameSnapshot`                            | Nombre del Patient al finalizar; no sustituye la FK.                                        |
-| `ownerDisplayNameSnapshot`                       | Owner derivado del Patient/Encounter al finalizar. No se acepta Owner arbitrario.           |
-| `clinicalDate` / `administeredOn`                | Fecha civil; usar `administeredOn` nullable en vacunación cuando el estado no sea aplicado. |
-| `nextDueOn`                                      | Próxima fecha civil opcional; no es automáticamente una Appointment.                        |
-| `notes`                                          | Narrativa clínica acotada, no JSON de contrato.                                             |
-| `finalizedAt`, `finalizedByMembershipId`         | Evidencia de finalización.                                                                  |
-| `voidedAt`, `voidedByMembershipId`, `voidReason` | Anulación terminal con motivo obligatorio.                                                  |
-| `createdAt`, `updatedAt`                         | Auditoría técnica.                                                                          |
+No se impone `administeredOn <= today`; la validación de fechas futuras queda
+como decisión de producto/regulación. Se permite `nextDueOn = administeredOn`.
+No se impone `expiryOn >= administeredOn`: un hecho vencido o documentado
+retrospectivamente debe poder conservarse sin rechazo de base.
 
-Owner se deriva del Patient. No se añade una FK Owner duplicada; el snapshot
-textual de nombre protege certificados futuros frente a cambios de ficha.
+No se crean `Appointment`, `Reminder`, `FollowUp` ni `Notification` por
+efecto de `nextDueOn`.
 
-El evento no duplica `VitalMeasurement` ni `Patient.currentWeightKg`. Si la
-pantalla necesita mostrar peso, consulta los vitales del Encounter; solo se
-capturaría un nuevo vital mediante el flujo de Clinical Core.
+## Identidad tenant-safe y snapshots
 
-Microchip, especie, raza y sexo tampoco se copian al agregado por anticipación.
-Un futuro Document renderer puede tomar esos datos o congelar un snapshot
-documental específico cuando exista un requisito legal; el evento preventivo
-conserva únicamente el nombre del Patient y el display name del Owner en
-finalización.
-Patient archivado bloquea alta, edición de draft y finalización, pero permite
-lectura histórica según permisos y retención.
+Ambas tablas contienen las siguientes columnas conceptuales exactas:
 
-## `Vaccination`
+| Campo                                 | Nullability y regla                                                                 |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| `id`                                  | Requerido, UUID estable.                                                            |
+| `organizationId`                      | Requerido, derivado del tenant activo.                                              |
+| `clinicalEncounterId`                 | Requerido; FK compuesta al Encounter.                                               |
+| `patientId`                           | Requerido; debe coincidir con el Encounter.                                         |
+| `status`                              | Requerido, default `DRAFT`, enum `PreventiveRecordStatus`.                          |
+| `version`                             | Requerido, default `1`, positivo.                                                   |
+| `createdByMembershipId`               | Requerido, derivado de sesión; nunca client-controlled.                             |
+| `responsiblePractitionerMembershipId` | Nullable en `DRAFT`; requerido al finalizar.                                        |
+| `administeredByMembershipId`          | Nullable; Membership activa con `ClinicalRole.PRACTITIONER` o `CLINICAL_ASSISTANT`. |
+| `patientNameSnapshot`                 | Nullable en draft; requerido al finalizar.                                          |
+| `ownerDisplayNameSnapshot`            | Nullable en draft; al finalizar se deriva de `ClinicalEncounter.ownerIdAtTime`.     |
+| `professionalDisplayNameSnapshot`     | Nullable en draft; requerido al finalizar.                                          |
+| `professionalLicenseSnapshot`         | Nullable globalmente; copia de `MembershipProfessionalProfile.licenseNumber`.       |
+| `administeredByDisplayNameSnapshot`   | Nullable; se crea al finalizar solo si existe `administeredByMembershipId`.         |
+| `finalizedAt`                         | Nullable; requerido con `FINALIZED`/`VOIDED`.                                       |
+| `finalizedByMembershipId`             | Nullable; requerido con `FINALIZED`/`VOIDED`.                                       |
+| `voidedAt`                            | Nullable; requerido con `VOIDED`.                                                   |
+| `voidedByMembershipId`                | Nullable; requerido con `VOIDED`.                                                   |
+| `voidReason`                          | Nullable en otros estados; obligatorio y no vacío en `VOIDED`.                      |
+| `createdAt`, `updatedAt`              | Requeridos, timestamps UTC.                                                         |
 
-Campos propios recomendados:
+No se guarda snapshot de Organization en estos aggregates. No se copian
+species, breed, sex ni microchip; pertenecen a un futuro Document/Certificate
+snapshot si un requisito legal lo exige.
 
-| Campo               | Decisión propuesta                                                                                                                 |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `applicationStatus` | Estado clínico independiente del lifecycle técnico.                                                                                |
-| `vaccineName`       | Texto requerido al finalizar; admite nombre libre.                                                                                 |
-| `vaccineType`       | Texto nullable en MVP; no fijar enum desde la lista legacy.                                                                        |
-| `routeText`         | Texto nullable; la vía observada en legacy no debe cerrarse a un catálogo regulatorio sin país definido.                           |
-| `manufacturerText`  | Snapshot textual del fabricante/laboratorio.                                                                                       |
-| `lotNumber`         | Texto nullable en MVP; su obligatoriedad es decisión regulatoria pendiente.                                                        |
-| `expiresOn`         | Fecha civil nullable; validar `expiresOn >= administeredOn` cuando ambas existan.                                                  |
-| `doseText`          | Texto libre (por ejemplo `1 ml`); no convertir a Decimal/unidad sin catálogo.                                                      |
-| `doseTypeText`      | `Refuerzo`, primovacunación, revacunación, dosis única u otra como texto controlado por UI; enum futuro solo con política estable. |
-| `notes`             | Observaciones de aplicación/contraindicación.                                                                                      |
-| `previousDoseOn`    | No se agrega por defecto; una dosis previa es otro evento. Solo añadir si producto necesita capturar historia externa sin evento.  |
+## Modelo exacto: `Vaccination`
 
-El lote, vencimiento y fabricante son snapshots de la aplicación. No son
-referencias a inventario ni deben cambiar si se edita un catálogo futuro.
+Además de todas las columnas comunes anteriores, `Vaccination` contiene:
 
-## `Deworming`
+| Campo            | Tipo/nullable             | Regla                                                                                                 |
+| ---------------- | ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `administeredOn` | `DATE`, nullable en draft | Obligatorio al finalizar.                                                                             |
+| `nextDueOn`      | `DATE`, nullable          | Debe ser `>= administeredOn` cuando ambos existen.                                                    |
+| `vaccineName`    | String, nullable en draft | Obligatorio, trim y no vacío al finalizar. Texto libre.                                               |
+| `vaccineType`    | String nullable           | Conserva clasificación legacy sin enum inicial.                                                       |
+| `route`          | String nullable           | Columna propia, texto libre (`SC`, `IM`, `Oral`, `Intranasal`, etc.); sin catálogo.                   |
+| `laboratoryName` | String nullable           | Nombre libre; se elige este nombre porque legacy usa consistentemente “laboratorio”. Sin Supplier FK. |
+| `lotNumber`      | String nullable           | Texto libre trim; no unique; no obligatorio globalmente.                                              |
+| `expiryOn`       | `DATE` nullable           | Snapshot; no bloquea finalización aunque preceda a `administeredOn`.                                  |
+| `doseText`       | String nullable           | Texto libre; puede contener `1 ml`, fracciones, tabletas, gotas o “según peso”.                       |
+| `notes`          | String nullable           | Observaciones clínicas acotadas.                                                                      |
 
-Campos propios recomendados:
+El legacy `vaccination_followup_dose_type`, checkbox de seguimiento, intervalo
+y días de recordatorio no crean columnas en 6E.2: la fecha clínica resultante,
+si existe, se representa únicamente con `nextDueOn`.
 
-| Campo                      | Decisión propuesta                                                                                         |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `productName`              | Texto requerido al finalizar.                                                                              |
-| `dewormingTypeText`        | Conserva el valor legacy (`Interna`, `Externa`, etc.) como texto nullable hasta separar modalidad y vía.   |
-| `routeText`                | No se crea automáticamente: la fuente legacy mezcla ruta y tipo. Requiere decisión de producto/regulación. |
-| `administeredOn`           | Fecha civil requerida al finalizar.                                                                        |
-| `previousAdministrationOn` | Fecha civil opcional de referencia declarada por el Owner/profesional; no reemplaza un evento histórico.   |
-| `doseText`                 | Texto libre.                                                                                               |
-| `nextDueOn`                | Fecha civil opcional.                                                                                      |
-| `notes`                    | Observaciones clínicas.                                                                                    |
+Mínimo global de finalización: `administeredOn`, `vaccineName`,
+`responsiblePractitionerMembershipId` válido y perfil profesional con
+`displayName`. Ningún otro campo propio es obligatorio globalmente.
 
-No se deriva un estado resumido en Patient. La historia de administraciones es
-la fuente de verdad.
+## Modelo exacto: `Deworming`
 
-## Profesional, asistente y snapshots
+Además de todas las columnas comunes, `Deworming` contiene exactamente:
 
-El actor que realiza la mutación se obtiene de la sesión y nunca del body. El
-`administeredByMembershipId` debe ser Membership activa del mismo tenant con
-`ClinicalRole.PRACTITIONER` cuando el evento se finaliza como administrado.
-`recordedByMembershipId` conserva al asistente u operador técnico.
+| Campo            | Tipo/nullable             | Regla                                                          |
+| ---------------- | ------------------------- | -------------------------------------------------------------- |
+| `administeredOn` | `DATE`, nullable en draft | Obligatorio al finalizar.                                      |
+| `nextDueOn`      | `DATE`, nullable          | Debe ser `>= administeredOn` cuando ambos existen.             |
+| `productName`    | String, nullable en draft | Obligatorio, trim y no vacío al finalizar. Texto libre.        |
+| `dewormingType`  | String nullable           | Conserva el valor legacy sin compartir enum con `vaccineType`. |
+| `doseText`       | String nullable           | Texto libre, igual que en Vaccination.                         |
+| `notes`          | String nullable           | Único campo narrativo del evento en MVP.                       |
 
-`MembershipRole.VETERINARIAN` o `ASSISTANT` no sustituyen a `ClinicalRole`.
-Un `PLATFORM_ADMIN` tampoco obtiene bypass: las rutas siguen requiriendo
-tenant activo y permisos clínicos explícitos, igual que el resto de Clinical
-Core.
+No se agrega `route`: legacy mezcla modalidad y vía dentro de `type` y no hay
+evidencia suficiente para separar ambas. No se agrega `reason`: el único
+“follow-up reason” legacy describe seguimiento, no una razón clínica distinta;
+se representa `nextDueOn` y, si corresponde, `notes`.
 
-Recomendación de permisos:
+El mínimo global de finalización es `administeredOn`, `productName`,
+`responsiblePractitionerMembershipId` válido y perfil profesional con
+`displayName`. `dewormingType`, dosis, próxima fecha, notes y administeredBy
+son opcionales.
 
-| Capacidad           | Practitioner                                             | Clinical Assistant     |
-| ------------------- | -------------------------------------------------------- | ---------------------- |
-| Leer                | Sí                                                       | Sí                     |
-| Crear draft         | Sí                                                       | Sí                     |
-| Editar draft        | Sí                                                       | Sí                     |
-| Finalizar           | Sí, siendo responsable o conforme a delegación explícita | No                     |
-| Anular              | Sí, con política del producto                            | No                     |
-| Exportar/constancia | Según permiso separado                                   | Según permiso separado |
+## Dosis, intervalos y campos legacy
 
-El nombre y matrícula del perfil profesional se congelan al finalizar. Si el
-producto permite que un asistente prepare el draft, debe exigir que el
-Practitioner responsable quede asignado antes de `FINALIZED`.
+Se elige `doseText String nullable` para ambos dominios. La evidencia legacy
+contiene expresiones humanas (dosis, ml, tabletas, gotas y texto dependiente del
+peso); imponer Decimal/unidad perdería información y exigiría un catálogo que
+no existe.
 
-## Patient/Owner y proyecciones
+- `deworming_last_date` no se copia: cada administración previa debe ser otro
+  Deworming histórico. Queda **NO APLICA / REDISEÑADO**.
+- `deworming_followup_interval_value/unit` y el checkbox de seguimiento no se
+  conservan como campos redundantes. Si producen una fecha, se guarda solo
+  `nextDueOn`; el intervalo textual queda descartado.
+- `deworming_followup_reason` no es un `reason` del evento; se descarta como
+  campo estructural y puede conservarse en `notes` únicamente mediante una
+  decisión de importación legacy futura.
 
-No se añaden `vaccinationStatus` ni `dewormingStatus` a Patient. Esos strings
-legacy son una proyección mutable y pueden quedar obsoletos. Las pantallas
-obtendrán el último evento por fecha/estado, y cualquier resumen futuro se
-reconstruirá en una consulta tenant-safe o en una proyección explícitamente
-derivada.
+## Profesionales y workflow de asistente
 
-El cambio de Owner no reescribe snapshots finalizados. Archivar Owner o Patient
-no borra eventos; las mutaciones que impliquen una administración nueva se
-bloquean cuando Patient está `ARCHIVED`.
+`responsiblePractitionerMembershipId` debe apuntar a Membership `ACTIVE`, User
+`ACTIVE`, `ClinicalRole.PRACTITIONER` y un `MembershipProfessionalProfile` con
+`displayName`. `licenseNumber` es globalmente nullable y no se reemplaza por
+email.
 
-El MVP no resuelve registros retrospectivos o aplicaciones externas. Si se
-aprueban después, el contrato debe distinguir `source = INTERNAL|EXTERNAL`,
-permitir profesional/fecha inciertos sin atribuirlos falsamente a una
-Membership de la clínica y conservar el texto del carné/origen. Ese flujo no
-debe degradar el requisito de Encounter ni reutilizar el nombre del actor de la
-sesión como administrador externo.
-
-## Reminders, Agenda, documentos e inventario
-
-- `nextDueOn` es dato clínico, no una cita implícita.
-- Anular un evento no recalcula ni crea automáticamente una nueva fecha: el
-  `nextDueOn` queda como evidencia histórica del evento anulado y deja de ser
-  fuente activa. Una proyección futura debe excluir `VOIDED` y recalcularse
-  desde los eventos restantes.
-- Una integración posterior puede crear una Appointment de control con
-  `sourcePreventiveCareId` mediante operación idempotente, fuera de la
-  transacción clínica; si el usuario elimina la fecha, se cancela la cita por
-  comando explícito.
-- Un futuro reminder/outbox debe ser tenant-scoped e idempotente, con fecha y
-  tipo del evento, sin mandar correo dentro de la transacción de la aplicación.
-- Un certificado/constancia solo se genera desde un evento `FINALIZED`, usando
-  snapshots; la firma digital y el almacenamiento se mantienen fuera del
-  agregado.
-- No existe FK a `Inventory`, lote de stock, compra, venta o facturación en
-  6E.2. La vacunación puede conservar lote/fabricante como texto histórico.
-
-Un futuro `inventoryBatchId` nullable podría enlazar una aplicación con un lote
-real, pero nunca sustituye los snapshots `manufacturerText`, `lotNumber` y
-`expiresOn`, ni convierte el registro clínico en una transacción de inventario.
-
-No se crea una unicidad clínica artificial como
-`UNIQUE(patientId, vaccineName, administeredOn)`: dos productos o dosis el
-mismo día son válidos.
-
-No se implementan automáticamente series, protocolos, número de dosis,
-`VaccineCatalog` ni reglas por especie/país. Una futura configuración puede
-proponer una próxima dosis, pero el evento guardado conserva el valor elegido
-por el profesional.
-
-## Auditoría y concurrencia
-
-Se reutiliza `ClinicalAuditEvent` append-only. La futura migración añadirá solo
-los valores mínimos para crear, actualizar draft, finalizar y anular cada
-satélite. Metadata: entidad, acción, actor, versión anterior/nueva, estado,
-Patient/Encounter y presencia de datos regulados; nunca dosis, diagnóstico,
-PII completa o texto clínico duplicado.
-
-Toda mutación usa `expectedVersion` y transacción. Orden de locks recomendado:
+El actor de `FINALIZE` debe satisfacer:
 
 ```text
-ClinicalEncounter → Patient → Owner histórico → Membership responsable → Preventive record
+TenantContext.membershipId == responsiblePractitionerMembershipId
 ```
 
-Create/update/finalize/void revalidan tenant, parent status, Patient y actor
-dentro de la misma transacción. `PARENT_VOIDED`, `PATIENT_ARCHIVED` y stale
-versiones devuelven errores deterministas (`404` seguro para cross-tenant y
-`409` para conflictos). Una carrera entre `voidEncounter` y finalize confirma
-solo la operación que conserva el lock; la otra reevalúa y falla sin side
-effects.
+No existe finalize-on-behalf en MVP. `administeredByMembershipId` es opcional,
+puede ser Practitioner o Clinical Assistant, y representa quién aplicó
+físicamente el producto; no sustituye al responsable clínico. Debe pertenecer
+al tenant, tener Membership/User activos y `clinicalRole` no nulo.
 
-## Contratos API propuestos para 6E.2
+Clinical Assistant puede leer, crear DRAFT, actualizar DRAFT y figurar como
+`administeredBy`; no puede finalizar ni anular. Practitioner puede ejecutar
+las operaciones que sus permisos permitan. Un PlatformAdmin no obtiene bypass.
 
-Los DTOs deben separar resumen, detalle y mutaciones, igual que Prescriptions,
-sin exponer Prisma directamente:
+## Patient archivado y VOID
 
-- `GET /patients/:patientId/vaccinations` y
-  `GET /patients/:patientId/dewormings`: listas tenant-safe paginables.
-- `GET /vaccinations/:id` y `GET /dewormings/:id`: detalle con Encounter,
-  Patient/Owner snapshots y estado del parent.
-- `POST /clinical-encounters/:encounterId/vaccinations` y `/dewormings`: crea
-  draft; Patient/Encounter se derivan del parent.
-- `PATCH /vaccinations/:id` y `/dewormings/:id`: reemplaza campos de draft con
-  `expectedVersion`.
-- `POST /vaccinations/:id/finalize` y `/dewormings/:id/finalize`.
-- `POST /vaccinations/:id/void` y `/dewormings/:id/void`, con motivo.
+Con Patient `ARCHIVED` se rechazan crear, actualizar DRAFT y finalizar. La
+lectura histórica sigue permitida. Un evento ya `FINALIZED` permanece así.
+Se permite `FINALIZED → VOIDED` por Practitioner autorizado incluso si Patient
+está archivado, porque corrige evidencia histórica y no crea actividad clínica.
 
-No se proponen endpoints por lote, por dosis ni por items; no hay delete.
+`voidReason` es obligatorio; no hay hard delete ni reapertura.
 
-## Índices e invariantes de base propuestos
+## Inventario, reminders y documentos
 
-- Unique `(id, organizationId)` para FKs compuestas.
-- Índices `(organizationId, patientId, administeredOn/createdAt)` y
-  `(organizationId, clinicalEncounterId, createdAt)`.
-- Índice `(organizationId, status)` y, si se materializa, `(organizationId,
-nextDueOn)`.
-- Checks de `version > 0`, estado/lifecycle coherente, fechas no futuras solo
-  si producto las prohíbe, `expiresOn >= administeredOn`, nombres no vacíos y
-  motivo obligatorio en `VOIDED`.
-- FKs `RESTRICT` para historia y responsables; no cascada destructiva.
+6E.2 no contiene `inventoryProductId`, `inventoryBatchId`, descuento de stock,
+reserva, venta, factura, Reminder, Appointment, FollowUp, Notification, PDF,
+Storage ni Signature. `laboratoryName`, `lotNumber` y `expiryOn` son snapshots
+clínicos independientes. Un workflow/outbox explícito futuro podrá integrar
+`nextDueOn` sin mutar la transacción clínica.
 
-## Migración legacy → Easyvet
+## Auditoría, concurrencia y orden de locks
 
-La migración futura debe ser explícita y revisable:
+Se reutiliza `ClinicalAuditEvent`. 6E.2 añadirá tipos de entidad
+`VACCINATION` y `DEWORMING`, con acciones genéricas `CREATED`, `UPDATED`,
+`FINALIZED` y `VOIDED`, usando el naming existente. Metadata mínima: versión,
+operación y estado; nunca dosis, lote, notes ni nombres completos de Patient u
+Owner.
 
-| Legacy                                                                    | Destino propuesto                                 | Riesgo                                                                                             |
-| ------------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `clinical_consultations` con `consultation_type = Vacunacion`             | `Vaccination` ligado al Encounter del `record_id` | Estado `Proxima` puede ser plan, no aplicación; `consultation_at` suele ser `T12:00` sintético.    |
-| `title` / `summary.Vacuna`                                                | `vaccineName`                                     | Resolver nombre libre y duplicados.                                                                |
-| `summary.Estado`, tipo, vía, laboratorio, lote, vencimiento, dosis, notas | Campos propios y snapshots                        | Parseo de texto; valores vacíos y etiquetas antiguas deben conservarse en un reporte de migración. |
-| `indications.Proxima vacunacion` / `Proximo control`                      | `nextDueOn`                                       | Puede representar recordatorio o cita; no migrar Appointment automáticamente sin reconciliación.   |
-| `professional_name/license`                                               | Membership + snapshots                            | No existe FK profesional legacy; requiere matching manual o identidad “legacy desconocida”.        |
-| `clinical_consultations` con `consultation_type = Desparasitacion`        | `Deworming` ligado al Encounter                   | `deworming_type` mezcla modalidad/vía; no convertir a enum.                                        |
-| `summary.Producto`, tipo, dosis, observaciones                            | Campos propios                                    | Texto estructurado con variaciones.                                                                |
-| `indications.Ultima desparasitacion`                                      | `previousAdministrationOn` opcional               | Es una declaración, no un evento histórico.                                                        |
-| `patients.vaccination_status`/`deworming_status`                          | No migrar como fuente; recalcular resumen         | Es una proyección mutable y puede contradecir historia.                                            |
-| `control_reminders` y citas derivadas                                     | Integración posterior/outbox                      | Evitar duplicar comunicaciones o reservas durante backfill.                                        |
-
-Antes de una migración real se necesita un reporte de filas ambiguas,
-conservación del `consultation_id` de origen y una estrategia para consultas
-sin Encounter equivalente. No se debe hacer una conversión masiva silenciosa.
-
-## Alcance de la futura Fase 6E.2
-
-Solo después de cerrar las decisiones pendientes, 6E.2 puede implementar:
-
-1. modelos/enums y migración Prisma tenant-safe;
-2. FKs, checks e índices;
-3. permisos y guardas por `ClinicalRole`;
-4. DTOs, servicios y endpoints de listas/detalle/draft/finalize/void;
-5. transacciones, lock order, CAS, parent race y auditoría;
-6. snapshots profesionales, Patient y Owner;
-7. pruebas PostgreSQL reales de tenant, lifecycle, archive, fechas,
-   conflictos, recordatorios y ausencia de inventario;
-8. seed únicamente ficticio y documentación de contrato.
-
-Frontend, certificados, email, Agenda y migración histórica amplia quedan
-posteriores (6E.3 o fases específicas).
-
-## Fase 6E.3 — integración frontend futura
-
-La UI futura se integrará en la historia del Patient y el detalle del Encounter:
+Todas las mutaciones `PATCH DRAFT`, `FINALIZE` y `VOID` exigen
+`expectedVersion`, usan CAS y transacción. El orden conceptual es:
 
 ```text
-Patient history → Preventive care
-Encounter detail → Vaccinations / Dewormings
+ClinicalEncounter → Patient → Vaccination/Deworming
 ```
 
-Puede ofrecer una línea de tiempo combinada cronológica con filtros por tipo,
-sin unificar las tablas. El flujo de creación partirá del Encounter y separará:
+En `FINALIZE` se añaden `Owner` histórico, Membership responsable y, si existe,
+Membership administeredBy. Los locks de múltiples Membership se ordenan por ID
+ascendente para evitar deadlocks.
 
-- vacunación: producto, estado, lote, vencimiento, dosis, fecha civil y próxima
-  dosis;
-- desparasitación: producto, tipo, dosis, fecha civil y próxima fecha.
+Las carreras obligatorias de 6E.2 son Encounter VOID vs Create, Update y
+Finalize. Si la mutación preventiva obtiene primero los locks, puede completar;
+el posterior VOID del Encounter no auto-anula un preventivo ya finalizado. Si
+Encounter VOID gana primero, la mutación preventiva falla.
 
-Ambos tendrán guardar draft, revisión y finalización, edición de drafts y
-anulación con motivo. No habrá selector duplicado de Patient/Encounter ni
-requests fuera del tenant activo.
+## FKs e índices
 
-Los drafts pueden carecer de lote, vencimiento, notas y próxima fecha. La
-finalización exige los datos clínicamente definidos (Encounter/Patient válidos,
-producto, fecha aplicable y Practitioner responsable); cualquier requisito de
-lote, vencimiento, jurisdicción o certificado se mantiene como decisión
-regulatoria y no se inventa en la UI.
+Cada agregado incluye `organizationId` en sus FKs:
+
+- `(clinicalEncounterId, organizationId, patientId)` →
+  `ClinicalEncounter(id, organizationId, patientId)`.
+- `(patientId, organizationId)` → `Patient(id, organizationId)`.
+- Cada Membership actor usa `(membershipId, organizationId)`.
+- `organizationId` referencia `Organization`.
+- No hay FK Owner; el snapshot se deriva de `ClinicalEncounter.ownerIdAtTime`.
+
+Índices concretos y mínimos:
+
+1. `(organizationId, patientId, administeredOn, createdAt)` para historia.
+2. `(organizationId, clinicalEncounterId)` para contexto.
+3. `(organizationId, status)` para bandejas de trabajo.
+4. `(organizationId, responsiblePractitionerMembershipId)` para agenda clínica.
+
+No se añade ninguna unicidad por Patient, producto, fecha o Encounter.
+
+## Permisos y role matrix
+
+Permisos independientes, nunca `preventiveCare.*`:
+
+```text
+vaccinations.read
+vaccinations.create
+vaccinations.updateDraft
+vaccinations.finalize
+vaccinations.void
+dewormings.read
+dewormings.create
+dewormings.updateDraft
+dewormings.finalize
+dewormings.void
+```
+
+| Rol                |       Read |     Create | Update DRAFT |   Finalize |       Void |
+| ------------------ | ---------: | ---------: | -----------: | ---------: | ---------: |
+| PRACTITIONER       |         Sí |         Sí |           Sí |         Sí |         Sí |
+| CLINICAL_ASSISTANT |         Sí |         Sí |           Sí |         No |         No |
+| Sin ClinicalRole   |         No |         No |           No |         No |         No |
+| PlatformAdmin      | Sin bypass | Sin bypass |   Sin bypass | Sin bypass | Sin bypass |
+
+## APIs exactas de 6E.2
+
+Vaccination:
+
+```text
+GET   /patients/:patientId/vaccinations
+GET   /vaccinations/:vaccinationId
+POST  /clinical-encounters/:encounterId/vaccinations
+PATCH /vaccinations/:vaccinationId
+POST  /vaccinations/:vaccinationId/finalize
+POST  /vaccinations/:vaccinationId/void
+```
+
+Deworming usa la misma forma con `dewormings` y `dewormingId`.
+
+No existen endpoints child, delete, eventos standalone, catálogo, inventario,
+reminders ni consultas polimórficas.
+
+## Contratos Zod futuros
+
+Sin compartir tipos Prisma con la API, 6E.2 definirá estos contratos:
+
+- `vaccinationListQuerySchema` y `dewormingListQuerySchema`: `page` entero
+  positivo (default `1`), `pageSize` entero `1..100` (default `20`),
+  `status` opcional, `clinicalEncounterId` opcional, `from`/`to` opcionales
+  como fechas civiles.
+- `createVaccinationDraftSchema`: campos propios nullable de draft,
+  `responsiblePractitionerMembershipId` y `administeredByMembershipId`
+  opcionales; sin `organizationId`, actor, status ni Patient.
+- `updateVaccinationDraftSchema`: mismo conjunto mutable más
+  `expectedVersion` requerido.
+- `finalizeVaccinationSchema`: únicamente `expectedVersion` requerido.
+- `voidVaccinationSchema`: `expectedVersion` y `voidReason` requerido no vacío.
+- Contratos equivalentes `createDewormingDraftSchema`,
+  `updateDewormingDraftSchema`, `finalizeDewormingSchema` y
+  `voidDewormingSchema`.
+- `vaccinationSummarySchema`, `vaccinationDetailSchema`,
+  `dewormingSummarySchema` y `dewormingDetailSchema`: campos públicos,
+  snapshots y `parentEncounterStatus`, nunca modelos Prisma.
+
+Listas ordenan `administeredOn DESC NULLS LAST`, luego `createdAt DESC` y luego
+`id ASC`. DRAFT sin fecha sigue visible. El límite default es 20 y máximo 100.
+
+## Mapeo conceptual legacy
+
+| Legacy                               | Easyvet                             | Tratamiento                                                 |
+| ------------------------------------ | ----------------------------------- | ----------------------------------------------------------- |
+| Consultation `Vacunacion`            | `ClinicalEncounter` + `Vaccination` | Transformación; no se conserva consulta polimórfica.        |
+| `vaccination_date`                   | `administeredOn`                    | Directo como fecha civil.                                   |
+| nombre/custom                        | `vaccineName`                       | Directo, con trim.                                          |
+| type/route/lab/lot/expiry/dose/notes | campos propios                      | Directo, con `laboratoryName` y `doseText`.                 |
+| seguimiento/next date                | `nextDueOn`                         | Solo fecha resultante; no reminder ni intervalo redundante. |
+| `vaccination_status` de Patient      | Ningún campo                        | Proyección descartada.                                      |
+| Consultation `Desparasitacion`       | `ClinicalEncounter` + `Deworming`   | Transformación; no consulta polimórfica.                    |
+| date/product/type/dose/notes         | campos propios                      | Directo, con `dewormingType`.                               |
+| last date/interval/follow-up reason  | Sin columnas equivalentes           | Rediseñados o postergados según reglas anteriores.          |
+| `deworming_status` de Patient        | Ningún campo                        | Proyección descartada.                                      |
+
+Si no existe profesional verificable, Encounter o contexto tenant completo en
+un futuro import legacy, no se inventa Practitioner: se posterga a una
+estrategia de importación especial.
+
+## Producto pendiente y siguiente fase
+
+No quedan decisiones estructurales necesarias para el schema de 6E.2. Solo
+quedan decisiones genuinamente futuras/regulatorias: obligatoriedad jurisdiccional
+de lote/licencia, importación histórica externa, certificados, biológicos
+controlados, protocolos por especie y vínculo opcional con inventario.
+
+La Fase 6E.2 podrá implementar literalmente este contrato: dos modelos,
+migración additive, contratos Zod, servicios tenant-safe, endpoints, permisos,
+auditoría, CAS y pruebas de carreras. No incluye frontend; eso corresponde a
+6E.3.

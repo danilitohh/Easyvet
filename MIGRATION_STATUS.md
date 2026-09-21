@@ -537,7 +537,30 @@ Fase 6E.1 — análisis y diseño de vacunación + desparasitación:
   obligatoria con `ClinicalEncounter`, multiplicidad `0..N`, fechas civiles,
   lifecycle, snapshots, auditoría, CAS, lock order, APIs futuras, inventario y
   migración en `docs/architecture/preventive-care-proposal.md`.
-- Se registraron decisiones recomendadas y preguntas que producto/regulación
-  debe cerrar antes de 6E.2 en `docs/architecture/preventive-care-decisions.md`.
+- Se registraron y cerraron las decisiones estructurales; solo permanecen
+  decisiones regulatorias/producto postergadas en
+  `docs/architecture/preventive-care-decisions.md`.
 - No se modificaron Prisma, migraciones, endpoints, permisos, seed,
   frontend ni backend. No se inició la Fase 6E.2.
+
+Checkpoint 6E.1.1 — Preventive Care Design Gate completado:
+
+- Se corrigió la inconsistencia documental: Vaccination y Deworming requieren
+  siempre `ClinicalEncounter`; no existe evento standalone en el MVP.
+- Se cerraron los estados permitidos del Encounter padre, la regla de parent
+  VOID posterior a un preventivo FINALIZED, la multiplicidad `0..N`, los
+  modelos independientes y el enum común `PreventiveRecordStatus`.
+- Se eliminó explícitamente `applicationStatus` del MVP; `nextDueOn` queda como
+  planificación clínica sin crear Reminder, Appointment, FollowUp ni
+  Notification.
+- Se fijaron fechas civiles, mínimos de finalización, `doseText`,
+  `laboratoryName`, reglas de lote/vencimiento, intervalos/last-date legacy,
+  responsable Practitioner, `administeredBy`, snapshots y Patient archived.
+- Se cerraron FKs compuestas tenant-safe, índices, CAS/versionado, lock order,
+  carreras contra Encounter VOID, auditoría, permisos separados, role matrix,
+  APIs, contratos, paginación/orden y mapeo conceptual legacy.
+- El contrato literal para la Fase 6E.2 está en
+  `docs/architecture/preventive-care-core-6e2.md`; las propuestas y decisiones
+  previas fueron actualizadas para no dejar decisiones estructurales abiertas.
+- No se modificaron `prisma/schema.prisma`, migraciones, backend, frontend,
+  endpoints, permisos, seeds ni dependencias. No se inició la Fase 6E.2.
