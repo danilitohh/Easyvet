@@ -1,6 +1,6 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1 y 6B.2
+## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2 y 6E.2
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
 autorización por permisos y el primer dominio veterinario de propietarios y
@@ -48,6 +48,8 @@ Organization
 
 ClinicalEncounter
   └── Prescription[] ──< PrescriptionItem[]
+  ├── Vaccination[]
+  └── Deworming[]
 ```
 
 ## Entidades
@@ -79,6 +81,10 @@ ClinicalEncounter
   `VOIDED`; conserva snapshots al finalizar y nunca se elimina físicamente.
 - `PrescriptionItem`: línea ordenada de una receta. Sus campos clínicos son
   texto introducido por el profesional; no referencia catálogo ni inventario.
+- `Vaccination` y `Deworming`: satélites preventivos independientes, siempre
+  ligados al Encounter y Patient del mismo tenant. Comparten
+  `PreventiveRecordStatus` (`DRAFT`, `FINALIZED`, `VOIDED`), versionado CAS,
+  snapshots al finalizar y auditoría; no proyectan campos en `Patient`.
 
 ## Estados y roles
 
@@ -126,6 +132,11 @@ documentNumberNormalized`, más índices tenant/status y de nombre.
   tenant/Encounter, estado y prescriptor. `PrescriptionItem` solo referencia
   a su Prescription, con `(prescriptionId, position)` único; ambos usan
   `ON DELETE RESTRICT`.
+- Vaccination/Deworming usan FKs compuestas `(clinicalEncounterId,
+organizationId, patientId)`, `(patientId, organizationId)` y Memberships
+  tenant-safe, además de índices por Patient/fecha, Encounter, status y
+  responsable. Sus migraciones añaden checks de fecha civil, lifecycle,
+  snapshots finales y `version >= 1`; todas las relaciones usan `RESTRICT`.
 - Los servicios normalizan emails a minúsculas antes de escribir o buscar.
 
 ## Delete y archive behavior
@@ -160,4 +171,4 @@ modificar `veterinary_saas`. La migración se aplica a la base de pruebas con
 La idempotencia del seed se verifica ejecutando `npm run db:seed` dos veces y
 comprobando que permanecen 2 organizaciones, 2 sedes, 3 usuarios, 4
 memberships, 4 Owners, 6 Patients, 3 AvailabilityRules, 6 Appointments,
-3 Prescriptions y 3 PrescriptionItems.
+3 Prescriptions, 3 PrescriptionItems, 2 Vaccinations y 3 Dewormings.

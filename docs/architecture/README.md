@@ -7,10 +7,12 @@ Prisma administra cambios mediante migraciones versionadas explícitas.
 ## Principios
 
 - `apps/web` y `apps/api` son aplicaciones separadas con contratos TypeScript compartidos.
-- `packages/contracts` contiene tipos/esquemas que cruzan la frontera HTTP; no contiene dominio veterinario todavía.
+- `packages/contracts` contiene tipos/esquemas que cruzan la frontera HTTP,
+  incluidos los contratos clínicos y de Preventive Care ya implementados.
 - `packages/config` solo expone primitivas de configuración compartidas.
-- El schema Prisma contiene únicamente `Organization`, `ClinicLocation`,
-  `User`, `Membership` y `Session`; el dominio clínico llegará después.
+- El schema Prisma mantiene las entidades core tenant/auth y los dominios
+  clínicos implementados por fase; Preventive Care 6E.2 añade únicamente
+  `Vaccination` y `Deworming` como satélites de `ClinicalEncounter`.
 - La autenticación de Fase 3B usa sesiones HttpOnly. Storage, correo, calendarios,
   permisos completos y módulos clínicos permanecen pendientes.
 - El API no modifica el esquema al iniciar.

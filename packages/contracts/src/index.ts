@@ -59,6 +59,16 @@ export const permissionSchema = z.enum([
   'prescriptions.updateDraft',
   'prescriptions.finalize',
   'prescriptions.void',
+  'vaccinations.read',
+  'vaccinations.create',
+  'vaccinations.updateDraft',
+  'vaccinations.finalize',
+  'vaccinations.void',
+  'dewormings.read',
+  'dewormings.create',
+  'dewormings.updateDraft',
+  'dewormings.finalize',
+  'dewormings.void',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -337,6 +347,8 @@ export const clinicalAuditEntityTypeSchema = z.enum([
   'CLINICAL_ENCOUNTER',
   'CLINICAL_EVOLUTION',
   'VITAL_MEASUREMENT',
+  'VACCINATION',
+  'DEWORMING',
 ]);
 export const clinicalAuditActionSchema = z.enum([
   'CREATED',
@@ -680,6 +692,168 @@ export type UpdatePrescriptionRequest = z.infer<typeof updatePrescriptionRequest
 export type FinalizePrescriptionRequest = z.infer<typeof finalizePrescriptionRequestSchema>;
 export type VoidPrescriptionRequest = z.infer<typeof voidPrescriptionRequestSchema>;
 export type PrescriptionListQuery = z.infer<typeof prescriptionListQuerySchema>;
+
+// Preventive-care contracts keep civil dates as YYYY-MM-DD strings and never expose Prisma types.
+const preventiveRecordStatusSchema = z.enum(['DRAFT', 'FINALIZED', 'VOIDED']);
+const civilDateSchema = z.string().date();
+const preventivePatientSummarySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  status: z.enum(['ACTIVE', 'ARCHIVED']),
+});
+const preventiveEncounterSummarySchema = z.object({
+  id: z.string().uuid(),
+  status: clinicalEncounterStatusSchema,
+});
+const preventiveProfessionalSummarySchema = z.object({
+  membershipId: z.string().uuid(),
+  displayName: z.string().nullable(),
+  licenseNumber: z.string().nullable(),
+  clinicalRole: clinicalRoleSchema.nullable(),
+});
+const preventiveCommonResponseFieldsSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  status: preventiveRecordStatusSchema,
+  version: z.number().int().positive(),
+  createdByMembershipId: z.string().uuid(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable(),
+  administeredByMembershipId: z.string().uuid().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  ownerDisplayNameSnapshot: z.string().nullable(),
+  professionalDisplayNameSnapshot: z.string().nullable(),
+  professionalLicenseSnapshot: z.string().nullable(),
+  administeredByDisplayNameSnapshot: z.string().nullable(),
+  finalizedAt: z.string().datetime({ offset: true }).nullable(),
+  finalizedByMembershipId: z.string().uuid().nullable(),
+  voidedAt: z.string().datetime({ offset: true }).nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: z.string().nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+  parentEncounterStatus: clinicalEncounterStatusSchema,
+  patient: preventivePatientSummarySchema,
+  encounter: preventiveEncounterSummarySchema,
+  responsiblePractitioner: preventiveProfessionalSummarySchema.nullable(),
+  administeredBy: preventiveProfessionalSummarySchema.nullable(),
+});
+
+export const vaccinationSummarySchema = preventiveCommonResponseFieldsSchema.extend({
+  administeredOn: civilDateSchema.nullable(),
+  nextDueOn: civilDateSchema.nullable(),
+  vaccineName: z.string().nullable(),
+  vaccineType: z.string().nullable(),
+  route: z.string().nullable(),
+  laboratoryName: z.string().nullable(),
+  lotNumber: z.string().nullable(),
+  expiryOn: civilDateSchema.nullable(),
+  doseText: z.string().nullable(),
+  notes: z.string().nullable(),
+});
+export const vaccinationDetailSchema = vaccinationSummarySchema;
+export const dewormingSummarySchema = preventiveCommonResponseFieldsSchema.extend({
+  administeredOn: civilDateSchema.nullable(),
+  nextDueOn: civilDateSchema.nullable(),
+  productName: z.string().nullable(),
+  dewormingType: z.string().nullable(),
+  doseText: z.string().nullable(),
+  notes: z.string().nullable(),
+});
+export const dewormingDetailSchema = dewormingSummarySchema;
+
+export const vaccinationListResponseSchema = z.object({
+  data: z.array(vaccinationSummarySchema),
+  pagination: paginationSchema,
+});
+export const dewormingListResponseSchema = z.object({
+  data: z.array(dewormingSummarySchema),
+  pagination: paginationSchema,
+});
+
+const preventiveListQuerySchema = z
+  .object({
+    page: pageSchema.default(1),
+    pageSize: pageSizeSchema.default(20),
+    status: preventiveRecordStatusSchema.optional(),
+    clinicalEncounterId: z.string().uuid().optional(),
+    from: civilDateSchema.optional(),
+    to: civilDateSchema.optional(),
+  })
+  .strict();
+export const vaccinationListQuerySchema = preventiveListQuerySchema;
+export const dewormingListQuerySchema = preventiveListQuerySchema;
+
+const vaccinationDraftFieldsSchema = {
+  administeredOn: civilDateSchema.nullable().optional(),
+  nextDueOn: civilDateSchema.nullable().optional(),
+  vaccineName: z.string().trim().max(200).nullable().optional(),
+  vaccineType: z.string().trim().max(120).nullable().optional(),
+  route: z.string().trim().max(100).nullable().optional(),
+  laboratoryName: z.string().trim().max(160).nullable().optional(),
+  lotNumber: z.string().trim().max(120).nullable().optional(),
+  expiryOn: civilDateSchema.nullable().optional(),
+  doseText: z.string().trim().max(500).nullable().optional(),
+  notes: z.string().trim().max(5000).nullable().optional(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable().optional(),
+  administeredByMembershipId: z.string().uuid().nullable().optional(),
+};
+const dewormingDraftFieldsSchema = {
+  administeredOn: civilDateSchema.nullable().optional(),
+  nextDueOn: civilDateSchema.nullable().optional(),
+  productName: z.string().trim().max(200).nullable().optional(),
+  dewormingType: z.string().trim().max(120).nullable().optional(),
+  doseText: z.string().trim().max(500).nullable().optional(),
+  notes: z.string().trim().max(5000).nullable().optional(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable().optional(),
+  administeredByMembershipId: z.string().uuid().nullable().optional(),
+};
+
+export const createVaccinationRequestSchema = z.object(vaccinationDraftFieldsSchema).strict();
+export const updateVaccinationRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive(), ...vaccinationDraftFieldsSchema })
+  .strict();
+export const finalizeVaccinationRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+export const voidVaccinationRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(1000),
+  })
+  .strict();
+export const createDewormingRequestSchema = z.object(dewormingDraftFieldsSchema).strict();
+export const updateDewormingRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive(), ...dewormingDraftFieldsSchema })
+  .strict();
+export const finalizeDewormingRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+export const voidDewormingRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(1000),
+  })
+  .strict();
+
+export type PreventiveRecordStatus = z.infer<typeof preventiveRecordStatusSchema>;
+export type VaccinationSummary = z.infer<typeof vaccinationSummarySchema>;
+export type VaccinationDetail = z.infer<typeof vaccinationDetailSchema>;
+export type VaccinationListResponse = z.infer<typeof vaccinationListResponseSchema>;
+export type VaccinationListQuery = z.infer<typeof vaccinationListQuerySchema>;
+export type CreateVaccinationRequest = z.infer<typeof createVaccinationRequestSchema>;
+export type UpdateVaccinationRequest = z.infer<typeof updateVaccinationRequestSchema>;
+export type FinalizeVaccinationRequest = z.infer<typeof finalizeVaccinationRequestSchema>;
+export type VoidVaccinationRequest = z.infer<typeof voidVaccinationRequestSchema>;
+export type DewormingSummary = z.infer<typeof dewormingSummarySchema>;
+export type DewormingDetail = z.infer<typeof dewormingDetailSchema>;
+export type DewormingListResponse = z.infer<typeof dewormingListResponseSchema>;
+export type DewormingListQuery = z.infer<typeof dewormingListQuerySchema>;
+export type CreateDewormingRequest = z.infer<typeof createDewormingRequestSchema>;
+export type UpdateDewormingRequest = z.infer<typeof updateDewormingRequestSchema>;
+export type FinalizeDewormingRequest = z.infer<typeof finalizeDewormingRequestSchema>;
+export type VoidDewormingRequest = z.infer<typeof voidDewormingRequestSchema>;
 
 const appointmentStatusSchema = z.enum([
   'SCHEDULED',

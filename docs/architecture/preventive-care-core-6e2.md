@@ -1,8 +1,16 @@
 # Contrato exacto para Preventive Care — implementación 6E.2
 
-Este documento es normativo para la futura implementación de Vaccination y
-Deworming. No contiene código ni autoriza iniciar 6E.2 durante el checkpoint
-6E.1.1.
+Este documento fue el contrato normativo de diseño de Vaccination y Deworming.
+La implementación backend 6E.2 respeta estas decisiones; el frontend 6E.3
+continúa fuera de alcance.
+
+## Estado de implementación 6E.2
+
+`Vaccination` y `Deworming` ya existen en Prisma y PostgreSQL local mediante la
+migración `20260921212106_add_preventive_care_backend`. El API, contratos, seed,
+auditoría, CAS y pruebas se describen en
+[preventive-care-api.md](preventive-care-api.md). No se agregaron recordatorios,
+inventario, documentos, importación histórica ni proyecciones a `Patient`.
 
 ## 1. Convenciones comunes
 

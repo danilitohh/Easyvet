@@ -43,16 +43,37 @@
 | Prescriptions — frontend 6D.3A    | COMPLETADO (lectura, snapshots y aislamiento)                                 |
 | Prescriptions — frontend 6D.3B    | COMPLETADO (drafts, items, CAS, finalize y void)                              |
 | Prescriptions — hardening 6D.4    | COMPLETADO (locks, lifecycle, invariantes, snapshots, tenant, auditoría y UX) |
-| Preventive care — análisis 6E.1   | COMPLETADO (referencia legacy, propuesta y decisiones; sin implementación)    |
-| Vaccinations backend              | PENDIENTE (Fase 6E.2)                                                         |
-| Dewormings backend                | PENDIENTE (Fase 6E.2)                                                         |
+| Preventive care — análisis 6E.1   | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
+| Preventive care — backend 6E.2    | COMPLETADO (schema, migración, API, lifecycle, CAS, auditoría y tests)        |
+| Vaccinations backend              | COMPLETADO (Fase 6E.2)                                                        |
+| Dewormings backend                | COMPLETADO (Fase 6E.2)                                                        |
 | Preventive Care frontend          | PENDIENTE (Fase 6E.3)                                                         |
+| Preventive Care hardening         | PENDIENTE                                                                     |
+| Certificates/Documents            | POSTERGADO                                                                    |
+| Inventory integration             | POSTERGADO                                                                    |
+| External preventive records       | POSTERGADO                                                                    |
 | Inventario                        | Pendiente                                                                     |
 | Facturación                       | Pendiente                                                                     |
 | SaaS                              | Pendiente                                                                     |
 | Multi-tenancy SaaS completo       | EN PROGRESO                                                                   |
 
 La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
+
+Fase 6E.2 — backend de Preventive Care completada:
+
+- Se añadieron `Vaccination` y `Deworming` como tablas independientes, con
+  Encounter obligatorio, FKs compuestas tenant-safe, índices, checks de
+  lifecycle/fechas/snapshots y migración `20260921212106_add_preventive_care_backend`.
+- Se implementaron los seis endpoints por dominio, contratos Zod, DTOs estrictos,
+  permisos separados, operaciones DRAFT/FINALIZED/VOIDED, CAS y locks ordenados.
+- Finalizar calcula snapshots server-side (incluido Owner histórico del
+  Encounter), registra auditoría genérica y no crea recordatorios, citas,
+  inventario, documentos ni proyecciones en Patient.
+- El seed ficticio e idempotente incluye dos Vaccinations y tres Dewormings entre
+  Norte y Sur. La migración fue aplicada localmente solo a `easyvet_dev` y
+  `easyvet_test`; no se tocaron bases compartidas o productivas.
+- La cobertura automatizada incluye tenant isolation, permisos, validaciones de
+  fechas, snapshots históricos, CAS/lifecycle y carreras de finalización.
 
 Fase 6A — análisis y arquitectura clínica:
 
@@ -562,5 +583,6 @@ Checkpoint 6E.1.1 — Preventive Care Design Gate completado:
 - El contrato literal para la Fase 6E.2 está en
   `docs/architecture/preventive-care-core-6e2.md`; las propuestas y decisiones
   previas fueron actualizadas para no dejar decisiones estructurales abiertas.
-- No se modificaron `prisma/schema.prisma`, migraciones, backend, frontend,
-  endpoints, permisos, seeds ni dependencias. No se inició la Fase 6E.2.
+- Durante ese checkpoint no se modificaron `prisma/schema.prisma`, migraciones,
+  backend, frontend, endpoints, permisos, seeds ni dependencias; la
+  implementación posterior queda registrada en la sección 6E.2 anterior.

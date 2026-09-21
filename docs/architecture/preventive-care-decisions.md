@@ -1,7 +1,8 @@
 # Decisiones cerradas — Preventive Care Design Gate 6E.1.1
 
-Este registro cierra las decisiones estructurales de Vaccination y Deworming
-antes de Prisma. No autoriza implementación. La evidencia legacy corresponde a
+Este registro cerró las decisiones estructurales de Vaccination y Deworming
+antes de Prisma. Fase 6E.2 las implementó en backend; Fase 6E.3 (frontend)
+permanece pendiente. La evidencia legacy corresponde a
 `05fea495cb13208b27bf470b3570987fd501a81e`.
 
 ## Matriz de decisiones
@@ -86,7 +87,7 @@ decisiones genuinamente regulatorias o de producto:
 
 ## Gate de autorización
 
-6E.2 no puede comenzar hasta que se verifique que la implementación respeta
-literalmente `preventive-care-core-6e2.md`, incluyendo parent VOID, Patient
-archived, CAS, lock order, role matrix, APIs y pruebas de carreras. Este
-checkpoint no modifica código funcional.
+El gate 6E.1.1 quedó satisfecho por la implementación 6E.2: schema, APIs,
+parent VOID, Patient archived, CAS, lock order, matriz de roles, auditoría y
+pruebas de carreras se encuentran en código y migración versionada. No se
+autoriza iniciar la UI de 6E.3 dentro de esta fase.

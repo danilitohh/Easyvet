@@ -31,6 +31,8 @@ model Organization {
   vitalMeasurements    VitalMeasurement[]
   clinicalAuditEvents  ClinicalAuditEvent[]
   prescriptions        Prescription[]
+  vaccinations         Vaccination[]
+  dewormings           Deworming[]
 
   @@map("organizations")
 }
@@ -99,6 +101,16 @@ model Membership {
   prescribedPrescriptions   Prescription[]                 @relation("PrescriptionPrescribedByMembership")
   finalizedPrescriptions    Prescription[]                 @relation("PrescriptionFinalizedByMembership")
   voidedPrescriptions       Prescription[]                 @relation("PrescriptionVoidedByMembership")
+  createdVaccinations       Vaccination[]                  @relation("VaccinationCreatedByMembership")
+  responsibleVaccinations   Vaccination[]                  @relation("VaccinationResponsibleMembership")
+  administeredVaccinations  Vaccination[]                  @relation("VaccinationAdministeredByMembership")
+  finalizedVaccinations     Vaccination[]                  @relation("VaccinationFinalizedByMembership")
+  voidedVaccinations        Vaccination[]                  @relation("VaccinationVoidedByMembership")
+  createdDewormings         Deworming[]                    @relation("DewormingCreatedByMembership")
+  responsibleDewormings     Deworming[]                    @relation("DewormingResponsibleMembership")
+  administeredDewormings    Deworming[]                    @relation("DewormingAdministeredByMembership")
+  finalizedDewormings       Deworming[]                    @relation("DewormingFinalizedByMembership")
+  voidedDewormings          Deworming[]                    @relation("DewormingVoidedByMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -192,6 +204,8 @@ model Patient {
   clinicalEncounters ClinicalEncounter[]
   vitalMeasurements  VitalMeasurement[]
   prescriptions      Prescription[]
+  vaccinations       Vaccination[]       @relation("VaccinationPatient")
+  dewormings         Deworming[]         @relation("DewormingPatient")
 
   @@unique([id, organizationId], map: "patients_id_organization_id_key")
   @@index([organizationId])
@@ -269,12 +283,20 @@ enum ClinicalEncounterStatus {
   VOIDED
 }
 
+enum PreventiveRecordStatus {
+  DRAFT
+  FINALIZED
+  VOIDED
+}
+
 enum ClinicalAuditEntityType {
   CLINICAL_RECORD
   CLINICAL_ENCOUNTER
   CLINICAL_EVOLUTION
   VITAL_MEASUREMENT
   PRESCRIPTION
+  VACCINATION
+  DEWORMING
 }
 
 enum ClinicalAuditAction {
@@ -374,6 +396,8 @@ model ClinicalEncounter {
   evolutions                      ClinicalEvolution[]
   vitalMeasurements               VitalMeasurement[]
   prescriptions                   Prescription[]
+  vaccinations                    Vaccination[]           @relation("VaccinationEncounter")
+  dewormings                      Deworming[]             @relation("DewormingEncounter")
 
   @@unique([id, organizationId], map: "clinical_encounters_id_organization_id_key")
   @@unique([id, organizationId, clinicalRecordId], map: "clinical_encounters_id_org_record_key")
@@ -429,6 +453,102 @@ model Prescription {
   @@index([organizationId, status])
   @@index([organizationId, prescribedByMembershipId])
   @@map("prescriptions")
+}
+
+// Vaccination stores a tenant-safe preventive-care event with a dedicated lifecycle.
+model Vaccination {
+  id                                  String                 @id @default(uuid()) @db.Uuid
+  organizationId                      String                 @map("organization_id") @db.Uuid
+  clinicalEncounterId                 String                 @map("clinical_encounter_id") @db.Uuid
+  patientId                           String                 @map("patient_id") @db.Uuid
+  status                              PreventiveRecordStatus @default(DRAFT)
+  version                             Int                    @default(1)
+  administeredOn                      DateTime?              @map("administered_on") @db.Date
+  nextDueOn                           DateTime?              @map("next_due_on") @db.Date
+  vaccineName                         String?                @map("vaccine_name") @db.VarChar(200)
+  vaccineType                         String?                @map("vaccine_type") @db.VarChar(120)
+  route                               String?                @db.VarChar(100)
+  laboratoryName                      String?                @map("laboratory_name") @db.VarChar(160)
+  lotNumber                           String?                @map("lot_number") @db.VarChar(120)
+  expiryOn                            DateTime?              @map("expiry_on") @db.Date
+  doseText                            String?                @map("dose_text") @db.VarChar(500)
+  notes                               String?                @db.VarChar(5000)
+  createdByMembershipId               String                 @map("created_by_membership_id") @db.Uuid
+  responsiblePractitionerMembershipId String?                @map("responsible_practitioner_membership_id") @db.Uuid
+  administeredByMembershipId          String?                @map("administered_by_membership_id") @db.Uuid
+  patientNameSnapshot                 String?                @map("patient_name_snapshot") @db.VarChar(200)
+  ownerDisplayNameSnapshot            String?                @map("owner_display_name_snapshot") @db.VarChar(200)
+  professionalDisplayNameSnapshot     String?                @map("professional_display_name_snapshot") @db.VarChar(200)
+  professionalLicenseSnapshot         String?                @map("professional_license_snapshot") @db.VarChar(160)
+  administeredByDisplayNameSnapshot   String?                @map("administered_by_display_name_snapshot") @db.VarChar(200)
+  finalizedAt                         DateTime?              @map("finalized_at") @db.Timestamptz(3)
+  finalizedByMembershipId             String?                @map("finalized_by_membership_id") @db.Uuid
+  voidedAt                            DateTime?              @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId                String?                @map("voided_by_membership_id") @db.Uuid
+  voidReason                          String?                @map("void_reason") @db.VarChar(1000)
+  createdAt                           DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                           DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                        Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicalEncounter                   ClinicalEncounter      @relation("VaccinationEncounter", fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade)
+  patient                             Patient                @relation("VaccinationPatient", fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership                 Membership             @relation("VaccinationCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  responsiblePractitioner             Membership?            @relation("VaccinationResponsibleMembership", fields: [responsiblePractitionerMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  administeredByMembership            Membership?            @relation("VaccinationAdministeredByMembership", fields: [administeredByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  finalizedByMembership               Membership?            @relation("VaccinationFinalizedByMembership", fields: [finalizedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership                  Membership?            @relation("VaccinationVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, organizationId], map: "vaccinations_id_organization_id_key")
+  @@index([organizationId, patientId, administeredOn, createdAt])
+  @@index([organizationId, clinicalEncounterId])
+  @@index([organizationId, status])
+  @@index([organizationId, responsiblePractitionerMembershipId])
+  @@map("vaccinations")
+}
+
+// Deworming stores a tenant-safe preventive-care event with a dedicated lifecycle.
+model Deworming {
+  id                                  String                 @id @default(uuid()) @db.Uuid
+  organizationId                      String                 @map("organization_id") @db.Uuid
+  clinicalEncounterId                 String                 @map("clinical_encounter_id") @db.Uuid
+  patientId                           String                 @map("patient_id") @db.Uuid
+  status                              PreventiveRecordStatus @default(DRAFT)
+  version                             Int                    @default(1)
+  administeredOn                      DateTime?              @map("administered_on") @db.Date
+  nextDueOn                           DateTime?              @map("next_due_on") @db.Date
+  productName                         String?                @map("product_name") @db.VarChar(200)
+  dewormingType                       String?                @map("deworming_type") @db.VarChar(120)
+  doseText                            String?                @map("dose_text") @db.VarChar(500)
+  notes                               String?                @db.VarChar(5000)
+  createdByMembershipId               String                 @map("created_by_membership_id") @db.Uuid
+  responsiblePractitionerMembershipId String?                @map("responsible_practitioner_membership_id") @db.Uuid
+  administeredByMembershipId          String?                @map("administered_by_membership_id") @db.Uuid
+  patientNameSnapshot                 String?                @map("patient_name_snapshot") @db.VarChar(200)
+  ownerDisplayNameSnapshot            String?                @map("owner_display_name_snapshot") @db.VarChar(200)
+  professionalDisplayNameSnapshot     String?                @map("professional_display_name_snapshot") @db.VarChar(200)
+  professionalLicenseSnapshot         String?                @map("professional_license_snapshot") @db.VarChar(160)
+  administeredByDisplayNameSnapshot   String?                @map("administered_by_display_name_snapshot") @db.VarChar(200)
+  finalizedAt                         DateTime?              @map("finalized_at") @db.Timestamptz(3)
+  finalizedByMembershipId             String?                @map("finalized_by_membership_id") @db.Uuid
+  voidedAt                            DateTime?              @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId                String?                @map("voided_by_membership_id") @db.Uuid
+  voidReason                          String?                @map("void_reason") @db.VarChar(1000)
+  createdAt                           DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                           DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                        Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicalEncounter                   ClinicalEncounter      @relation("DewormingEncounter", fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade)
+  patient                             Patient                @relation("DewormingPatient", fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership                 Membership             @relation("DewormingCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  responsiblePractitioner             Membership?            @relation("DewormingResponsibleMembership", fields: [responsiblePractitionerMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  administeredByMembership            Membership?            @relation("DewormingAdministeredByMembership", fields: [administeredByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  finalizedByMembership               Membership?            @relation("DewormingFinalizedByMembership", fields: [finalizedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership                  Membership?            @relation("DewormingVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, organizationId], map: "dewormings_id_organization_id_key")
+  @@index([organizationId, patientId, administeredOn, createdAt])
+  @@index([organizationId, clinicalEncounterId])
+  @@index([organizationId, status])
+  @@index([organizationId, responsiblePractitionerMembershipId])
+  @@map("dewormings")
 }
 
 // PrescriptionItem keeps the ordered medication instructions relational and auditable.

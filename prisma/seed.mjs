@@ -535,6 +535,157 @@ const seedPrescriptionItems = [
   },
 ];
 
+// Preventive-care fixtures exercise both lifecycle states and both tenants without
+// introducing production-like clinical data into the development seed.
+const seedVaccinations = [
+  {
+    id: '00000000-0000-4000-8000-000000001501',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[0].id,
+    patientId: seedPatients[0].id,
+    status: 'DRAFT',
+    version: 1,
+    administeredOn: null,
+    nextDueOn: null,
+    vaccineName: null,
+    vaccineType: null,
+    route: null,
+    laboratoryName: null,
+    lotNumber: null,
+    expiryOn: null,
+    doseText: null,
+    notes: null,
+    createdByMembershipId: seedUsers[2].membershipId,
+    responsiblePractitionerMembershipId: null,
+    administeredByMembershipId: null,
+    patientNameSnapshot: null,
+    ownerDisplayNameSnapshot: null,
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    administeredByDisplayNameSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001502',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    patientId: seedPatients[0].id,
+    status: 'FINALIZED',
+    version: 2,
+    administeredOn: '2030-01-08',
+    nextDueOn: '2030-07-08',
+    vaccineName: 'Rabia QA',
+    vaccineType: 'Monovalente',
+    route: 'Subcutánea',
+    laboratoryName: 'Laboratorio QA',
+    lotNumber: 'QA-VAC-001',
+    expiryOn: '2031-01-08',
+    doseText: '1 ml',
+    notes: 'Registro ficticio de vacunación para QA.',
+    createdByMembershipId: seedUsers[0].membershipId,
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+    administeredByMembershipId: null,
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    administeredByDisplayNameSnapshot: null,
+    finalizedAt: '2030-01-08T16:00:00.000Z',
+    finalizedByMembershipId: seedUsers[0].membershipId,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+];
+
+const seedDewormings = [
+  {
+    id: '00000000-0000-4000-8000-000000001503',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[0].id,
+    patientId: seedPatients[0].id,
+    status: 'DRAFT',
+    version: 1,
+    administeredOn: null,
+    nextDueOn: null,
+    productName: null,
+    dewormingType: null,
+    doseText: null,
+    notes: null,
+    createdByMembershipId: seedUsers[2].membershipId,
+    responsiblePractitionerMembershipId: null,
+    administeredByMembershipId: null,
+    patientNameSnapshot: null,
+    ownerDisplayNameSnapshot: null,
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    administeredByDisplayNameSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001504',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    patientId: seedPatients[0].id,
+    status: 'FINALIZED',
+    version: 2,
+    administeredOn: '2030-01-08',
+    nextDueOn: '2030-04-08',
+    productName: 'Antiparasitario QA',
+    dewormingType: 'Interna',
+    doseText: '1 tableta',
+    notes: 'Registro ficticio de desparasitación para QA.',
+    createdByMembershipId: seedUsers[0].membershipId,
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+    administeredByMembershipId: null,
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    administeredByDisplayNameSnapshot: null,
+    finalizedAt: '2030-01-08T16:05:00.000Z',
+    finalizedByMembershipId: seedUsers[0].membershipId,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001505',
+    organizationId: seedOrganizations[1].id,
+    clinicalEncounterId: seedClinicalEncounters[2].id,
+    patientId: seedPatients[3].id,
+    status: 'DRAFT',
+    version: 1,
+    administeredOn: null,
+    nextDueOn: null,
+    productName: 'QA Sur',
+    dewormingType: null,
+    doseText: null,
+    notes: 'Registro ficticio de tenant Sur.',
+    createdByMembershipId: '00000000-0000-4000-8000-000000000204',
+    responsiblePractitionerMembershipId: '00000000-0000-4000-8000-000000000204',
+    administeredByMembershipId: null,
+    patientNameSnapshot: null,
+    ownerDisplayNameSnapshot: null,
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    administeredByDisplayNameSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+];
+
 const seedClinicalAuditEvents = [
   {
     id: '00000000-0000-4000-8000-000000001201',
@@ -607,6 +758,42 @@ const seedClinicalAuditEvents = [
     entityId: seedPrescriptions[2].id,
     action: 'PRESCRIPTION_CREATED',
     metadata: { source: 'seed', stage: '6D.2', itemCount: 0, newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001209',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'VACCINATION',
+    entityId: seedVaccinations[0].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6E.2', newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001210',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'VACCINATION',
+    entityId: seedVaccinations[1].id,
+    action: 'FINALIZED',
+    metadata: { source: 'seed', stage: '6E.2', previousVersion: 1, newVersion: 2 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001211',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'DEWORMING',
+    entityId: seedDewormings[0].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6E.2', newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001212',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'DEWORMING',
+    entityId: seedDewormings[1].id,
+    action: 'FINALIZED',
+    metadata: { source: 'seed', stage: '6E.2', previousVersion: 1, newVersion: 2 },
   },
 ];
 
@@ -861,6 +1048,54 @@ async function main() {
       });
     }
 
+    for (const vaccination of seedVaccinations) {
+      const {
+        id: vaccinationId,
+        administeredOn,
+        nextDueOn,
+        expiryOn,
+        finalizedAt,
+        voidedAt,
+        ...vaccinationFields
+      } = vaccination;
+      const data = {
+        ...vaccinationFields,
+        administeredOn: administeredOn ? new Date(`${administeredOn}T00:00:00.000Z`) : null,
+        nextDueOn: nextDueOn ? new Date(`${nextDueOn}T00:00:00.000Z`) : null,
+        expiryOn: expiryOn ? new Date(`${expiryOn}T00:00:00.000Z`) : null,
+        finalizedAt: finalizedAt ? new Date(finalizedAt) : null,
+        voidedAt: voidedAt ? new Date(voidedAt) : null,
+      };
+      await transaction.vaccination.upsert({
+        where: { id: vaccination.id },
+        update: data,
+        create: { id: vaccinationId, ...data },
+      });
+    }
+
+    for (const deworming of seedDewormings) {
+      const {
+        id: dewormingId,
+        administeredOn,
+        nextDueOn,
+        finalizedAt,
+        voidedAt,
+        ...dewormingFields
+      } = deworming;
+      const data = {
+        ...dewormingFields,
+        administeredOn: administeredOn ? new Date(`${administeredOn}T00:00:00.000Z`) : null,
+        nextDueOn: nextDueOn ? new Date(`${nextDueOn}T00:00:00.000Z`) : null,
+        finalizedAt: finalizedAt ? new Date(finalizedAt) : null,
+        voidedAt: voidedAt ? new Date(voidedAt) : null,
+      };
+      await transaction.deworming.upsert({
+        where: { id: deworming.id },
+        update: data,
+        create: { id: dewormingId, ...data },
+      });
+    }
+
     for (const vital of seedVitalMeasurements) {
       const { id: vitalId, ...vitalFields } = vital;
       await transaction.vitalMeasurement.upsert({
@@ -894,7 +1129,7 @@ async function main() {
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 1 profile, 2 records, 3 encounters, 3 prescriptions, 3 items, 2 vitals, 1 evolution, 8 audits.',
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 1 profile, 2 records, 3 encounters, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 12 audits.',
   );
 }
 

@@ -2,10 +2,9 @@
 
 ## Alcance del checkpoint 6E.1.1
 
-Este documento convierte el análisis de la Fase 6E.1 en el contrato de diseño
-que precede a Prisma. Es documentación únicamente: no crea modelos, migraciones,
-endpoints, permisos ni componentes React. La implementación queda expresamente
-fuera de este checkpoint y no inicia la Fase 6E.2.
+Este documento convirtió el análisis de la Fase 6E.1 en el contrato de diseño
+que precedió a Prisma. La propuesta se implementó de forma controlada en Fase
+6E.2 únicamente para backend; el frontend 6E.3 continúa pendiente.
 
 La fuente legacy inspeccionada es el commit
 `05fea495cb13208b27bf470b3570987fd501a81e` del checkout read-only de Lativet.
@@ -235,7 +234,7 @@ clínicos independientes. Un workflow/outbox explícito futuro podrá integrar
 
 ## Auditoría, concurrencia y orden de locks
 
-Se reutiliza `ClinicalAuditEvent`. 6E.2 añadirá tipos de entidad
+Se reutiliza `ClinicalAuditEvent`. 6E.2 añadió tipos de entidad
 `VACCINATION` y `DEWORMING`, con acciones genéricas `CREATED`, `UPDATED`,
 `FINALIZED` y `VOIDED`, usando el naming existente. Metadata mínima: versión,
 operación y estado; nunca dosis, lote, notes ni nombres completos de Patient u
@@ -319,9 +318,9 @@ Deworming usa la misma forma con `dewormings` y `dewormingId`.
 No existen endpoints child, delete, eventos standalone, catálogo, inventario,
 reminders ni consultas polimórficas.
 
-## Contratos Zod futuros
+## Contratos Zod implementados
 
-Sin compartir tipos Prisma con la API, 6E.2 definirá estos contratos:
+Sin compartir tipos Prisma con la API, 6E.2 implementa estos contratos:
 
 - `vaccinationListQuerySchema` y `dewormingListQuerySchema`: `page` entero
   positivo (default `1`), `pageSize` entero `1..100` (default `20`),
@@ -370,7 +369,6 @@ quedan decisiones genuinamente futuras/regulatorias: obligatoriedad jurisdiccion
 de lote/licencia, importación histórica externa, certificados, biológicos
 controlados, protocolos por especie y vínculo opcional con inventario.
 
-La Fase 6E.2 podrá implementar literalmente este contrato: dos modelos,
-migración additive, contratos Zod, servicios tenant-safe, endpoints, permisos,
-auditoría, CAS y pruebas de carreras. No incluye frontend; eso corresponde a
-6E.3.
+La Fase 6E.2 implementó literalmente este contrato: dos modelos, migración
+additive, contratos Zod, servicios tenant-safe, endpoints, permisos, auditoría,
+CAS y pruebas de carreras. No incluye frontend; eso corresponde a 6E.3.

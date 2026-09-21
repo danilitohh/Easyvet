@@ -1,4 +1,4 @@
-# Autorización clínica — Fases 6B.1–6B.2
+# Autorización clínica — Fases 6B.1–6B.2 y 6E.2
 
 ## Separación de responsabilidades
 
@@ -9,8 +9,9 @@ siempre necesita un Membership activo en el tenant seleccionado.
 
 `MembershipProfessionalProfile` es una relación 1:0..1 tenant-aware. Guarda
 únicamente `displayName` y `licenseNumber` nullable, además de sus timestamps.
-La matrícula no es obligatoria para el modelo; la política de finalización
-futura exigirá Membership activo, `ClinicalRole=PRACTITIONER` y perfil válido.
+La matrícula no es obligatoria para el modelo; las finalizaciones clínicas y
+preventivas validan Membership activo, `ClinicalRole=PRACTITIONER` y perfil
+válido cuando la operación lo requiere.
 
 ## Permisos implementados
 
@@ -24,17 +25,24 @@ El catálogo base contiene exactamente:
 - `clinicalVitals.read`, `clinicalVitals.create`
 - `prescriptions.read`, `prescriptions.create`, `prescriptions.updateDraft`,
   `prescriptions.finalize`, `prescriptions.void`
+- `vaccinations.read`, `vaccinations.create`, `vaccinations.updateDraft`,
+  `vaccinations.finalize`, `vaccinations.void`
+- `dewormings.read`, `dewormings.create`, `dewormings.updateDraft`,
+  `dewormings.finalize`, `dewormings.void`
 
 `PRACTITIONER` recibe todos los permisos clínicos, incluidos los cinco de
 prescripciones. `CLINICAL_ASSISTANT` recibe lectura
 del expediente/encuentro/evolución/vitales, creación y edición de drafts de
 encuentro y creación de vitales, además de leer/crear/editar drafts de
-prescripciones; no recibe `finalize` ni `void` de prescripciones, ni
+prescripciones, vacunaciones y desparasitaciones; no recibe `finalize` ni `void`
+de prescripciones, vacunaciones o desparasitaciones, ni
 `clinicalEvolutions.create` por defecto. Las funciones de autorización
 combinan permisos organizacionales y clínicos, eliminando duplicados.
 
-La finalización de una receta requiere además que el Membership actor sea el
-prescriptor indicado y tenga perfil profesional con `displayName`. Un rol
+La finalización de una receta o de un preventivo requiere además que el
+Membership actor sea el responsable indicado y tenga perfil profesional con
+`displayName`; en Preventive Care `administeredBy` puede ser Practitioner o
+Clinical Assistant activo con perfil para snapshot. Un rol
 organizacional aislado (`OWNER`, `ADMIN`, `RECEPTION`, `GROOMER` o `CASHIER`) y
 un `PLATFORM_ADMIN` sin Membership clínico no obtienen acceso por defecto.
 
