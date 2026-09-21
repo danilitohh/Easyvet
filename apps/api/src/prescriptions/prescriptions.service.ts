@@ -545,6 +545,7 @@ export class PrescriptionsService {
       clinicalEncounterId: record.clinicalEncounterId,
       patientId: record.patientId,
       status: record.status,
+      itemCount: record.items.length,
       version: record.version,
       prescribedByMembershipId: record.prescribedByMembershipId,
       createdByMembershipId: record.createdByMembershipId,

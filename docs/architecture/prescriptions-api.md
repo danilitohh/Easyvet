@@ -22,7 +22,8 @@ delete.
 ## Contratos y reglas
 
 Las respuestas separan `PrescriptionSummary`, `PrescriptionDetail` e
-`PrescriptionItem`. Todas contienen `version`; las mutaciones reciben
+`PrescriptionItem`. El resumen incluye `itemCount` sin cargar el contenido de
+cada item. Todas contienen `version`; las mutaciones reciben
 `expectedVersion`. Un conflicto de versión devuelve `409` con
 `PRESCRIPTION_STALE` y no escribe auditoría.
 

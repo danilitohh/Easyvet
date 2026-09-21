@@ -350,6 +350,7 @@ describeDatabase('prescriptions API', () => {
     expect(created.body.patientId).toBe(patientId);
     expect(created.body.status).toBe('DRAFT');
     expect(created.body.items).toHaveLength(0);
+    expect(created.body.itemCount).toBe(0);
 
     await practitioner
       .patch(`/api/v1/prescriptions/${created.body.id}`)
@@ -380,6 +381,7 @@ describeDatabase('prescriptions API', () => {
       .expect(201);
     expect(finalized.body.status).toBe('FINALIZED');
     expect(finalized.body.items.map((item: { position: number }) => item.position)).toEqual([0, 1]);
+    expect(finalized.body.itemCount).toBe(2);
     expect(finalized.body.professionalDisplayNameSnapshot).toBe('Dr. Prescription Original');
     expect(finalized.body.patientNameSnapshot).toBe('Prescription Patient');
     expect(finalized.body.ownerDisplayNameSnapshot).toBe('Original Owner');
@@ -665,6 +667,10 @@ describeDatabase('prescriptions API', () => {
       .expect(200);
     expect(list.body.pagination.page).toBe(1);
     expect(list.body.data.some((item: { id: string }) => item.id === created.body.id)).toBe(true);
+    expect(
+      list.body.data.find((item: { id: string; itemCount: number }) => item.id === created.body.id)
+        ?.itemCount,
+    ).toBe(1);
     expect(list.body.data.every((item: { status: string }) => item.status === 'DRAFT')).toBe(true);
     expect(
       list.body.data.every(

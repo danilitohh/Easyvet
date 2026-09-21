@@ -447,3 +447,24 @@ Fase 6D.2 — backend de Prescriptions completada:
 - No se inició la Fase 6D.3 (frontend). PDF, Documents, Storage, firma,
   catálogo, inventario, ventas, facturación y fármacos controlados permanecen
   postergados.
+
+Fase 6D.3A — frontend read-only de Prescriptions completada:
+
+- Se añadieron las rutas lazy de listado y detalle bajo
+  `/pacientes/:patientId/historia/prescripciones` y su integración filtrada en
+  el detalle de Encounter.
+- La UI usa exclusivamente `prescriptions.read`, `apiClient`, contratos Zod y
+  hooks tenant-aware con abort de requests. Cambiar de organización limpia
+  lista, detalle y estado asociado; un deep link cross-tenant se presenta como
+  recurso no encontrado.
+- Se muestran lifecycle, timestamps en `Organization.timezone`, cantidad y
+  orden de items, snapshots históricos, diagnóstico y avisos independientes
+  del Encounter padre. Patient archivado conserva lectura.
+- No hay botones ni requests de crear, editar, finalizar, anular, PDF,
+  impresión, firma, email, inventario, ventas, facturación o catálogo.
+- Se añadieron 40 pruebas read-only y se documentaron routing, permisos,
+  snapshots, aislamiento, responsive y límites en
+  `docs/architecture/prescriptions-frontend.md` y
+  `docs/migration/prescriptions-ui.md`.
+- Prescriptions operations UI (6D.3B): **PENDIENTE**. Prescriptions hardening
+  (6D.4): **PENDIENTE**.

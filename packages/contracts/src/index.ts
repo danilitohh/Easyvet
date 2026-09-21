@@ -590,6 +590,7 @@ const prescriptionSummaryFieldsSchema = z.object({
   clinicalEncounterId: z.string().uuid(),
   patientId: z.string().uuid(),
   status: prescriptionStatusSchema,
+  itemCount: z.number().int().nonnegative(),
   version: z.number().int().positive(),
   prescribedByMembershipId: z.string().uuid().nullable(),
   createdByMembershipId: z.string().uuid(),

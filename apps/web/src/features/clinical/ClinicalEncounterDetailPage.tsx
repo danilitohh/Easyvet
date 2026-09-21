@@ -36,6 +36,7 @@ import {
   statusTone,
   vitalValues,
 } from './clinicalUtils';
+import { PrescriptionListSection } from '../prescriptions/PrescriptionListSection';
 
 function ReadonlyField({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value?.trim()) return null;
@@ -182,6 +183,7 @@ export function ClinicalEncounterDetailPage() {
   const canReadEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_READ);
   const canReadVitals = useCan(PERMISSION.CLINICAL_VITALS_READ);
   const canReadEvolutions = useCan(PERMISSION.CLINICAL_EVOLUTIONS_READ);
+  const canReadPrescriptions = useCan(PERMISSION.PRESCRIPTIONS_READ);
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
   const canUpdateDraft = useCan(PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT);
   const canCreateVital = useCan(PERMISSION.CLINICAL_VITALS_CREATE);
@@ -497,6 +499,14 @@ export function ClinicalEncounterDetailPage() {
           </dl>
         </Card>
       </div>
+      {canReadPrescriptions ? (
+        <PrescriptionListSection
+          patientId={item.patientId}
+          encounterId={item.id}
+          timezone={timezone}
+          compact
+        />
+      ) : null}
       <Card className="detail-card">
         <div className="detail-card__heading">
           <div>

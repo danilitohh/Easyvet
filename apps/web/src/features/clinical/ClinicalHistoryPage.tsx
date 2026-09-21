@@ -74,6 +74,7 @@ export function ClinicalHistoryPage() {
   const canReadRecord = useCan(PERMISSION.CLINICAL_RECORDS_READ);
   const canReadEncounters = useCan(PERMISSION.CLINICAL_ENCOUNTERS_READ);
   const canReadEvolutions = useCan(PERMISSION.CLINICAL_EVOLUTIONS_READ);
+  const canReadPrescriptions = useCan(PERMISSION.PRESCRIPTIONS_READ);
   const canCreateEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_CREATE);
   const canCreateEvolution = useCan(PERMISSION.CLINICAL_EVOLUTIONS_CREATE);
   const { activeMembership } = useAuth();
@@ -192,6 +193,25 @@ export function ClinicalHistoryPage() {
           Completa tu perfil profesional antes de poder finalizar consultas.{' '}
           <Link to="/perfil/profesional">Configurar perfil profesional</Link>
         </Alert>
+      ) : null}
+      {canReadPrescriptions ? (
+        <Card className="prescription-history-entry">
+          <div>
+            <p className="section-kicker">Tratamientos</p>
+            <h2>Prescripciones</h2>
+            <p className="clinical-muted">
+              Consulta las indicaciones históricas del paciente, sus items y el estado de la
+              consulta relacionada.
+            </p>
+          </div>
+          <Button
+            as={Link}
+            to={`/pacientes/${patientId}/historia/prescripciones`}
+            variant="secondary"
+          >
+            Ver prescripciones
+          </Button>
+        </Card>
       ) : null}
       {!canReadEncounters ? (
         <Card>

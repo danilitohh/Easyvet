@@ -47,6 +47,16 @@ const ClinicalEvolutionFormPage = lazy(() =>
     default: module.ClinicalEvolutionFormPage,
   })),
 );
+const PrescriptionListPage = lazy(() =>
+  import('../features/prescriptions/PrescriptionListPage').then((module) => ({
+    default: module.PrescriptionListPage,
+  })),
+);
+const PrescriptionDetailPage = lazy(() =>
+  import('../features/prescriptions/PrescriptionDetailPage').then((module) => ({
+    default: module.PrescriptionDetailPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -212,6 +222,26 @@ export function App() {
               <PermissionRoute permission={PERMISSION.CLINICAL_RECORDS_READ}>
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <ClinicalHistoryPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/prescripciones"
+            element={
+              <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <PrescriptionListPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/prescripciones/:prescriptionId"
+            element={
+              <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <PrescriptionDetailPage />
                 </Suspense>
               </PermissionRoute>
             }
