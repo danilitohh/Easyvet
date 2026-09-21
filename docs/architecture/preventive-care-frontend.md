@@ -78,3 +78,18 @@ independiente, snapshots, lifecycle, fechas civiles, timezone, tenant switch,
 abort/carga stale, deep links cruzados, paciente archivado, texto no confiable,
 ausencia de CTAs de mutación, CAS, perfiles y responsive estructural. La matriz completa de
 validación se ejecuta con los scripts raíz documentados en `MIGRATION_STATUS.md`.
+
+## Cierre de hardening 6E.4
+
+La UI trata `409` de CAS, estado, paciente archivado, encuentro padre anulado
+y membresía clínica inválida con mensajes específicos y acción de recarga
+cuando corresponde. El selector `administeredBy` recibe únicamente la forma
+mínima de `GET /clinical/members` y nunca muestra matrícula, correo u otra PII
+que no necesita para elegir el miembro. Los formularios siguen usando fechas
+civiles sin conversiones de zona horaria; `expiryOn` anterior es una advertencia
+visible y `nextDueOn` inválido se bloquea antes del envío.
+
+La verificación responsive final se realizó a 390 px sin overflow horizontal en
+lista, detalle ni formulario. El cambio de tenant invalida solicitudes,
+limpia cache local y cierra acciones pendientes; no se conserva un registro del
+tenant anterior en pantalla.

@@ -31,10 +31,10 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
     return 'La consulta no permite esta operación en su estado actual.';
   }
   if (error.code === 'PROFESSIONAL_PROFILE_REQUIRED') {
-    return 'Completa tu perfil profesional antes de finalizar esta consulta.';
+    return 'Completa tu perfil profesional antes de finalizar este registro.';
   }
   if (error.code === 'ONLY_RESPONSIBLE_PRACTITIONER_CAN_FINALIZE') {
-    return 'Esta consulta debe ser finalizada por el Practitioner responsable.';
+    return 'Esta operación debe realizarla el profesional responsable.';
   }
   if (error.code === 'PRESCRIPTION_STALE') {
     return 'Esta prescripción fue modificada desde otra sesión. Recarga la versión actual.';
@@ -48,7 +48,10 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'INVALID_VACCINATION_STATE' || error.code === 'INVALID_DEWORMING_STATE') {
     return 'El registro preventivo no permite esta operación en su estado actual.';
   }
-  if (error.code === 'VACCINE_REQUIRED' || error.code === 'DEWORMING_PRODUCT_REQUIRED') {
+  if (error.code === 'VACCINE_REQUIRED' || error.code === 'VACCINE_NAME_REQUIRED') {
+    return 'Completa el nombre de la vacuna antes de finalizar.';
+  }
+  if (error.code === 'DEWORMING_PRODUCT_REQUIRED') {
     return 'Completa el nombre del producto antes de finalizar.';
   }
   if (error.code === 'RESPONSIBLE_PRACTITIONER_REQUIRED') {
@@ -56,6 +59,15 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   }
   if (error.code === 'ADMINISTERED_BY_PROFILE_REQUIRED') {
     return 'El miembro registrado como administrador debe completar su perfil profesional.';
+  }
+  if (error.code === 'ADMINISTERED_BY_INVALID') {
+    return 'Selecciona un miembro clínico activo para «administrado por».';
+  }
+  if (error.code === 'PATIENT_ARCHIVED') {
+    return 'El paciente está archivado y no admite nueva actividad clínica.';
+  }
+  if (error.code === 'INVALID_NEXT_DUE_DATE') {
+    return 'La próxima fecha debe ser igual o posterior a la fecha de aplicación.';
   }
   if (error.code === 'PRESCRIPTION_IMMUTABLE') {
     return 'La prescripción ya no está en borrador y no puede editarse.';
@@ -76,7 +88,7 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
     return 'Esta prescripción debe ser finalizada por el profesional asignado.';
   }
   if (error.code === 'PARENT_CLINICAL_ENCOUNTER_VOIDED') {
-    return 'La consulta asociada fue anulada y la prescripción ya no puede editarse.';
+    return 'La consulta asociada fue anulada y este registro ya no puede modificarse.';
   }
   if (error.status === 409) return 'No se pudo completar la operación porque existe un conflicto.';
   if (error.code === 'RESOURCE_NOT_FOUND' || error.status === 404) {

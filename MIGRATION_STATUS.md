@@ -49,7 +49,8 @@
 | Dewormings backend                 | COMPLETADO (Fase 6E.2)                                                        |
 | Preventive Care frontend read-only | COMPLETADO (Fase 6E.3A)                                                       |
 | Preventive Care operations         | COMPLETADO (Fase 6E.3B: create/edit/finalize/void, CAS y UX tenant-safe)      |
-| Preventive Care hardening          | PENDIENTE (Fase 6E.4)                                                         |
+| Preventive Care hardening          | COMPLETADO (Fase 6E.4: invariantes, concurrencia, PII, UX y auditoría)        |
+| Preventive Care                    | COMPLETADO (Fases 6E.1–6E.4)                                                  |
 | Certificates/Documents             | POSTERGADO                                                                    |
 | Inventory integration              | POSTERGADO                                                                    |
 | External preventive records        | POSTERGADO                                                                    |
@@ -107,8 +108,24 @@ Fase 6E.3B — operaciones UI de Preventive Care completada:
 - Se agregó `GET /clinical/members` sin cambiar la semántica del lookup de
   practitioners. No se modificó Prisma, no se creó migración y no se alteró el
   seed. Reminders, inventory y certificates siguen fuera de alcance.
-- Preventive Care hardening continúa **PENDIENTE (Fase 6E.4)**; esta fase se
-  detiene aquí.
+- Preventive Care hardening quedó **COMPLETADO (Fase 6E.4)**; no se inicia el
+  siguiente módulo en este checkpoint.
+
+Fase 6E.4 — hardening y cierre de Preventive Care completada:
+
+- Se verificaron constraints SQL, lifecycle terminal, CAS, fechas civiles,
+  `nextDueOn`, warning no bloqueante de `expiryOn`, snapshots, Patient
+  archivado, Encounter padre, orden de locks y auditoría sin narrativa clínica.
+- `administeredBy` quedó restringido explícitamente a miembros clínicos activos;
+  el actor de `void` se revalida y bloquea dentro de la transacción. Se redujo
+  `GET /clinical/members` al selector mínimo sin matrícula ni correo y se
+  corrigieron mensajes preventivos de stale/estado/fechas.
+- No se creó migración nueva, no se modificó Prisma, seed, inventario,
+  recordatorios, certificados ni documentos. La matriz legacy está en
+  `docs/migration/preventive-care-final-review.md`.
+- QA manual previo y regresiones automatizadas se ejecutaron únicamente con
+  datos ficticios en `easyvet_dev`; `easyvet_test` quedó reservado para la
+  suite. Docker/PostgreSQL permanecen verificados localmente, no en producción.
 
 Fase 6A — análisis y arquitectura clínica:
 

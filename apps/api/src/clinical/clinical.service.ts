@@ -300,7 +300,7 @@ export class ClinicalService {
       select: {
         id: true,
         clinicalRole: true,
-        professionalProfile: { select: { displayName: true, licenseNumber: true } },
+        professionalProfile: { select: { displayName: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -309,7 +309,6 @@ export class ClinicalService {
         membershipId: membership.id,
         clinicalRole: membership.clinicalRole!,
         displayName: membership.professionalProfile?.displayName ?? null,
-        licenseNumber: membership.professionalProfile?.licenseNumber ?? null,
         profileConfigured: Boolean(membership.professionalProfile?.displayName?.trim()),
       })),
     };

@@ -1,4 +1,4 @@
-# Preventive Care API — Fase 6E.2
+# Preventive Care API — Fases 6E.2 y 6E.4
 
 El backend de Preventive Care es un módulo NestJS tenant-safe. El prefijo global
 es `/api/v1`; todas las mutaciones derivan `organizationId` y el actor desde la
@@ -33,7 +33,8 @@ orden determinista es `administeredOn DESC NULLS LAST`, `createdAt DESC`, `id AS
 
 El endpoint tenant-safe `GET /clinical/members` expone únicamente membresías
 activas con rol `PRACTITIONER` o `CLINICAL_ASSISTANT`, incluyendo `membershipId`,
-`clinicalRole`, nombre, matrícula y `profileConfigured`. Se protege con
+`clinicalRole`, nombre y `profileConfigured`. No expone matrícula ni correo: es
+un selector operativo mínimo. Se protege con
 `clinicalRecords.read` y existe para el selector explícito de `administeredBy`;
 `GET /clinical/practitioners` conserva su semántica histórica.
 
@@ -64,6 +65,23 @@ Las transacciones bloquean en orden `ClinicalEncounter → Patient → Preventiv
 finalize añade Owner histórico y Memberships ordenadas por ID. Un recurso de
 otro tenant se responde como `404`, y una carrera con la misma versión produce
 un único ganador y un `409` stale.
+
+## Cierre de hardening 6E.4
+
+- Las restricciones SQL mantienen `version >= 1`, orden civil de `nextDueOn`,
+  coherencia de snapshots y metadatos de `DRAFT`, `FINALIZED` y `VOIDED`.
+- `administeredBy` solo acepta membresías activas de `PRACTITIONER` o
+  `CLINICAL_ASSISTANT` cuyo usuario también esté activo. `void` vuelve a
+  bloquear y validar el actor dentro de la transacción.
+- El lock order completo es `ClinicalEncounter → Patient → Preventive → Owner →
+Memberships` (Memberships en orden lexicográfico de ID). El archivado de
+  Patient y el void del Encounter padre compiten en esas mismas filas; no se
+  crean proyecciones, reminders ni side effects ocultos.
+- Los errores públicos no incluyen SQL, PII ni identificadores de otro tenant.
+  Los snapshots son inmutables y la auditoría solo guarda actor, entidad,
+  acción y metadatos de versión, nunca narrativa clínica.
+- El cierre no requiere migración nueva. La revisión legacy se conserva en
+  `docs/migration/preventive-care-final-review.md`.
 
 ## Implementación y validación
 

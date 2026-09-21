@@ -1,8 +1,12 @@
 # Decisiones cerradas — Preventive Care Design Gate 6E.1.1
 
+> Estado documental: Fase 6E.4 completada. Las decisiones de este documento
+> describen únicamente Vaccination y Deworming; no habilitan el siguiente
+> dominio clínico.
+
 Este registro cerró las decisiones estructurales de Vaccination y Deworming
-antes de Prisma. Fase 6E.2 las implementó en backend; Fase 6E.3 (frontend)
-permanece pendiente. La evidencia legacy corresponde a
+antes de Prisma. Fase 6E.2 las implementó en backend y Fase 6E.3 en frontend;
+Fase 6E.4 cerró hardening y QA. La evidencia legacy corresponde a
 `05fea495cb13208b27bf470b3570987fd501a81e`.
 
 ## Matriz de decisiones

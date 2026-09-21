@@ -192,8 +192,13 @@ export const clinicalPractitionerListResponseSchema = z.object({
 
 // Preventive-care selectors need both practitioners and clinical assistants while the
 // historical practitioner lookup remains intentionally practitioner-only.
-export const clinicalMemberResponseSchema = clinicalPractitionerResponseSchema.extend({
+// The member selector only needs a stable identity, role and profile state. Do not
+// expose license numbers (or other professional PII) to this list endpoint.
+export const clinicalMemberResponseSchema = z.object({
+  membershipId: z.string().uuid(),
   clinicalRole: clinicalRoleSchema,
+  displayName: z.string().nullable(),
+  profileConfigured: z.boolean(),
 });
 
 export const clinicalMemberListResponseSchema = z.object({

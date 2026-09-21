@@ -53,3 +53,13 @@ aplica estos permisos en todas las rutas clínicas, deriva el actor del
 Membership activo y mantiene `PLATFORM_ADMIN` sin acceso clínico implícito.
 La UI clínica y los side effects externos sobre Agenda, documentos o
 notificaciones siguen fuera de alcance.
+
+## Endpoint de miembros clínicos
+
+`GET /api/v1/clinical/members` exige `clinicalRecords.read`, deriva el tenant
+de la sesión y filtra simultáneamente `Membership.status=ACTIVE`,
+`User.status=ACTIVE` y `ClinicalRole IN (PRACTITIONER, CLINICAL_ASSISTANT)`.
+Devuelve solo `membershipId`, `clinicalRole`, `displayName` y
+`profileConfigured`; no es un endpoint de directorio y no expone email ni
+matrícula. Todas las operaciones de Preventive Care vuelven a validar estas
+condiciones dentro de su transacción antes de congelar snapshots o anular.

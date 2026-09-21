@@ -221,7 +221,10 @@ export async function requireAdministeredMembership(
       organizationId,
       status: MembershipStatus.ACTIVE,
       user: { status: UserStatus.ACTIVE },
-      clinicalRole: { not: null },
+      // Only clinical roles may be selected as the person who administered care.
+      // Keep this explicit so future non-clinical membership roles cannot leak into
+      // the clinical transaction boundary by merely being non-null.
+      clinicalRole: { in: [ClinicalRole.PRACTITIONER, ClinicalRole.CLINICAL_ASSISTANT] },
     },
     select: {
       id: true,

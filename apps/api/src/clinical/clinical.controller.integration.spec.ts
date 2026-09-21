@@ -258,6 +258,11 @@ describeDatabase('clinical core API', () => {
       ]),
     );
     expect(clinicalMembers.body.data).toHaveLength(2);
+    expect(
+      clinicalMembers.body.data.every(
+        (member: Record<string, unknown>) => !('licenseNumber' in member) && !('email' in member),
+      ),
+    ).toBe(true);
     await agent
       .put('/api/v1/clinical/me/professional-profile')
       .send({ displayName: 'Dr. Clinical', licenseNumber: null })

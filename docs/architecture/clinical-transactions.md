@@ -77,6 +77,11 @@ pueden completar únicamente si adquieren primero el lock; un parent ya voided
 bloquea create/update/finalize. `FINALIZED` no se auto-void y expone
 `parentEncounterStatus`.
 
+En 6E.4 `void` también bloquea y revalida el Membership actor como Practitioner
+activo dentro de la transacción. Así una suspensión concurrente no puede pasar
+la guardia HTTP y autorizar una anulación después de que cambie el estado de la
+membresía.
+
 La creación lazy de `ClinicalRecord` usa `INSERT ... ON CONFLICT DO NOTHING` dentro de la
 transacción del primer Encounter. Dos requests simultáneas producen un único Record y dos drafts
 válidos; solo el request que inserta el Record escribe el audit de creación.

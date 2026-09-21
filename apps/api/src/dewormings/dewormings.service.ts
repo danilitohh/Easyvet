@@ -400,6 +400,10 @@ export class DewormingsService {
       await lockEncounter(tx, tenant.organizationId, snapshot.clinicalEncounterId);
       await lockPatient(tx, tenant.organizationId, snapshot.patientId);
       await this.lockRecord(tx, tenant.organizationId, dewormingId);
+      // Revalidate and lock the actor inside the same transaction so a concurrent
+      // suspension cannot authorize a void after the controller guard passed.
+      await lockMembership(tx, tenant.organizationId, tenant.membershipId);
+      await requireResponsibleMembership(tx, tenant.organizationId, tenant.membershipId);
       const current = await this.requireMinimal(tx, tenant.organizationId, dewormingId);
       if (current.status !== PreventiveRecordStatus.FINALIZED)
         throw conflict('INVALID_DEWORMING_STATE', 'Only finalized dewormings can be voided');
