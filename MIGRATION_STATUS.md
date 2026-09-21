@@ -1,61 +1,62 @@
 # Estado de migración
 
-| Área                              | Estado                                                                        |
-| --------------------------------- | ----------------------------------------------------------------------------- |
-| Auditoría legacy                  | Completada                                                                    |
-| Monorepo                          | Completado                                                                    |
-| React/Vite                        | App shell y base visual de Fase 2 completados                                 |
-| NestJS                            | Infraestructura; Nest 12.0.3 verificado                                       |
-| PostgreSQL                        | VERIFICADO LOCALMENTE                                                         |
-| Prisma                            | Modelos Fases 3A/3B/4A/5B y migraciones aplicados localmente                  |
-| Core tenant model                 | COMPLETADO (Fase 3A)                                                          |
-| Multi-tenancy                     | Fundación de aislamiento completada (Fase 3C)                                 |
-| Autenticación                     | COMPLETADA (Fase 3B)                                                          |
-| Autorización                      | COMPLETADA (Fase 3C)                                                          |
-| UI Lativet                        | Referencia analizada; adaptación React completada                             |
-| Owners backend                    | COMPLETADO (Fase 4A)                                                          |
-| Patients backend                  | COMPLETADO (Fase 4A)                                                          |
-| Owners frontend                   | COMPLETADO (Fase 4B)                                                          |
-| Patients frontend                 | COMPLETADO (Fase 4B)                                                          |
-| Owners/Patients final review      | COMPLETADO (Fase 4C)                                                          |
-| Agenda analysis/design            | COMPLETADO (Fase 5A)                                                          |
-| Agenda backend                    | COMPLETADO (Fase 5B)                                                          |
-| Agenda frontend read-only         | COMPLETADO (Fase 5C.1)                                                        |
-| Agenda scheduling operations      | COMPLETADO (Fase 5C.2A)                                                       |
-| Agenda workflow operations        | COMPLETADO (Fase 5C.2B)                                                       |
-| Agenda availability UI            | COMPLETADO (Fase 5C.2B)                                                       |
-| Agenda hardening                  | COMPLETADO (Fase 5D)                                                          |
-| Agenda                            | COMPLETADO (Fases 5A–5D)                                                      |
-| Google Calendar                   | POSTERGADO                                                                    |
-| Notifications                     | POSTERGADO                                                                    |
-| Public booking                    | POSTERGADO                                                                    |
-| Clínica — análisis Fase 6A        | COMPLETADO                                                                    |
-| Clínica — design gate 6A.1        | COMPLETADO                                                                    |
-| Clínica — fundación 6B.1          | COMPLETADO (schema, migración, seed, permisos y tests)                        |
-| Clínica — núcleo API 6B.2         | COMPLETADO (API, transacciones, CAS, auditoría y tests)                       |
-| Clínica — frontend read-only 6C.1 | COMPLETADO (rutas, historia y detalle en modo lectura)                        |
-| Clínica — operaciones UI 6C.2A    | COMPLETADO (borradores, vitales y perfil profesional)                         |
-| Clínica — finalize/void UI 6C.2B  | COMPLETADO (finalización, evoluciones y anulación)                            |
-| Clínica — hardening 6C.3          | COMPLETADO (invariantes, concurrencia, tenant, UX y auditoría)                |
-| Clinical Core                     | COMPLETADO                                                                    |
-| Prescriptions — análisis 6D.1     | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
-| Prescriptions — backend 6D.2      | COMPLETADO                                                                    |
-| Prescriptions — frontend 6D.3A    | COMPLETADO (lectura, snapshots y aislamiento)                                 |
-| Prescriptions — frontend 6D.3B    | COMPLETADO (drafts, items, CAS, finalize y void)                              |
-| Prescriptions — hardening 6D.4    | COMPLETADO (locks, lifecycle, invariantes, snapshots, tenant, auditoría y UX) |
-| Preventive care — análisis 6E.1   | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
-| Preventive care — backend 6E.2    | COMPLETADO (schema, migración, API, lifecycle, CAS, auditoría y tests)        |
-| Vaccinations backend              | COMPLETADO (Fase 6E.2)                                                        |
-| Dewormings backend                | COMPLETADO (Fase 6E.2)                                                        |
-| Preventive Care frontend          | PENDIENTE (Fase 6E.3)                                                         |
-| Preventive Care hardening         | PENDIENTE                                                                     |
-| Certificates/Documents            | POSTERGADO                                                                    |
-| Inventory integration             | POSTERGADO                                                                    |
-| External preventive records       | POSTERGADO                                                                    |
-| Inventario                        | Pendiente                                                                     |
-| Facturación                       | Pendiente                                                                     |
-| SaaS                              | Pendiente                                                                     |
-| Multi-tenancy SaaS completo       | EN PROGRESO                                                                   |
+| Área                               | Estado                                                                        |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| Auditoría legacy                   | Completada                                                                    |
+| Monorepo                           | Completado                                                                    |
+| React/Vite                         | App shell y base visual de Fase 2 completados                                 |
+| NestJS                             | Infraestructura; Nest 12.0.3 verificado                                       |
+| PostgreSQL                         | VERIFICADO LOCALMENTE                                                         |
+| Prisma                             | Modelos Fases 3A/3B/4A/5B y migraciones aplicados localmente                  |
+| Core tenant model                  | COMPLETADO (Fase 3A)                                                          |
+| Multi-tenancy                      | Fundación de aislamiento completada (Fase 3C)                                 |
+| Autenticación                      | COMPLETADA (Fase 3B)                                                          |
+| Autorización                       | COMPLETADA (Fase 3C)                                                          |
+| UI Lativet                         | Referencia analizada; adaptación React completada                             |
+| Owners backend                     | COMPLETADO (Fase 4A)                                                          |
+| Patients backend                   | COMPLETADO (Fase 4A)                                                          |
+| Owners frontend                    | COMPLETADO (Fase 4B)                                                          |
+| Patients frontend                  | COMPLETADO (Fase 4B)                                                          |
+| Owners/Patients final review       | COMPLETADO (Fase 4C)                                                          |
+| Agenda analysis/design             | COMPLETADO (Fase 5A)                                                          |
+| Agenda backend                     | COMPLETADO (Fase 5B)                                                          |
+| Agenda frontend read-only          | COMPLETADO (Fase 5C.1)                                                        |
+| Agenda scheduling operations       | COMPLETADO (Fase 5C.2A)                                                       |
+| Agenda workflow operations         | COMPLETADO (Fase 5C.2B)                                                       |
+| Agenda availability UI             | COMPLETADO (Fase 5C.2B)                                                       |
+| Agenda hardening                   | COMPLETADO (Fase 5D)                                                          |
+| Agenda                             | COMPLETADO (Fases 5A–5D)                                                      |
+| Google Calendar                    | POSTERGADO                                                                    |
+| Notifications                      | POSTERGADO                                                                    |
+| Public booking                     | POSTERGADO                                                                    |
+| Clínica — análisis Fase 6A         | COMPLETADO                                                                    |
+| Clínica — design gate 6A.1         | COMPLETADO                                                                    |
+| Clínica — fundación 6B.1           | COMPLETADO (schema, migración, seed, permisos y tests)                        |
+| Clínica — núcleo API 6B.2          | COMPLETADO (API, transacciones, CAS, auditoría y tests)                       |
+| Clínica — frontend read-only 6C.1  | COMPLETADO (rutas, historia y detalle en modo lectura)                        |
+| Clínica — operaciones UI 6C.2A     | COMPLETADO (borradores, vitales y perfil profesional)                         |
+| Clínica — finalize/void UI 6C.2B   | COMPLETADO (finalización, evoluciones y anulación)                            |
+| Clínica — hardening 6C.3           | COMPLETADO (invariantes, concurrencia, tenant, UX y auditoría)                |
+| Clinical Core                      | COMPLETADO                                                                    |
+| Prescriptions — análisis 6D.1      | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
+| Prescriptions — backend 6D.2       | COMPLETADO                                                                    |
+| Prescriptions — frontend 6D.3A     | COMPLETADO (lectura, snapshots y aislamiento)                                 |
+| Prescriptions — frontend 6D.3B     | COMPLETADO (drafts, items, CAS, finalize y void)                              |
+| Prescriptions — hardening 6D.4     | COMPLETADO (locks, lifecycle, invariantes, snapshots, tenant, auditoría y UX) |
+| Preventive care — análisis 6E.1    | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
+| Preventive care — backend 6E.2     | COMPLETADO (schema, migración, API, lifecycle, CAS, auditoría y tests)        |
+| Vaccinations backend               | COMPLETADO (Fase 6E.2)                                                        |
+| Dewormings backend                 | COMPLETADO (Fase 6E.2)                                                        |
+| Preventive Care frontend read-only | COMPLETADO (Fase 6E.3A)                                                       |
+| Preventive Care operations         | PENDIENTE (Fase 6E.3B)                                                        |
+| Preventive Care hardening          | PENDIENTE (Fase 6E.4)                                                         |
+| Certificates/Documents             | POSTERGADO                                                                    |
+| Inventory integration              | POSTERGADO                                                                    |
+| External preventive records        | POSTERGADO                                                                    |
+| Inventario                         | Pendiente                                                                     |
+| Facturación                        | Pendiente                                                                     |
+| SaaS                               | Pendiente                                                                     |
+| Multi-tenancy SaaS completo        | EN PROGRESO                                                                   |
 
 La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
 
@@ -74,6 +75,24 @@ Fase 6E.2 — backend de Preventive Care completada:
   `easyvet_test`; no se tocaron bases compartidas o productivas.
 - La cobertura automatizada incluye tenant isolation, permisos, validaciones de
   fechas, snapshots históricos, CAS/lifecycle y carreras de finalización.
+
+Fase 6E.3A — frontend read-only de Preventive Care completada:
+
+- Se añadieron las rutas semánticas de lectura para vacunaciones,
+  desparasitaciones y su vista combinada dentro de la historia clínica.
+- Los permisos `vaccinations.read` y `dewormings.read` se resuelven de forma
+  independiente en historia, encuentro, listado y detalle; no se habilitan
+  operaciones de escritura ni CTAs de negocio.
+- Los clientes y hooks están separados por dominio, validan contratos Zod,
+  cancelan solicitudes stale y limpian datos al cambiar de tenant, paciente,
+  encuentro o página.
+- La UI muestra lifecycle, snapshots, encuentros padres anulados, pacientes
+  archivados, fechas civiles y timestamps técnicos con la zona horaria de la
+  organización, incluyendo deep-link cross-tenant como 404.
+- Se documentó la arquitectura en `docs/architecture/preventive-care-frontend.md`
+  y la trazabilidad de migración en `docs/migration/preventive-care-ui.md`.
+- No se modificó Prisma, no se creó migración y no se alteró el seed. La Fase
+  6E.3B permanece detenida.
 
 Fase 6A — análisis y arquitectura clínica:
 

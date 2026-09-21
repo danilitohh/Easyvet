@@ -62,6 +62,21 @@ const PrescriptionFormPage = lazy(() =>
     default: module.PrescriptionFormPage,
   })),
 );
+const PreventiveCarePage = lazy(() =>
+  import('../features/preventive-care/PreventiveCarePage').then((module) => ({
+    default: module.PreventiveCarePage,
+  })),
+);
+const VaccinationDetailPage = lazy(() =>
+  import('../features/preventive-care/VaccinationDetailPage').then((module) => ({
+    default: module.VaccinationDetailPage,
+  })),
+);
+const DewormingDetailPage = lazy(() =>
+  import('../features/preventive-care/DewormingDetailPage').then((module) => ({
+    default: module.DewormingDetailPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -237,6 +252,34 @@ export function App() {
               <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <PrescriptionListPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/preventivos"
+            element={
+              <Suspense fallback={<ClinicalRouteFallback />}>
+                <PreventiveCarePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/preventivos/vacunas/:vaccinationId"
+            element={
+              <PermissionRoute permission={PERMISSION.VACCINATIONS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <VaccinationDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId"
+            element={
+              <PermissionRoute permission={PERMISSION.DEWORMINGS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <DewormingDetailPage />
                 </Suspense>
               </PermissionRoute>
             }

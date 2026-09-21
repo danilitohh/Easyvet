@@ -37,6 +37,8 @@ import {
   vitalValues,
 } from './clinicalUtils';
 import { PrescriptionListSection } from '../prescriptions/PrescriptionListSection';
+import { VaccinationListSection } from '../preventive-care/VaccinationListSection';
+import { DewormingListSection } from '../preventive-care/DewormingListSection';
 
 function ReadonlyField({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value?.trim()) return null;
@@ -184,6 +186,8 @@ export function ClinicalEncounterDetailPage() {
   const canReadVitals = useCan(PERMISSION.CLINICAL_VITALS_READ);
   const canReadEvolutions = useCan(PERMISSION.CLINICAL_EVOLUTIONS_READ);
   const canReadPrescriptions = useCan(PERMISSION.PRESCRIPTIONS_READ);
+  const canReadVaccinations = useCan(PERMISSION.VACCINATIONS_READ);
+  const canReadDewormings = useCan(PERMISSION.DEWORMINGS_READ);
   const canCreatePrescription = useCan(PERMISSION.PRESCRIPTIONS_CREATE);
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
   const canUpdateDraft = useCan(PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT);
@@ -513,6 +517,22 @@ export function ClinicalEncounterDetailPage() {
           patientId={item.patientId}
           encounterId={item.id}
           timezone={timezone}
+          compact
+        />
+      ) : null}
+      {canReadVaccinations ? (
+        <VaccinationListSection
+          patientId={item.patientId}
+          timezone={timezone}
+          clinicalEncounterId={item.id}
+          compact
+        />
+      ) : null}
+      {canReadDewormings ? (
+        <DewormingListSection
+          patientId={item.patientId}
+          timezone={timezone}
+          clinicalEncounterId={item.id}
           compact
         />
       ) : null}

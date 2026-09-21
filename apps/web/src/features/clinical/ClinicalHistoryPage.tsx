@@ -75,6 +75,8 @@ export function ClinicalHistoryPage() {
   const canReadEncounters = useCan(PERMISSION.CLINICAL_ENCOUNTERS_READ);
   const canReadEvolutions = useCan(PERMISSION.CLINICAL_EVOLUTIONS_READ);
   const canReadPrescriptions = useCan(PERMISSION.PRESCRIPTIONS_READ);
+  const canReadVaccinations = useCan(PERMISSION.VACCINATIONS_READ);
+  const canReadDewormings = useCan(PERMISSION.DEWORMINGS_READ);
   const canCreateEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_CREATE);
   const canCreateEvolution = useCan(PERMISSION.CLINICAL_EVOLUTIONS_CREATE);
   const { activeMembership } = useAuth();
@@ -210,6 +212,20 @@ export function ClinicalHistoryPage() {
             variant="secondary"
           >
             Ver prescripciones
+          </Button>
+        </Card>
+      ) : null}
+      {canReadVaccinations || canReadDewormings ? (
+        <Card className="prescription-history-entry preventive-history-entry">
+          <div>
+            <p className="section-kicker">Cuidado preventivo</p>
+            <h2>Vacunaciones y desparasitaciones</h2>
+            <p className="clinical-muted">
+              Consulta el historial preventivo con estados, fechas civiles y snapshots históricos.
+            </p>
+          </div>
+          <Button as={Link} to={`/pacientes/${patientId}/historia/preventivos`} variant="secondary">
+            Ver cuidado preventivo
           </Button>
         </Card>
       ) : null}
