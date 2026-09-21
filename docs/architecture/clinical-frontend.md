@@ -64,5 +64,18 @@ La carga de las páginas es lazy para mantener el shell principal liviano. Las t
 - Los controles se ocultan según permisos efectivos y estado; el cambio de tenant cancela cargas,
   limpia identificadores y no permite reutilizar estado de otra organización.
 
+## Fase 6C.3 — hardening cerrado
+
+- Los hooks clínicos incluyen el `organizationId` activo en sus dependencias y limpian datos antes
+  de cada carga; las páginas de formulario también reinician valores, versiones, IDs y errores al
+  cambiar de tenant.
+- La UI no intenta calcular estado clínico: peso, snapshots, lifecycle y autorización proceden
+  del backend. Los estados stale/immutable ofrecen una decisión explícita y no hacen merge
+  automático.
+- Los formularios mantienen texto plano escapado, límites de 20.000 caracteres, saltos de línea,
+  labels asociados y diálogos con foco. El paginado evita cargar la historia completa.
+- Encounter finalizado/anulado no expone controles de edición/vitales/evolución incompatibles; un
+  deep link al editor abandona a la vista histórica.
+
 Los satélites clínicos (prescripciones, procedimientos, diagnóstico, hospitalización, documentos,
 firmas y seguimiento) y el hardening de 6C.3 permanecen fuera de esta fase.

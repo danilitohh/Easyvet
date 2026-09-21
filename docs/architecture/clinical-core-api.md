@@ -1,7 +1,8 @@
-# Clinical Core API — Fases 6B.2 y 6C.2B
+# Clinical Core API — Fases 6B.2, 6C.2B y 6C.3
 
-**Estado:** COMPLETADO en backend y consumido por el frontend de 6C.2B. El núcleo expone
-finalización, evoluciones append-only y anulación sin abrir satélites clínicos.
+**Estado:** COMPLETADO y endurecido. El núcleo expone finalización, evoluciones append-only y
+anulación sin abrir satélites clínicos; 6C.3 cerró invariantes de archivado, lifecycle, tenant,
+auditoría y proyección de peso.
 
 Todas las rutas están bajo `/api/v1`, requieren sesión autenticada y
 `TenantContext`. El `organizationId` nunca se acepta desde el cliente.
@@ -39,6 +40,8 @@ Todas las rutas están bajo `/api/v1`, requieren sesión autenticada y
   Cambios posteriores del perfil nunca reescriben el snapshot.
 - `DRAFT` admite edición y vitales. `FINALIZED` y `VOIDED` son inmutables; no
   existen reopen, PATCH ni DELETE de auditorías, vitales o evoluciones.
+- El Patient debe permanecer `ACTIVE` para crear Encounter, editar draft, registrar vitales,
+  finalizar o agregar evoluciones. Archivar no oculta la historia existente.
 - Las transiciones usan `version` con comparación y actualización atómica. Un
   conflicto devuelve `409 CLINICAL_ENCOUNTER_STALE`; estado no editable devuelve
   `409 CLINICAL_ENCOUNTER_IMMUTABLE` o `INVALID_CLINICAL_ENCOUNTER_STATE`.
@@ -55,6 +58,10 @@ Todas las rutas están bajo `/api/v1`, requieren sesión autenticada y
   `organizationId` del cliente.
 - La anulación solo es válida desde `FINALIZED`, exige motivo y `expectedVersion`, conserva
   encuentros/vitales/auditoría y recalcula la proyección de peso excluyendo encounters anulados.
+- Las listas de encounters/evoluciones aceptan páginas de 1–100 elementos y orden determinista;
+  el Record permanece segmentado y no hace bootstrap de toda la historia.
+- Los límites narrativos de 20.000 caracteres se validan en DTO/contrato y se persisten como
+  texto plano. Los errores públicos no contienen SQL, nombres de constraints ni stacks.
 
 ## Fuera de alcance
 

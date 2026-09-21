@@ -406,7 +406,7 @@ export function ClinicalEncounterDetailPage() {
         {item.status === 'FINALIZED' ? (
           <p className="clinical-muted">
             Finalizado {formatDateTime(item.finalizedAt, timezone)} ·{' '}
-            {item.professionalDisplayNameSnapshot ?? professionalDisplayName(item)}
+            {professionalDisplayName(item)}
             {item.professionalLicenseSnapshot ? ` · ${item.professionalLicenseSnapshot}` : ''}
           </p>
         ) : null}

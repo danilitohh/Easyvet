@@ -296,6 +296,21 @@ describe('clinical finalize, evolution and void operations', () => {
     ).toBeInTheDocument();
   });
 
+  it('uses the historical professional snapshot instead of the live profile', () => {
+    mocks.encounter = {
+      ...baseEncounter,
+      status: 'FINALIZED',
+      professionalDisplayNameSnapshot: 'Dra. Histórica',
+      responsibleProfessional: {
+        ...baseEncounter.responsibleProfessional!,
+        displayName: 'Dra. Actualizada',
+      },
+    };
+    renderDetail();
+    expect(screen.getAllByText(/Dra\. Histórica/).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Dra. Actualizada')).not.toBeInTheDocument();
+  });
+
   it('submits an encounter-linked evolution without client-controlled authorship', async () => {
     mocks.encounter = { ...baseEncounter, status: 'FINALIZED' };
     renderEvolution(

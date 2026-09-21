@@ -31,7 +31,7 @@ export function AppShell() {
         </main>
         <footer className="app-footer">
           <span>{route.label}</span>
-          <span>{appConfig.shortName} · Fase 6C.2B</span>
+          <span>{appConfig.shortName} · Fase 6C.3</span>
         </footer>
       </div>
     </div>

@@ -37,8 +37,15 @@ export function ownerDisplayName(owner: { firstName: string; lastName: string | 
 }
 
 export function professionalDisplayName(encounter: ClinicalEncounterResponse): string {
+  // Terminal encounters are historical evidence: never replace a missing snapshot with a live
+  // ProfessionalProfile value. Drafts may still preview the current responsible profile.
+  if (encounter.status !== 'DRAFT') {
+    return (
+      encounter.professionalDisplayNameSnapshot?.trim() || 'Snapshot profesional no disponible'
+    );
+  }
   return (
-    encounter.professionalDisplayNameSnapshot ||
+    encounter.professionalDisplayNameSnapshot?.trim() ||
     encounter.responsibleProfessional?.displayName ||
     'Sin asignar'
   );

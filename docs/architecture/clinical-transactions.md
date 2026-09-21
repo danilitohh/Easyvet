@@ -1,7 +1,7 @@
 # Límites transaccionales del dominio clínico
 
 Este documento registra los límites atómicos implementados en el Clinical Core
-6B.2 y la operación de frontend 6C.2B. No modifica la
+6B.2, la operación de frontend 6C.2B y el hardening 6C.3. No modifica la
 implementación actual de Agenda ni introduce side effects externos.
 
 ## Regla general
@@ -63,6 +63,15 @@ La UI de 6C.2B envía `expectedVersion` tanto para finalizar como para anular. U
 transición de estado devuelve `409` sin optimistic update; el cliente conserva el formulario y
 ofrece recarga explícita. Finalizar congela snapshots de profesional/licencia y anular exige un
 motivo no vacío, pero nunca borra la evidencia clínica.
+
+La creación lazy de `ClinicalRecord` usa `INSERT ... ON CONFLICT DO NOTHING` dentro de la
+transacción del primer Encounter. Dos requests simultáneas producen un único Record y dos drafts
+válidos; solo el request que inserta el Record escribe el audit de creación.
+
+Patient `ARCHIVED` conserva lecturas, pero bloquea toda nueva actividad clínica, incluidos
+vitales agregados a drafts que ya existían. Las operaciones `PATCH`, `FINALIZE` y `VOID` comparan
+tenant, estado y versión en la misma actualización atómica; una carrera perdedora no escribe
+audit ni cambia proyecciones.
 
 El cambio de Owner no reescribe snapshots históricos. Archivar Patient no borra
 encounters, documentos, consentimientos ni auditoría. Las citas futuras se

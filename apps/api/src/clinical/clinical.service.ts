@@ -550,6 +550,13 @@ export class ClinicalService {
     input: CreateClinicalVitalDto,
   ): Promise<ClinicalVitalResponse> {
     const vital = await this.prisma.$transaction(async (tx) => {
+      // Lock the encounter before checking DRAFT so finalize and vital creation linearize on the
+      // same row; a vital cannot commit after finalization has projected the patient's weight.
+      await tx.$queryRaw(Prisma.sql`
+        SELECT "id" FROM "clinical_encounters"
+        WHERE "id" = ${encounterId}::uuid AND "organization_id" = ${tenant.organizationId}::uuid
+        FOR UPDATE
+      `);
       const encounter = await tx.clinicalEncounter.findFirst({
         where: { id: encounterId, organizationId: tenant.organizationId },
         select: { id: true, clinicalRecordId: true, patientId: true, status: true },
@@ -557,6 +564,14 @@ export class ClinicalService {
       if (!encounter)
         throw notFound('CLINICAL_ENCOUNTER_NOT_FOUND', 'Clinical encounter not found');
       if (encounter.status !== ClinicalEncounterStatus.DRAFT) throw immutable();
+      // Serialize against Patient archive so no new vital can pass an ACTIVE check concurrently.
+      await tx.$queryRaw(Prisma.sql`
+        SELECT "id" FROM "patients"
+        WHERE "id" = ${encounter.patientId}::uuid AND "organization_id" = ${tenant.organizationId}::uuid
+        FOR UPDATE
+      `);
+      // Archived patients retain readable history but cannot receive new clinical activity.
+      await this.requirePatient(tx, tenant.organizationId, encounter.patientId, true);
       const created = await tx.vitalMeasurement.create({
         data: {
           organizationId: tenant.organizationId,

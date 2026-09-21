@@ -314,6 +314,16 @@ describeDatabase('clinical core API', () => {
       .patch(`/api/v1/clinical-encounters/${encounterId}`)
       .send({ expectedVersion: 3 })
       .expect(409);
+    await agent
+      .post(`/api/v1/clinical-encounters/${encounterId}/vitals`)
+      .send({ measuredAt: '2032-01-09T15:02:00.000Z', temperatureC: 38.2 })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('CLINICAL_ENCOUNTER_IMMUTABLE'));
+    await agent
+      .patch(`/api/v1/clinical-encounters/${encounterId}`)
+      .send({ expectedVersion: 3, status: 'DRAFT' })
+      .expect(400)
+      .expect(({ body }) => expect(body.code).toBe('VALIDATION_ERROR'));
   });
 
   it('creates one lazy record when two first encounters race concurrently', async () => {
@@ -355,6 +365,47 @@ describeDatabase('clinical core API', () => {
         where: { organizationId, entityType: 'CLINICAL_RECORD', entityId: records[0]!.id },
       }),
     ).toBe(1);
+  });
+
+  it('rejects new vitals and evolutions after a patient is archived while keeping history readable', async () => {
+    const archivedOwner = await prisma.owner.create({
+      data: { organizationId, firstName: 'Archived', lastName: 'Patient Owner' },
+    });
+    const archivedPatient = await prisma.patient.create({
+      data: {
+        organizationId,
+        ownerId: archivedOwner.id,
+        name: 'Archived Clinical Patient',
+        nameNormalized: 'archived clinical patient',
+        species: 'DOG',
+      },
+    });
+    ownerIds.push(archivedOwner.id);
+    patientIds.push(archivedPatient.id);
+    const agent = await login(practitionerEmail);
+    const created = await agent
+      .post(`/api/v1/patients/${archivedPatient.id}/clinical-encounters`)
+      .send({
+        clinicLocationId: locationId,
+        occurredAt: '2032-01-14T15:00:00.000Z',
+        reason: 'Archive activity guard',
+      })
+      .expect(201);
+    await prisma.patient.update({
+      where: { id: archivedPatient.id },
+      data: { status: 'ARCHIVED', archivedAt: new Date() },
+    });
+    await agent
+      .post(`/api/v1/clinical-encounters/${created.body.id}/vitals`)
+      .send({ measuredAt: '2032-01-14T15:01:00.000Z', weightKg: 8 })
+      .expect(404)
+      .expect(({ body }) => expect(body.code).toBe('RESOURCE_NOT_FOUND'));
+    await agent
+      .post(`/api/v1/patients/${archivedPatient.id}/clinical-evolutions`)
+      .send({ occurredAt: '2032-01-14T15:02:00.000Z', assessment: 'Should be rejected' })
+      .expect(404)
+      .expect(({ body }) => expect(body.code).toBe('RESOURCE_NOT_FOUND'));
+    await agent.get(`/api/v1/clinical-encounters/${created.body.id}`).expect(200);
   });
 
   it('allows assistants to work on drafts but not finalize, and appends evolutions', async () => {
@@ -468,5 +519,19 @@ describeDatabase('clinical core API', () => {
       orderBy: { createdAt: 'asc' },
     });
     expect(audits.map((item) => item.action)).toEqual(['CREATED', 'FINALIZED', 'VOIDED']);
+    await agent
+      .post(`/api/v1/clinical-encounters/${created.body.id}/void`)
+      .send({ expectedVersion: 3, reason: 'Duplicate void' })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('INVALID_CLINICAL_ENCOUNTER_STATE'));
+    await agent
+      .post(`/api/v1/patients/${patientId}/clinical-evolutions`)
+      .send({
+        clinicalEncounterId: created.body.id,
+        occurredAt: '2032-01-12T15:02:00.000Z',
+        assessment: 'Should be rejected after void',
+      })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('INVALID_CLINICAL_ENCOUNTER_STATE'));
   });
 });

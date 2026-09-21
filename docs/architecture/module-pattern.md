@@ -36,3 +36,13 @@ Las decisiones no confirmadas por legacy se documentan como `NEEDS REVIEW` en
 vez de convertirse en comportamiento implícito. Archive, restore, auditoría y
 relaciones adicionales requieren una decisión de dominio antes de ampliar el
 modelo.
+
+El cierre del Clinical Core añade tres reglas reutilizables cuando un módulo
+maneja evidencia irreversible:
+
+- los estados terminales se protegen en backend con una transición explícita y
+  compare-and-set; ocultar botones no sustituye la invariante del servicio;
+- los hechos históricos guardan snapshots de identidad o contexto que no deben
+  rehidratarse desde perfiles vivos;
+- toda relación entre agregados tenant-scoped usa una FK compuesta o una
+  validación equivalente dentro de la transacción.
