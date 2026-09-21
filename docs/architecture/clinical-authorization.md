@@ -22,12 +22,21 @@ El catálogo base contiene exactamente:
   `clinicalEncounters.void`
 - `clinicalEvolutions.read`, `clinicalEvolutions.create`
 - `clinicalVitals.read`, `clinicalVitals.create`
+- `prescriptions.read`, `prescriptions.create`, `prescriptions.updateDraft`,
+  `prescriptions.finalize`, `prescriptions.void`
 
-`PRACTITIONER` recibe los diez permisos. `CLINICAL_ASSISTANT` recibe lectura
+`PRACTITIONER` recibe todos los permisos clínicos, incluidos los cinco de
+prescripciones. `CLINICAL_ASSISTANT` recibe lectura
 del expediente/encuentro/evolución/vitales, creación y edición de drafts de
-encuentro y creación de vitales; no recibe `finalize`, `void` ni
+encuentro y creación de vitales, además de leer/crear/editar drafts de
+prescripciones; no recibe `finalize` ni `void` de prescripciones, ni
 `clinicalEvolutions.create` por defecto. Las funciones de autorización
 combinan permisos organizacionales y clínicos, eliminando duplicados.
+
+La finalización de una receta requiere además que el Membership actor sea el
+prescriptor indicado y tenga perfil profesional con `displayName`. Un rol
+organizacional aislado (`OWNER`, `ADMIN`, `RECEPTION`, `GROOMER` o `CASHIER`) y
+un `PLATFORM_ADMIN` sin Membership clínico no obtienen acceso por defecto.
 
 ## Alcance de la fase
 

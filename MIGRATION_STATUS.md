@@ -424,3 +424,26 @@ Fase 6D.1 — análisis y diseño de Prescriptions completada:
   `docs/architecture/prescriptions-decisions.md`.
 - No se modificaron Prisma, migraciones, backend, frontend, permisos ni tests.
   Prescriptions backend (6D.2) y frontend (6D.3) permanecen pendientes.
+
+Fase 6D.2 — backend de Prescriptions completada:
+
+- Se añadió la migración versionada
+  `20260921150000_add_prescriptions_backend`, aplicada únicamente a
+  `easyvet_dev` y `easyvet_test`; no se modificaron migraciones anteriores ni
+  se utilizó `veterinary_saas`.
+- Se implementaron `Prescription`/`PrescriptionItem`, contratos estrictos,
+  endpoints tenant-safe, lifecycle `DRAFT → FINALIZED → VOIDED`, CAS,
+  reemplazo atómico de items y snapshots de profesional, Patient, Owner y
+  diagnóstico.
+- Se ampliaron permisos clínicos y auditoría. Practitioner tiene todas las
+  operaciones; Clinical Assistant solo lectura/creación/edición de drafts.
+  No existe delete físico ni endpoint de items.
+- El seed idempotente contiene tres recetas ficticias y tres items. Las pruebas
+  cubren aislamiento, roles, snapshots, invariantes, archive, items y carreras
+  reales de update/finalize/void.
+- El QA manual se ejecuta únicamente sobre `easyvet_dev`. Docker/PostgreSQL
+  debe conservar el estado verificado localmente; no representa una base
+  compartida o productiva.
+- No se inició la Fase 6D.3 (frontend). PDF, Documents, Storage, firma,
+  catálogo, inventario, ventas, facturación y fármacos controlados permanecen
+  postergados.

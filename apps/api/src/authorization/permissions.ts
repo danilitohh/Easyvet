@@ -52,6 +52,11 @@ export const PERMISSIONS = {
     EVOLUTIONS_CREATE: 'clinicalEvolutions.create',
     VITALS_READ: 'clinicalVitals.read',
     VITALS_CREATE: 'clinicalVitals.create',
+    PRESCRIPTIONS_READ: 'prescriptions.read',
+    PRESCRIPTIONS_CREATE: 'prescriptions.create',
+    PRESCRIPTIONS_UPDATE_DRAFT: 'prescriptions.updateDraft',
+    PRESCRIPTIONS_FINALIZE: 'prescriptions.finalize',
+    PRESCRIPTIONS_VOID: 'prescriptions.void',
   },
 } as const satisfies Record<string, Record<string, Permission>>;
 
@@ -178,6 +183,11 @@ export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission
     'clinicalEvolutions.create',
     'clinicalVitals.read',
     'clinicalVitals.create',
+    'prescriptions.read',
+    'prescriptions.create',
+    'prescriptions.updateDraft',
+    'prescriptions.finalize',
+    'prescriptions.void',
   ],
   CLINICAL_ASSISTANT: [
     'clinicalRecords.read',
@@ -187,6 +197,9 @@ export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission
     'clinicalEvolutions.read',
     'clinicalVitals.read',
     'clinicalVitals.create',
+    'prescriptions.read',
+    'prescriptions.create',
+    'prescriptions.updateDraft',
   ],
 };
 

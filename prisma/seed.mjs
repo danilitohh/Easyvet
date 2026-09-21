@@ -315,6 +315,13 @@ const seedClinicalEncounters = [
     version: 1,
     reason: 'Control clínico de QA',
     anamnesis: 'Consulta de seguimiento ficticia.',
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
     occurredAt: '2030-01-08T15:00:00.000Z',
     createdByMembershipId: seedUsers[2].membershipId,
   },
@@ -341,6 +348,9 @@ const seedClinicalEncounters = [
     professionalLicenseSnapshot: 'VET-DEMO-001',
     finalizedAt: '2030-01-08T15:30:00.000Z',
     finalizedByMembershipId: seedUsers[0].membershipId,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
     occurredAt: '2030-01-08T14:00:00.000Z',
     createdByMembershipId: seedUsers[0].membershipId,
   },
@@ -356,6 +366,13 @@ const seedClinicalEncounters = [
     status: 'DRAFT',
     version: 1,
     reason: 'Control Sur ficticio',
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
     occurredAt: '2030-01-08T16:00:00.000Z',
     createdByMembershipId: '00000000-0000-4000-8000-000000000204',
   },
@@ -415,6 +432,109 @@ const seedClinicalEvolutions = [
   },
 ];
 
+// Prescription seed records are fictitious and cover draft/finalized states in both tenants.
+const seedPrescriptions = [
+  {
+    id: '00000000-0000-4000-8000-000000001301',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[0].id,
+    patientId: seedPatients[0].id,
+    status: 'DRAFT',
+    version: 1,
+    prescribedByMembershipId: null,
+    createdByMembershipId: seedUsers[2].membershipId,
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    patientNameSnapshot: null,
+    ownerDisplayNameSnapshot: null,
+    diagnosisSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001302',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    patientId: seedPatients[0].id,
+    status: 'FINALIZED',
+    version: 2,
+    prescribedByMembershipId: seedUsers[0].membershipId,
+    createdByMembershipId: seedUsers[0].membershipId,
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    diagnosisSnapshot: 'Presuntivo: Paciente clínicamente estable.',
+    finalizedAt: '2030-01-08T15:35:00.000Z',
+    finalizedByMembershipId: seedUsers[0].membershipId,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001303',
+    organizationId: seedOrganizations[1].id,
+    clinicalEncounterId: seedClinicalEncounters[2].id,
+    patientId: seedPatients[3].id,
+    status: 'DRAFT',
+    version: 1,
+    prescribedByMembershipId: null,
+    createdByMembershipId: '00000000-0000-4000-8000-000000000204',
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    patientNameSnapshot: null,
+    ownerDisplayNameSnapshot: null,
+    diagnosisSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+];
+
+const seedPrescriptionItems = [
+  {
+    id: '00000000-0000-4000-8000-000000001401',
+    prescriptionId: seedPrescriptions[0].id,
+    position: 0,
+    medicationName: 'Medicamento QA draft',
+    presentation: 'Tabletas',
+    quantity: '10 tabletas',
+    dosage: '1/2 tableta',
+    frequency: 'Cada 12 horas',
+    duration: '5 días',
+    observations: 'Dato ficticio de demostración.',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001402',
+    prescriptionId: seedPrescriptions[1].id,
+    position: 0,
+    medicationName: 'Antiinflamatorio QA',
+    presentation: 'Suspensión',
+    quantity: '1 frasco',
+    dosage: '2 ml',
+    frequency: 'Cada 8 horas',
+    duration: '7 días',
+    observations: 'Primera indicación ficticia.',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001403',
+    prescriptionId: seedPrescriptions[1].id,
+    position: 1,
+    medicationName: 'Protector gástrico QA',
+    presentation: 'Cápsulas',
+    quantity: '7 cápsulas',
+    dosage: '1 cápsula',
+    frequency: 'Cada 24 horas',
+    duration: '7 días',
+    observations: 'Segunda indicación ficticia.',
+  },
+];
+
 const seedClinicalAuditEvents = [
   {
     id: '00000000-0000-4000-8000-000000001201',
@@ -451,6 +571,42 @@ const seedClinicalAuditEvents = [
     entityId: seedVitalMeasurements[0].id,
     action: 'VITAL_ADDED',
     metadata: { source: 'seed', stage: '6B.1' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001205',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'PRESCRIPTION',
+    entityId: seedPrescriptions[0].id,
+    action: 'PRESCRIPTION_CREATED',
+    metadata: { source: 'seed', stage: '6D.2', itemCount: 1, newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001206',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'PRESCRIPTION',
+    entityId: seedPrescriptions[1].id,
+    action: 'PRESCRIPTION_CREATED',
+    metadata: { source: 'seed', stage: '6D.2', itemCount: 2, newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001207',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'PRESCRIPTION',
+    entityId: seedPrescriptions[1].id,
+    action: 'PRESCRIPTION_FINALIZED',
+    metadata: { source: 'seed', stage: '6D.2', itemCount: 2, previousVersion: 1, newVersion: 2 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001208',
+    organizationId: seedOrganizations[1].id,
+    actorMembershipId: '00000000-0000-4000-8000-000000000204',
+    entityType: 'PRESCRIPTION',
+    entityId: seedPrescriptions[2].id,
+    action: 'PRESCRIPTION_CREATED',
+    metadata: { source: 'seed', stage: '6D.2', itemCount: 0, newVersion: 1 },
   },
 ];
 
@@ -683,6 +839,28 @@ async function main() {
       });
     }
 
+    for (const prescription of seedPrescriptions) {
+      const { id: prescriptionId, finalizedAt, voidedAt, ...prescriptionFields } = prescription;
+      const data = {
+        ...prescriptionFields,
+        finalizedAt: finalizedAt ? new Date(finalizedAt) : null,
+        voidedAt: voidedAt ? new Date(voidedAt) : null,
+      };
+      await transaction.prescription.upsert({
+        where: { id: prescription.id },
+        update: data,
+        create: { id: prescriptionId, ...data },
+      });
+    }
+
+    for (const item of seedPrescriptionItems) {
+      await transaction.prescriptionItem.upsert({
+        where: { id: item.id },
+        update: { ...item },
+        create: { ...item },
+      });
+    }
+
     for (const vital of seedVitalMeasurements) {
       const { id: vitalId, ...vitalFields } = vital;
       await transaction.vitalMeasurement.upsert({
@@ -716,7 +894,7 @@ async function main() {
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 1 profile, 2 records, 3 encounters, 2 vitals, 1 evolution, 4 audits.',
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 1 profile, 2 records, 3 encounters, 3 prescriptions, 3 items, 2 vitals, 1 evolution, 8 audits.',
   );
 }
 

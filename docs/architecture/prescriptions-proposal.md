@@ -1,11 +1,11 @@
-# Propuesta de arquitectura de prescripciones — Fase 6D.1
+# Propuesta de arquitectura de prescripciones — Fases 6D.1–6D.2
 
 ## Estado y alcance
 
-Este documento es un diseño previo a implementación. La Fase 6D.1 solo analiza
-el comportamiento legacy y propone el contrato del dominio para una futura
-Fase 6D.2. No se crean modelos Prisma, migraciones, endpoints, permisos ni
-componentes React en este checkpoint.
+La sección de diseño se originó en Fase 6D.1 y analiza el comportamiento legacy
+y el contrato del dominio. La Fase 6D.2 implementó únicamente el backend
+descrito en este documento: modelos, migración, permisos, endpoints,
+transacciones, auditoría y pruebas. No se implementó frontend.
 
 La fuente legacy y sus límites están en
 `docs/migration/prescriptions-reference.md`.
@@ -399,5 +399,12 @@ requieren una decisión regulatoria antes de estructurarse.
 
 ## Estado de implementación
 
-No se implementó ninguna prescripción en esta fase. No se modificaron Prisma,
-migraciones, backend, frontend, permisos ni tests de Easyvet.
+La propuesta fue implementada de forma acotada en Fase 6D.2 para backend:
+`Prescription` y `PrescriptionItem`, migración versionada, contratos DTO/Zod,
+permisos clínicos, operaciones transaccionales con CAS, auditoría y pruebas de
+tenant/concurrencia. La implementación exige Encounter, permite `0..N` recetas
+por Encounter y mantiene los items dentro del agregado.
+
+No se implementaron frontend, PDF, Documents, Storage, firma, email, catálogo,
+inventario, ventas, facturación ni fármacos controlados. La Fase 6D.3 queda
+pendiente y no se inició.

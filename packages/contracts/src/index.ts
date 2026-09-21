@@ -54,6 +54,11 @@ export const permissionSchema = z.enum([
   'clinicalEvolutions.create',
   'clinicalVitals.read',
   'clinicalVitals.create',
+  'prescriptions.read',
+  'prescriptions.create',
+  'prescriptions.updateDraft',
+  'prescriptions.finalize',
+  'prescriptions.void',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -550,6 +555,130 @@ export type FinalizeClinicalEncounterRequest = z.infer<
 >;
 export type VoidClinicalEncounterRequest = z.infer<typeof voidClinicalEncounterRequestSchema>;
 export type CreateClinicalEvolutionRequest = z.infer<typeof createClinicalEvolutionRequestSchema>;
+
+const prescriptionStatusSchema = z.enum(['DRAFT', 'FINALIZED', 'VOIDED']);
+
+export const prescriptionItemSchema = z.object({
+  id: z.string().uuid(),
+  prescriptionId: z.string().uuid(),
+  position: z.number().int().nonnegative(),
+  medicationName: z.string(),
+  presentation: z.string().nullable(),
+  quantity: z.string().nullable(),
+  dosage: z.string().nullable(),
+  frequency: z.string().nullable(),
+  duration: z.string().nullable(),
+  observations: z.string().nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+
+const prescriptionPatientSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  status: patientStatusSchema,
+});
+
+const prescriptionProfessionalSchema = z.object({
+  membershipId: z.string().uuid(),
+  displayName: z.string().nullable(),
+  licenseNumber: z.string().nullable(),
+});
+
+const prescriptionSummaryFieldsSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  status: prescriptionStatusSchema,
+  version: z.number().int().positive(),
+  prescribedByMembershipId: z.string().uuid().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  professionalDisplayNameSnapshot: z.string().nullable(),
+  professionalLicenseSnapshot: z.string().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  ownerDisplayNameSnapshot: z.string().nullable(),
+  diagnosisSnapshot: z.string().nullable(),
+  finalizedAt: z.string().datetime({ offset: true }).nullable(),
+  finalizedByMembershipId: z.string().uuid().nullable(),
+  voidedAt: z.string().datetime({ offset: true }).nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: z.string().nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+  parentEncounterStatus: clinicalEncounterStatusSchema,
+  patient: prescriptionPatientSchema,
+  prescribedBy: prescriptionProfessionalSchema.nullable(),
+});
+
+export const prescriptionSummarySchema = prescriptionSummaryFieldsSchema;
+export const prescriptionDetailSchema = prescriptionSummaryFieldsSchema.extend({
+  items: z.array(prescriptionItemSchema),
+});
+
+export const prescriptionListResponseSchema = z.object({
+  data: z.array(prescriptionSummarySchema),
+  pagination: paginationSchema,
+});
+
+const prescriptionItemRequestSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    position: z.number().int().nonnegative().max(10_000),
+    medicationName: z.string().max(500),
+    presentation: z.string().max(500).nullable().optional(),
+    quantity: z.string().max(200).nullable().optional(),
+    dosage: z.string().max(500).nullable().optional(),
+    frequency: z.string().max(500).nullable().optional(),
+    duration: z.string().max(500).nullable().optional(),
+    observations: z.string().max(2_000).nullable().optional(),
+  })
+  .strict();
+
+export const createPrescriptionRequestSchema = z
+  .object({
+    prescribedByMembershipId: z.string().uuid().nullable().optional(),
+    items: z.array(prescriptionItemRequestSchema).max(100).optional(),
+  })
+  .strict();
+
+export const updatePrescriptionRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    prescribedByMembershipId: z.string().uuid().nullable().optional(),
+    items: z.array(prescriptionItemRequestSchema).max(100),
+  })
+  .strict();
+
+export const finalizePrescriptionRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+
+export const voidPrescriptionRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(2_000),
+  })
+  .strict();
+
+export const prescriptionListQuerySchema = z
+  .object({
+    page: pageSchema.default(1),
+    pageSize: pageSizeSchema.default(20),
+    status: prescriptionStatusSchema.optional(),
+    clinicalEncounterId: z.string().uuid().optional(),
+  })
+  .strict();
+
+export type PrescriptionStatus = z.infer<typeof prescriptionStatusSchema>;
+export type PrescriptionItem = z.infer<typeof prescriptionItemSchema>;
+export type PrescriptionSummary = z.infer<typeof prescriptionSummarySchema>;
+export type PrescriptionDetail = z.infer<typeof prescriptionDetailSchema>;
+export type PrescriptionListResponse = z.infer<typeof prescriptionListResponseSchema>;
+export type CreatePrescriptionRequest = z.infer<typeof createPrescriptionRequestSchema>;
+export type UpdatePrescriptionRequest = z.infer<typeof updatePrescriptionRequestSchema>;
+export type FinalizePrescriptionRequest = z.infer<typeof finalizePrescriptionRequestSchema>;
+export type VoidPrescriptionRequest = z.infer<typeof voidPrescriptionRequestSchema>;
+export type PrescriptionListQuery = z.infer<typeof prescriptionListQuerySchema>;
 
 const appointmentStatusSchema = z.enum([
   'SCHEDULED',

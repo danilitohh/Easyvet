@@ -988,9 +988,23 @@ export class ClinicalService {
     tx: Prisma.TransactionClient,
     tenant: TenantContext,
     entityType:
-      'CLINICAL_RECORD' | 'CLINICAL_ENCOUNTER' | 'CLINICAL_EVOLUTION' | 'VITAL_MEASUREMENT',
+      | 'CLINICAL_RECORD'
+      | 'CLINICAL_ENCOUNTER'
+      | 'CLINICAL_EVOLUTION'
+      | 'VITAL_MEASUREMENT'
+      | 'PRESCRIPTION',
     entityId: string,
-    action: 'CREATED' | 'UPDATED' | 'FINALIZED' | 'VOIDED' | 'EVOLUTION_ADDED' | 'VITAL_ADDED',
+    action:
+      | 'CREATED'
+      | 'UPDATED'
+      | 'FINALIZED'
+      | 'VOIDED'
+      | 'EVOLUTION_ADDED'
+      | 'VITAL_ADDED'
+      | 'PRESCRIPTION_CREATED'
+      | 'PRESCRIPTION_UPDATED'
+      | 'PRESCRIPTION_FINALIZED'
+      | 'PRESCRIPTION_VOIDED',
     metadata: Record<string, unknown>,
   ): Promise<void> {
     await tx.clinicalAuditEvent.create({

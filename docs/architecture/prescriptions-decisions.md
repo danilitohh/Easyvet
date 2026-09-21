@@ -1,8 +1,26 @@
-# Decisiones y preguntas abiertas de prescripciones — Fase 6D.1
+# Decisiones y preguntas abiertas de prescripciones — Fase 6D.1 / 6D.2
 
 Este registro separa hechos verificados en Lativet, recomendaciones de diseño
-para Easyvet y decisiones que requieren aprobación de producto. No autoriza
-implementación. La Fase 6D.1 termina sin cambios de código ni esquema.
+para Easyvet y decisiones que requieren aprobación de producto. Las decisiones
+cerradas de implementación de 6D.2 se registran al final del documento.
+
+## Cierre de decisiones aplicado en 6D.2
+
+- Toda receta requiere `ClinicalEncounter`; no existe bypass administrativo.
+- Un Encounter admite `0..N` recetas. Crear se permite en `DRAFT` y `FINALIZED`,
+  pero no en `VOIDED`.
+- El ciclo es `DRAFT → FINALIZED → VOIDED`; no existe reapertura ni delete.
+- El Patient se deriva del Encounter y el Owner se deriva de
+  `ownerIdAtTime`; no se aceptan FKs arbitrarias desde el cliente.
+- Finalizar exige items, Patient activo, prescriptor Practitioner con perfil y
+  que el actor sea el prescriptor. El asistente puede crear/editar drafts,
+  pero no finalizar/anular.
+- Finalizar congela snapshots profesionales, de Patient, Owner y diagnóstico;
+  no exige diagnóstico ni matrícula. Anular exige motivo y no elimina items.
+- Todas las mutaciones utilizan `expectedVersion`; el reemplazo de items es
+  atómico y los conflictos devuelven `409`.
+- No se agregan efectos de PDF, documentos, Storage, firma, correo,
+  inventario, ventas o facturación.
 
 ## Registro de decisiones
 
@@ -105,7 +123,9 @@ Salvo una nueva decisión explícita, 6D.2 debe mantener estos límites:
 
 ## Autorización de siguiente fase
 
-La implementación de 6D.2 queda **PENDIENTE** hasta que producto confirme como
-mínimo: Encounter requerido o excepción, política post-finalización, lifecycle
-propio, autoría de asistentes, matrícula/firma y semántica de cantidad. Este
-documento registra la propuesta recomendada, no una aprobación de construcción.
+Las decisiones mínimas de Encounter requerido, política post-finalización,
+lifecycle propio, autoría de asistentes, matrícula/firma y semántica de
+cantidad quedaron cerradas para el backend 6D.2 y están reflejadas en la
+sección de cierre. La implementación backend está **COMPLETADA**. El frontend
+6D.3 continúa **PENDIENTE** y cualquier ampliación regulatoria o documental
+requiere una decisión posterior.

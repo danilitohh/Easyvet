@@ -16,6 +16,7 @@ import { OwnersModule } from './owners/owners.module';
 import { PatientsModule } from './patients/patients.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ClinicalModule } from './clinical/clinical.module';
+import { PrescriptionsModule } from './prescriptions/prescriptions.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ClinicalModule } from './clinical/clinical.module';
     PatientsModule,
     AppointmentsModule,
     ClinicalModule,
+    PrescriptionsModule,
   ],
   providers: [ApiExceptionFilter],
 })

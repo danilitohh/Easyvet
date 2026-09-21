@@ -45,6 +45,9 @@ Organization
 Organization
   ├── ClinicLocation[] ── AvailabilityRule[]
   └── Appointment[] ── Patient + Owner + Membership
+
+ClinicalEncounter
+  └── Prescription[] ──< PrescriptionItem[]
 ```
 
 ## Entidades
@@ -71,6 +74,11 @@ Organization
   independiente y metadatos de cancelación.
 - `AvailabilityRule`: ventana semanal civil por sede y Membership opcional; sus
   horas se guardan como `HH:mm` y no representan bloques ni calendarios externos.
+- `Prescription`: indicación clínica tenant-scoped ligada obligatoriamente a un
+  `ClinicalEncounter` y a su Patient derivado. Su ciclo es `DRAFT`, `FINALIZED`,
+  `VOIDED`; conserva snapshots al finalizar y nunca se elimina físicamente.
+- `PrescriptionItem`: línea ordenada de una receta. Sus campos clínicos son
+  texto introducido por el profesional; no referencia catálogo ni inventario.
 
 ## Estados y roles
 
@@ -112,6 +120,12 @@ documentNumberNormalized`, más índices tenant/status y de nombre.
 - La migración habilita `btree_gist` y crea exclusion constraints `tstzrange`
   para Patient y Membership en estados bloqueantes, con intervalos half-open
   `[start, end)`.
+- Prescription usa FKs compuestas `(organizationId, patientId)` y
+  `(organizationId, clinicalEncounterId, patientId)` para impedir cruces de
+  tenant o del Patient del Encounter. Sus índices cubren tenant/Patient,
+  tenant/Encounter, estado y prescriptor. `PrescriptionItem` solo referencia
+  a su Prescription, con `(prescriptionId, position)` único; ambos usan
+  `ON DELETE RESTRICT`.
 - Los servicios normalizan emails a minúsculas antes de escribir o buscar.
 
 ## Delete y archive behavior
@@ -145,4 +159,5 @@ modificar `veterinary_saas`. La migración se aplica a la base de pruebas con
 
 La idempotencia del seed se verifica ejecutando `npm run db:seed` dos veces y
 comprobando que permanecen 2 organizaciones, 2 sedes, 3 usuarios, 4
-memberships, 4 Owners, 6 Patients, 3 AvailabilityRules y 6 Appointments.
+memberships, 4 Owners, 6 Patients, 3 AvailabilityRules, 6 Appointments,
+3 Prescriptions y 3 PrescriptionItems.

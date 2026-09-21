@@ -30,6 +30,7 @@ model Organization {
   clinicalEvolutions   ClinicalEvolution[]
   vitalMeasurements    VitalMeasurement[]
   clinicalAuditEvents  ClinicalAuditEvent[]
+  prescriptions        Prescription[]
 
   @@map("organizations")
 }
@@ -94,6 +95,10 @@ model Membership {
   evolutionAuthors          ClinicalEvolution[]            @relation("EvolutionAuthorMembership")
   recordedVitalMeasurements VitalMeasurement[]             @relation("VitalRecordedByMembership")
   clinicalAuditEvents       ClinicalAuditEvent[]           @relation("AuditActorMembership")
+  createdPrescriptions      Prescription[]                 @relation("PrescriptionCreatedByMembership")
+  prescribedPrescriptions   Prescription[]                 @relation("PrescriptionPrescribedByMembership")
+  finalizedPrescriptions    Prescription[]                 @relation("PrescriptionFinalizedByMembership")
+  voidedPrescriptions       Prescription[]                 @relation("PrescriptionVoidedByMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -186,6 +191,7 @@ model Patient {
   clinicalRecord     ClinicalRecord?
   clinicalEncounters ClinicalEncounter[]
   vitalMeasurements  VitalMeasurement[]
+  prescriptions      Prescription[]
 
   @@unique([id, organizationId], map: "patients_id_organization_id_key")
   @@index([organizationId])
@@ -268,6 +274,7 @@ enum ClinicalAuditEntityType {
   CLINICAL_ENCOUNTER
   CLINICAL_EVOLUTION
   VITAL_MEASUREMENT
+  PRESCRIPTION
 }
 
 enum ClinicalAuditAction {
@@ -277,6 +284,10 @@ enum ClinicalAuditAction {
   VOIDED
   EVOLUTION_ADDED
   VITAL_ADDED
+  PRESCRIPTION_CREATED
+  PRESCRIPTION_UPDATED
+  PRESCRIPTION_FINALIZED
+  PRESCRIPTION_VOIDED
 }
 
 // A tenant-scoped professional profile is optional for every membership.
@@ -362,15 +373,82 @@ model ClinicalEncounter {
   createdByMembership             Membership              @relation("EncounterCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   evolutions                      ClinicalEvolution[]
   vitalMeasurements               VitalMeasurement[]
+  prescriptions                   Prescription[]
 
   @@unique([id, organizationId], map: "clinical_encounters_id_organization_id_key")
   @@unique([id, organizationId, clinicalRecordId], map: "clinical_encounters_id_org_record_key")
+  @@unique([id, organizationId, patientId], map: "clinical_encounters_id_org_patient_key")
   @@unique([appointmentId, organizationId], map: "clinical_encounters_appointment_org_key")
   @@index([organizationId, patientId, occurredAt])
   @@index([organizationId, clinicalRecordId, occurredAt])
   @@index([organizationId, responsibleMembershipId, occurredAt])
   @@index([organizationId, status])
   @@map("clinical_encounters")
+}
+
+enum PrescriptionStatus {
+  DRAFT
+  FINALIZED
+  VOIDED
+}
+
+// Prescription is a tenant-safe clinical satellite with its own immutable lifecycle.
+model Prescription {
+  id                              String             @id @default(uuid()) @db.Uuid
+  organizationId                  String             @map("organization_id") @db.Uuid
+  clinicalEncounterId             String             @map("clinical_encounter_id") @db.Uuid
+  patientId                       String             @map("patient_id") @db.Uuid
+  status                          PrescriptionStatus @default(DRAFT)
+  version                         Int                @default(1)
+  prescribedByMembershipId        String?            @map("prescribed_by_membership_id") @db.Uuid
+  createdByMembershipId           String             @map("created_by_membership_id") @db.Uuid
+  professionalDisplayNameSnapshot String?            @map("professional_display_name_snapshot")
+  professionalLicenseSnapshot     String?            @map("professional_license_snapshot")
+  patientNameSnapshot             String?            @map("patient_name_snapshot")
+  ownerDisplayNameSnapshot        String?            @map("owner_display_name_snapshot")
+  diagnosisSnapshot               String?            @map("diagnosis_snapshot")
+  finalizedAt                     DateTime?          @map("finalized_at") @db.Timestamptz(3)
+  finalizedByMembershipId         String?            @map("finalized_by_membership_id") @db.Uuid
+  voidedAt                        DateTime?          @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId            String?            @map("voided_by_membership_id") @db.Uuid
+  voidReason                      String?            @map("void_reason")
+  createdAt                       DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                    Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicalEncounter               ClinicalEncounter  @relation(fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade)
+  patient                         Patient            @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  prescribedByMembership          Membership?        @relation("PrescriptionPrescribedByMembership", fields: [prescribedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership             Membership         @relation("PrescriptionCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  finalizedByMembership           Membership?        @relation("PrescriptionFinalizedByMembership", fields: [finalizedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership              Membership?        @relation("PrescriptionVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  items                           PrescriptionItem[]
+
+  @@unique([id, organizationId], map: "prescriptions_id_organization_id_key")
+  @@index([organizationId, patientId, createdAt])
+  @@index([organizationId, clinicalEncounterId])
+  @@index([organizationId, status])
+  @@index([organizationId, prescribedByMembershipId])
+  @@map("prescriptions")
+}
+
+// PrescriptionItem keeps the ordered medication instructions relational and auditable.
+model PrescriptionItem {
+  id             String       @id @default(uuid()) @db.Uuid
+  prescriptionId String       @map("prescription_id") @db.Uuid
+  position       Int
+  medicationName String       @map("medication_name")
+  presentation   String?
+  quantity       String?
+  dosage         String?
+  frequency      String?
+  duration       String?
+  observations   String?
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([prescriptionId, position], map: "prescription_items_prescription_position_key")
+  @@index([prescriptionId, position])
+  @@map("prescription_items")
 }
 
 // Evolutions are append-only narrative additions; deletion is intentionally unsupported.
