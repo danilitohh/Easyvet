@@ -173,13 +173,49 @@ export class PatientsService {
     if (input.color !== undefined) data.color = trimNullable(input.color) ?? null;
     if (input.microchipNumber !== undefined)
       data.microchipNumber = normalizeMicrochip(input.microchipNumber);
-    if (input.currentWeightKg !== undefined) data.currentWeightKg = input.currentWeightKg;
+    if (input.currentWeightKg !== undefined) {
+      data.currentWeightKg = input.currentWeightKg;
+    }
     if (input.sterilized !== undefined) data.sterilized = input.sterilized;
     if (input.notes !== undefined) data.notes = trimNullable(input.notes) ?? null;
 
-    const updated = await this.prisma.patient.updateMany({
-      where: { id: patientId, organizationId },
-      data,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (input.currentWeightKg !== undefined) {
+        // Lock the Patient row so finalization cannot project a clinical weight between
+        // the managed-weight check and this administrative update.
+        await tx.$queryRaw(
+          Prisma.sql`SELECT "id" FROM "patients" WHERE "id" = ${patientId}::uuid AND "organization_id" = ${organizationId}::uuid FOR UPDATE`,
+        );
+        const lockedPatient = await tx.patient.findFirst({
+          where: { id: patientId, organizationId },
+          select: { status: true, currentWeightKg: true },
+        });
+        if (!lockedPatient || lockedPatient.status === PatientStatus.ARCHIVED)
+          throw resourceNotFound();
+        const currentWeight =
+          lockedPatient.currentWeightKg === null ? null : Number(lockedPatient.currentWeightKg);
+        if (input.currentWeightKg !== currentWeight) {
+          const managedWeight = await tx.vitalMeasurement.findFirst({
+            where: {
+              organizationId,
+              patientId,
+              weightKg: { not: null },
+              clinicalEncounter: { status: 'FINALIZED' },
+            },
+            select: { id: true },
+          });
+          if (managedWeight) {
+            throw new ConflictException({
+              code: 'CURRENT_WEIGHT_MANAGED_BY_CLINICAL_RECORD',
+              message: 'Patient weight is managed by finalized clinical measurements',
+            });
+          }
+        }
+      }
+      return tx.patient.updateMany({
+        where: { id: patientId, organizationId, status: PatientStatus.ACTIVE },
+        data,
+      });
     });
     if (updated.count !== 1) throw resourceNotFound();
     return this.findRequired(organizationId, patientId);

@@ -15,6 +15,7 @@ import { CsrfOriginMiddleware } from './http/csrf-origin.middleware';
 import { OwnersModule } from './owners/owners.module';
 import { PatientsModule } from './patients/patients.module';
 import { AppointmentsModule } from './appointments/appointments.module';
+import { ClinicalModule } from './clinical/clinical.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
     OwnersModule,
     PatientsModule,
     AppointmentsModule,
+    ClinicalModule,
   ],
   providers: [ApiExceptionFilter],
 })

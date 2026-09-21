@@ -1,10 +1,11 @@
-# Contrato del Clinical Core — Fase 6B.1
+# Contrato del Clinical Core — Fases 6B.1–6B.2
 
-**Estado:** fundación de esquema implementada y verificada en Fase 6B.1.
+**Estado:** fundación de esquema y núcleo API implementados y verificados en
+Fases 6B.1 y 6B.2.
 **Alcance:** `ClinicalRecord`, `ClinicalEncounter`, `ClinicalEvolution`,
-`VitalMeasurement`, `ClinicalAuditEvent`, roles/perfil clínico y sus
-invariantes de base de datos. No se implementaron endpoints ni workflows de
-6B.2.
+`VitalMeasurement`, `ClinicalAuditEvent`, roles/perfil clínico, API, CAS,
+transacciones y sus invariantes de base de datos. La UI clínica y los
+satélites siguen fuera de alcance.
 
 Las migraciones versionadas de la fundación son
 `20260921130259_add_clinical_core_foundation`,
@@ -12,8 +13,8 @@ Las migraciones versionadas de la fundación son
 `20260921134500_remove_redundant_clinical_indexes` y
 `20260921135000_restore_required_clinical_uniques`; se aplican únicamente a
 `easyvet_dev` y `easyvet_test`. El seed contiene datos ficticios mínimos en
-Norte y Sur. Los endpoints conceptuales de este documento siguen siendo
-**PENDIENTES 6B.2** y no deben interpretarse como API disponible.
+Norte y Sur. Las rutas implementadas y sus contratos se detallan en
+`docs/architecture/clinical-core-api.md`.
 
 La migración es aditiva y no reescribe datos existentes. No se alteraron
 migraciones previas; cualquier rollback de una base local deberá hacerse con
@@ -250,18 +251,18 @@ finalizado se anula, nunca se borra.
 El tenant se obtiene del contexto autenticado, no de un `organizationId` libre
 del cliente. Todas las rutas aplican permisos y relaciones compuestas.
 
-| Método y ruta                                      | Propósito                                                                          |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `GET /patients/:patientId/clinical-record`         | Obtener el único Record del tenant; 404 si no existe.                              |
-| `GET /patients/:patientId/clinical-encounters`     | Lista paginada por `eventAt`, status, tipo futuro y profesional.                   |
-| `POST /patients/:patientId/clinical-encounters`    | Lazy-create Record + Encounter draft + auditoría. Rechaza Patient archivado.       |
-| `GET /clinical-encounters/:encounterId`            | Detalle tenant-safe con versión y vitales.                                         |
-| `PATCH /clinical-encounters/:encounterId`          | Editar draft con `expectedVersion`; 409 `CLINICAL_ENCOUNTER_STALE` si no coincide. |
-| `POST /clinical-encounters/:encounterId/finalize`  | CAS de finalización, snapshots, vitals, peso y auditoría.                          |
-| `POST /clinical-encounters/:encounterId/void`      | Solo `FINALIZED`; requiere `voidReason`, recalcula peso y audita.                  |
-| `GET /clinical-encounters/:encounterId/evolutions` | Evoluciones contextualizadas del encounter.                                        |
-| `POST /clinical-records/:recordId/evolutions`      | Evolución general o contextual; body opcional `clinicalEncounterId`.               |
-| `POST /clinical-encounters/:encounterId/vitals`    | Añadir medición durante draft; no cambia Patient hasta finalize.                   |
+| Método y ruta                                     | Propósito                                                                          |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `GET /patients/:patientId/clinical-record`        | Obtener el único Record del tenant; `{ clinicalRecord: null }` si no existe.       |
+| `GET /patients/:patientId/clinical-encounters`    | Lista paginada por `eventAt`, status, tipo futuro y profesional.                   |
+| `POST /patients/:patientId/clinical-encounters`   | Lazy-create Record + Encounter draft + auditoría. Rechaza Patient archivado.       |
+| `GET /clinical-encounters/:encounterId`           | Detalle tenant-safe con versión y resúmenes de relaciones.                         |
+| `PATCH /clinical-encounters/:encounterId`         | Editar draft con `expectedVersion`; 409 `CLINICAL_ENCOUNTER_STALE` si no coincide. |
+| `POST /clinical-encounters/:encounterId/finalize` | CAS de finalización, snapshots, vitals, peso y auditoría.                          |
+| `POST /clinical-encounters/:encounterId/void`     | Solo `FINALIZED`; requiere `voidReason`, recalcula peso y audita.                  |
+| `GET /patients/:patientId/clinical-evolutions`    | Evoluciones paginadas del Record, incluidas las contextualizadas.                  |
+| `POST /patients/:patientId/clinical-evolutions`   | Evolución general o contextual; body opcional `clinicalEncounterId`.               |
+| `POST /clinical-encounters/:encounterId/vitals`   | Añadir medición durante draft; no cambia Patient hasta finalize.                   |
 
 No hay endpoints de hard-delete, reopen, PDF, Storage, firma, FollowUp ni
 mutación de Agenda en 6B.
@@ -300,8 +301,8 @@ mutación de Agenda en 6B.
 
 ### Auditoría e integridad
 
-- Se crean acciones `ENCOUNTER_CREATED`, `ENCOUNTER_UPDATED`,
-  `ENCOUNTER_FINALIZED`, `ENCOUNTER_VOIDED`, `EVOLUTION_ADDED` y `VITAL_ADDED`.
+- Se crean acciones `CREATED`, `UPDATED`, `FINALIZED`, `VOIDED`,
+  `EVOLUTION_ADDED` y `VITAL_ADDED`.
 - Audit no acepta update/delete por API normal y no contiene payload clínico
   completo.
 - Restrict evita cascadas al archivar Patient/Owner/Membership.
@@ -309,8 +310,17 @@ mutación de Agenda en 6B.
 
 ## Fuera de alcance
 
-No se implementan en 6B roles múltiples, permisos en código, perfil profesional,
-Prisma, migraciones, endpoints, React, diagnósticos codificados, Prescription,
+No se implementan en 6B roles múltiples, permisos en código, diagnósticos
+codificados, React, Prescription,
 Vaccination, Deworming, Procedure, Hospitalization, DiagnosticOrder/Result,
 Document, Consent, SignatureRequest, Referral, FollowUp, Storage, email, PDF,
 Google Calendar ni cambios de Agenda/Patient.
+
+## Implementación 6B.2
+
+El contrato operativo vigente está documentado en
+`docs/architecture/clinical-core-api.md`. El backend cubre Record lazy,
+encounters segmentados, edición de drafts con CAS, vitales append-only,
+finalización y void transaccionales, evoluciones, auditoría y proyección de
+peso. No se añadieron endpoints de auditoría ni mutaciones para satélites
+clínicos; la interfaz React queda pendiente de 6C.

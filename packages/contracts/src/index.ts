@@ -290,6 +290,155 @@ export type UpdateOwnerRequest = z.infer<typeof updateOwnerRequestSchema>;
 export type CreatePatientRequest = z.infer<typeof createPatientRequestSchema>;
 export type UpdatePatientRequest = z.infer<typeof updatePatientRequestSchema>;
 
+// Clinical Core responses are segmented so clients never receive an entire longitudinal history.
+const clinicalEncounterStatusSchema = z.enum(['DRAFT', 'FINALIZED', 'VOIDED']);
+export const clinicalAuditEntityTypeSchema = z.enum([
+  'CLINICAL_RECORD',
+  'CLINICAL_ENCOUNTER',
+  'CLINICAL_EVOLUTION',
+  'VITAL_MEASUREMENT',
+]);
+export const clinicalAuditActionSchema = z.enum([
+  'CREATED',
+  'UPDATED',
+  'FINALIZED',
+  'VOIDED',
+  'EVOLUTION_ADDED',
+  'VITAL_ADDED',
+]);
+
+const clinicalLocationSummarySchema = locationResponseSchema;
+const clinicalProfessionalSummarySchema = z.object({
+  membershipId: z.string().uuid(),
+  displayName: z.string().nullable(),
+  licenseNumber: z.string().nullable(),
+  role: membershipRoleSchema,
+  clinicalRole: clinicalRoleSchema.nullable(),
+});
+const clinicalPatientSummarySchema = patientSummarySchema.extend({ ownerId: z.string().uuid() });
+const clinicalOwnerSummarySchema = ownerSummarySchema;
+const clinicalAppointmentSummarySchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['SCHEDULED', 'WAITING_ROOM', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW']),
+  startsAt: z.string().datetime({ offset: true }),
+  endsAt: z.string().datetime({ offset: true }),
+  reason: z.string(),
+});
+
+export const clinicalRecordResponseSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+  encounterCount: z.number().int().nonnegative().optional(),
+});
+
+const clinicalEncounterFieldsSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicalRecordId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  ownerIdAtTime: z.string().uuid(),
+  clinicLocationId: z.string().uuid(),
+  appointmentId: z.string().uuid().nullable(),
+  responsibleMembershipId: z.string().uuid().nullable(),
+  status: clinicalEncounterStatusSchema,
+  version: z.number().int().positive(),
+  reason: z.string(),
+  anamnesis: z.string().nullable(),
+  physicalExam: z.string().nullable(),
+  presumptiveDiagnosis: z.string().nullable(),
+  differentialDiagnosis: z.string().nullable(),
+  definitiveDiagnosis: z.string().nullable(),
+  diagnosticPlan: z.string().nullable(),
+  therapeuticPlan: z.string().nullable(),
+  recommendations: z.string().nullable(),
+  followUpPlan: z.string().nullable(),
+  notes: z.string().nullable(),
+  professionalDisplayNameSnapshot: z.string().nullable(),
+  professionalLicenseSnapshot: z.string().nullable(),
+  finalizedAt: z.string().datetime({ offset: true }).nullable(),
+  finalizedByMembershipId: z.string().uuid().nullable(),
+  voidedAt: z.string().datetime({ offset: true }).nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: z.string().nullable(),
+  occurredAt: z.string().datetime({ offset: true }),
+  createdByMembershipId: z.string().uuid(),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+});
+
+export const clinicalEncounterResponseSchema = clinicalEncounterFieldsSchema.extend({
+  patient: clinicalPatientSummarySchema,
+  historicalOwner: clinicalOwnerSummarySchema,
+  clinicLocation: clinicalLocationSummarySchema,
+  responsibleProfessional: clinicalProfessionalSummarySchema.nullable(),
+  appointment: clinicalAppointmentSummarySchema.nullable(),
+});
+
+export const clinicalEncounterListResponseSchema = z.object({
+  data: z.array(clinicalEncounterResponseSchema),
+  pagination: paginationSchema,
+});
+
+export const clinicalVitalResponseSchema = z.object({
+  id: z.string().uuid(),
+  clinicalRecordId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  measuredAt: z.string().datetime({ offset: true }),
+  weightKg: z.number().positive().nullable(),
+  temperatureC: z.number().positive().nullable(),
+  heartRateBpm: z.number().int().positive().nullable(),
+  respiratoryRateBpm: z.number().int().positive().nullable(),
+  bodyCondition: z.string().nullable(),
+  hydration: z.string().nullable(),
+  mucousMembranes: z.string().nullable(),
+  skinTurgor: z.string().nullable(),
+  observations: z.string().nullable(),
+  recordedByMembershipId: z.string().uuid(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+
+export const clinicalEvolutionResponseSchema = z.object({
+  id: z.string().uuid(),
+  clinicalRecordId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid().nullable(),
+  occurredAt: z.string().datetime({ offset: true }),
+  subjective: z.string().nullable(),
+  objective: z.string().nullable(),
+  assessment: z.string().nullable(),
+  plan: z.string().nullable(),
+  authorMembershipId: z.string().uuid(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+
+export const clinicalEvolutionListResponseSchema = z.object({
+  data: z.array(clinicalEvolutionResponseSchema),
+  pagination: paginationSchema,
+});
+
+export const clinicalVitalListResponseSchema = z.object({
+  data: z.array(clinicalVitalResponseSchema),
+});
+
+export const clinicalRecordEnvelopeSchema = z.object({
+  clinicalRecord: clinicalRecordResponseSchema.nullable(),
+});
+
+export type ClinicalEncounterStatus = z.infer<typeof clinicalEncounterStatusSchema>;
+export type ClinicalAuditEntityType = z.infer<typeof clinicalAuditEntityTypeSchema>;
+export type ClinicalAuditAction = z.infer<typeof clinicalAuditActionSchema>;
+export type ClinicalRecordResponse = z.infer<typeof clinicalRecordResponseSchema>;
+export type ClinicalEncounterResponse = z.infer<typeof clinicalEncounterResponseSchema>;
+export type ClinicalEncounterListResponse = z.infer<typeof clinicalEncounterListResponseSchema>;
+export type ClinicalVitalResponse = z.infer<typeof clinicalVitalResponseSchema>;
+export type ClinicalEvolutionResponse = z.infer<typeof clinicalEvolutionResponseSchema>;
+export type ClinicalEvolutionListResponse = z.infer<typeof clinicalEvolutionListResponseSchema>;
+export type ClinicalVitalListResponse = z.infer<typeof clinicalVitalListResponseSchema>;
+export type ClinicalRecordEnvelope = z.infer<typeof clinicalRecordEnvelopeSchema>;
+
 const appointmentStatusSchema = z.enum([
   'SCHEDULED',
   'WAITING_ROOM',

@@ -1,12 +1,12 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A, 3B, 3C, 4A, 5B y 6B.1
+## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1 y 6B.2
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
 autorización por permisos y el primer dominio veterinario de propietarios y
-pacientes. Agenda 5B añade reservas operativas y disponibilidad. Fase 6B.1
-añade únicamente la fundación persistente del núcleo clínico; inventario,
-ventas y facturación siguen fuera de alcance.
+pacientes. Agenda 5B añade reservas operativas y disponibilidad. Fases 6B.1 y
+6B.2 añaden la fundación persistente y las operaciones transaccionales del
+núcleo clínico; inventario, ventas y facturación siguen fuera de alcance.
 
 ### Fundación clínica 6B.1
 
@@ -23,7 +23,9 @@ Organization
 Las cinco tablas clínicas tienen `organizationId` directo y FKs compuestas
 tenant-aware. La migración usa `RESTRICT` para conservar historia, checks de
 estado/timestamps en Encounter y checks positivos para mediciones numéricas.
-No hay endpoints clínicos ni borrado físico en esta fase.
+Las rutas 6B.2 aplican lazy record, CAS, snapshots profesionales, proyección
+de peso y auditoría append-only. No hay borrado físico ni endpoints de
+satélites clínicos.
 
 ```text
 User (identidad global)

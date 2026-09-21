@@ -32,7 +32,7 @@
 | Clínica — análisis Fase 6A   | COMPLETADO                                                   |
 | Clínica — design gate 6A.1   | COMPLETADO                                                   |
 | Clínica — fundación 6B.1     | COMPLETADO (schema, migración, seed, permisos y tests)       |
-| Clínica — núcleo API 6B.2    | PENDIENTE                                                    |
+| Clínica — núcleo API 6B.2    | COMPLETADO (API, transacciones, CAS, auditoría y tests)      |
 | Clínica — frontend 6C        | PENDIENTE                                                    |
 | Inventario                   | Pendiente                                                    |
 | Facturación                  | Pendiente                                                    |
@@ -77,8 +77,8 @@ Checkpoint 6A.1 — Clinical Design Gate completado documentalmente:
   1:0..1 con `displayName` y `licenseNumber` nullable; no contiene especialidad
   ni catálogos prematuros.
 - El contrato conceptual, APIs y plan de pruebas se mantienen en
-  `docs/architecture/clinical-core-6b.md`; los endpoints siguen pendientes de
-  Fase 6B.2.
+  `docs/architecture/clinical-core-6b.md`; en el checkpoint los endpoints
+  seguían pendientes y fueron implementados en Fase 6B.2.
 
 Fase 6B.1 — fundación del núcleo clínico completada:
 
@@ -94,9 +94,10 @@ Fase 6B.1 — fundación del núcleo clínico completada:
   draft, un encounter finalizado, vitales, evolución y auditoría; Sur mantiene
   una contraparte mínima para pruebas de tenant. No se crean dominios clínicos
   satélite.
-- No se implementaron endpoints clínicos, snapshots derivados por workflow,
-  finalización/anulación, evoluciones/vitales por API, frontend ni side effects
-  sobre Patient. Todo ello queda pendiente de Fase 6B.2.
+- La Fase 6B.2 implementó el API tenant-safe del núcleo: Record lazy,
+  encounters DRAFT/FINALIZED/VOIDED, CAS, vitals, evoluciones append-only,
+  snapshots profesionales, auditoría y proyección de peso. No se implementó
+  frontend clínico ni satélites.
 - La migración fue aplicada localmente solo a `easyvet_dev` y `easyvet_test`;
   no se modificaron migraciones previas ni bases externas.
 

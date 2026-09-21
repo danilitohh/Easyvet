@@ -1,4 +1,4 @@
-# Autorización clínica — Fase 6B.1
+# Autorización clínica — Fases 6B.1–6B.2
 
 ## Separación de responsabilidades
 
@@ -31,7 +31,8 @@ combinan permisos organizacionales y clínicos, eliminando duplicados.
 
 ## Alcance de la fase
 
-La resolución ya viaja en el contexto autenticado y en `/auth/me`, pero no
-existen rutas clínicas en 6B.1. No se implementan todavía creación de
-encuentros vía API, finalización, anulación, evoluciones, vitales, snapshots,
-CAS, frontend ni side effects sobre Patient. Esos cambios pertenecen a 6B.2.
+La resolución viaja en el contexto autenticado y en `/auth/me`. La Fase 6B.2
+aplica estos permisos en todas las rutas clínicas, deriva el actor del
+Membership activo y mantiene `PLATFORM_ADMIN` sin acceso clínico implícito.
+La UI clínica y los side effects externos sobre Agenda, documentos o
+notificaciones siguen fuera de alcance.

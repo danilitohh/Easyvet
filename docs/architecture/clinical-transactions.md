@@ -1,8 +1,8 @@
 # Límites transaccionales del dominio clínico
 
-Esta propuesta define qué debe ser atómico en Easyvet y qué debe ejecutarse
-después del commit. No modifica la implementación actual de Agenda, Prisma ni
-PostgreSQL.
+Este documento registra los límites atómicos implementados en el Clinical Core
+6B.2 y los flujos futuros que siguen fuera de alcance. No modifica la
+implementación actual de Agenda ni introduce side effects externos.
 
 ## Regla general
 
@@ -127,9 +127,10 @@ producto y permisos documentadas en `clinical-decisions.md`.
 
 ## Checklist para implementación futura
 
-- [ ] Tenant compuesto probado para lectura, escritura y exportación.
-- [ ] Estados, versionado y transiciones cubiertos con tests de concurrencia.
-- [ ] Auditoría de actor, Membership, IP cuando aplique y snapshots.
+- [x] Tenant compuesto probado para lectura y escritura del Clinical Core.
+- [x] Estados, versionado y transiciones cubiertos con tests de CAS y carrera
+      de creación lazy.
+- [x] Auditoría de actor, Membership y snapshots profesionales.
 - [ ] Outbox idempotente para email, PDF, Storage y Agenda.
 - [ ] No hard-delete de evidencia finalizada.
 - [ ] Política de retención y firma revisada legalmente.

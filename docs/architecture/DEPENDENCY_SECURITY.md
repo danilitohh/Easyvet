@@ -2,9 +2,10 @@
 
 ## Alcance
 
-Checkpoint 2.6, Fases 3B–5D y fundación clínica 6B.1 (septiembre de 2026). Se
+Checkpoint 2.6, Fases 3B–5D y núcleo clínico 6B.1–6B.2 (septiembre de 2026). Se
 revisó el stack base antes de incorporar autenticación, Owners/Patients, Agenda
-y el schema clínico. No se añadieron uploads ni endpoints clínicos.
+y el schema y API clínicos. No se añadieron uploads ni dependencias de runtime
+para archivos.
 
 ## Versiones y cambios
 
@@ -33,7 +34,7 @@ se añadió una configuración ESM acotada (`apps/api/tsconfig.test.json` y
 | `prisma` → `@prisma/config` → `deepmerge-ts` | Alta                                                                   | Alta                                               | Alta                            | Dev/tooling        | Mantener Prisma 6.19.3; el fix propuesto por audit es un downgrade incompatible. Revisar cuando exista patch oficial compatible. |
 | `vitest` → `@vitest/mocker`                  | Moderada                                                               | Moderada                                           | Moderada                        | Dev/tooling        | Mantener Vitest 3.2.7; el fix requiere Vitest 5 y no es necesario para el runtime actual.                                        |
 
-El resultado de `npm audit` en el cierre de Fase 6B.1 es **5 vulnerabilidades: 2
+El resultado de `npm audit` en el cierre de Fase 6B.2 es **5 vulnerabilidades: 2
 moderadas y 3 altas**. Las entradas repetidas corresponden a los paquetes
 afectados y sus cadenas transitivas. No se ejecutó `npm audit fix --force` ni se
 aplicaron upgrades mayores.
