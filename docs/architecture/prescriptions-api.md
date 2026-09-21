@@ -47,6 +47,43 @@ prescriptor. Finalizar y anular son transacciones CAS.
 finalizar. El estado actual del Encounter padre se devuelve como
 `parentEncounterStatus`; anular el Encounter no modifica la receta.
 
+Los items enviados por create/PATCH se aceptan como texto libre acotado (máximo
+100 items; nombre de 1–500 caracteres no vacíos; presentación/dosis/frecuencia/
+duración hasta 500; cantidad hasta 200; observaciones hasta 2.000). El backend
+recorta valores, ordena por la posición recibida y persiste posiciones contiguas
+`0..N-1`; la base también protege posiciones no negativas, nombres no vacíos y
+unicidad por receta. Un Draft puede quedar sin items, pero no puede finalizarse
+así.
+
+## Concurrencia y locks
+
+Las operaciones críticas usan una transacción y compare-and-set por
+`expectedVersion`. Create, PATCH y finalize toman locks PostgreSQL en orden
+determinista:
+
+```text
+ClinicalEncounter → Patient → Prescription
+```
+
+Finalize additionally locks the historical Owner and prescriber Membership
+before reading their current identity data. Owner edits and professional-profile
+upserts use the same row locks, so finalized snapshots cannot race a source
+identity update.
+
+`voidEncounter` bloquea primero el Encounter y `archive Patient` bloquea primero
+el Patient para que una receta nunca confirme una validación de estado que ya
+quedó obsoleta. Void de Prescription bloquea su propia fila y no modifica al
+Encounter. Si el Encounter se anula primero, create/update/finalize devuelve
+`PARENT_CLINICAL_ENCOUNTER_VOIDED`; si la receta obtiene primero el lock, la
+operación confirma y el Encounter puede anularse después sin auto-anular la
+receta finalizada. Los items se borran y recrean dentro de la misma transacción,
+por lo que nunca se observa una versión nueva con items parciales.
+
+La lista usa el orden determinista `finalizedAt DESC NULLS LAST, createdAt DESC,
+id DESC`, con `page` entre 1 y 10.000 y `pageSize` entre 1 y 100. El detalle
+incluye únicamente campos necesarios para la UI; no expone eventos de auditoría,
+internals de Membership ni información de sesión.
+
 ## Errores de dominio
 
 Los errores relevantes son `PRESCRIPTION_NOT_FOUND`, `PRESCRIPTION_STALE`,
@@ -65,8 +102,17 @@ organización.
 `PRESCRIPTION_VOIDED`. El metadata solo contiene versión, cantidad de items y
 si se proporcionó motivo; nunca copia texto clínico ni credenciales.
 
+La auditoría es append-only: cada ganador CAS escribe exactamente un evento;
+los requests perdedores no escriben eventos ni side effects duplicados.
+
+PostgreSQL también exige `version > 0` y metadata de lifecycle coherente: un
+draft no tiene timestamps terminales; una receta finalizada exige actor,
+timestamp y snapshots de identidad; una anulada agrega motivo y metadata de
+anulación no vacíos. Estos checks complementan las reglas de servicio.
+
 ## Fuera de alcance
 
 PDF, Documents, Storage, firma, notificaciones, catálogo de medicamentos,
 fármacos controlados, inventario, ventas y facturación siguen fuera de alcance.
-La UI operativa 6D.3B no altera el modelo ni añade migraciones.
+La UI operativa no altera el modelo; las dos migraciones de hardening de 6D.4
+solo refuerzan invariantes ya implementadas.

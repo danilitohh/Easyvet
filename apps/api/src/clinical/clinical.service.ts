@@ -234,27 +234,32 @@ export class ClinicalService {
   ): Promise<ProfessionalProfileResponse> {
     const displayName = trimmedRequired(input.displayName, 'displayName');
     const licenseNumber = trimmedNullable(input.licenseNumber) ?? null;
-    const membership = await this.prisma.membership.findFirst({
-      where: {
-        id: tenant.membershipId,
-        organizationId: tenant.organizationId,
-        status: MembershipStatus.ACTIVE,
-        clinicalRole: { not: null },
-        user: { status: UserStatus.ACTIVE },
-      },
-      select: { id: true },
-    });
-    if (!membership) throw notFound('RESOURCE_NOT_FOUND', 'Professional profile not found');
-    const profile = await this.prisma.membershipProfessionalProfile.upsert({
-      where: { membershipId: membership.id },
-      create: {
-        organizationId: tenant.organizationId,
-        membershipId: membership.id,
-        displayName,
-        licenseNumber,
-      },
-      update: { displayName, licenseNumber },
-      select: { membershipId: true, displayName: true, licenseNumber: true },
+    const profile = await this.prisma.$transaction(async (tx) => {
+      // Profile writes share the membership lock used by prescription finalization, so a
+      // finalized snapshot always reflects a serialized professional identity.
+      await this.lockMembership(tx, tenant.organizationId, tenant.membershipId);
+      const membership = await tx.membership.findFirst({
+        where: {
+          id: tenant.membershipId,
+          organizationId: tenant.organizationId,
+          status: MembershipStatus.ACTIVE,
+          clinicalRole: { not: null },
+          user: { status: UserStatus.ACTIVE },
+        },
+        select: { id: true },
+      });
+      if (!membership) throw notFound('RESOURCE_NOT_FOUND', 'Professional profile not found');
+      return tx.membershipProfessionalProfile.upsert({
+        where: { membershipId: membership.id },
+        create: {
+          organizationId: tenant.organizationId,
+          membershipId: membership.id,
+          displayName,
+          licenseNumber,
+        },
+        update: { displayName, licenseNumber },
+        select: { membershipId: true, displayName: true, licenseNumber: true },
+      });
     });
     return profile;
   }
@@ -407,6 +412,8 @@ export class ClinicalService {
     await this.assertEncounterExists(tenant.organizationId, encounterId);
     const updated = await this.prisma
       .$transaction(async (tx) => {
+        // Encounter and Patient locks serialize edits with finalization and archive transitions.
+        await this.lockEncounter(tx, tenant.organizationId, encounterId);
         const current = await tx.clinicalEncounter.findFirst({
           where: { id: encounterId, organizationId: tenant.organizationId },
           select: {
@@ -439,6 +446,7 @@ export class ClinicalService {
         if (current.version !== input.expectedVersion) {
           throw conflict('CLINICAL_ENCOUNTER_STALE', 'Clinical encounter version is stale');
         }
+        await this.lockPatient(tx, tenant.organizationId, current.patientId);
         const patient = await this.requirePatient(
           tx,
           tenant.organizationId,
@@ -606,6 +614,8 @@ export class ClinicalService {
     input: ClinicalEncounterVersionDto,
   ): Promise<ClinicalEncounterResponse> {
     await this.prisma.$transaction(async (tx) => {
+      // Finalization shares the Encounter row lock with Prescription operations.
+      await this.lockEncounter(tx, tenant.organizationId, encounterId);
       const current = await tx.clinicalEncounter.findFirst({
         where: { id: encounterId, organizationId: tenant.organizationId },
         select: {
@@ -627,6 +637,8 @@ export class ClinicalService {
       if (current.version !== input.expectedVersion) {
         throw conflict('CLINICAL_ENCOUNTER_STALE', 'Clinical encounter version is stale');
       }
+      // Serialize the active-patient check with archive transitions.
+      await this.lockPatient(tx, tenant.organizationId, current.patientId);
       const patient = await this.requirePatient(tx, tenant.organizationId, current.patientId, true);
       await this.requireActiveLocation(tx, tenant.organizationId, current.clinicLocationId);
       if (!current.responsibleMembershipId) {
@@ -682,6 +694,8 @@ export class ClinicalService {
     input: VoidClinicalEncounterDto,
   ): Promise<ClinicalEncounterResponse> {
     await this.prisma.$transaction(async (tx) => {
+      // Parent void must serialize with Prescription create/update/finalize checks.
+      await this.lockEncounter(tx, tenant.organizationId, encounterId);
       const current = await tx.clinicalEncounter.findFirst({
         where: { id: encounterId, organizationId: tenant.organizationId },
         select: { id: true, status: true, version: true, patientId: true },
@@ -952,6 +966,42 @@ export class ClinicalService {
     });
     if (!encounter) throw notFound('CLINICAL_ENCOUNTER_NOT_FOUND', 'Clinical encounter not found');
     return encounter;
+  }
+
+  private async lockEncounter(
+    database: DomainDatabase,
+    organizationId: string,
+    encounterId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "clinical_encounters"
+      WHERE "id" = ${encounterId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
+  }
+
+  private async lockPatient(
+    database: DomainDatabase,
+    organizationId: string,
+    patientId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "patients"
+      WHERE "id" = ${patientId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
+  }
+
+  private async lockMembership(
+    database: DomainDatabase,
+    organizationId: string,
+    membershipId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "memberships"
+      WHERE "id" = ${membershipId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
   }
 
   private async assertEncounterExists(organizationId: string, encounterId: string): Promise<void> {

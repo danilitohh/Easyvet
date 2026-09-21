@@ -141,39 +141,43 @@ export class OwnersService {
   }
 
   async updateForOrganization(organizationId: string, ownerId: string, input: UpdateOwnerDto) {
-    const current = await this.prisma.owner.findFirst({
-      where: { id: ownerId, organizationId },
-      select: ownerListSelect,
-    });
-    if (!current) throw resourceNotFound();
-    if (current.status === OwnerStatus.ARCHIVED) throw archivedResource();
-
-    const data: Prisma.OwnerUpdateInput = {};
-    if (input.firstName !== undefined)
-      data.firstName = this.requireText(input.firstName, 'firstName');
-    if (input.lastName !== undefined) data.lastName = trimNullable(input.lastName) ?? null;
-    if (input.email !== undefined) data.email = normalizeEmail(input.email);
-    if (input.phone !== undefined) data.phone = trimNullable(input.phone) ?? null;
-    if (input.secondaryPhone !== undefined)
-      data.secondaryPhone = trimNullable(input.secondaryPhone) ?? null;
-    if (input.address !== undefined) data.address = trimNullable(input.address) ?? null;
-    if (input.city !== undefined) data.city = trimNullable(input.city) ?? null;
-    if (input.notes !== undefined) data.notes = trimNullable(input.notes) ?? null;
-    if (input.documentType !== undefined || input.documentNumber !== undefined) {
-      const document = this.resolveDocument(
-        input.documentType === undefined ? current.documentType : input.documentType,
-        input.documentNumber === undefined ? current.documentNumber : input.documentNumber,
-      );
-      data.documentType = document.documentType;
-      data.documentNumber = document.documentNumber;
-      data.documentNumberNormalized = document.documentNumberNormalized ?? null;
-    }
-
     try {
-      await this.prisma.owner.update({
-        where: { id_organizationId: { id: ownerId, organizationId } },
-        data,
-        select: { id: true },
+      await this.prisma.$transaction(async (tx) => {
+        // Owner edits share the row lock used by prescription finalization snapshots.
+        await this.lockOwner(tx, organizationId, ownerId);
+        const current = await tx.owner.findFirst({
+          where: { id: ownerId, organizationId },
+          select: ownerListSelect,
+        });
+        if (!current) throw resourceNotFound();
+        if (current.status === OwnerStatus.ARCHIVED) throw archivedResource();
+
+        const data: Prisma.OwnerUpdateInput = {};
+        if (input.firstName !== undefined)
+          data.firstName = this.requireText(input.firstName, 'firstName');
+        if (input.lastName !== undefined) data.lastName = trimNullable(input.lastName) ?? null;
+        if (input.email !== undefined) data.email = normalizeEmail(input.email);
+        if (input.phone !== undefined) data.phone = trimNullable(input.phone) ?? null;
+        if (input.secondaryPhone !== undefined)
+          data.secondaryPhone = trimNullable(input.secondaryPhone) ?? null;
+        if (input.address !== undefined) data.address = trimNullable(input.address) ?? null;
+        if (input.city !== undefined) data.city = trimNullable(input.city) ?? null;
+        if (input.notes !== undefined) data.notes = trimNullable(input.notes) ?? null;
+        if (input.documentType !== undefined || input.documentNumber !== undefined) {
+          const document = this.resolveDocument(
+            input.documentType === undefined ? current.documentType : input.documentType,
+            input.documentNumber === undefined ? current.documentNumber : input.documentNumber,
+          );
+          data.documentType = document.documentType;
+          data.documentNumber = document.documentNumber;
+          data.documentNumberNormalized = document.documentNumberNormalized ?? null;
+        }
+
+        await tx.owner.update({
+          where: { id_organizationId: { id: ownerId, organizationId } },
+          data,
+          select: { id: true },
+        });
       });
       return this.findRequired(organizationId, ownerId);
     } catch (error) {

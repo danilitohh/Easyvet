@@ -1,6 +1,6 @@
 import type { PrescriptionDetail } from '@veterinary-saas/contracts';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
 import { useAuth } from '../../contexts/useAuth';
@@ -58,6 +58,10 @@ function PrescriptionItems({ prescription }: { prescription: PrescriptionDetail 
       ))}
     </div>
   );
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
 }
 
 function PrescriptionStatusPanel({
@@ -130,15 +134,24 @@ export function PrescriptionDetailPage() {
   const [voidReason, setVoidReason] = useState('');
   const [actionPending, setActionPending] = useState(false);
   const [actionError, setActionError] = useState<unknown>(null);
+  const mutationAbortRef = useRef<AbortController | null>(null);
   const organizationId = activeMembership?.organization.id;
   const timezone = organization.data?.timezone ?? 'UTC';
 
-  // Tenant changes close destructive dialogs and remove the previous prescription context.
+  // Tenant changes abort in-flight mutations so a response from the previous tenant cannot
+  // update the current page or surface a stale error after the context has changed.
   useEffect(() => {
+    mutationAbortRef.current?.abort();
+    mutationAbortRef.current = null;
     setFinalizeOpen(false);
     setVoidOpen(false);
     setVoidReason('');
+    setActionPending(false);
     setActionError(null);
+    return () => {
+      mutationAbortRef.current?.abort();
+      mutationAbortRef.current = null;
+    };
   }, [organizationId]);
 
   if (!canRead) return <ResourceError error={new ApiError('Acceso denegado', 403)} />;
@@ -197,13 +210,21 @@ export function PrescriptionDetailPage() {
 
   async function finalizePrescription() {
     if (actionPending) return;
+    mutationAbortRef.current?.abort();
+    const controller = new AbortController();
+    mutationAbortRef.current = controller;
     setActionPending(true);
     setActionError(null);
     try {
-      await prescriptionsApi.finalize(item.id, { expectedVersion: item.version });
+      await prescriptionsApi.finalize(
+        item.id,
+        { expectedVersion: item.version },
+        controller.signal,
+      );
       setFinalizeOpen(false);
       prescription.reload();
     } catch (error: unknown) {
+      if (controller.signal.aborted || isAbortError(error)) return;
       if (error instanceof ApiError && error.code === 'PARENT_CLINICAL_ENCOUNTER_VOIDED') {
         setFinalizeOpen(false);
         setActionError(error);
@@ -212,24 +233,37 @@ export function PrescriptionDetailPage() {
         setActionError(error);
       }
     } finally {
-      setActionPending(false);
+      if (mutationAbortRef.current === controller) {
+        mutationAbortRef.current = null;
+        setActionPending(false);
+      }
     }
   }
 
   async function voidPrescription() {
     const reason = voidReason.trim();
     if (!reason || actionPending) return;
+    mutationAbortRef.current?.abort();
+    const controller = new AbortController();
+    mutationAbortRef.current = controller;
     setActionPending(true);
     setActionError(null);
     try {
-      await prescriptionsApi.void(item.id, { expectedVersion: item.version, reason });
+      await prescriptionsApi.void(
+        item.id,
+        { expectedVersion: item.version, reason },
+        controller.signal,
+      );
       setVoidOpen(false);
       setVoidReason('');
       prescription.reload();
     } catch (error: unknown) {
-      setActionError(error);
+      if (!controller.signal.aborted && !isAbortError(error)) setActionError(error);
     } finally {
-      setActionPending(false);
+      if (mutationAbortRef.current === controller) {
+        mutationAbortRef.current = null;
+        setActionPending(false);
+      }
     }
   }
 

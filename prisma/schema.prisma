@@ -433,6 +433,7 @@ model Prescription {
 
 // PrescriptionItem keeps the ordered medication instructions relational and auditable.
 model PrescriptionItem {
+  // Database checks in the hardening migration enforce non-negative positions and non-empty names.
   id             String       @id @default(uuid()) @db.Uuid
   prescriptionId String       @map("prescription_id") @db.Uuid
   position       Int

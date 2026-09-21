@@ -625,7 +625,7 @@ const prescriptionItemRequestSchema = z
   .object({
     id: z.string().uuid().optional(),
     position: z.number().int().nonnegative().max(10_000),
-    medicationName: z.string().max(500),
+    medicationName: z.string().trim().min(1).max(500),
     presentation: z.string().max(500).nullable().optional(),
     quantity: z.string().max(200).nullable().optional(),
     dosage: z.string().max(500).nullable().optional(),

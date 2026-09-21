@@ -223,6 +223,8 @@ export class PatientsService {
 
   async archiveForOrganization(organizationId: string, patientId: string) {
     await this.prisma.$transaction(async (tx) => {
+      // Serialize archive decisions with clinical/prescription mutations that require an active Patient.
+      await this.lockPatient(tx, organizationId, patientId);
       const current = await tx.patient.findFirst({
         where: { id: patientId, organizationId },
         select: { id: true, status: true },
@@ -274,6 +276,18 @@ export class PatientsService {
   ): Promise<void> {
     const owner = await this.lockOwner(database, organizationId, ownerId);
     if (!owner || owner.status !== OwnerStatus.ACTIVE) throw resourceNotFound();
+  }
+
+  private async lockPatient(
+    database: DomainDatabase,
+    organizationId: string,
+    patientId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "patients"
+      WHERE "id" = ${patientId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
   }
 
   // Owner row locking serializes create-versus-archive lifecycle decisions for one tenant.

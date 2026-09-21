@@ -104,15 +104,21 @@ function trimmedNullable(value: string | null | undefined): string | null {
 }
 
 function normalizedItems(input: PrescriptionItemDto[] | undefined) {
-  const items = input ?? [];
+  const items = [...(input ?? [])];
   const positions = new Set<number>();
-  return items.map((item) => {
+  for (const item of items) {
     if (positions.has(item.position)) {
       throw validation('Prescription item positions must be unique');
     }
     positions.add(item.position);
-    return {
-      position: item.position,
+    if (!item.medicationName.trim()) {
+      throw validation('Every prescription item needs a medication name');
+    }
+  }
+  return items
+    .sort((left, right) => left.position - right.position)
+    .map((item, position) => ({
+      position,
       medicationName: item.medicationName.trim(),
       presentation: trimmedNullable(item.presentation),
       quantity: trimmedNullable(item.quantity),
@@ -120,8 +126,7 @@ function normalizedItems(input: PrescriptionItemDto[] | undefined) {
       frequency: trimmedNullable(item.frequency),
       duration: trimmedNullable(item.duration),
       observations: trimmedNullable(item.observations),
-    };
-  });
+    }));
 }
 
 // PrescriptionService owns the satellite lifecycle, tenant invariants and CAS transactions.
@@ -176,11 +181,14 @@ export class PrescriptionsService {
     input: CreatePrescriptionDto,
   ): Promise<PrescriptionDetail> {
     const createdId = await this.prisma.$transaction(async (tx) => {
+      // Lock parent first so create and parent void have one deterministic winner.
+      await this.lockParentEncounter(tx, tenant.organizationId, clinicalEncounterId);
       const encounter = await this.requireParentEncounter(
         tx,
         tenant.organizationId,
         clinicalEncounterId,
       );
+      await this.lockPatient(tx, tenant.organizationId, encounter.patientId);
       await this.requirePatient(tx, tenant.organizationId, encounter.patientId, true);
       if (input.prescribedByMembershipId) {
         await this.requirePrescriber(tx, tenant.organizationId, input.prescribedByMembershipId);
@@ -212,6 +220,19 @@ export class PrescriptionsService {
     input: UpdatePrescriptionDto,
   ): Promise<PrescriptionDetail> {
     await this.prisma.$transaction(async (tx) => {
+      // Critical operations use Encounter → Patient → Prescription lock order.
+      const prescriptionSnapshot = await this.requirePrescription(
+        tx,
+        tenant.organizationId,
+        prescriptionId,
+      );
+      await this.lockParentEncounter(
+        tx,
+        tenant.organizationId,
+        prescriptionSnapshot.clinicalEncounterId,
+      );
+      await this.lockPatient(tx, tenant.organizationId, prescriptionSnapshot.patientId);
+      await this.lockPrescription(tx, tenant.organizationId, prescriptionId);
       const current = await this.requirePrescription(tx, tenant.organizationId, prescriptionId);
       if (current.status !== PrescriptionStatus.DRAFT) {
         throw conflict('PRESCRIPTION_IMMUTABLE', 'Only draft prescriptions can be edited');
@@ -265,6 +286,19 @@ export class PrescriptionsService {
   ): Promise<PrescriptionDetail> {
     const actor = await this.requirePractitionerActor(tenant);
     await this.prisma.$transaction(async (tx) => {
+      // Parent is locked before the prescription so parent void and finalize serialize.
+      const prescriptionSnapshot = await this.requirePrescription(
+        tx,
+        tenant.organizationId,
+        prescriptionId,
+      );
+      await this.lockParentEncounter(
+        tx,
+        tenant.organizationId,
+        prescriptionSnapshot.clinicalEncounterId,
+      );
+      await this.lockPatient(tx, tenant.organizationId, prescriptionSnapshot.patientId);
+      await this.lockPrescription(tx, tenant.organizationId, prescriptionId);
       const current = await this.requirePrescription(tx, tenant.organizationId, prescriptionId);
       if (current.status !== PrescriptionStatus.DRAFT) {
         throw conflict('INVALID_PRESCRIPTION_STATE', 'Only draft prescriptions can be finalized');
@@ -287,6 +321,10 @@ export class PrescriptionsService {
           'Only the prescribed practitioner can finalize this prescription',
         );
       }
+      // Snapshot sources are locked in the same transaction as the prescription. Their own
+      // mutation paths use these locks, eliminating owner/profile TOCTOU races at finalization.
+      await this.lockOwner(tx, tenant.organizationId, encounter.ownerIdAtTime);
+      await this.lockMembership(tx, tenant.organizationId, current.prescribedByMembershipId);
       const prescriber = await this.requirePrescriber(
         tx,
         tenant.organizationId,
@@ -346,6 +384,8 @@ export class PrescriptionsService {
   ): Promise<PrescriptionDetail> {
     await this.requirePractitionerActor(tenant);
     await this.prisma.$transaction(async (tx) => {
+      // Void only changes the prescription row; serializing that row prevents duplicate audits.
+      await this.lockPrescription(tx, tenant.organizationId, prescriptionId);
       const current = await this.requirePrescription(tx, tenant.organizationId, prescriptionId);
       if (current.status !== PrescriptionStatus.FINALIZED) {
         throw conflict('INVALID_PRESCRIPTION_STATE', 'Only finalized prescriptions can be voided');
@@ -411,6 +451,66 @@ export class PrescriptionsService {
       throw conflict('INVALID_CLINICAL_ENCOUNTER_STATE', 'The parent encounter is not eligible');
     }
     return encounter;
+  }
+
+  private async lockParentEncounter(
+    database: DomainDatabase,
+    organizationId: string,
+    encounterId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "clinical_encounters"
+      WHERE "id" = ${encounterId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
+  }
+
+  private async lockPatient(
+    database: DomainDatabase,
+    organizationId: string,
+    patientId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "patients"
+      WHERE "id" = ${patientId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
+  }
+
+  private async lockPrescription(
+    database: DomainDatabase,
+    organizationId: string,
+    prescriptionId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "prescriptions"
+      WHERE "id" = ${prescriptionId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
+  }
+
+  private async lockOwner(
+    database: DomainDatabase,
+    organizationId: string,
+    ownerId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "owners"
+      WHERE "id" = ${ownerId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
+  }
+
+  private async lockMembership(
+    database: DomainDatabase,
+    organizationId: string,
+    membershipId: string,
+  ): Promise<void> {
+    await database.$queryRaw(Prisma.sql`
+      SELECT "id" FROM "memberships"
+      WHERE "id" = ${membershipId}::uuid AND "organization_id" = ${organizationId}::uuid
+      FOR UPDATE
+    `);
   }
 
   private async requirePrescription(
@@ -489,11 +589,17 @@ export class PrescriptionsService {
       throw conflict('PRESCRIPTION_ITEMS_REQUIRED', 'At least one prescription item is required');
     }
     const positions = new Set<number>();
-    for (const item of items) {
+    for (const [index, item] of items.entries()) {
       if (positions.has(item.position)) {
         throw conflict('PRESCRIPTION_ITEMS_REQUIRED', 'Prescription item positions must be unique');
       }
       positions.add(item.position);
+      if (item.position !== index) {
+        throw conflict(
+          'PRESCRIPTION_ITEMS_REQUIRED',
+          'Prescription item positions must be contiguous',
+        );
+      }
       if (!item.medicationName.trim()) {
         throw conflict('PRESCRIPTION_ITEMS_REQUIRED', 'Every item needs a medication name');
       }

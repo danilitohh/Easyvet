@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  ArrayMaxSize,
   IsEnum,
   IsInt,
   IsOptional,
@@ -8,6 +9,7 @@ import {
   IsUUID,
   Max,
   MaxLength,
+  Matches,
   Min,
   MinLength,
   ValidateNested,
@@ -27,6 +29,7 @@ export class PrescriptionItemDto {
   position!: number;
 
   @IsString()
+  @Matches(/\S/, { message: 'medicationName must contain a non-whitespace character' })
   @MaxLength(500)
   medicationName!: string;
 
@@ -69,6 +72,7 @@ export class CreatePrescriptionDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => PrescriptionItemDto)
   items?: PrescriptionItemDto[];
@@ -86,6 +90,7 @@ export class UpdatePrescriptionDto {
   prescribedByMembershipId?: string | null;
 
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => PrescriptionItemDto)
   items!: PrescriptionItemDto[];

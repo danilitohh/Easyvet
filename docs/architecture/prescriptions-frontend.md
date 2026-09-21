@@ -52,6 +52,13 @@ motivo y conserva la evidencia; no existe delete físico. Si el Encounter padre
 se anula durante edición/finalización, la UI recarga el contexto y sale del
 flujo sin transformar la prescripción histórica.
 
+Los formularios abortan requests pendientes al cambiar de tenant o desmontarse;
+limpian IDs, versiones, valores locales y diálogos antes de cargar el nuevo
+contexto. Ante `409` stale no hay retry ni merge automático: se conservan los
+valores locales y se ofrece recarga explícita. Ante `PARENT_CLINICAL_ENCOUNTER_VOIDED`
+se abandona la edición con el mensaje “Consulta asociada anulada” y se mantiene
+la receta histórica legible.
+
 ## Presentación
 
 Los estados se muestran como Borrador, Finalizada y Anulada, siempre con texto
@@ -92,6 +99,12 @@ La lista, el detalle, items largos, avisos, enlaces y paginación colapsan en
 mobile sin overflow horizontal. Los encabezados, estados, alertas y enlaces
 son semánticos y navegables por teclado. La jerarquía visual usa los tokens
 clínicos existentes de Easyvet y no agrega otra librería de componentes.
+
+El editor no depende de drag-and-drop: cada fila expone botones etiquetados para
+subir/bajar, eliminar y añadir. Los errores se anuncian con `role=alert`, los
+diálogos requieren acción explícita y los estados parentales se muestran con
+texto además de color. QA cubre 390 px, tablet y desktop; las páginas siguen
+dentro del feature clínico lazy.
 
 ## Alcance diferido
 

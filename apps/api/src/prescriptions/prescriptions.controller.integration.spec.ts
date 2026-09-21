@@ -655,6 +655,167 @@ describeDatabase('prescriptions API', () => {
     ).toBe(1);
   });
 
+  it('serializes parent void against prescription create, update and finalize', async () => {
+    const practitioner = await login(practitionerEmail);
+    const concurrentPractitioner = await login(practitionerEmail);
+
+    const createEncounterRace = await createEncounter({ status: 'FINALIZED' });
+    const [createResponse, createParentVoidResponse] = await Promise.all([
+      practitioner
+        .post(`/api/v1/clinical-encounters/${createEncounterRace.id}/prescriptions`)
+        .send({ prescribedByMembershipId: practitionerMembershipId }),
+      concurrentPractitioner
+        .post(`/api/v1/clinical-encounters/${createEncounterRace.id}/void`)
+        .send({ expectedVersion: 2, reason: 'Parent void versus create' }),
+    ]);
+    expect(createParentVoidResponse.status).toBe(201);
+    expect([201, 409]).toContain(createResponse.status);
+    if (createResponse.status === 201) {
+      prescriptionIds.push(createResponse.body.id as string);
+      expect(createResponse.body.status).toBe('DRAFT');
+    } else {
+      expect(createResponse.body.code).toBe('PARENT_CLINICAL_ENCOUNTER_VOIDED');
+    }
+    expect(
+      (await practitioner.get(`/api/v1/clinical-encounters/${createEncounterRace.id}`)).body.status,
+    ).toBe('VOIDED');
+
+    const updateEncounterRace = await createEncounter({ status: 'FINALIZED' });
+    const updateDraft = await createPrescription(practitioner, updateEncounterRace.id, {
+      prescribedByMembershipId: practitionerMembershipId,
+      items: [{ position: 0, medicationName: 'Update race' }],
+    });
+    const [updateResponse, updateParentVoidResponse] = await Promise.all([
+      practitioner.patch(`/api/v1/prescriptions/${updateDraft.body.id}`).send({
+        expectedVersion: 1,
+        prescribedByMembershipId: practitionerMembershipId,
+        items: [{ position: 0, medicationName: 'Update winner' }],
+      }),
+      concurrentPractitioner
+        .post(`/api/v1/clinical-encounters/${updateEncounterRace.id}/void`)
+        .send({ expectedVersion: 2, reason: 'Parent void versus update' }),
+    ]);
+    expect(updateParentVoidResponse.status).toBe(201);
+    expect([200, 409]).toContain(updateResponse.status);
+    if (updateResponse.status === 409) {
+      expect(updateResponse.body.code).toBe('PARENT_CLINICAL_ENCOUNTER_VOIDED');
+    }
+    const updateFinalState = await practitioner
+      .get(`/api/v1/prescriptions/${updateDraft.body.id}`)
+      .expect(200);
+    expect(updateFinalState.body.parentEncounterStatus).toBe('VOIDED');
+
+    const finalizeEncounterRace = await createEncounter({ status: 'FINALIZED' });
+    const finalizeDraft = await createPrescription(practitioner, finalizeEncounterRace.id, {
+      prescribedByMembershipId: practitionerMembershipId,
+      items: [{ position: 0, medicationName: 'Finalize race' }],
+    });
+    const [finalizeResponse, finalizeParentVoidResponse] = await Promise.all([
+      practitioner
+        .post(`/api/v1/prescriptions/${finalizeDraft.body.id}/finalize`)
+        .send({ expectedVersion: 1 }),
+      concurrentPractitioner
+        .post(`/api/v1/clinical-encounters/${finalizeEncounterRace.id}/void`)
+        .send({ expectedVersion: 2, reason: 'Parent void versus finalize' }),
+    ]);
+    expect(finalizeParentVoidResponse.status).toBe(201);
+    expect([201, 409]).toContain(finalizeResponse.status);
+    if (finalizeResponse.status === 409) {
+      expect(finalizeResponse.body.code).toBe('PARENT_CLINICAL_ENCOUNTER_VOIDED');
+    }
+    const finalizeFinalState = await practitioner
+      .get(`/api/v1/prescriptions/${finalizeDraft.body.id}`)
+      .expect(200);
+    expect(finalizeFinalState.body.parentEncounterStatus).toBe('VOIDED');
+    expect(['DRAFT', 'FINALIZED']).toContain(finalizeFinalState.body.status);
+  });
+
+  it('blocks draft mutations when the Patient is archived while preserving history', async () => {
+    const practitioner = await login(practitionerEmail);
+    const encounter = await createEncounter();
+    const draft = await createPrescription(practitioner, encounter.id, {
+      prescribedByMembershipId: practitionerMembershipId,
+      items: [{ position: 0, medicationName: 'Archived patient draft' }],
+    });
+    await prisma.patient.update({
+      where: { id: patientId },
+      data: { status: 'ARCHIVED', archivedAt: new Date() },
+    });
+    await practitioner
+      .patch(`/api/v1/prescriptions/${draft.body.id}`)
+      .send({ expectedVersion: 1, items: [{ position: 0, medicationName: 'Blocked update' }] })
+      .expect(404);
+    await practitioner
+      .post(`/api/v1/prescriptions/${draft.body.id}/finalize`)
+      .send({ expectedVersion: 1 })
+      .expect(404);
+    await practitioner.get(`/api/v1/prescriptions/${draft.body.id}`).expect(200);
+    await prisma.patient.update({
+      where: { id: patientId },
+      data: { status: 'ACTIVE', archivedAt: null },
+    });
+  });
+
+  it('rejects empty medication names and client-controlled snapshots', async () => {
+    const practitioner = await login(practitionerEmail);
+    const encounter = await createEncounter();
+    await practitioner
+      .post(`/api/v1/clinical-encounters/${encounter.id}/prescriptions`)
+      .send({ items: [{ position: 0, medicationName: '   ' }] })
+      .expect(400)
+      .expect(({ body }) => expect(body.code).toBe('VALIDATION_ERROR'));
+    await practitioner
+      .post(`/api/v1/clinical-encounters/${encounter.id}/prescriptions`)
+      .send({ patientNameSnapshot: 'Injected snapshot' })
+      .expect(400)
+      .expect(({ body }) => expect(body.code).toBe('VALIDATION_ERROR'));
+  });
+
+  it('allows exactly one winner for update versus finalize and keeps audit atomicity', async () => {
+    const practitioner = await login(practitionerEmail);
+    const concurrentPractitioner = await login(practitionerEmail);
+    const encounter = await createEncounter();
+    const draft = await createPrescription(practitioner, encounter.id, {
+      prescribedByMembershipId: practitionerMembershipId,
+      items: [{ position: 0, medicationName: 'Initial race item' }],
+    });
+    const [updateResponse, finalizeResponse] = await Promise.all([
+      practitioner.patch(`/api/v1/prescriptions/${draft.body.id}`).send({
+        expectedVersion: 1,
+        prescribedByMembershipId: practitionerMembershipId,
+        items: [{ position: 0, medicationName: 'Update winner item' }],
+      }),
+      concurrentPractitioner
+        .post(`/api/v1/prescriptions/${draft.body.id}/finalize`)
+        .send({ expectedVersion: 1 }),
+    ]);
+    expect([200, 409]).toContain(updateResponse.status);
+    expect([201, 409]).toContain(finalizeResponse.status);
+    expect(
+      [updateResponse.status, finalizeResponse.status].filter((status) => status !== 409),
+    ).toHaveLength(1);
+    const finalState = await practitioner.get(`/api/v1/prescriptions/${draft.body.id}`).expect(200);
+    expect(['DRAFT', 'FINALIZED']).toContain(finalState.body.status);
+    expect(finalState.body.items).toHaveLength(1);
+    const [updatedAudits, finalizedAudits] = await Promise.all([
+      prisma.clinicalAuditEvent.count({
+        where: {
+          entityType: 'PRESCRIPTION',
+          entityId: draft.body.id,
+          action: 'PRESCRIPTION_UPDATED',
+        },
+      }),
+      prisma.clinicalAuditEvent.count({
+        where: {
+          entityType: 'PRESCRIPTION',
+          entityId: draft.body.id,
+          action: 'PRESCRIPTION_FINALIZED',
+        },
+      }),
+    ]);
+    expect(updatedAudits + finalizedAudits).toBe(1);
+  });
+
   it('lists by patient with pagination, status and encounter filters', async () => {
     const practitioner = await login(practitionerEmail);
     const encounter = await createEncounter();

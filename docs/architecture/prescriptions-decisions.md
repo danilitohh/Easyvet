@@ -22,6 +22,28 @@ cerradas de implementación de 6D.2 se registran al final del documento.
 - No se agregan efectos de PDF, documentos, Storage, firma, correo,
   inventario, ventas o facturación.
 
+## Cierre de hardening aplicado en 6D.4
+
+- Create, update y finalize serializan el Encounter padre, Patient y Prescription
+  en el orden `Encounter → Patient → Prescription`; `voidEncounter` y archive de
+  Patient comparten el prefijo de lock. La carrera parent-void queda definida:
+  quien obtiene primero el lock confirma; la operación que llega después
+  reevalúa estado y devuelve `PARENT_CLINICAL_ENCOUNTER_VOIDED` cuando aplica.
+- El backend normaliza todos los items a posiciones contiguas `0..N-1` y la
+  migración `20260921200000_harden_prescription_item_invariants` añade checks
+  de posición no negativa y nombre no vacío, además de la unicidad existente.
+- Patient `ARCHIVED` conserva lectura histórica, pero bloquea update/finalize de
+  drafts existentes y cualquier create; la decisión se aplica dentro de la
+  transacción que muta la Prescription.
+- Finalize bloquea también el Owner histórico y el Membership prescriptor antes
+  de leer sus datos; Owner update y professional-profile upsert comparten esos
+  locks para evitar snapshots de identidad afectados por TOCTOU.
+- La migración `20260921201000_harden_prescription_lifecycle_invariants` añade
+  checks SQL de `version` positiva y coherencia de timestamps, actores, motivo y
+  snapshots para estados terminales.
+- La auditoría permanece append-only y operativa: versiones, cantidad de items
+  y presencia de motivo; nunca texto de medicación, diagnóstico o PII.
+
 ## Registro de decisiones
 
 | Tema                                         | Estado                                     | Decisión o pregunta                                                                                                                                                                 |

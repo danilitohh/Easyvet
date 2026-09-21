@@ -597,7 +597,11 @@ describe('PrescriptionDetailPage operations', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Finalizar prescripción' }));
     fireEvent.click(screen.getByRole('dialog').querySelector('button.button--primary')!);
     await waitFor(() =>
-      expect(mocks.finalize).toHaveBeenCalledWith(ids.prescription, { expectedVersion: 3 }),
+      expect(mocks.finalize).toHaveBeenCalledWith(
+        ids.prescription,
+        { expectedVersion: 3 },
+        expect.any(AbortSignal),
+      ),
     );
     expect(mocks.reloadPrescription).toHaveBeenCalled();
   });
@@ -640,10 +644,14 @@ describe('PrescriptionDetailPage operations', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar anulación' }));
     await waitFor(() =>
-      expect(mocks.voidPrescription).toHaveBeenCalledWith(ids.prescription, {
-        expectedVersion: 3,
-        reason: 'QA cleanup',
-      }),
+      expect(mocks.voidPrescription).toHaveBeenCalledWith(
+        ids.prescription,
+        {
+          expectedVersion: 3,
+          reason: 'QA cleanup',
+        },
+        expect.any(AbortSignal),
+      ),
     );
     expect(mocks.reloadPrescription).toHaveBeenCalled();
   });
