@@ -38,6 +38,9 @@
 | Clínica — finalize/void UI 6C.2B  | COMPLETADO (finalización, evoluciones y anulación)             |
 | Clínica — hardening 6C.3          | COMPLETADO (invariantes, concurrencia, tenant, UX y auditoría) |
 | Clinical Core                     | COMPLETADO                                                     |
+| Prescriptions — análisis 6D.1     | COMPLETADO (referencia legacy, propuesta y decisiones)         |
+| Prescriptions — backend 6D.2      | PENDIENTE                                                      |
+| Prescriptions — frontend 6D.3     | PENDIENTE                                                      |
 | Inventario                        | Pendiente                                                      |
 | Facturación                       | Pendiente                                                      |
 | SaaS                              | Pendiente                                                      |
@@ -400,3 +403,24 @@ docker compose down
 ```
 
 No se documentan contraseñas locales reales.
+
+Fase 6D.1 — análisis y diseño de Prescriptions completada:
+
+- Se inspeccionó directamente el checkout legacy `Lativet-reference` en el
+  commit `05fea495cb13208b27bf470b3570987fd501a81e` (`05fea49`), incluyendo
+  Fórmulas médicas, Consultas, Historia, Documentos, exportación/PDF, permisos,
+  Inventario, Ventas y pruebas.
+- Se verificó que la fórmula legacy es una especialización de
+  `clinical_consultations` (`consultation_type = "Formula"`) con medicamentos
+  serializados en `document_reference`; no existe una entidad de prescripción
+  independiente ni tabla de items.
+- Se documentaron el comportamiento observado y la matriz de campos en
+  `docs/migration/prescriptions-reference.md`.
+- Se documentaron la propuesta tenant-safe de `Prescription`/
+  `PrescriptionItem`, lifecycle, CAS, auditoría, permisos, APIs y límites con
+  Encounter, PDF, firma, Inventario y Ventas en
+  `docs/architecture/prescriptions-proposal.md`.
+- Se registraron las recomendaciones y decisiones de producto pendientes en
+  `docs/architecture/prescriptions-decisions.md`.
+- No se modificaron Prisma, migraciones, backend, frontend, permisos ni tests.
+  Prescriptions backend (6D.2) y frontend (6D.3) permanecen pendientes.
