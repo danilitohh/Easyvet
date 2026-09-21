@@ -1,16 +1,20 @@
 import {
   clinicalEncounterListResponseSchema,
   clinicalEncounterResponseSchema,
+  clinicalEvolutionResponseSchema,
   clinicalEvolutionListResponseSchema,
   clinicalRecordEnvelopeSchema,
   clinicalVitalListResponseSchema,
   clinicalVitalResponseSchema,
   clinicalPractitionerListResponseSchema,
   createClinicalEncounterRequestSchema,
+  createClinicalEvolutionRequestSchema,
   createClinicalVitalRequestSchema,
+  finalizeClinicalEncounterRequestSchema,
   professionalProfileResponseSchema,
   upsertProfessionalProfileRequestSchema,
   updateClinicalEncounterRequestSchema,
+  voidClinicalEncounterRequestSchema,
   organizationCurrentResponseSchema,
   type ClinicalEncounterListResponse,
   type ClinicalEncounterResponse,
@@ -20,8 +24,12 @@ import {
   type ClinicalVitalResponse,
   type OrganizationCurrentResponse,
   type CreateClinicalEncounterRequest,
+  type CreateClinicalEvolutionRequest,
+  type FinalizeClinicalEncounterRequest,
   type UpdateClinicalEncounterRequest,
   type CreateClinicalVitalRequest,
+  type VoidClinicalEncounterRequest,
+  type ClinicalEvolutionResponse,
   type ProfessionalProfileResponse,
   type ClinicalPractitionerListResponse,
 } from '@veterinary-saas/contracts';
@@ -43,7 +51,7 @@ function queryString(values: Record<string, string | undefined>): string {
 }
 
 // Clinical API keeps request validation and response parsing at the browser boundary while
-// exposing only draft/vital operations for this phase (finalize/void/evolution remain later work).
+// exposing only the clinical operations approved for the current phase.
 export const clinicalApi = {
   async currentOrganization(signal?: AbortSignal): Promise<OrganizationCurrentResponse> {
     return organizationCurrentResponseSchema.parse(
@@ -119,6 +127,42 @@ export const clinicalApi = {
       await apiClient(`/clinical-encounters/${encounterId}/vitals`, {
         method: 'POST',
         body: createClinicalVitalRequestSchema.parse(input),
+      }),
+    );
+  },
+
+  async finalizeEncounter(
+    encounterId: string,
+    input: FinalizeClinicalEncounterRequest,
+  ): Promise<ClinicalEncounterResponse> {
+    return clinicalEncounterResponseSchema.parse(
+      await apiClient(`/clinical-encounters/${encounterId}/finalize`, {
+        method: 'POST',
+        body: finalizeClinicalEncounterRequestSchema.parse(input),
+      }),
+    );
+  },
+
+  async voidEncounter(
+    encounterId: string,
+    input: VoidClinicalEncounterRequest,
+  ): Promise<ClinicalEncounterResponse> {
+    return clinicalEncounterResponseSchema.parse(
+      await apiClient(`/clinical-encounters/${encounterId}/void`, {
+        method: 'POST',
+        body: voidClinicalEncounterRequestSchema.parse(input),
+      }),
+    );
+  },
+
+  async createEvolution(
+    patientId: string,
+    input: CreateClinicalEvolutionRequest,
+  ): Promise<ClinicalEvolutionResponse> {
+    return clinicalEvolutionResponseSchema.parse(
+      await apiClient(`/patients/${patientId}/clinical-evolutions`, {
+        method: 'POST',
+        body: createClinicalEvolutionRequestSchema.parse(input),
       }),
     );
   },

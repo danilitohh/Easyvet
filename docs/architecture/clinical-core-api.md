@@ -1,7 +1,7 @@
-# Clinical Core API — Fase 6B.2
+# Clinical Core API — Fases 6B.2 y 6C.2B
 
-**Estado:** COMPLETADO en backend. Fase 6C.2A añade únicamente perfiles y operaciones de
-borrador sobre este núcleo; no incluye finalización/anulación desde React ni satélites.
+**Estado:** COMPLETADO en backend y consumido por el frontend de 6C.2B. El núcleo expone
+finalización, evoluciones append-only y anulación sin abrir satélites clínicos.
 
 Todas las rutas están bajo `/api/v1`, requieren sesión autenticada y
 `TenantContext`. El `organizationId` nunca se acepta desde el cliente.
@@ -35,7 +35,8 @@ Todas las rutas están bajo `/api/v1`, requieren sesión autenticada y
   `CANCELLED`/`NO_SHOW` ni enlazarse dos veces.
 - El responsable de finalización es un Membership activo cuyo User está activo,
   tiene `ClinicalRole=PRACTITIONER` y un perfil profesional con `displayName`.
-  Los snapshots se derivan del perfil y quedan congelados.
+  Solo esa membresía puede finalizar; los snapshots se derivan del perfil y quedan congelados.
+  Cambios posteriores del perfil nunca reescriben el snapshot.
 - `DRAFT` admite edición y vitales. `FINALIZED` y `VOIDED` son inmutables; no
   existen reopen, PATCH ni DELETE de auditorías, vitales o evoluciones.
 - Las transiciones usan `version` con comparación y actualización atómica. Un
@@ -49,6 +50,11 @@ Todas las rutas están bajo `/api/v1`, requieren sesión autenticada y
 - Cada creación, edición, vital, finalización, anulación y evolución escribe un
   `ClinicalAuditEvent` dentro de la misma transacción. Metadata solo contiene
   estado, versiones o IDs; nunca el payload clínico completo.
+- Una evolución requiere al menos una narrativa no vacía. El autor se deriva de la sesión y su
+  display name se devuelve como dato histórico; no se aceptan `authorMembershipId` ni
+  `organizationId` del cliente.
+- La anulación solo es válida desde `FINALIZED`, exige motivo y `expectedVersion`, conserva
+  encuentros/vitales/auditoría y recalcula la proyección de peso excluyendo encounters anulados.
 
 ## Fuera de alcance
 

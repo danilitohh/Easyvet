@@ -27,6 +27,15 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'CLINICAL_ENCOUNTER_IMMUTABLE') {
     return 'La consulta ya no está en borrador y no puede editarse.';
   }
+  if (error.code === 'INVALID_CLINICAL_ENCOUNTER_STATE') {
+    return 'La consulta no permite esta operación en su estado actual.';
+  }
+  if (error.code === 'PROFESSIONAL_PROFILE_REQUIRED') {
+    return 'Completa tu perfil profesional antes de finalizar esta consulta.';
+  }
+  if (error.code === 'ONLY_RESPONSIBLE_PRACTITIONER_CAN_FINALIZE') {
+    return 'Esta consulta debe ser finalizada por el Practitioner responsable.';
+  }
   if (error.status === 409) return 'No se pudo completar la operación porque existe un conflicto.';
   if (error.code === 'RESOURCE_NOT_FOUND' || error.status === 404) {
     return 'No encontramos este recurso.';

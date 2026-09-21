@@ -75,6 +75,7 @@ export function ClinicalHistoryPage() {
   const canReadEncounters = useCan(PERMISSION.CLINICAL_ENCOUNTERS_READ);
   const canReadEvolutions = useCan(PERMISSION.CLINICAL_EVOLUTIONS_READ);
   const canCreateEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_CREATE);
+  const canCreateEvolution = useCan(PERMISSION.CLINICAL_EVOLUTIONS_CREATE);
   const { activeMembership } = useAuth();
   const organization = useClinicalOrganization();
   const recordState = useClinicalRecord(patientId, canReadRecord);
@@ -160,6 +161,11 @@ export function ClinicalHistoryPage() {
             {canCreateEncounter && patientState.patient?.status === 'ACTIVE' ? (
               <Button as={Link} to={`/pacientes/${patientId}/historia/nueva`}>
                 Nueva consulta
+              </Button>
+            ) : null}
+            {canCreateEvolution && patientState.patient?.status === 'ACTIVE' ? (
+              <Button as={Link} to={`/pacientes/${patientId}/historia/evoluciones/nueva`}>
+                Nueva evolución general
               </Button>
             ) : null}
             <Button as={Link} to={`/pacientes/${patientId}`} variant="secondary">
@@ -258,7 +264,10 @@ export function ClinicalHistoryPage() {
             .filter((item) => item.clinicalEncounterId === null)
             .map((item) => (
               <article className="clinical-note" key={item.id}>
-                <strong>{formatDateTime(item.occurredAt, timezone)}</strong>
+                <strong>
+                  {formatDateTime(item.occurredAt, timezone)} ·{' '}
+                  {item.authorDisplayName ?? 'Profesional clínico'}
+                </strong>
                 {item.subjective ? (
                   <p>
                     <b>Subjetivo:</b> {item.subjective}

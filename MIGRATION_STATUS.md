@@ -35,7 +35,7 @@
 | Clínica — núcleo API 6B.2         | COMPLETADO (API, transacciones, CAS, auditoría y tests)      |
 | Clínica — frontend read-only 6C.1 | COMPLETADO (rutas, historia y detalle en modo lectura)       |
 | Clínica — operaciones UI 6C.2A    | COMPLETADO (borradores, vitales y perfil profesional)        |
-| Clínica — finalize/void UI 6C.2B  | PENDIENTE                                                    |
+| Clínica — finalize/void UI 6C.2B  | COMPLETADO (finalización, evoluciones y anulación)           |
 | Clínica — hardening 6C.3          | PENDIENTE                                                    |
 | Inventario                        | Pendiente                                                    |
 | Facturación                       | Pendiente                                                    |
@@ -118,6 +118,24 @@ Fase 6C.2A — operación clínica en borrador y perfil profesional completada:
   `DRAFT` y el peso actual del paciente permaneció sin cambios. No se modificó seed ni se creó una
   migración nueva.
 - `easyvet_test` mantiene sus datos de pruebas; no se escribieron bases compartidas o productivas.
+
+Fase 6C.2B — finalización clínica, evoluciones y anulación completada:
+
+- El backend exige que solo el Practitioner responsable de la consulta pueda finalizarla; el
+  perfil profesional se valida al momento de la acción y el snapshot de nombre/licencia queda
+  congelado. Practitioner distintos y Clinical Assistant reciben un error controlado.
+- El frontend incorpora revisión previa, CAS con `expectedVersion`, recarga explícita ante stale,
+  bloqueo de edición/vitales tras FINALIZED y lectura histórica del snapshot.
+- Las evoluciones son append-only, con narrativa obligatoria y autor derivado del backend; pueden
+  vincularse a un encuentro FINALIZED o al ClinicalRecord existente. No se implementó edición ni
+  borrado.
+- Anular exige motivo, conserva historia y vitales con advertencia, recalcula el peso proyectado y
+  bloquea nuevas evoluciones. No se creó migración ni se modificó Prisma en esta fase.
+- QA manual real ejecutado únicamente sobre `easyvet_dev`: se finalizó, evolucionó y anuló una
+  consulta ficticia de Norte/Luna; se verificaron snapshots, motivo, auditoría, estados y layout
+  móvil de 390 px. `easyvet_test` se reservó para pruebas automatizadas.
+- La suite agregó regresiones para autoría del responsable, narrativa vacía, snapshots, acciones
+  por permiso y operaciones de frontend. Fase 6C.3 y satélites permanecen pendientes.
 
 La Fase 2 queda detenida después del AppShell, navegación, dashboard demo y
 componentes UI compartidos. Fase 3A añadió el modelo multi-tenant fundamental y

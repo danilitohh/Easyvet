@@ -30,7 +30,10 @@ export const PERMISSION = {
   CLINICAL_ENCOUNTERS_READ: 'clinicalEncounters.read',
   CLINICAL_ENCOUNTERS_CREATE: 'clinicalEncounters.create',
   CLINICAL_ENCOUNTERS_UPDATE_DRAFT: 'clinicalEncounters.updateDraft',
+  CLINICAL_ENCOUNTERS_FINALIZE: 'clinicalEncounters.finalize',
+  CLINICAL_ENCOUNTERS_VOID: 'clinicalEncounters.void',
   CLINICAL_EVOLUTIONS_READ: 'clinicalEvolutions.read',
+  CLINICAL_EVOLUTIONS_CREATE: 'clinicalEvolutions.create',
   CLINICAL_VITALS_READ: 'clinicalVitals.read',
   CLINICAL_VITALS_CREATE: 'clinicalVitals.create',
 } as const satisfies Record<string, Permission>;

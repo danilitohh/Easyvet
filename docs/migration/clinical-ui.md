@@ -1,4 +1,4 @@
-# Fases 6C.1–6C.2A — Frontend clínico y borradores
+# Fases 6C.1–6C.2B — Frontend clínico y operación clínica
 
 ## Completado
 
@@ -28,11 +28,25 @@
   `/pacientes/:patientId/historia/encuentros/:encounterId/editar`; los cambios de tenant limpian
   estado y cancelan requests.
 
+## Fase 6C.2B — completado
+
+- Revisión y finalización de DRAFT con autorización estricta del Practitioner responsable,
+  perfil profesional obligatorio, `expectedVersion`, manejo de stale y snapshots inmutables.
+- Finalizados quedan en modo lectura: no permiten editar, guardar draft ni agregar vitales; el
+  profesional/licencia se leen desde el snapshot histórico.
+- Evoluciones append-only desde encuentros FINALIZED o desde un ClinicalRecord existente; el
+  formulario exige narrativa, muestra autor y no acepta identidad/tenant desde el cliente.
+- Anulación irreversible de FINALIZED con motivo obligatorio, confirmación fuerte, CAS, historia
+  retenida, vitales visibles con advertencia y recálculo transaccional de peso.
+- Acciones y rutas están protegidas por permisos efectivos y estado, con tenant switch/deep links
+  revalidados; no se añadieron migraciones ni tablas.
+
 ## Fuera de alcance
 
-Finalizar, anular y crear evoluciones permanecen fuera del frontend. No se inició Fase 6C.2B ni
-Fase 6C.3 (hardening).
+Satélites clínicos y Fase 6C.3 (hardening) no se iniciaron.
 
 ## Verificación
 
-La suite frontend cubre render de historia, estados, snapshots, vitales, textos largos y warnings de anulación. La validación completa del monorepo se ejecuta con los comandos de checkpoint de la fase; Docker/PostgreSQL y QA manual deben reportarse por separado cuando no estén disponibles.
+La suite frontend cubre render de historia, estados, snapshots, vitales, finalización, evoluciones,
+anulación, textos largos y conflictos. La validación completa del monorepo se ejecuta con los
+comandos de checkpoint de la fase; Docker/PostgreSQL y QA manual deben reportarse por separado.

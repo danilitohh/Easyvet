@@ -123,6 +123,24 @@ const vitalSelect = {
 
 type VitalRecord = Prisma.VitalMeasurementGetPayload<{ select: typeof vitalSelect }>;
 
+const evolutionSelect = {
+  id: true,
+  clinicalRecordId: true,
+  clinicalEncounterId: true,
+  occurredAt: true,
+  subjective: true,
+  objective: true,
+  assessment: true,
+  plan: true,
+  authorMembershipId: true,
+  createdAt: true,
+  authorMembership: {
+    select: { professionalProfile: { select: { displayName: true } } },
+  },
+} satisfies Prisma.ClinicalEvolutionSelect;
+
+type EvolutionRecord = Prisma.ClinicalEvolutionGetPayload<{ select: typeof evolutionSelect }>;
+
 const editableFields = [
   'clinicLocationId',
   'appointmentId',
@@ -599,6 +617,12 @@ export class ClinicalService {
       if (!current.responsibleMembershipId) {
         throw conflict('PROFESSIONAL_PROFILE_REQUIRED', 'A responsible practitioner is required');
       }
+      if (current.responsibleMembershipId !== tenant.membershipId) {
+        throw conflict(
+          'ONLY_RESPONSIBLE_PRACTITIONER_CAN_FINALIZE',
+          'Only the responsible practitioner can finalize this encounter',
+        );
+      }
       const responsible = await this.requireResponsible(
         tx,
         tenant.organizationId,
@@ -701,6 +725,7 @@ export class ClinicalService {
     const [data, total] = await Promise.all([
       this.prisma.clinicalEvolution.findMany({
         where,
+        select: evolutionSelect,
         orderBy: [{ occurredAt: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -756,6 +781,7 @@ export class ClinicalService {
           plan: trimmedNullable(input.plan) ?? null,
           authorMembershipId: tenant.membershipId,
         },
+        select: evolutionSelect,
       });
       await this.createAudit(tx, tenant, 'CLINICAL_EVOLUTION', created.id, 'EVOLUTION_ADDED', {
         clinicalEncounterId: input.clinicalEncounterId ?? null,
@@ -1077,9 +1103,7 @@ export class ClinicalService {
     };
   }
 
-  private toEvolutionResponse(
-    evolution: Prisma.ClinicalEvolutionGetPayload<object>,
-  ): ClinicalEvolutionResponse {
+  private toEvolutionResponse(evolution: EvolutionRecord): ClinicalEvolutionResponse {
     return {
       id: evolution.id,
       clinicalRecordId: evolution.clinicalRecordId,
@@ -1090,6 +1114,8 @@ export class ClinicalService {
       assessment: evolution.assessment,
       plan: evolution.plan,
       authorMembershipId: evolution.authorMembershipId,
+      authorDisplayName:
+        evolution.authorMembership.professionalProfile?.displayName?.trim() || null,
       createdAt: evolution.createdAt.toISOString(),
     };
   }

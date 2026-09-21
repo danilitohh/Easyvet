@@ -7,7 +7,8 @@ El frontend clínico expone únicamente lectura del núcleo clínico existente:
 - `/pacientes/:patientId/historia` muestra el `ClinicalRecord`, encuentros paginados y evoluciones de record sin encuentro.
 - `/pacientes/:patientId/historia/encuentros/:encounterId` muestra el snapshot histórico del encuentro, narrativa, planes, signos vitales y evoluciones relacionadas.
 - La pantalla de historia enlaza desde la ficha de Patient únicamente cuando la membresía efectiva tiene `clinicalRecords.read`.
-- No existen botones ni clientes React para crear, editar, finalizar, anular, registrar vitales o agregar evoluciones.
+- Las mutaciones clínicas se habilitan progresivamente por fase y permiso; las acciones de
+  finalización, anulación y evolución se describen en 6C.2B.
 
 ## Autorización y tenant
 
@@ -41,5 +42,27 @@ La carga de las páginas es lazy para mantener el shell principal liviano. Las t
 - Los vitales se agregan únicamente a drafts con `clinicalVitals.create`; son append-only y un
   peso en borrador nunca modifica `Patient.currentWeightKg`.
 
-Finalizar, anular, crear evoluciones y cualquier satélite clínico siguen fuera del frontend de
-esta fase y quedan pendientes de 6C.2B.
+## Fase 6C.2B — finalización, evoluciones y anulación
+
+- El detalle de consulta DRAFT muestra una revisión previa a finalizar. La acción solo aparece
+  para una membresía Practitioner activa que coincide con `responsibleMembershipId`, tiene el
+  permiso de finalización y un perfil profesional con nombre; el backend vuelve a validar todas
+  estas condiciones.
+- La finalización envía `expectedVersion` y no usa optimistic update. Un `409` conserva el
+  contexto, exige recarga explícita y vuelve a consultar el estado antes de continuar.
+- Una consulta FINALIZED muestra el snapshot histórico de profesional/licencia y queda sin
+  edición, nuevos vitales o guardado de draft. Una consulta VOIDED conserva historia y vitales,
+  muestra la razón de anulación y no admite evoluciones.
+- En DRAFT la revisión usa el perfil vigente del profesional responsable; en FINALIZED/VOIDED
+  solo se presenta el snapshot persistido en el encuentro.
+- Las evoluciones son append-only: pueden vincularse a un encuentro FINALIZED o al Record del
+  paciente existente. El formulario exige al menos una narrativa no vacía, deriva autor y tenant
+  del backend y muestra el autor clínico. No hay edición ni borrado.
+- Anular exige motivo y `expectedVersion`, confirma que la historia se conservará y recalcula la
+  proyección de peso del Patient dentro de la transacción. Los conflictos de versión/estado se
+  muestran como estado stale accionable, sin perder los valores locales.
+- Los controles se ocultan según permisos efectivos y estado; el cambio de tenant cancela cargas,
+  limpia identificadores y no permite reutilizar estado de otra organización.
+
+Los satélites clínicos (prescripciones, procedimientos, diagnóstico, hospitalización, documentos,
+firmas y seguimiento) y el hardening de 6C.3 permanecen fuera de esta fase.

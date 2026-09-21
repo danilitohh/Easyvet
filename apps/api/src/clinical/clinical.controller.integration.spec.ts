@@ -292,6 +292,17 @@ describeDatabase('clinical core API', () => {
       .expect(201);
     expect(finalized.body.status).toBe('FINALIZED');
     expect(finalized.body.professionalDisplayNameSnapshot).toBe('Dr. Clinical');
+    await agent
+      .put('/api/v1/clinical/me/professional-profile')
+      .send({ displayName: 'Dr. Profile Changed', licenseNumber: 'LIC-CHANGED' })
+      .expect(200);
+    const historical = await agent.get(`/api/v1/clinical-encounters/${encounterId}`).expect(200);
+    expect(historical.body.professionalDisplayNameSnapshot).toBe('Dr. Clinical');
+    expect(historical.body.professionalLicenseSnapshot).toBeNull();
+    await agent
+      .put('/api/v1/clinical/me/professional-profile')
+      .send({ displayName: 'Dr. Clinical', licenseNumber: null })
+      .expect(200);
     const patient = await prisma.patient.findUniqueOrThrow({ where: { id: patientId } });
     expect(Number(patient.currentWeightKg)).toBe(12.5);
     await agent
@@ -374,10 +385,45 @@ describeDatabase('clinical core API', () => {
         reason: 'Evolution source',
       })
       .expect(201);
+    const otherPractitionerEmail = `clinical-other-practitioner-${suffix}@example.local`;
+    const otherPractitioner = await prisma.user.create({
+      data: {
+        email: otherPractitionerEmail,
+        passwordHash: await app.get(PasswordService).hash(password),
+      },
+    });
+    const otherPractitionerMembership = await prisma.membership.create({
+      data: {
+        userId: otherPractitioner.id,
+        organizationId,
+        role: 'VETERINARIAN',
+        status: 'ACTIVE',
+        clinicalRole: 'PRACTITIONER',
+      },
+    });
+    userIds.push(otherPractitioner.id);
+    membershipIds.push(otherPractitionerMembership.id);
+    const otherPractitionerAgent = await login(otherPractitionerEmail);
+    await otherPractitionerAgent
+      .post(`/api/v1/clinical-encounters/${finalized.body.id}/finalize`)
+      .send({ expectedVersion: 1 })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('ONLY_RESPONSIBLE_PRACTITIONER_CAN_FINALIZE'));
     await practitioner
       .post(`/api/v1/clinical-encounters/${finalized.body.id}/finalize`)
       .send({ expectedVersion: 1 })
       .expect(201);
+    await practitioner
+      .post(`/api/v1/patients/${patientId}/clinical-evolutions`)
+      .send({
+        clinicalEncounterId: finalized.body.id,
+        occurredAt: '2032-01-11T16:00:00.000Z',
+        subjective: '  ',
+        objective: null,
+        assessment: null,
+        plan: null,
+      })
+      .expect(400);
     await practitioner
       .post(`/api/v1/patients/${patientId}/clinical-evolutions`)
       .send({

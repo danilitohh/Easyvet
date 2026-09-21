@@ -446,6 +446,7 @@ export const clinicalEvolutionResponseSchema = z.object({
   assessment: z.string().nullable(),
   plan: z.string().nullable(),
   authorMembershipId: z.string().uuid(),
+  authorDisplayName: z.string().nullable(),
   createdAt: z.string().datetime({ offset: true }),
 });
 
@@ -504,6 +505,28 @@ export const createClinicalVitalRequestSchema = z
   })
   .strict();
 
+export const finalizeClinicalEncounterRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+
+export const voidClinicalEncounterRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(2_000),
+  })
+  .strict();
+
+export const createClinicalEvolutionRequestSchema = z
+  .object({
+    clinicalEncounterId: z.string().uuid().nullable().optional(),
+    occurredAt: z.string().datetime({ offset: true }),
+    subjective: clinicalNarrativeField(),
+    objective: clinicalNarrativeField(),
+    assessment: clinicalNarrativeField(),
+    plan: clinicalNarrativeField(),
+  })
+  .strict();
+
 export const clinicalRecordEnvelopeSchema = z.object({
   clinicalRecord: clinicalRecordResponseSchema.nullable(),
 });
@@ -522,6 +545,11 @@ export type ClinicalRecordEnvelope = z.infer<typeof clinicalRecordEnvelopeSchema
 export type CreateClinicalEncounterRequest = z.infer<typeof createClinicalEncounterRequestSchema>;
 export type UpdateClinicalEncounterRequest = z.infer<typeof updateClinicalEncounterRequestSchema>;
 export type CreateClinicalVitalRequest = z.infer<typeof createClinicalVitalRequestSchema>;
+export type FinalizeClinicalEncounterRequest = z.infer<
+  typeof finalizeClinicalEncounterRequestSchema
+>;
+export type VoidClinicalEncounterRequest = z.infer<typeof voidClinicalEncounterRequestSchema>;
+export type CreateClinicalEvolutionRequest = z.infer<typeof createClinicalEvolutionRequestSchema>;
 
 const appointmentStatusSchema = z.enum([
   'SCHEDULED',

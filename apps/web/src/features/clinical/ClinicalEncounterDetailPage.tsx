@@ -10,6 +10,7 @@ import { TextInput } from '../../components/ui/TextInput';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
+import { Modal } from '../../components/ui/Modal';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../services/apiClient';
 import { usePatient } from '../patients/usePatients';
@@ -184,6 +185,9 @@ export function ClinicalEncounterDetailPage() {
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
   const canUpdateDraft = useCan(PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT);
   const canCreateVital = useCan(PERMISSION.CLINICAL_VITALS_CREATE);
+  const canFinalize = useCan(PERMISSION.CLINICAL_ENCOUNTERS_FINALIZE);
+  const canVoid = useCan(PERMISSION.CLINICAL_ENCOUNTERS_VOID);
+  const canCreateEvolution = useCan(PERMISSION.CLINICAL_EVOLUTIONS_CREATE);
   const { activeMembership } = useAuth();
   const canReadPatients = useCan(PERMISSION.PATIENTS_READ);
   const organization = useClinicalOrganization();
@@ -198,6 +202,11 @@ export function ClinicalEncounterDetailPage() {
   const profile = useProfessionalProfile(
     activeMembership?.clinicalRole === 'PRACTITIONER' && canReadEncounter,
   );
+  const [finalizeOpen, setFinalizeOpen] = useState(false);
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
+  const [actionPending, setActionPending] = useState(false);
+  const [actionError, setActionError] = useState<unknown>(null);
   const timezone = organization.data?.timezone ?? 'UTC';
 
   if (encounter.loading || organization.loading)
@@ -220,6 +229,99 @@ export function ClinicalEncounterDetailPage() {
   const relatedEvolutions = (evolutions.data?.data ?? []).filter(
     (evolution) => evolution.clinicalEncounterId === item.id && evolutionHasContent(evolution),
   );
+  const isResponsiblePractitioner = activeMembership?.id === item.responsibleMembershipId;
+  const responsibleDisplayName = item.responsibleProfessional?.displayName?.trim() || null;
+  const responsibleProfileConfigured = Boolean(responsibleDisplayName);
+  const currentResponsibleProfileMissing =
+    item.status === 'DRAFT' &&
+    canFinalize &&
+    isResponsiblePractitioner &&
+    (!profile.data || !profile.data.displayName.trim() || !responsibleProfileConfigured);
+  const canOpenFinalizeReview =
+    item.status === 'DRAFT' &&
+    canFinalize &&
+    isResponsiblePractitioner &&
+    responsibleProfileConfigured &&
+    Boolean(profile.data?.displayName.trim());
+  const staleActionError =
+    actionError instanceof ApiError && actionError.code === 'CLINICAL_ENCOUNTER_STALE';
+
+  function reloadClinicalState() {
+    encounter.reload();
+    patientState.reload();
+    vitals.reload();
+    evolutions.reload();
+  }
+
+  function reloadAfterConflict() {
+    setActionError(null);
+    setFinalizeOpen(false);
+    setVoidOpen(false);
+    setVoidReason('');
+    reloadClinicalState();
+  }
+
+  async function finalize() {
+    setActionPending(true);
+    setActionError(null);
+    try {
+      await clinicalApi.finalizeEncounter(item.id, { expectedVersion: item.version });
+      setFinalizeOpen(false);
+      reloadClinicalState();
+    } catch (error: unknown) {
+      if (
+        error instanceof ApiError &&
+        (error.code === 'CLINICAL_ENCOUNTER_IMMUTABLE' ||
+          error.code === 'INVALID_CLINICAL_ENCOUNTER_STATE')
+      ) {
+        setFinalizeOpen(false);
+        setActionError(
+          new ApiError(
+            'Esta consulta cambió desde que la abriste.',
+            409,
+            'CLINICAL_ENCOUNTER_STALE',
+          ),
+        );
+        reloadClinicalState();
+      } else {
+        setActionError(error);
+      }
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function voidEncounter() {
+    const reason = voidReason.trim();
+    if (!reason) return;
+    setActionPending(true);
+    setActionError(null);
+    try {
+      await clinicalApi.voidEncounter(item.id, {
+        expectedVersion: item.version,
+        reason,
+      });
+      setVoidOpen(false);
+      setVoidReason('');
+      reloadClinicalState();
+    } catch (error: unknown) {
+      if (error instanceof ApiError && error.code === 'INVALID_CLINICAL_ENCOUNTER_STATE') {
+        setVoidOpen(false);
+        setActionError(
+          new ApiError(
+            'Esta consulta cambió desde que la abriste.',
+            409,
+            'CLINICAL_ENCOUNTER_STALE',
+          ),
+        );
+        reloadClinicalState();
+      } else {
+        setActionError(error);
+      }
+    } finally {
+      setActionPending(false);
+    }
+  }
 
   return (
     <div className="page-stack clinical-page">
@@ -237,18 +339,48 @@ export function ClinicalEncounterDetailPage() {
                 Editar borrador
               </Button>
             ) : null}
+            {canOpenFinalizeReview ? (
+              <Button type="button" onClick={() => setFinalizeOpen(true)}>
+                Finalizar consulta
+              </Button>
+            ) : null}
+            {item.status === 'FINALIZED' && canVoid ? (
+              <Button type="button" variant="danger" onClick={() => setVoidOpen(true)}>
+                Anular consulta
+              </Button>
+            ) : null}
             <Button as={Link} to={`/pacientes/${item.patientId}/historia`} variant="secondary">
               Volver a historia
             </Button>
           </span>
         }
       />
-      {activeMembership?.clinicalRole === 'PRACTITIONER' &&
-      profile.data &&
-      !profile.data.displayName.trim() ? (
+      {currentResponsibleProfileMissing ? (
         <Alert tone="warning" role="status">
-          Completa tu perfil profesional antes de poder finalizar consultas.{' '}
+          Completa tu perfil profesional antes de finalizar esta consulta.{' '}
           <Link to="/perfil/profesional">Configurar perfil profesional</Link>
+        </Alert>
+      ) : null}
+      {item.status === 'DRAFT' &&
+      canFinalize &&
+      !isResponsiblePractitioner &&
+      item.responsibleMembershipId ? (
+        <Alert tone="info" role="status">
+          Esta consulta debe ser finalizada por{' '}
+          {responsibleDisplayName ?? 'el Practitioner responsable'}.
+        </Alert>
+      ) : null}
+      {actionError ? (
+        <Alert tone="error" role="alert">
+          {actionError instanceof ApiError && actionError.code === 'CLINICAL_ENCOUNTER_STALE'
+            ? 'Esta consulta cambió desde que la abriste.'
+            : errorMessage(actionError, 'No fue posible completar la operación clínica.')}
+          {actionError instanceof ApiError &&
+          (actionError.code === 'CLINICAL_ENCOUNTER_STALE' || actionError.status === 409) ? (
+            <Button variant="secondary" type="button" onClick={reloadAfterConflict}>
+              Recargar versión actual
+            </Button>
+          ) : null}
         </Alert>
       ) : null}
       <Card className="clinical-encounter-header">
@@ -388,6 +520,11 @@ export function ClinicalEncounterDetailPage() {
               <h2>Signos vitales</h2>
             </div>
           </div>
+          {item.status === 'VOIDED' ? (
+            <Alert tone="warning" role="status">
+              Estas mediciones pertenecen a una consulta anulada.
+            </Alert>
+          ) : null}
           {vitals.loading ? (
             <LoadingState label="Cargando signos vitales" />
           ) : vitals.vitals.length ? (
@@ -440,13 +577,24 @@ export function ClinicalEncounterDetailPage() {
               <h2>Notas relacionadas</h2>
             </div>
             <Badge>{`${relatedEvolutions.length} notas`}</Badge>
+            {item.status === 'FINALIZED' && canCreateEvolution ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/evoluciones/nueva`}
+              >
+                Agregar evolución
+              </Button>
+            ) : null}
           </div>
           {evolutions.loading ? (
             <LoadingState label="Cargando evoluciones" />
           ) : relatedEvolutions.length ? (
             relatedEvolutions.map((evolution) => (
               <article className="clinical-note" key={evolution.id}>
-                <strong>{formatDateTime(evolution.occurredAt, timezone)}</strong>
+                <strong>
+                  {formatDateTime(evolution.occurredAt, timezone)} ·{' '}
+                  {evolution.authorDisplayName ?? 'Profesional clínico'}
+                </strong>
                 {evolution.subjective ? (
                   <p>
                     <b>Subjetivo:</b> {evolution.subjective}
@@ -477,6 +625,140 @@ export function ClinicalEncounterDetailPage() {
           )}
         </Card>
       ) : null}
+      <Modal
+        open={finalizeOpen}
+        onClose={() => {
+          if (!actionPending) setFinalizeOpen(false);
+        }}
+        eyebrow="Revisión clínica"
+        title="Finalizar consulta"
+        description="Revisa los datos antes de convertir este borrador en evidencia clínica definitiva."
+      >
+        {actionError instanceof ApiError && actionError.code === 'CLINICAL_ENCOUNTER_STALE' ? (
+          <Alert tone="error" role="alert">
+            Esta consulta cambió desde que la abriste. No se finalizará una versión que no hayas
+            revisado.
+            <Button variant="secondary" type="button" onClick={reloadAfterConflict}>
+              Recargar versión actual
+            </Button>
+          </Alert>
+        ) : null}
+        <dl className="detail-list">
+          <div>
+            <dt>Paciente</dt>
+            <dd>{item.patient.name}</dd>
+          </div>
+          <div>
+            <dt>Fecha y hora</dt>
+            <dd>{formatDateTime(item.occurredAt, timezone)}</dd>
+          </div>
+          <div>
+            <dt>Sede</dt>
+            <dd>{item.clinicLocation.name}</dd>
+          </div>
+          <div>
+            <dt>Profesional responsable</dt>
+            <dd>{responsibleDisplayName ?? 'Sin perfil profesional configurado'}</dd>
+          </div>
+          {item.responsibleProfessional?.licenseNumber ? (
+            <div>
+              <dt>Matrícula / registro</dt>
+              <dd>{item.responsibleProfessional.licenseNumber}</dd>
+            </div>
+          ) : null}
+          <div>
+            <dt>Motivo</dt>
+            <dd>{item.reason}</dd>
+          </div>
+          <div>
+            <dt>Versión</dt>
+            <dd>{item.version}</dd>
+          </div>
+        </dl>
+        <Alert tone="warning" role="status">
+          Al finalizar, esta consulta dejará de ser editable.
+        </Alert>
+        <div className="form-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={actionPending}
+            onClick={() => setFinalizeOpen(false)}
+          >
+            Revisar después
+          </Button>
+          <Button
+            type="button"
+            disabled={actionPending || staleActionError}
+            onClick={() => void finalize()}
+          >
+            {actionPending ? 'Finalizando…' : 'Finalizar consulta'}
+          </Button>
+        </div>
+      </Modal>
+      <Modal
+        open={voidOpen}
+        onClose={() => {
+          if (!actionPending) setVoidOpen(false);
+        }}
+        eyebrow="Operación excepcional"
+        title="Anular consulta"
+        description="La consulta seguirá conservada en la historia clínica y quedará marcada como anulada."
+      >
+        <form
+          className="domain-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void voidEncounter();
+          }}
+        >
+          <FormField
+            label="Motivo de anulación *"
+            htmlFor="void-reason"
+            hint="Explica brevemente por qué esta evidencia deja de ser válida."
+          >
+            <textarea
+              id="void-reason"
+              className="input input--textarea"
+              value={voidReason}
+              maxLength={2_000}
+              required
+              onChange={(event) => {
+                setVoidReason(event.target.value);
+                setActionError(null);
+              }}
+            />
+          </FormField>
+          {actionError ? (
+            <Alert tone="error" role="alert">
+              {errorMessage(actionError, 'No fue posible anular la consulta.')}
+              {actionError instanceof ApiError &&
+              actionError.code === 'CLINICAL_ENCOUNTER_STALE' ? (
+                <Button variant="secondary" type="button" onClick={reloadAfterConflict}>
+                  Recargar versión actual
+                </Button>
+              ) : null}
+            </Alert>
+          ) : null}
+          <div className="form-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={actionPending}
+              onClick={() => setVoidOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              disabled={actionPending || staleActionError || !voidReason.trim()}
+            >
+              {actionPending ? 'Anulando…' : 'Confirmar anulación'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

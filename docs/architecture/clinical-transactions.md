@@ -1,7 +1,7 @@
 # Límites transaccionales del dominio clínico
 
 Este documento registra los límites atómicos implementados en el Clinical Core
-6B.2 y los flujos futuros que siguen fuera de alcance. No modifica la
+6B.2 y la operación de frontend 6C.2B. No modifica la
 implementación actual de Agenda ni introduce side effects externos.
 
 ## Regla general
@@ -18,20 +18,20 @@ Todas las operaciones verifican `organizationId` en cada lookup. Un `patientId`,
 
 ## Flujos y atomicidad
 
-| Flujo                      | Dentro de la transacción                                                                                                                                                                                                         | Después del commit                                                                   |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Crear/editar draft         | Validar tenant, Patient/Owner, actor y versión; upsert de Record/Encounter; snapshots profesionales; referencias de Appointment; metadata de adjuntos; auditoría.                                                                | Previsualización/exportación bajo demanda; antivirus/storage final si aplica.        |
-| Finalizar                  | Comprobar permiso, estado `DRAFT`, versión, Patient activo, Owner histórico, profesional responsable/perfil y ClinicLocation; fijar `FINALIZED`, `finalizedAt`, actor/snapshots; congelar mediciones; proyectar peso; auditoría. | Generar PDF, notificar, crear recordatorio o sincronizar Agenda mediante outbox.     |
-| Addendum/evolución         | Insertar fila append-only con autor, timestamp, plan y vínculo obligatorio al Record; vínculo opcional a Encounter `FINALIZED` no `VOIDED`; auditoría.                                                                           | Notificación o export actualizado. Nunca mutar el finalizado.                        |
-| Vital/peso                 | Insertar `VitalMeasurement`; actualizar `Patient.currentWeightKg` solamente si la medición es la vigente según regla de orden; auditoría.                                                                                        | Métricas o recordatorios.                                                            |
-| Vacunación/desparasitación | Guardar evento especializado, lote/producto y fecha; actualizar proyección preventiva de Patient; auditoría.                                                                                                                     | Recordatorio y posible Appointment de control, nunca dentro de la transacción de DB. |
-| Prescripción               | Crear Encounter + Prescription + Items y validar cantidades/unidades como una unidad; finalización según permiso.                                                                                                                | PDF, email al Owner y almacenamiento del documento.                                  |
-| Procedimiento/cirugía      | Crear evento, protocolo y referencias a Consent; no marcar `consentSigned` sin Consent válido.                                                                                                                                   | Informe/anestesia PDF, notificación y seguimiento.                                   |
-| Hospitalización            | Abrir/actualizar estancia y sus observaciones; alta es transición validada y auditada.                                                                                                                                           | Kardex PDF y avisos al Owner.                                                        |
-| Diagnóstico                | Crear `DiagnosticOrder` y sus items; cada resultado es una transición idempotente y tenant-safe; no sobrescribir resultado previo sin versión.                                                                                   | Ingesta de archivo, análisis externo y aviso al profesional.                         |
-| Consentimiento/firma       | Crear versión/hash; transición de `SignatureRequest` (`pending` → `code_sent` → `signed`) con control de expiración/intentos; guardar identidad/evidencia y ligar hash exacto.                                                   | Email OTP, PDF sellado y almacenamiento durable.                                     |
-| FollowUp                   | Crear programa y ocurrencias; completar una ocurrencia con contacto, resultado, evolución y próxima fecha en una transacción; auditoría.                                                                                         | Recordatorio, email y eventual Appointment proyectado.                               |
-| Exportación                | Registrar autorización y auditoría; leer un snapshot consistente.                                                                                                                                                                | Renderizar PDF/DOCX y entregar URL expirable. No cambiar el hecho clínico.           |
+| Flujo                      | Dentro de la transacción                                                                                                                                                                                                                 | Después del commit                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Crear/editar draft         | Validar tenant, Patient/Owner, actor y versión; upsert de Record/Encounter; snapshots profesionales; referencias de Appointment; metadata de adjuntos; auditoría.                                                                        | Previsualización/exportación bajo demanda; antivirus/storage final si aplica.        |
+| Finalizar                  | Comprobar permiso, actor Practitioner responsable, estado `DRAFT`, versión, Patient activo, Owner histórico, perfil y ClinicLocation; fijar `FINALIZED`, `finalizedAt`, actor/snapshots; congelar mediciones; proyectar peso; auditoría. | Generar PDF, notificar, crear recordatorio o sincronizar Agenda mediante outbox.     |
+| Addendum/evolución         | Insertar fila append-only con autor derivado de sesión, timestamp, al menos una narrativa y vínculo obligatorio al Record; vínculo opcional a Encounter `FINALIZED` no `VOIDED`; auditoría.                                              | Notificación o export actualizado. Nunca mutar el finalizado.                        |
+| Vital/peso                 | Insertar `VitalMeasurement`; actualizar `Patient.currentWeightKg` solamente si la medición es la vigente según regla de orden; auditoría.                                                                                                | Métricas o recordatorios.                                                            |
+| Vacunación/desparasitación | Guardar evento especializado, lote/producto y fecha; actualizar proyección preventiva de Patient; auditoría.                                                                                                                             | Recordatorio y posible Appointment de control, nunca dentro de la transacción de DB. |
+| Prescripción               | Crear Encounter + Prescription + Items y validar cantidades/unidades como una unidad; finalización según permiso.                                                                                                                        | PDF, email al Owner y almacenamiento del documento.                                  |
+| Procedimiento/cirugía      | Crear evento, protocolo y referencias a Consent; no marcar `consentSigned` sin Consent válido.                                                                                                                                           | Informe/anestesia PDF, notificación y seguimiento.                                   |
+| Hospitalización            | Abrir/actualizar estancia y sus observaciones; alta es transición validada y auditada.                                                                                                                                                   | Kardex PDF y avisos al Owner.                                                        |
+| Diagnóstico                | Crear `DiagnosticOrder` y sus items; cada resultado es una transición idempotente y tenant-safe; no sobrescribir resultado previo sin versión.                                                                                           | Ingesta de archivo, análisis externo y aviso al profesional.                         |
+| Consentimiento/firma       | Crear versión/hash; transición de `SignatureRequest` (`pending` → `code_sent` → `signed`) con control de expiración/intentos; guardar identidad/evidencia y ligar hash exacto.                                                           | Email OTP, PDF sellado y almacenamiento durable.                                     |
+| FollowUp                   | Crear programa y ocurrencias; completar una ocurrencia con contacto, resultado, evolución y próxima fecha en una transacción; auditoría.                                                                                                 | Recordatorio, email y eventual Appointment proyectado.                               |
+| Exportación                | Registrar autorización y auditoría; leer un snapshot consistente.                                                                                                                                                                        | Renderizar PDF/DOCX y entregar URL expirable. No cambiar el hecho clínico.           |
 
 ## Flujos que afectan a Patient
 
@@ -58,6 +58,11 @@ desactualizada.
 Al anular un encounter finalizado, la misma transacción recalcula el peso desde
 la medición finalizada más reciente de encounters no anulados; si no queda
 ninguna, establece null. El encounter anulado y sus mediciones permanecen.
+
+La UI de 6C.2B envía `expectedVersion` tanto para finalizar como para anular. Una carrera o
+transición de estado devuelve `409` sin optimistic update; el cliente conserva el formulario y
+ofrece recarga explícita. Finalizar congela snapshots de profesional/licencia y anular exige un
+motivo no vacío, pero nunca borra la evidencia clínica.
 
 El cambio de Owner no reescribe snapshots históricos. Archivar Patient no borra
 encounters, documentos, consentimientos ni auditoría. Las citas futuras se

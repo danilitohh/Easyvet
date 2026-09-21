@@ -42,6 +42,11 @@ const ClinicalEncounterFormPage = lazy(() =>
     default: module.ClinicalEncounterFormPage,
   })),
 );
+const ClinicalEvolutionFormPage = lazy(() =>
+  import('../features/clinical/ClinicalEvolutionFormPage').then((module) => ({
+    default: module.ClinicalEvolutionFormPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -237,6 +242,26 @@ export function App() {
               <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT}>
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <ClinicalEncounterFormPage mode="edit" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/evoluciones/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.CLINICAL_EVOLUTIONS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ClinicalEvolutionFormPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/evoluciones/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.CLINICAL_EVOLUTIONS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ClinicalEvolutionFormPage />
                 </Suspense>
               </PermissionRoute>
             }
