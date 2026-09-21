@@ -1,4 +1,4 @@
-import type { MembershipRole } from '@prisma/client';
+import type { ClinicalRole, MembershipRole } from '@prisma/client';
 import type { Permission } from '@veterinary-saas/contracts';
 
 // The permission catalog is intentionally small and code-defined until a future custom-role phase.
@@ -40,6 +40,18 @@ export const PERMISSIONS = {
   AVAILABILITY: {
     READ: 'availability.read',
     MANAGE: 'availability.manage',
+  },
+  CLINICAL: {
+    RECORDS_READ: 'clinicalRecords.read',
+    ENCOUNTERS_READ: 'clinicalEncounters.read',
+    ENCOUNTERS_CREATE: 'clinicalEncounters.create',
+    ENCOUNTERS_UPDATE_DRAFT: 'clinicalEncounters.updateDraft',
+    ENCOUNTERS_FINALIZE: 'clinicalEncounters.finalize',
+    ENCOUNTERS_VOID: 'clinicalEncounters.void',
+    EVOLUTIONS_READ: 'clinicalEvolutions.read',
+    EVOLUTIONS_CREATE: 'clinicalEvolutions.create',
+    VITALS_READ: 'clinicalVitals.read',
+    VITALS_CREATE: 'clinicalVitals.create',
   },
 } as const satisfies Record<string, Record<string, Permission>>;
 
@@ -153,11 +165,47 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
   ],
 };
 
-export function permissionsForRole(role: MembershipRole): Permission[] {
-  return [...ROLE_PERMISSIONS[role]];
+// Clinical permissions are derived only from the orthogonal ClinicalRole field.
+export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission[]> = {
+  PRACTITIONER: [
+    'clinicalRecords.read',
+    'clinicalEncounters.read',
+    'clinicalEncounters.create',
+    'clinicalEncounters.updateDraft',
+    'clinicalEncounters.finalize',
+    'clinicalEncounters.void',
+    'clinicalEvolutions.read',
+    'clinicalEvolutions.create',
+    'clinicalVitals.read',
+    'clinicalVitals.create',
+  ],
+  CLINICAL_ASSISTANT: [
+    'clinicalRecords.read',
+    'clinicalEncounters.read',
+    'clinicalEncounters.create',
+    'clinicalEncounters.updateDraft',
+    'clinicalEvolutions.read',
+    'clinicalVitals.read',
+    'clinicalVitals.create',
+  ],
+};
+
+export function permissionsForRole(
+  role: MembershipRole,
+  clinicalRole: ClinicalRole | null = null,
+): Permission[] {
+  const permissions = [...ROLE_PERMISSIONS[role]];
+  if (clinicalRole) {
+    permissions.push(...CLINICAL_ROLE_PERMISSIONS[clinicalRole]);
+  }
+  return [...new Set(permissions)];
 }
 
-export function hasPermissions(role: MembershipRole, required: readonly Permission[]): boolean {
-  const granted = new Set(ROLE_PERMISSIONS[role]);
+export function hasPermissions(
+  role: MembershipRole,
+  clinicalRole: ClinicalRole | null,
+  required: readonly Permission[],
+): boolean {
+  const granted = new Set(permissionsForRole(role, clinicalRole));
   return required.every((permission) => granted.has(permission));
 }

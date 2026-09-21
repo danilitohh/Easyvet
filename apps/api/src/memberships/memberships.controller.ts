@@ -26,6 +26,7 @@ function toMembershipResponse(
   return {
     id: membership.id,
     role: membership.role,
+    clinicalRole: membership.clinicalRole,
     status: membership.status,
     user: membership.user,
   };

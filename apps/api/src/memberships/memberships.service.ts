@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { MembershipRole, MembershipStatus, Prisma } from '@prisma/client';
+import { ClinicalRole, MembershipRole, MembershipStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../infrastructure/database/prisma.service';
 
 export type CreateMembershipInput = {
   userId: string;
   organizationId: string;
   role?: MembershipRole;
+  clinicalRole?: ClinicalRole | null;
   status?: MembershipStatus;
 };
 
@@ -17,6 +18,7 @@ export class MembershipsService {
   create(input: CreateMembershipInput) {
     const data: Prisma.MembershipCreateInput = {
       role: input.role ?? MembershipRole.RECEPTION,
+      clinicalRole: input.clinicalRole ?? null,
       status: input.status ?? MembershipStatus.INVITED,
       user: { connect: { id: input.userId } },
       organization: { connect: { id: input.organizationId } },
@@ -40,6 +42,7 @@ export class MembershipsService {
       select: {
         id: true,
         role: true,
+        clinicalRole: true,
         status: true,
         user: { select: { id: true, email: true, status: true } },
       },
@@ -54,6 +57,7 @@ export class MembershipsService {
       select: {
         id: true,
         role: true,
+        clinicalRole: true,
         status: true,
         user: { select: { id: true, email: true, status: true } },
       },

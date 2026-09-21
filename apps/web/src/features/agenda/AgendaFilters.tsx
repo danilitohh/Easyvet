@@ -44,6 +44,7 @@ export function AgendaFilters({
         items.push({
           id: membership.id,
           role: membership.role,
+          clinicalRole: null,
           status: 'ACTIVE',
           user: membership.user,
         });

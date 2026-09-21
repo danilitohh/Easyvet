@@ -34,7 +34,7 @@ export class TenantContextService {
         status: MembershipStatus.ACTIVE,
         organization: { status: OrganizationStatus.ACTIVE },
       },
-      select: { id: true, userId: true, organizationId: true, role: true },
+      select: { id: true, userId: true, organizationId: true, role: true, clinicalRole: true },
     });
     if (!membership) {
       throw activeOrganizationRequired();
@@ -44,6 +44,7 @@ export class TenantContextService {
       organizationId: membership.organizationId,
       membershipId: membership.id,
       role: membership.role,
+      clinicalRole: membership.clinicalRole,
       userId: membership.userId,
     };
   }

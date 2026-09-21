@@ -29,18 +29,24 @@ const seedUsers = [
     email: 'owner.norte@demo.local',
     organizationId: seedOrganizations[0].id,
     membershipId: '00000000-0000-4000-8000-000000000201',
+    role: 'OWNER',
+    clinicalRole: 'PRACTITIONER',
   },
   {
     id: '00000000-0000-4000-8000-000000000102',
     email: 'owner.sur@demo.local',
     organizationId: seedOrganizations[1].id,
     membershipId: '00000000-0000-4000-8000-000000000202',
+    role: 'OWNER',
+    clinicalRole: null,
   },
   {
     id: '00000000-0000-4000-8000-000000000103',
     email: 'multi@demo.local',
     organizationId: seedOrganizations[0].id,
     membershipId: '00000000-0000-4000-8000-000000000203',
+    role: 'ASSISTANT',
+    clinicalRole: 'CLINICAL_ASSISTANT',
   },
 ];
 
@@ -271,6 +277,183 @@ const seedAppointments = [
   },
 ];
 
+// Clinical seed data is intentionally small and fictitious so tenant isolation can be exercised.
+const seedClinicalRecords = [
+  {
+    id: '00000000-0000-4000-8000-000000000801',
+    organizationId: seedOrganizations[0].id,
+    patientId: seedPatients[0].id,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000802',
+    organizationId: seedOrganizations[1].id,
+    patientId: seedPatients[3].id,
+  },
+];
+
+const seedProfessionalProfiles = [
+  {
+    id: '00000000-0000-4000-8000-000000000701',
+    organizationId: seedOrganizations[0].id,
+    membershipId: seedUsers[0].membershipId,
+    displayName: 'Dra. Camila Rojas',
+    licenseNumber: 'VET-DEMO-001',
+  },
+];
+
+const seedClinicalEncounters = [
+  {
+    id: '00000000-0000-4000-8000-000000000901',
+    organizationId: seedOrganizations[0].id,
+    clinicalRecordId: seedClinicalRecords[0].id,
+    patientId: seedPatients[0].id,
+    ownerIdAtTime: seedOwners[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    appointmentId: null,
+    responsibleMembershipId: null,
+    status: 'DRAFT',
+    version: 1,
+    reason: 'Control clínico de QA',
+    anamnesis: 'Consulta de seguimiento ficticia.',
+    occurredAt: '2030-01-08T15:00:00.000Z',
+    createdByMembershipId: seedUsers[2].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000902',
+    organizationId: seedOrganizations[0].id,
+    clinicalRecordId: seedClinicalRecords[0].id,
+    patientId: seedPatients[0].id,
+    ownerIdAtTime: seedOwners[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    appointmentId: seedAppointments[0].id,
+    responsibleMembershipId: seedUsers[0].membershipId,
+    status: 'FINALIZED',
+    version: 1,
+    reason: 'Consulta general ficticia',
+    anamnesis: 'La paciente mantiene apetito y actividad normales.',
+    physicalExam: 'Mucosas rosadas; auscultación sin hallazgos relevantes.',
+    presumptiveDiagnosis: 'Paciente clínicamente estable.',
+    diagnosticPlan: 'No requiere pruebas adicionales en esta visita.',
+    therapeuticPlan: 'Continuar observación en casa.',
+    recommendations: 'Control preventivo en seis meses.',
+    followUpPlan: 'Revisión preventiva.',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    finalizedAt: '2030-01-08T15:30:00.000Z',
+    finalizedByMembershipId: seedUsers[0].membershipId,
+    occurredAt: '2030-01-08T14:00:00.000Z',
+    createdByMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000903',
+    organizationId: seedOrganizations[1].id,
+    clinicalRecordId: seedClinicalRecords[1].id,
+    patientId: seedPatients[3].id,
+    ownerIdAtTime: seedOwners[2].id,
+    clinicLocationId: seedOrganizations[1].locationId,
+    appointmentId: null,
+    responsibleMembershipId: '00000000-0000-4000-8000-000000000204',
+    status: 'DRAFT',
+    version: 1,
+    reason: 'Control Sur ficticio',
+    occurredAt: '2030-01-08T16:00:00.000Z',
+    createdByMembershipId: '00000000-0000-4000-8000-000000000204',
+  },
+];
+
+const seedVitalMeasurements = [
+  {
+    id: '00000000-0000-4000-8000-000000001001',
+    organizationId: seedOrganizations[0].id,
+    clinicalRecordId: seedClinicalRecords[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    patientId: seedPatients[0].id,
+    measuredAt: '2030-01-08T14:05:00.000Z',
+    weightKg: 12.4,
+    temperatureC: 38.5,
+    heartRateBpm: 96,
+    respiratoryRateBpm: 24,
+    bodyCondition: 'Bueno',
+    hydration: 'Normal',
+    mucousMembranes: 'Rosadas',
+    skinTurgor: 'Normal',
+    observations: 'Medición ficticia de QA.',
+    recordedByMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001002',
+    organizationId: seedOrganizations[0].id,
+    clinicalRecordId: seedClinicalRecords[0].id,
+    clinicalEncounterId: seedClinicalEncounters[0].id,
+    patientId: seedPatients[0].id,
+    measuredAt: '2030-01-08T15:05:00.000Z',
+    weightKg: 12.5,
+    temperatureC: null,
+    heartRateBpm: null,
+    respiratoryRateBpm: null,
+    bodyCondition: null,
+    hydration: null,
+    mucousMembranes: null,
+    skinTurgor: null,
+    observations: 'Medición de borrador ficticia.',
+    recordedByMembershipId: seedUsers[2].membershipId,
+  },
+];
+
+const seedClinicalEvolutions = [
+  {
+    id: '00000000-0000-4000-8000-000000001101',
+    organizationId: seedOrganizations[0].id,
+    clinicalRecordId: seedClinicalRecords[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    occurredAt: '2030-01-08T15:20:00.000Z',
+    subjective: 'La familia reporta evolución favorable.',
+    objective: 'Signos vitales dentro del rango esperado.',
+    assessment: 'Sin cambios clínicos relevantes.',
+    plan: 'Mantener recomendaciones.',
+    authorMembershipId: seedUsers[0].membershipId,
+  },
+];
+
+const seedClinicalAuditEvents = [
+  {
+    id: '00000000-0000-4000-8000-000000001201',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'CLINICAL_RECORD',
+    entityId: seedClinicalRecords[0].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6B.1' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001202',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'CLINICAL_ENCOUNTER',
+    entityId: seedClinicalEncounters[1].id,
+    action: 'FINALIZED',
+    metadata: { source: 'seed', stage: '6B.1' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001203',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'CLINICAL_EVOLUTION',
+    entityId: seedClinicalEvolutions[0].id,
+    action: 'EVOLUTION_ADDED',
+    metadata: { source: 'seed', stage: '6B.1' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001204',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'VITAL_MEASUREMENT',
+    entityId: seedVitalMeasurements[0].id,
+    action: 'VITAL_ADDED',
+    metadata: { source: 'seed', stage: '6B.1' },
+  },
+];
+
 async function main() {
   // Hash the local-only demo credential with Argon2id; plaintext never reaches PostgreSQL.
   const passwordHash = await argon2.hash(demoPassword, { type: argon2.argon2id });
@@ -341,12 +524,13 @@ async function main() {
             organizationId: user.organizationId,
           },
         },
-        update: { role: 'OWNER', status: 'ACTIVE' },
+        update: { role: user.role, clinicalRole: user.clinicalRole, status: 'ACTIVE' },
         create: {
           id: user.membershipId,
           userId: user.id,
           organizationId: user.organizationId,
-          role: 'OWNER',
+          role: user.role,
+          clinicalRole: user.clinicalRole,
           status: 'ACTIVE',
         },
       });
@@ -360,12 +544,13 @@ async function main() {
           organizationId: seedOrganizations[1].id,
         },
       },
-      update: { role: 'VETERINARIAN', status: 'ACTIVE' },
+      update: { role: 'VETERINARIAN', clinicalRole: 'PRACTITIONER', status: 'ACTIVE' },
       create: {
         id: '00000000-0000-4000-8000-000000000204',
         userId: seedUsers[2].id,
         organizationId: seedOrganizations[1].id,
         role: 'VETERINARIAN',
+        clinicalRole: 'PRACTITIONER',
         status: 'ACTIVE',
       },
     });
@@ -458,10 +643,80 @@ async function main() {
         },
       });
     }
+
+    for (const profile of seedProfessionalProfiles) {
+      await transaction.membershipProfessionalProfile.upsert({
+        where: {
+          membershipId_organizationId: {
+            membershipId: profile.membershipId,
+            organizationId: profile.organizationId,
+          },
+        },
+        update: {
+          organizationId: profile.organizationId,
+          displayName: profile.displayName,
+          licenseNumber: profile.licenseNumber,
+        },
+        create: { ...profile },
+      });
+    }
+
+    for (const record of seedClinicalRecords) {
+      await transaction.clinicalRecord.upsert({
+        where: { id: record.id },
+        update: { organizationId: record.organizationId, patientId: record.patientId },
+        create: { ...record },
+      });
+    }
+
+    for (const encounter of seedClinicalEncounters) {
+      const { id: encounterId, ...encounterFields } = encounter;
+      const data = {
+        ...encounterFields,
+        occurredAt: new Date(encounter.occurredAt),
+        finalizedAt: encounter.finalizedAt ? new Date(encounter.finalizedAt) : null,
+      };
+      await transaction.clinicalEncounter.upsert({
+        where: { id: encounter.id },
+        update: data,
+        create: { id: encounterId, ...data },
+      });
+    }
+
+    for (const vital of seedVitalMeasurements) {
+      const { id: vitalId, ...vitalFields } = vital;
+      await transaction.vitalMeasurement.upsert({
+        where: { id: vital.id },
+        update: { ...vitalFields, measuredAt: new Date(vital.measuredAt) },
+        create: { id: vitalId, ...vitalFields, measuredAt: new Date(vital.measuredAt) },
+      });
+    }
+
+    for (const evolution of seedClinicalEvolutions) {
+      const { id: evolutionId, ...evolutionFields } = evolution;
+      await transaction.clinicalEvolution.upsert({
+        where: { id: evolution.id },
+        update: { ...evolutionFields, occurredAt: new Date(evolution.occurredAt) },
+        create: {
+          id: evolutionId,
+          ...evolutionFields,
+          occurredAt: new Date(evolution.occurredAt),
+        },
+      });
+    }
+
+    for (const audit of seedClinicalAuditEvents) {
+      const { id: auditId, ...auditFields } = audit;
+      await transaction.clinicalAuditEvent.upsert({
+        where: { id: audit.id },
+        update: { ...auditFields },
+        create: { id: auditId, ...auditFields },
+      });
+    }
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments.',
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 1 profile, 2 records, 3 encounters, 2 vitals, 1 evolution, 4 audits.',
   );
 }
 

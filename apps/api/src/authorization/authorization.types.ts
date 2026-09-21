@@ -6,6 +6,7 @@ export type TenantContext = {
   organizationId: string;
   membershipId: string;
   role: 'OWNER' | 'ADMIN' | 'VETERINARIAN' | 'ASSISTANT' | 'RECEPTION' | 'GROOMER' | 'CASHIER';
+  clinicalRole: 'PRACTITIONER' | 'CLINICAL_ASSISTANT' | null;
   userId: string;
 };
 

@@ -1,4 +1,10 @@
-# Autorización y aislamiento multi-tenant (Fases 3C y 4A)
+# Autorización y aislamiento multi-tenant (Fases 3C, 4A y 6B.1)
+
+La autorización clínica se suma como una dimensión independiente a la matriz
+operativa. `Membership.clinicalRole` puede ser `PRACTITIONER`,
+`CLINICAL_ASSISTANT` o `null`; nunca reemplaza `MembershipRole`. Los permisos
+clínicos se resuelven junto con los organizacionales y no se conceden por
+`PLATFORM_ADMIN` sin Membership activo en el tenant.
 
 ## Authentication vs authorization
 

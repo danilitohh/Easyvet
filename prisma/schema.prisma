@@ -9,38 +9,45 @@ datasource db {
 
 // Organization is the tenant boundary for every future veterinary domain entity.
 model Organization {
-  id                String             @id @default(uuid()) @db.Uuid
-  name              String
-  slug              String             @unique
-  status            OrganizationStatus @default(ACTIVE)
-  timezone          String             @default("UTC")
-  locale            String             @default("es-CO")
-  currencyCode      String             @default("COP") @map("currency_code")
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @updatedAt @map("updated_at")
-  clinicLocations   ClinicLocation[]
-  memberships       Membership[]
-  owners            Owner[]
-  patients          Patient[]
-  appointments      Appointment[]
-  availabilityRules AvailabilityRule[]
+  id                   String                          @id @default(uuid()) @db.Uuid
+  name                 String
+  slug                 String                          @unique
+  status               OrganizationStatus              @default(ACTIVE)
+  timezone             String                          @default("UTC")
+  locale               String                          @default("es-CO")
+  currencyCode         String                          @default("COP") @map("currency_code")
+  createdAt            DateTime                        @default(now()) @map("created_at")
+  updatedAt            DateTime                        @updatedAt @map("updated_at")
+  clinicLocations      ClinicLocation[]
+  memberships          Membership[]
+  owners               Owner[]
+  patients             Patient[]
+  appointments         Appointment[]
+  availabilityRules    AvailabilityRule[]
+  professionalProfiles MembershipProfessionalProfile[]
+  clinicalRecords      ClinicalRecord[]
+  clinicalEncounters   ClinicalEncounter[]
+  clinicalEvolutions   ClinicalEvolution[]
+  vitalMeasurements    VitalMeasurement[]
+  clinicalAuditEvents  ClinicalAuditEvent[]
 
   @@map("organizations")
 }
 
 // A physical clinic location belongs to an organization but is not a tenant boundary.
 model ClinicLocation {
-  id                String               @id @default(uuid()) @db.Uuid
-  organizationId    String               @map("organization_id") @db.Uuid
-  name              String
-  status            ClinicLocationStatus @default(ACTIVE)
-  address           String?
-  city              String?
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
-  organization      Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  appointments      Appointment[]
-  availabilityRules AvailabilityRule[]
+  id                 String               @id @default(uuid()) @db.Uuid
+  organizationId     String               @map("organization_id") @db.Uuid
+  name               String
+  status             ClinicLocationStatus @default(ACTIVE)
+  address            String?
+  city               String?
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  appointments       Appointment[]
+  availabilityRules  AvailabilityRule[]
+  clinicalEncounters ClinicalEncounter[]
 
   @@unique([id, organizationId], map: "clinic_locations_id_organization_id_key")
   @@index([organizationId])
@@ -64,20 +71,29 @@ model User {
 
 // Membership is the explicit many-to-many link between a global user and a tenant.
 model Membership {
-  id                    String             @id @default(uuid()) @db.Uuid
-  userId                String             @map("user_id") @db.Uuid
-  organizationId        String             @map("organization_id") @db.Uuid
-  role                  MembershipRole     @default(RECEPTION)
-  status                MembershipStatus   @default(INVITED)
-  createdAt             DateTime           @default(now()) @map("created_at")
-  updatedAt             DateTime           @updatedAt @map("updated_at")
-  user                  User               @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  organization          Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  activeSessions        Session[]          @relation("SessionActiveMembership")
-  assignedAppointments  Appointment[]      @relation("AppointmentAssignedMembership")
-  createdAppointments   Appointment[]      @relation("AppointmentCreatedByMembership")
-  cancelledAppointments Appointment[]      @relation("AppointmentCancelledByMembership")
-  availabilityRules     AvailabilityRule[]
+  id                        String                         @id @default(uuid()) @db.Uuid
+  userId                    String                         @map("user_id") @db.Uuid
+  organizationId            String                         @map("organization_id") @db.Uuid
+  role                      MembershipRole                 @default(RECEPTION)
+  clinicalRole              ClinicalRole?                  @map("clinical_role")
+  status                    MembershipStatus               @default(INVITED)
+  createdAt                 DateTime                       @default(now()) @map("created_at")
+  updatedAt                 DateTime                       @updatedAt @map("updated_at")
+  user                      User                           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  organization              Organization                   @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  activeSessions            Session[]                      @relation("SessionActiveMembership")
+  assignedAppointments      Appointment[]                  @relation("AppointmentAssignedMembership")
+  createdAppointments       Appointment[]                  @relation("AppointmentCreatedByMembership")
+  cancelledAppointments     Appointment[]                  @relation("AppointmentCancelledByMembership")
+  availabilityRules         AvailabilityRule[]
+  professionalProfile       MembershipProfessionalProfile?
+  responsibleEncounters     ClinicalEncounter[]            @relation("EncounterResponsibleMembership")
+  finalizedEncounters       ClinicalEncounter[]            @relation("EncounterFinalizedByMembership")
+  voidedEncounters          ClinicalEncounter[]            @relation("EncounterVoidedByMembership")
+  createdEncounters         ClinicalEncounter[]            @relation("EncounterCreatedByMembership")
+  evolutionAuthors          ClinicalEvolution[]            @relation("EvolutionAuthorMembership")
+  recordedVitalMeasurements VitalMeasurement[]             @relation("VitalRecordedByMembership")
+  clinicalAuditEvents       ClinicalAuditEvent[]           @relation("AuditActorMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -108,26 +124,27 @@ model Session {
 
 // Owner is a tenant-scoped responsible person; archive preserves future history.
 model Owner {
-  id                       String        @id @default(uuid()) @db.Uuid
-  organizationId           String        @map("organization_id") @db.Uuid
-  firstName                String        @map("first_name")
-  lastName                 String?       @map("last_name")
-  documentType             String?       @map("document_type")
-  documentNumber           String?       @map("document_number")
-  documentNumberNormalized String?       @map("document_number_normalized")
-  email                    String?
-  phone                    String?
-  secondaryPhone           String?       @map("secondary_phone")
-  address                  String?
-  city                     String?
-  notes                    String?
-  status                   OwnerStatus   @default(ACTIVE)
-  archivedAt               DateTime?     @map("archived_at")
-  createdAt                DateTime      @default(now()) @map("created_at")
-  updatedAt                DateTime      @updatedAt @map("updated_at")
-  organization             Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  patients                 Patient[]
-  appointments             Appointment[]
+  id                           String              @id @default(uuid()) @db.Uuid
+  organizationId               String              @map("organization_id") @db.Uuid
+  firstName                    String              @map("first_name")
+  lastName                     String?             @map("last_name")
+  documentType                 String?             @map("document_type")
+  documentNumber               String?             @map("document_number")
+  documentNumberNormalized     String?             @map("document_number_normalized")
+  email                        String?
+  phone                        String?
+  secondaryPhone               String?             @map("secondary_phone")
+  address                      String?
+  city                         String?
+  notes                        String?
+  status                       OwnerStatus         @default(ACTIVE)
+  archivedAt                   DateTime?           @map("archived_at")
+  createdAt                    DateTime            @default(now()) @map("created_at")
+  updatedAt                    DateTime            @updatedAt @map("updated_at")
+  organization                 Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patients                     Patient[]
+  appointments                 Appointment[]
+  historicalClinicalEncounters ClinicalEncounter[] @relation("EncounterHistoricalOwner")
 
   // The composite key supports a tenant-safe Patient foreign key.
   @@unique([id, organizationId], map: "owners_id_organization_id_key")
@@ -143,29 +160,32 @@ model Owner {
 
 // Patient is explicitly tenant-scoped even though it also references its Owner.
 model Patient {
-  id                 String        @id @default(uuid()) @db.Uuid
-  organizationId     String        @map("organization_id") @db.Uuid
-  ownerId            String        @map("owner_id") @db.Uuid
+  id                 String              @id @default(uuid()) @db.Uuid
+  organizationId     String              @map("organization_id") @db.Uuid
+  ownerId            String              @map("owner_id") @db.Uuid
   name               String
-  nameNormalized     String        @map("name_normalized")
+  nameNormalized     String              @map("name_normalized")
   species            String
   breed              String?
-  sex                PatientSex    @default(UNKNOWN)
-  birthDate          DateTime?     @map("birth_date") @db.Date
-  birthDateEstimated Boolean       @default(false) @map("birth_date_estimated")
+  sex                PatientSex          @default(UNKNOWN)
+  birthDate          DateTime?           @map("birth_date") @db.Date
+  birthDateEstimated Boolean             @default(false) @map("birth_date_estimated")
   color              String?
-  microchipNumber    String?       @map("microchip_number")
+  microchipNumber    String?             @map("microchip_number")
   // Numeric(20,6) preserves decimal weight snapshots without a species-specific cap.
-  currentWeightKg    Decimal?      @map("current_weight_kg") @db.Decimal(20, 6)
-  sterilized         Boolean       @default(false)
+  currentWeightKg    Decimal?            @map("current_weight_kg") @db.Decimal(20, 6)
+  sterilized         Boolean             @default(false)
   notes              String?
-  status             PatientStatus @default(ACTIVE)
-  archivedAt         DateTime?     @map("archived_at")
-  createdAt          DateTime      @default(now()) @map("created_at")
-  updatedAt          DateTime      @updatedAt @map("updated_at")
-  organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  owner              Owner         @relation(fields: [ownerId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  status             PatientStatus       @default(ACTIVE)
+  archivedAt         DateTime?           @map("archived_at")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  owner              Owner               @relation(fields: [ownerId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   appointments       Appointment[]
+  clinicalRecord     ClinicalRecord?
+  clinicalEncounters ClinicalEncounter[]
+  vitalMeasurements  VitalMeasurement[]
 
   @@unique([id, organizationId], map: "patients_id_organization_id_key")
   @@index([organizationId])
@@ -231,35 +251,229 @@ enum PatientSex {
   UNKNOWN
 }
 
+// ClinicalRole is orthogonal to MembershipRole and grants only clinical capabilities.
+enum ClinicalRole {
+  PRACTITIONER
+  CLINICAL_ASSISTANT
+}
+
+enum ClinicalEncounterStatus {
+  DRAFT
+  FINALIZED
+  VOIDED
+}
+
+enum ClinicalAuditEntityType {
+  CLINICAL_RECORD
+  CLINICAL_ENCOUNTER
+  CLINICAL_EVOLUTION
+  VITAL_MEASUREMENT
+}
+
+enum ClinicalAuditAction {
+  CREATED
+  UPDATED
+  FINALIZED
+  VOIDED
+  EVOLUTION_ADDED
+  VITAL_ADDED
+}
+
+// A tenant-scoped professional profile is optional for every membership.
+model MembershipProfessionalProfile {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  membershipId   String       @unique @map("membership_id") @db.Uuid
+  displayName    String       @map("display_name")
+  licenseNumber  String?      @map("license_number")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  membership     Membership   @relation(fields: [membershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, organizationId], map: "membership_professional_profiles_id_organization_id_key")
+  @@unique([membershipId, organizationId], map: "membership_professional_profiles_membership_org_key")
+  @@index([organizationId])
+  @@map("membership_professional_profiles")
+}
+
+// One record is the stable clinical history root for one patient in one organization.
+model ClinicalRecord {
+  id                String              @id @default(uuid()) @db.Uuid
+  organizationId    String              @map("organization_id") @db.Uuid
+  patientId         String              @map("patient_id") @db.Uuid
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient           Patient             @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  encounters        ClinicalEncounter[]
+  evolutions        ClinicalEvolution[]
+  vitalMeasurements VitalMeasurement[]
+
+  @@unique([patientId, organizationId], map: "clinical_records_patient_organization_key")
+  @@unique([organizationId, patientId], map: "clinical_records_organization_patient_key")
+  @@unique([id, organizationId], map: "clinical_records_id_organization_id_key")
+  @@map("clinical_records")
+}
+
+// Encounter stores the bounded clinical consultation state machine without workflow endpoints.
+model ClinicalEncounter {
+  id                              String                  @id @default(uuid()) @db.Uuid
+  organizationId                  String                  @map("organization_id") @db.Uuid
+  clinicalRecordId                String                  @map("clinical_record_id") @db.Uuid
+  patientId                       String                  @map("patient_id") @db.Uuid
+  ownerIdAtTime                   String                  @map("owner_id_at_time") @db.Uuid
+  clinicLocationId                String                  @map("clinic_location_id") @db.Uuid
+  appointmentId                   String?                 @map("appointment_id") @db.Uuid
+  responsibleMembershipId         String?                 @map("responsible_membership_id") @db.Uuid
+  status                          ClinicalEncounterStatus @default(DRAFT)
+  version                         Int                     @default(1)
+  reason                          String
+  anamnesis                       String?
+  physicalExam                    String?                 @map("physical_exam")
+  presumptiveDiagnosis            String?                 @map("presumptive_diagnosis")
+  differentialDiagnosis           String?                 @map("differential_diagnosis")
+  definitiveDiagnosis             String?                 @map("definitive_diagnosis")
+  diagnosticPlan                  String?                 @map("diagnostic_plan")
+  therapeuticPlan                 String?                 @map("therapeutic_plan")
+  recommendations                 String?
+  followUpPlan                    String?                 @map("follow_up_plan")
+  notes                           String?
+  professionalDisplayNameSnapshot String?                 @map("professional_display_name_snapshot")
+  professionalLicenseSnapshot     String?                 @map("professional_license_snapshot")
+  finalizedAt                     DateTime?               @map("finalized_at") @db.Timestamptz(3)
+  finalizedByMembershipId         String?                 @map("finalized_by_membership_id") @db.Uuid
+  voidedAt                        DateTime?               @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId            String?                 @map("voided_by_membership_id") @db.Uuid
+  voidReason                      String?                 @map("void_reason")
+  occurredAt                      DateTime                @map("occurred_at") @db.Timestamptz(3)
+  createdByMembershipId           String                  @map("created_by_membership_id") @db.Uuid
+  createdAt                       DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                       DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                    Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicalRecord                  ClinicalRecord          @relation(fields: [clinicalRecordId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  patient                         Patient                 @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  historicalOwner                 Owner                   @relation("EncounterHistoricalOwner", fields: [ownerIdAtTime, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  clinicLocation                  ClinicLocation          @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  appointment                     Appointment?            @relation(fields: [appointmentId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  responsibleMembership           Membership?             @relation("EncounterResponsibleMembership", fields: [responsibleMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  finalizedByMembership           Membership?             @relation("EncounterFinalizedByMembership", fields: [finalizedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership              Membership?             @relation("EncounterVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership             Membership              @relation("EncounterCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  evolutions                      ClinicalEvolution[]
+  vitalMeasurements               VitalMeasurement[]
+
+  @@unique([id, organizationId], map: "clinical_encounters_id_organization_id_key")
+  @@unique([id, organizationId, clinicalRecordId], map: "clinical_encounters_id_org_record_key")
+  @@unique([appointmentId, organizationId], map: "clinical_encounters_appointment_org_key")
+  @@index([organizationId, patientId, occurredAt])
+  @@index([organizationId, clinicalRecordId, occurredAt])
+  @@index([organizationId, responsibleMembershipId, occurredAt])
+  @@index([organizationId, status])
+  @@map("clinical_encounters")
+}
+
+// Evolutions are append-only narrative additions; deletion is intentionally unsupported.
+model ClinicalEvolution {
+  id                  String             @id @default(uuid()) @db.Uuid
+  organizationId      String             @map("organization_id") @db.Uuid
+  clinicalRecordId    String             @map("clinical_record_id") @db.Uuid
+  clinicalEncounterId String?            @map("clinical_encounter_id") @db.Uuid
+  occurredAt          DateTime           @map("occurred_at") @db.Timestamptz(3)
+  subjective          String?
+  objective           String?
+  assessment          String?
+  plan                String?
+  authorMembershipId  String             @map("author_membership_id") @db.Uuid
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicalRecord      ClinicalRecord     @relation(fields: [clinicalRecordId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  clinicalEncounter   ClinicalEncounter? @relation(fields: [clinicalEncounterId, organizationId, clinicalRecordId], references: [id, organizationId, clinicalRecordId], onDelete: Restrict, onUpdate: Cascade)
+  authorMembership    Membership         @relation("EvolutionAuthorMembership", fields: [authorMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId, clinicalRecordId, occurredAt])
+  @@index([organizationId, clinicalEncounterId, occurredAt])
+  @@map("clinical_evolutions")
+}
+
+// Vital measurements are immutable observations and do not project into Patient.currentWeightKg.
+model VitalMeasurement {
+  id                     String            @id @default(uuid()) @db.Uuid
+  organizationId         String            @map("organization_id") @db.Uuid
+  clinicalRecordId       String            @map("clinical_record_id") @db.Uuid
+  clinicalEncounterId    String            @map("clinical_encounter_id") @db.Uuid
+  patientId              String            @map("patient_id") @db.Uuid
+  measuredAt             DateTime          @map("measured_at") @db.Timestamptz(3)
+  weightKg               Decimal?          @map("weight_kg") @db.Decimal(20, 6)
+  temperatureC           Decimal?          @map("temperature_c") @db.Decimal(20, 6)
+  heartRateBpm           Int?              @map("heart_rate_bpm")
+  respiratoryRateBpm     Int?              @map("respiratory_rate_bpm")
+  bodyCondition          String?           @map("body_condition")
+  hydration              String?
+  mucousMembranes        String?           @map("mucous_membranes")
+  skinTurgor             String?           @map("skin_turgor")
+  observations           String?
+  recordedByMembershipId String            @map("recorded_by_membership_id") @db.Uuid
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization           Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicalRecord         ClinicalRecord    @relation(fields: [clinicalRecordId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  clinicalEncounter      ClinicalEncounter @relation(fields: [clinicalEncounterId, organizationId, clinicalRecordId], references: [id, organizationId, clinicalRecordId], onDelete: Restrict, onUpdate: Cascade)
+  patient                Patient           @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  recordedByMembership   Membership        @relation("VitalRecordedByMembership", fields: [recordedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId, patientId, measuredAt])
+  @@index([organizationId, clinicalRecordId, measuredAt])
+  @@index([organizationId, clinicalEncounterId, measuredAt])
+  @@map("vital_measurements")
+}
+
+// Audit events retain an append-only trail without cascading deletion of clinical history.
+model ClinicalAuditEvent {
+  id                String                  @id @default(uuid()) @db.Uuid
+  organizationId    String                  @map("organization_id") @db.Uuid
+  actorMembershipId String?                 @map("actor_membership_id") @db.Uuid
+  entityType        ClinicalAuditEntityType @map("entity_type")
+  entityId          String                  @map("entity_id") @db.Uuid
+  action            ClinicalAuditAction
+  metadata          Json?
+  createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actorMembership   Membership?             @relation("AuditActorMembership", fields: [actorMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId, entityType, entityId, createdAt])
+  @@map("clinical_audit_events")
+}
+
 // Appointment is a tenant-scoped operational reservation, separate from clinical consultation.
 model Appointment {
-  id                      String            @id @default(uuid()) @db.Uuid
-  organizationId          String            @map("organization_id") @db.Uuid
-  clinicLocationId        String            @map("clinic_location_id") @db.Uuid
-  patientId               String            @map("patient_id") @db.Uuid
-  ownerId                 String            @map("owner_id") @db.Uuid
-  assignedMembershipId    String?           @map("assigned_membership_id") @db.Uuid
-  createdByMembershipId   String            @map("created_by_membership_id") @db.Uuid
-  status                  AppointmentStatus @default(SCHEDULED)
-  startsAt                DateTime          @map("starts_at") @db.Timestamptz(3)
-  endsAt                  DateTime          @map("ends_at") @db.Timestamptz(3)
+  id                      String             @id @default(uuid()) @db.Uuid
+  organizationId          String             @map("organization_id") @db.Uuid
+  clinicLocationId        String             @map("clinic_location_id") @db.Uuid
+  patientId               String             @map("patient_id") @db.Uuid
+  ownerId                 String             @map("owner_id") @db.Uuid
+  assignedMembershipId    String?            @map("assigned_membership_id") @db.Uuid
+  createdByMembershipId   String             @map("created_by_membership_id") @db.Uuid
+  status                  AppointmentStatus  @default(SCHEDULED)
+  startsAt                DateTime           @map("starts_at") @db.Timestamptz(3)
+  endsAt                  DateTime           @map("ends_at") @db.Timestamptz(3)
   reason                  String
   notes                   String?
   observations            String?
-  ownerConfirmedAt        DateTime?         @map("owner_confirmed_at") @db.Timestamptz(3)
-  clinicConfirmedAt       DateTime?         @map("clinic_confirmed_at") @db.Timestamptz(3)
-  cancelledAt             DateTime?         @map("cancelled_at") @db.Timestamptz(3)
-  cancelledByMembershipId String?           @map("cancelled_by_membership_id") @db.Uuid
-  cancellationReason      String?           @map("cancellation_reason")
-  createdAt               DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt               DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
-  organization            Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  clinicLocation          ClinicLocation    @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  patient                 Patient           @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  owner                   Owner             @relation(fields: [ownerId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  assignedMembership      Membership?       @relation("AppointmentAssignedMembership", fields: [assignedMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  createdByMembership     Membership        @relation("AppointmentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  cancelledByMembership   Membership?       @relation("AppointmentCancelledByMembership", fields: [cancelledByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  ownerConfirmedAt        DateTime?          @map("owner_confirmed_at") @db.Timestamptz(3)
+  clinicConfirmedAt       DateTime?          @map("clinic_confirmed_at") @db.Timestamptz(3)
+  cancelledAt             DateTime?          @map("cancelled_at") @db.Timestamptz(3)
+  cancelledByMembershipId String?            @map("cancelled_by_membership_id") @db.Uuid
+  cancellationReason      String?            @map("cancellation_reason")
+  createdAt               DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization            Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicLocation          ClinicLocation     @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  patient                 Patient            @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  owner                   Owner              @relation(fields: [ownerId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  assignedMembership      Membership?        @relation("AppointmentAssignedMembership", fields: [assignedMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership     Membership         @relation("AppointmentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  cancelledByMembership   Membership?        @relation("AppointmentCancelledByMembership", fields: [cancelledByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  clinicalEncounter       ClinicalEncounter?
 
   @@unique([id, organizationId], map: "appointments_id_organization_id_key")
   @@index([organizationId, startsAt])

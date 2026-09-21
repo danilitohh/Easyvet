@@ -176,13 +176,14 @@ export class SessionsService {
     return {
       id: membership.id,
       role: membership.role,
+      clinicalRole: membership.clinicalRole,
       status: membership.status,
       organization: {
         id: membership.organization.id,
         name: membership.organization.name,
         slug: membership.organization.slug,
       },
-      permissions: permissionsForRole(membership.role),
+      permissions: permissionsForRole(membership.role, membership.clinicalRole),
     };
   }
 }

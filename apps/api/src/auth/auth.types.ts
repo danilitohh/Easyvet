@@ -10,6 +10,7 @@ export type AuthenticatedUser = {
 export type AuthenticatedMembership = {
   id: string;
   role: 'OWNER' | 'ADMIN' | 'VETERINARIAN' | 'ASSISTANT' | 'RECEPTION' | 'GROOMER' | 'CASHIER';
+  clinicalRole: 'PRACTITIONER' | 'CLINICAL_ASSISTANT' | null;
   status: 'INVITED' | 'ACTIVE' | 'SUSPENDED';
   organization: {
     id: string;

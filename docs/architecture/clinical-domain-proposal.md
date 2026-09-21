@@ -1,10 +1,12 @@
 # Propuesta de dominio clínico de Easyvet
 
 **Fase:** 6A — análisis y arquitectura  
-**Estado:** propuesta documental; no implementada  
+**Estado:** diseño implementado parcialmente en Fase 6B.1
 **Dependencias actuales:** `Organization`, `Membership`, `Owner`, `Patient` y
-`Appointment` ya existen en Easyvet. Este documento no agrega modelos ni
-migraciones.
+`Appointment` ya existen en Easyvet. La migración
+`20260921130259_add_clinical_core_foundation` añade únicamente el núcleo
+persistente, el perfil profesional y los permisos clínicos base. Los endpoints,
+workflows de lifecycle y side effects siguen pendientes de 6B.2.
 
 ## Principios
 

@@ -138,7 +138,20 @@ describeDatabase('fundamental multi-tenant model', () => {
     execFileSync(process.execPath, [seedPath], { cwd: repositoryRoot, env: environment });
     execFileSync(process.execPath, [seedPath], { cwd: repositoryRoot, env: environment });
 
-    const [organizations, locations, users, memberships, owners, patients] = await Promise.all([
+    const [
+      organizations,
+      locations,
+      users,
+      memberships,
+      owners,
+      patients,
+      profiles,
+      records,
+      encounters,
+      vitals,
+      evolutions,
+      audits,
+    ] = await Promise.all([
       prisma.organization.count({ where: { slug: { startsWith: 'veterinaria-demo-' } } }),
       prisma.clinicLocation.count({ where: { name: { startsWith: 'Sede ' } } }),
       prisma.user.count({ where: { email: { endsWith: '@demo.local' } } }),
@@ -149,15 +162,52 @@ describeDatabase('fundamental multi-tenant model', () => {
       prisma.patient.count({
         where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
       }),
+      prisma.membershipProfessionalProfile.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
+      prisma.clinicalRecord.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
+      prisma.clinicalEncounter.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
+      prisma.vitalMeasurement.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
+      prisma.clinicalEvolution.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
+      prisma.clinicalAuditEvent.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
     ]);
 
-    expect({ organizations, locations, users, memberships, owners, patients }).toEqual({
+    expect({
+      organizations,
+      locations,
+      users,
+      memberships,
+      owners,
+      patients,
+      profiles,
+      records,
+      encounters,
+      vitals,
+      evolutions,
+      audits,
+    }).toEqual({
       organizations: 2,
       locations: 2,
       users: 3,
       memberships: 4,
       owners: 4,
       patients: 6,
+      profiles: 1,
+      records: 2,
+      encounters: 3,
+      vitals: 2,
+      evolutions: 1,
+      audits: 4,
     });
   });
 });

@@ -5,6 +5,10 @@ Easyvet. `DECIDIDO` describe una regla de arquitectura propuesta; `POR DECIDIR`
 requiere aprobación de producto/legal; `POSTERGADO` queda fuera del núcleo de
 Fase 6B.
 
+La fundación de esquema de 6B.1 ya está aplicada localmente; las decisiones de
+API y workflow que no tienen implementación permanecen explícitamente
+pendientes de 6B.2.
+
 Para no mezclar hechos y diseño, las conclusiones usan además estas etiquetas:
 
 - **VERIFIED LEGACY BEHAVIOR:** se observó directamente en código, rutas, SQL o
@@ -33,39 +37,32 @@ Para no mezclar hechos y diseño, las conclusiones usan además estas etiquetas:
 | Firma                    | DECIDIDO | Versionar documento y firmar hash inmutable; OTP/auditoría son satélites.                                                                                                       | Legacy ya registra hash SHA-256, OTP, IP, UA e identidad.                                                       |
 | Auditoría                | DECIDIDO | Crear evento de auditoría en cada transición y exportación sensible.                                                                                                            | Legacy registra acciones, pero no existe un límite tenant-aware en sus tablas.                                  |
 
-## Permisos propuestos
+## Permisos implementados en 6B.1
 
 Los permisos se asignan al `Membership` activo y siempre se evalúan junto al
 tenant. No deben derivarse automáticamente de `patients.read`.
 
-| Permiso                                       | Uso                                           |
-| --------------------------------------------- | --------------------------------------------- |
-| `clinical.records.read`                       | Leer expediente y timeline.                   |
-| `clinical.records.create`                     | Abrir expediente/evento.                      |
-| `clinical.records.update-draft`               | Cambiar un draft propio o permitido.          |
-| `clinical.records.finalize`                   | Finalizar y fijar evidencia.                  |
-| `clinical.records.addendum`                   | Añadir evolución/corrección trazable.         |
-| `clinical.records.void`                       | Anular draft o corregir duplicado con motivo. |
-| `clinical.measurements.read/create`           | Leer/registrar peso y signos.                 |
-| `clinical.diagnoses.read/create`              | Consultar/registrar diagnósticos.             |
-| `clinical.prescriptions.read/create/finalize` | Fórmulas y sus items.                         |
-| `clinical.preventive.read/create`             | Vacunación y desparasitación.                 |
-| `clinical.procedures.read/create`             | Procedimientos y cirugía.                     |
-| `clinical.diagnostics.read/create/result`     | Solicitudes y resultados.                     |
-| `clinical.documents.read/create/export`       | Documentos y exportaciones.                   |
-| `clinical.consents.read/create/sign`          | Consentimientos y firma.                      |
-| `clinical.followups.read/create/complete`     | Planes, ocurrencias y controles.              |
+| Permiso                                      | Uso                                      |
+| -------------------------------------------- | ---------------------------------------- |
+| `clinicalRecords.read`                       | Leer expediente y timeline.              |
+| `clinicalEncounters.read/create/updateDraft` | Leer y trabajar drafts de Encounter.     |
+| `clinicalEncounters.finalize/void`           | Transiciones reservadas a Practitioner.  |
+| `clinicalEvolutions.read/create`             | Evoluciones append-only (create futura). |
+| `clinicalVitals.read/create`                 | Leer y registrar mediciones.             |
+
+No se crean todavía permisos para diagnósticos catalogados, recetas,
+prevención, procedimientos, documentos, firmas u otros satélites.
 
 Matriz inicial sugerida:
 
-| Rol existente         | Lectura clínica                                        | Escritura clínica                                                     | Finalizar/firma                                          |
-| --------------------- | ------------------------------------------------------ | --------------------------------------------------------------------- | -------------------------------------------------------- |
-| `OWNER` / `ADMIN`     | Amplia dentro de la organización                       | Según política; no implica conocimiento clínico automático            | Delegable a profesional autorizado; toda acción auditada |
-| `VETERINARIAN`        | Sí                                                     | Encounters, diagnósticos, medidas, tratamientos y satélites asignados | Sí, según licencia/estado                                |
-| `ASSISTANT`           | Solo si se concede `clinical.records.read`             | Draft y medidas no sensibles; no finaliza por defecto                 | No                                                       |
-| `RECEPTION`           | Agenda y datos administrativos; clínica no por defecto | No                                                                    | No                                                       |
-| `GROOMER` / `CASHIER` | No clínica                                             | No                                                                    | No                                                       |
-| `PLATFORM_ADMIN`      | Sin acceso clínico por defecto                         | No                                                                    | No                                                       |
+| Rol existente         | Lectura clínica                                        | Escritura clínica                                     | Finalizar/firma                   |
+| --------------------- | ------------------------------------------------------ | ----------------------------------------------------- | --------------------------------- |
+| `OWNER` / `ADMIN`     | Solo si `ClinicalRole` está configurado                | Según su `ClinicalRole`; no implica acceso automático | Solo Practitioner + perfil válido |
+| `VETERINARIAN`        | Solo si `ClinicalRole=PRACTITIONER`                    | Matriz clínica base implementada                      | Sí, cuando exista workflow 6B.2   |
+| `ASSISTANT`           | Solo si `ClinicalRole=CLINICAL_ASSISTANT`              | Draft y vitales; no evoluciones nuevas por defecto    | No                                |
+| `RECEPTION`           | Agenda y datos administrativos; clínica no por defecto | No                                                    | No                                |
+| `GROOMER` / `CASHIER` | No clínica                                             | No                                                    | No                                |
+| `PLATFORM_ADMIN`      | Sin acceso clínico por defecto                         | No                                                    | No                                |
 
 La matriz no sustituye una política de mínimo privilegio. Se necesitan pruebas
 cross-tenant para cada permiso y no debe existir un bypass por rol global.
@@ -193,17 +190,14 @@ histórica y la defensa tenant-aware.
 
 ### Identidad profesional y brecha de perfil
 
-El schema actual de Easyvet solo ofrece User.email, User.status,
-Membership.role/status y relaciones; no tiene display name ni licencia
-profesional. Esto es un **BLOCKING DESIGN GAP** para finalizar un encounter con
-un snapshot confiable.
+La fundación 6B.1 implementa `MembershipProfessionalProfile` con
+`displayName`, `licenseNumber` nullable y tenant explícito. El perfil no añade
+especialidad ni campos arbitrarios a User/Membership.
 
 La recomendación es la opción D: separar `organizationRole` (el `MembershipRole`
-actual) de un perfil/capability clínica explícita. Un futuro
-`MembershipProfessionalProfile` 1:1 debe contener como mínimo
-`displayName`, `licenseNumber` nullable y `clinicalAccessLevel` (`NONE`,
-`ASSISTANT`, `PRACTITIONER`), con estado activo y tenant. No se implementa ni se
-añaden campos arbitrarios a User/Membership en este gate.
+actual) de un capability clínica explícita. `MembershipProfessionalProfile` es
+1:0..1 y la capability vive en el enum nullable `Membership.clinicalRole`
+(`PRACTITIONER` o `CLINICAL_ASSISTANT`).
 
 `responsibleMembershipId` puede ser null en draft, pero es obligatorio al
 finalizar. El Membership y User deben estar ACTIVE, pertenecer a la
@@ -228,12 +222,13 @@ permisos code-defined antes de custom roles.
 | Groomer/Cashier                                   | Patient/agenda que ya posean             | No clínica                                | No                             |
 | PLATFORM_ADMIN                                    | Ningún acceso clínico automático         | No                                        | No                             |
 
-Permisos mínimos de 6B: `clinicalRecords.read`,
+Permisos implementados en 6B.1: `clinicalRecords.read`,
 `clinicalEncounters.read`, `clinicalEncounters.create`,
 `clinicalEncounters.updateDraft`, `clinicalEncounters.finalize`,
 `clinicalEncounters.void`, `clinicalEvolutions.read`,
-`clinicalEvolutions.create`, `clinicalMeasurements.read` y
-`clinicalMeasurements.create`. No se crean permisos por campo.
+`clinicalEvolutions.create`, `clinicalVitals.read` y
+`clinicalVitals.create`. No se crean permisos por campo ni endpoints clínicos
+en esta fase.
 
 ### Concurrencia
 

@@ -20,6 +20,7 @@ const location = {
 const membership = {
   id: '66666666-6666-4666-8666-666666666666',
   role: 'VETERINARIAN',
+  clinicalRole: null,
   status: 'ACTIVE',
   user: {
     id: '88888888-8888-4888-8888-888888888888',

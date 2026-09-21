@@ -1,24 +1,38 @@
-# Contrato conceptual del Clinical Core — Fase 6B
+# Contrato del Clinical Core — Fase 6B.1
 
-**Estado:** diseño cerrado por el Checkpoint 6A.1; no implementado.  
-**Alcance:** contrato conceptual para cinco agregados. No es un bloque para
-copiar en `schema.prisma` y no autoriza todavía la Fase 6B.
+**Estado:** fundación de esquema implementada y verificada en Fase 6B.1.
+**Alcance:** `ClinicalRecord`, `ClinicalEncounter`, `ClinicalEvolution`,
+`VitalMeasurement`, `ClinicalAuditEvent`, roles/perfil clínico y sus
+invariantes de base de datos. No se implementaron endpoints ni workflows de
+6B.2.
+
+Las migraciones versionadas de la fundación son
+`20260921130259_add_clinical_core_foundation`,
+`20260921133000_align_clinical_field_names`,
+`20260921134500_remove_redundant_clinical_indexes` y
+`20260921135000_restore_required_clinical_uniques`; se aplican únicamente a
+`easyvet_dev` y `easyvet_test`. El seed contiene datos ficticios mínimos en
+Norte y Sur. Los endpoints conceptuales de este documento siguen siendo
+**PENDIENTES 6B.2** y no deben interpretarse como API disponible.
+
+La migración es aditiva y no reescribe datos existentes. No se alteraron
+migraciones previas; cualquier rollback de una base local deberá hacerse con
+un snapshot/restauración o una migración inversa revisada explícitamente, no
+editando una migración ya aplicada.
 
 ## Dependencia previa: perfil profesional
 
-El schema actual de Easyvet no contiene display name ni matrícula profesional.
-Antes de permitir `FINALIZED`, debe aprobarse y modelarse una capacidad
-profesional separada del `MembershipRole` organizacional:
+La fundación 6B.1 contiene display name y matrícula opcional en un perfil
+profesional separado de `MembershipRole`:
 
 ```text
 Membership (organizationRole: OWNER/ADMIN/…)
-  └── MembershipProfessionalProfile (clinicalAccessLevel, displayName, licenseNumber)
+  └── MembershipProfessionalProfile (displayName, licenseNumber)
 ```
 
-Ese perfil puede ser un agregado de identidad independiente o una extensión de
-Membership, pero no se añaden campos clínicos arbitrarios a User. Un perfil
-activo con `PRACTITIONER` autoriza finalización; `ASSISTANT` no finaliza por
-defecto. Esta dependencia es obligatoria para la transición de Encounter.
+El perfil es tenant-aware y 1:0..1 por Membership; no se añaden campos clínicos
+arbitrarios a User. La política futura de finalización exige Membership activo,
+`ClinicalRole=PRACTITIONER` y perfil válido. `licenseNumber` puede ser null.
 
 ## Enums conceptuales
 
@@ -26,10 +40,10 @@ defecto. Esta dependencia es obligatoria para la transición de Encounter.
 ClinicalEncounterStatus = DRAFT | FINALIZED | VOIDED
 
 ClinicalAuditAction =
-  ENCOUNTER_CREATED
-  ENCOUNTER_UPDATED
-  ENCOUNTER_FINALIZED
-  ENCOUNTER_VOIDED
+  CREATED
+  UPDATED
+  FINALIZED
+  VOIDED
   EVOLUTION_ADDED
   VITAL_ADDED
 ```

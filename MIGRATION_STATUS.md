@@ -29,10 +29,11 @@
 | Google Calendar              | POSTERGADO                                                   |
 | Notifications                | POSTERGADO                                                   |
 | Public booking               | POSTERGADO                                                   |
-| Clínica — análisis Fase 6A   | COMPLETADO (solo documentación; sin implementación)          |
-| Clínica — design gate 6A.1   | COMPLETADO (decisiones conceptuales; sin implementación)     |
-| Clínica — núcleo backend     | PENDIENTE (Fase 6B no iniciada)                              |
-| Clínica — frontend           | PENDIENTE (Fase 6B no iniciada)                              |
+| Clínica — análisis Fase 6A   | COMPLETADO                                                   |
+| Clínica — design gate 6A.1   | COMPLETADO                                                   |
+| Clínica — fundación 6B.1     | COMPLETADO (schema, migración, seed, permisos y tests)       |
+| Clínica — núcleo API 6B.2    | PENDIENTE                                                    |
+| Clínica — frontend 6C        | PENDIENTE                                                    |
 | Inventario                   | Pendiente                                                    |
 | Facturación                  | Pendiente                                                    |
 | SaaS                         | Pendiente                                                    |
@@ -56,8 +57,9 @@ Fase 6A — análisis y arquitectura clínica:
 - Se documentaron los límites transaccionales, proyecciones de Patient,
   idempotencia, outbox, retención y política de no hard-delete en
   `docs/architecture/clinical-transactions.md`.
-- No se crearon modelos Prisma, migraciones, endpoints, componentes React ni
-  tablas clínicas. Fase 6B queda explícitamente detenida hasta aprobación.
+- En ese checkpoint no se crearon modelos Prisma, migraciones, endpoints,
+  componentes React ni tablas clínicas; la implementación posterior queda
+  registrada bajo Fase 6B.1.
 
 Checkpoint 6A.1 — Clinical Design Gate completado documentalmente:
 
@@ -71,10 +73,32 @@ Checkpoint 6A.1 — Clinical Design Gate completado documentalmente:
   para encuentros presenciales; Owner y profesional se congelan mediante
   relaciones/snapshots derivados por backend.
 - Se seleccionó separar `organizationRole` de capability/perfil clínico. El
-  perfil profesional de Membership es una dependencia de diseño pendiente de
-  modelar, no una modificación realizada en este checkpoint.
-- El contrato conceptual, APIs y plan de pruebas de una futura Fase 6B están en
-  `docs/architecture/clinical-core-6b.md`. Fase 6B no comenzó.
+  perfil profesional de Membership quedó implementado en 6B.1 como relación
+  1:0..1 con `displayName` y `licenseNumber` nullable; no contiene especialidad
+  ni catálogos prematuros.
+- El contrato conceptual, APIs y plan de pruebas se mantienen en
+  `docs/architecture/clinical-core-6b.md`; los endpoints siguen pendientes de
+  Fase 6B.2.
+
+Fase 6B.1 — fundación del núcleo clínico completada:
+
+- Las migraciones `20260921130259_add_clinical_core_foundation` y sus ajustes
+  versionados de vocabulario/índices añaden `ClinicalRole`,
+  `MembershipProfessionalProfile`, `ClinicalRecord`, `ClinicalEncounter`,
+  `ClinicalEvolution`, `VitalMeasurement` y `ClinicalAuditEvent`, con FKs
+  tenant-aware, índices de consulta, checks de lifecycle y numeric checks.
+- Los permisos clínicos se resuelven desde `Membership.clinicalRole` y se
+  combinan con la matriz organizacional. `PLATFORM_ADMIN` no obtiene acceso
+  clínico automático.
+- El seed es ficticio e idempotente: Norte tiene un perfil Practitioner, un
+  draft, un encounter finalizado, vitales, evolución y auditoría; Sur mantiene
+  una contraparte mínima para pruebas de tenant. No se crean dominios clínicos
+  satélite.
+- No se implementaron endpoints clínicos, snapshots derivados por workflow,
+  finalización/anulación, evoluciones/vitales por API, frontend ni side effects
+  sobre Patient. Todo ello queda pendiente de Fase 6B.2.
+- La migración fue aplicada localmente solo a `easyvet_dev` y `easyvet_test`;
+  no se modificaron migraciones previas ni bases externas.
 
 La Fase 2 queda detenida después del AppShell, navegación, dashboard demo y
 componentes UI compartidos. Fase 3A añadió el modelo multi-tenant fundamental y

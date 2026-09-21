@@ -18,6 +18,7 @@ const membershipRoleSchema = z.enum([
   'CASHIER',
 ]);
 const membershipStatusSchema = z.enum(['INVITED', 'ACTIVE', 'SUSPENDED']);
+export const clinicalRoleSchema = z.enum(['PRACTITIONER', 'CLINICAL_ASSISTANT']);
 export const permissionSchema = z.enum([
   'organization.read',
   'organization.update',
@@ -43,6 +44,16 @@ export const permissionSchema = z.enum([
   'appointments.markNoShow',
   'availability.read',
   'availability.manage',
+  'clinicalRecords.read',
+  'clinicalEncounters.read',
+  'clinicalEncounters.create',
+  'clinicalEncounters.updateDraft',
+  'clinicalEncounters.finalize',
+  'clinicalEncounters.void',
+  'clinicalEvolutions.read',
+  'clinicalEvolutions.create',
+  'clinicalVitals.read',
+  'clinicalVitals.create',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -54,6 +65,7 @@ const authenticatedUserSchema = z.object({
 const activeMembershipSchema = z.object({
   id: z.string().uuid(),
   role: membershipRoleSchema,
+  clinicalRole: clinicalRoleSchema.nullable(),
   status: membershipStatusSchema,
   organization: z.object({
     id: z.string().uuid(),
@@ -128,6 +140,7 @@ export const membershipResponseSchema = z.object({
     status: z.enum(['ACTIVE', 'SUSPENDED']),
   }),
   role: membershipRoleSchema,
+  clinicalRole: clinicalRoleSchema.nullable(),
   status: membershipStatusSchema,
 });
 
