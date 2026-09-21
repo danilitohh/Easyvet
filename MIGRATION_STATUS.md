@@ -39,8 +39,10 @@
 | Clínica — hardening 6C.3          | COMPLETADO (invariantes, concurrencia, tenant, UX y auditoría) |
 | Clinical Core                     | COMPLETADO                                                     |
 | Prescriptions — análisis 6D.1     | COMPLETADO (referencia legacy, propuesta y decisiones)         |
-| Prescriptions — backend 6D.2      | PENDIENTE                                                      |
-| Prescriptions — frontend 6D.3     | PENDIENTE                                                      |
+| Prescriptions — backend 6D.2      | COMPLETADO                                                     |
+| Prescriptions — frontend 6D.3A    | COMPLETADO (lectura, snapshots y aislamiento)                  |
+| Prescriptions — frontend 6D.3B    | COMPLETADO (drafts, items, CAS, finalize y void)               |
+| Prescriptions — hardening 6D.4    | PENDIENTE                                                      |
 | Inventario                        | Pendiente                                                      |
 | Facturación                       | Pendiente                                                      |
 | SaaS                              | Pendiente                                                      |
@@ -466,5 +468,26 @@ Fase 6D.3A — frontend read-only de Prescriptions completada:
   snapshots, aislamiento, responsive y límites en
   `docs/architecture/prescriptions-frontend.md` y
   `docs/migration/prescriptions-ui.md`.
-- Prescriptions operations UI (6D.3B): **PENDIENTE**. Prescriptions hardening
-  (6D.4): **PENDIENTE**.
+
+Fase 6D.3B — operaciones frontend de Prescriptions completada:
+
+- Se añadió creación contextual desde Encounter en
+  `/pacientes/:patientId/historia/encuentros/:encounterId/prescripciones/nueva`
+  y edición de drafts desde el detalle. No existe creación global ni selector
+  duplicado de Patient/Encounter.
+- El editor permite drafts sin items, texto libre, nombre obligatorio,
+  agregar/quitar y ordenar con controles accesibles. Cada PATCH reemplaza el
+  conjunto completo con posiciones `0..N-1` y `expectedVersion`; stale conserva
+  cambios locales hasta recarga explícita.
+- Finalizar usa revisión explícita y CAS, exige Practitioner prescriptor,
+  perfil configurado, items y Encounter no anulado. Anular solo opera sobre
+  `FINALIZED`, exige motivo y conserva evidencia histórica; no hay delete.
+- Se reforzó la UX de Clinical Assistant, prescriptor distinto, perfil
+  incompleto, Encounter padre anulado, permisos independientes y cambio de
+  tenant. Los deep links cross-tenant continúan siendo `404`.
+- Se añadieron 26 pruebas específicas de operaciones, además de las 40 de
+  lectura existentes. No se modificó Prisma ni se creó una migración nueva.
+  PDF, Documents, Storage, firma, email, catálogo, inventario, ventas,
+  facturación y fármacos controlados permanecen fuera de alcance.
+
+Prescriptions hardening (6D.4): **PENDIENTE**.

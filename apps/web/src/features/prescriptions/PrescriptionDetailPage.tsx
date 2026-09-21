@@ -1,16 +1,22 @@
 import type { PrescriptionDetail } from '@veterinary-saas/contracts';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
+import { useAuth } from '../../contexts/useAuth';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { LoadingState } from '../../components/ui/LoadingState';
+import { Modal } from '../../components/ui/Modal';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../services/apiClient';
 import { ResourceError } from '../shared/ResourceFeedback';
-import { useClinicalOrganization } from '../clinical/useClinical';
+import { errorMessage } from '../shared/resourceUtils';
+import { useClinicalOrganization, useProfessionalProfile } from '../clinical/useClinical';
 import { formatDateTime } from '../clinical/clinicalUtils';
+import { prescriptionsApi } from './prescriptionsApi';
 import { usePrescription } from './usePrescriptions';
 import {
   historicalProfessional,
@@ -103,7 +109,7 @@ function PrescriptionStatusPanel({
   );
 }
 
-// Read-only detail preserves historical snapshots and never exposes prescription mutations.
+// Detail preserves historical snapshots while exposing only lifecycle-safe prescription actions.
 export function PrescriptionDetailPage() {
   const { patientId, prescriptionId } = useParams<{
     patientId: string;
@@ -111,9 +117,29 @@ export function PrescriptionDetailPage() {
   }>();
   const canRead = useCan(PERMISSION.PRESCRIPTIONS_READ);
   const canReadEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_READ);
+  const canUpdateDraft = useCan(PERMISSION.PRESCRIPTIONS_UPDATE_DRAFT);
+  const canFinalize = useCan(PERMISSION.PRESCRIPTIONS_FINALIZE);
+  const canVoid = useCan(PERMISSION.PRESCRIPTIONS_VOID);
+  const { activeMembership } = useAuth();
+  const location = useLocation();
   const organization = useClinicalOrganization();
   const prescription = usePrescription(prescriptionId, canRead);
+  const profile = useProfessionalProfile(canFinalize);
+  const [finalizeOpen, setFinalizeOpen] = useState(false);
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
+  const [actionPending, setActionPending] = useState(false);
+  const [actionError, setActionError] = useState<unknown>(null);
+  const organizationId = activeMembership?.organization.id;
   const timezone = organization.data?.timezone ?? 'UTC';
+
+  // Tenant changes close destructive dialogs and remove the previous prescription context.
+  useEffect(() => {
+    setFinalizeOpen(false);
+    setVoidOpen(false);
+    setVoidReason('');
+    setActionError(null);
+  }, [organizationId]);
 
   if (!canRead) return <ResourceError error={new ApiError('Acceso denegado', 403)} />;
   if (!patientId || !prescriptionId) {
@@ -139,12 +165,81 @@ export function PrescriptionDetailPage() {
   }
 
   const item = prescription.data;
+  const parentVoided = item.parentEncounterStatus === 'VOIDED';
+  const isResponsiblePractitioner = activeMembership?.id === item.prescribedByMembershipId;
+  const isPractitionerActor = activeMembership?.clinicalRole === 'PRACTITIONER';
+  const hasItems = item.items.length > 0;
+  const prescriberMissing = !item.prescribedByMembershipId;
+  const prescriberProfileMissing = Boolean(
+    item.prescribedByMembershipId && !item.prescribedBy?.displayName?.trim(),
+  );
+  const currentProfileMissing = Boolean(
+    isResponsiblePractitioner &&
+    !profile.loading &&
+    (!profile.data || !profile.data.displayName.trim()),
+  );
+  const canEdit = item.status === 'DRAFT' && canUpdateDraft && !parentVoided;
+  const canOpenFinalizeReview =
+    item.status === 'DRAFT' &&
+    canFinalize &&
+    isPractitionerActor &&
+    isResponsiblePractitioner &&
+    !parentVoided &&
+    hasItems &&
+    !prescriberProfileMissing &&
+    !currentProfileMissing;
   const professional = historicalProfessional(
     item.status,
     item.professionalDisplayNameSnapshot,
     item.prescribedBy?.displayName,
   );
   const isHistorical = item.status !== 'DRAFT';
+
+  async function finalizePrescription() {
+    if (actionPending) return;
+    setActionPending(true);
+    setActionError(null);
+    try {
+      await prescriptionsApi.finalize(item.id, { expectedVersion: item.version });
+      setFinalizeOpen(false);
+      prescription.reload();
+    } catch (error: unknown) {
+      if (error instanceof ApiError && error.code === 'PARENT_CLINICAL_ENCOUNTER_VOIDED') {
+        setFinalizeOpen(false);
+        setActionError(error);
+        prescription.reload();
+      } else {
+        setActionError(error);
+      }
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function voidPrescription() {
+    const reason = voidReason.trim();
+    if (!reason || actionPending) return;
+    setActionPending(true);
+    setActionError(null);
+    try {
+      await prescriptionsApi.void(item.id, { expectedVersion: item.version, reason });
+      setVoidOpen(false);
+      setVoidReason('');
+      prescription.reload();
+    } catch (error: unknown) {
+      setActionError(error);
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  function reloadCurrent() {
+    setActionError(null);
+    setFinalizeOpen(false);
+    setVoidOpen(false);
+    prescription.reload();
+  }
+
   return (
     <div className="page-stack clinical-page prescription-page">
       <PageHeader
@@ -153,6 +248,24 @@ export function PrescriptionDetailPage() {
         description={`${item.patient.name} · ${prescriptionStatusLabel(item.status)}`}
         action={
           <span className="page-header__actions">
+            {canEdit ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${patientId}/historia/prescripciones/${item.id}/editar`}
+              >
+                Editar borrador
+              </Button>
+            ) : null}
+            {item.status === 'FINALIZED' && canVoid && isPractitionerActor ? (
+              <Button type="button" variant="danger" onClick={() => setVoidOpen(true)}>
+                Anular prescripción
+              </Button>
+            ) : null}
+            {canOpenFinalizeReview ? (
+              <Button type="button" onClick={() => setFinalizeOpen(true)}>
+                Finalizar prescripción
+              </Button>
+            ) : null}
             <Link
               className="button button--secondary"
               to={`/pacientes/${patientId}/historia/prescripciones`}
@@ -162,7 +275,67 @@ export function PrescriptionDetailPage() {
           </span>
         }
       />
+      {location.state && typeof location.state === 'object' && 'notice' in location.state ? (
+        <Alert tone="warning" role="status">
+          {String((location.state as { notice?: unknown }).notice)}
+        </Alert>
+      ) : null}
+      {actionError ? (
+        <Alert tone="error" role="alert">
+          {errorMessage(actionError, 'No fue posible completar la operación.')}
+          {actionError instanceof ApiError && actionError.code === 'PRESCRIPTION_STALE' ? (
+            <Button type="button" variant="secondary" onClick={reloadCurrent}>
+              Recargar versión actual
+            </Button>
+          ) : null}
+        </Alert>
+      ) : null}
       <PrescriptionStatusPanel prescription={item} timezone={timezone} />
+      {item.status === 'DRAFT' && canFinalize ? (
+        <div className="prescription-action-guidance">
+          {prescriberMissing ? (
+            <Alert tone="warning" role="status">
+              Selecciona un profesional prescriptor antes de finalizar.
+              {canEdit ? (
+                <Button
+                  as={Link}
+                  to={`/pacientes/${patientId}/historia/prescripciones/${item.id}/editar`}
+                  variant="secondary"
+                >
+                  Editar borrador
+                </Button>
+              ) : null}
+            </Alert>
+          ) : null}
+          {!prescriberMissing && !isResponsiblePractitioner ? (
+            <Alert tone="info" role="status">
+              Esta prescripción debe ser finalizada por{' '}
+              {item.prescribedBy?.displayName || 'el profesional asignado'}.
+            </Alert>
+          ) : null}
+          {!prescriberMissing && isResponsiblePractitioner && currentProfileMissing ? (
+            <Alert tone="warning" role="status">
+              Completa tu perfil profesional antes de finalizar.{' '}
+              <Link to="/perfil/profesional">Configurar perfil profesional</Link>
+            </Alert>
+          ) : null}
+          {!prescriberMissing && !isResponsiblePractitioner && prescriberProfileMissing ? (
+            <Alert tone="warning" role="status">
+              El profesional asignado debe completar su perfil profesional.
+            </Alert>
+          ) : null}
+          {isResponsiblePractitioner && !hasItems ? (
+            <Alert tone="warning" role="status">
+              Agrega al menos un medicamento antes de finalizar la prescripción.
+            </Alert>
+          ) : null}
+          {parentVoided ? (
+            <Alert tone="warning" role="status">
+              La consulta clínica asociada fue anulada. Este borrador no puede continuar.
+            </Alert>
+          ) : null}
+        </div>
+      ) : null}
       <div className="detail-grid prescription-detail-grid">
         <Card className="detail-card">
           <div className="detail-card__heading">
@@ -291,6 +464,105 @@ export function PrescriptionDetailPage() {
           ) : null}
         </dl>
       </Card>
+      <Modal
+        open={finalizeOpen}
+        onClose={() => {
+          if (!actionPending) setFinalizeOpen(false);
+        }}
+        eyebrow="Revisión de emisión"
+        title="Finalizar prescripción"
+        description="Revisa el contenido antes de dejar esta prescripción como evidencia clínica definitiva."
+      >
+        <div className="prescription-review">
+          <dl className="detail-list">
+            <div>
+              <dt>Paciente</dt>
+              <dd>{item.patient.name}</dd>
+            </div>
+            <div>
+              <dt>Consulta</dt>
+              <dd>{item.clinicalEncounterId}</dd>
+            </div>
+            <div>
+              <dt>Prescriptor</dt>
+              <dd>{item.prescribedBy?.displayName || 'Sin prescriptor'}</dd>
+            </div>
+            <div>
+              <dt>Matrícula</dt>
+              <dd>{item.prescribedBy?.licenseNumber || 'No registrada'}</dd>
+            </div>
+            <div>
+              <dt>Medicamentos</dt>
+              <dd>{item.items.length}</dd>
+            </div>
+            <div>
+              <dt>Versión revisada</dt>
+              <dd>{item.version}</dd>
+            </div>
+          </dl>
+          <Alert tone="warning" role="status">
+            Al finalizar, esta prescripción dejará de ser editable.
+          </Alert>
+          <div className="modal-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={actionPending}
+              onClick={() => setFinalizeOpen(false)}
+            >
+              Revisar después
+            </Button>
+            <Button
+              type="button"
+              disabled={actionPending}
+              onClick={() => void finalizePrescription()}
+            >
+              {actionPending ? 'Finalizando…' : 'Finalizar prescripción'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+      <Modal
+        open={voidOpen}
+        onClose={() => {
+          if (!actionPending) setVoidOpen(false);
+        }}
+        eyebrow="Anulación histórica"
+        title="Anular prescripción"
+        description="La prescripción seguirá conservada en la historia clínica y quedará marcada como anulada."
+      >
+        <div className="prescription-review">
+          <label className="form-field" htmlFor="prescription-void-reason">
+            <span>Motivo de anulación *</span>
+            <textarea
+              id="prescription-void-reason"
+              className="input input--textarea"
+              value={voidReason}
+              maxLength={2_000}
+              disabled={actionPending}
+              onChange={(event) => setVoidReason(event.target.value)}
+            />
+          </label>
+          <div className="modal-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={actionPending}
+              onClick={() => setVoidOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={actionPending || !voidReason.trim()}
+              onClick={() => void voidPrescription()}
+            >
+              {actionPending ? 'Anulando…' : 'Confirmar anulación'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

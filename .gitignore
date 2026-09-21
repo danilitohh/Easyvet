@@ -26,3 +26,4 @@ prisma/*.db-journal
 .eslintcache
 *.tsbuildinfo
 reports/
+.playwright-cli/

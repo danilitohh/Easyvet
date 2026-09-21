@@ -8,7 +8,7 @@ import { ApiError } from '../../services/apiClient';
 import { useClinicalOrganization } from '../clinical/useClinical';
 import { PrescriptionListSection } from './PrescriptionListSection';
 
-// Patient prescription history is intentionally read-only until Fase 6D.3B.
+// Patient prescription history remains historical; mutations are contextual to the encounter/detail flow.
 export function PrescriptionListPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const canRead = useCan(PERMISSION.PRESCRIPTIONS_READ);

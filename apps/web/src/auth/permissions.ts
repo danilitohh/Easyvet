@@ -37,4 +37,8 @@ export const PERMISSION = {
   CLINICAL_VITALS_READ: 'clinicalVitals.read',
   CLINICAL_VITALS_CREATE: 'clinicalVitals.create',
   PRESCRIPTIONS_READ: 'prescriptions.read',
+  PRESCRIPTIONS_CREATE: 'prescriptions.create',
+  PRESCRIPTIONS_UPDATE_DRAFT: 'prescriptions.updateDraft',
+  PRESCRIPTIONS_FINALIZE: 'prescriptions.finalize',
+  PRESCRIPTIONS_VOID: 'prescriptions.void',
 } as const satisfies Record<string, Permission>;

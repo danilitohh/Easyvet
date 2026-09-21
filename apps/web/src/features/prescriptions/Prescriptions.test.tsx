@@ -63,9 +63,17 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../../auth/useCan', () => ({ useCan: () => mocks.can }));
+vi.mock('../../auth/useCan', () => ({
+  useCan: (permission: string) => (mocks.can === true ? permission.endsWith('.read') : mocks.can),
+}));
 vi.mock('../clinical/useClinical', () => ({
   useClinicalOrganization: () => mocks.organization,
+  useProfessionalProfile: () => ({
+    data: { membershipId: ids.membership, displayName: 'Dra. Perfil', licenseNumber: 'MV-123' },
+    loading: false,
+    error: null,
+    reload: vi.fn(),
+  }),
 }));
 vi.mock('./usePrescriptions', () => ({
   usePatientPrescriptions: () => mocks.listState,

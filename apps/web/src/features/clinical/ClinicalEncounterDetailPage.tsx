@@ -184,6 +184,7 @@ export function ClinicalEncounterDetailPage() {
   const canReadVitals = useCan(PERMISSION.CLINICAL_VITALS_READ);
   const canReadEvolutions = useCan(PERMISSION.CLINICAL_EVOLUTIONS_READ);
   const canReadPrescriptions = useCan(PERMISSION.PRESCRIPTIONS_READ);
+  const canCreatePrescription = useCan(PERMISSION.PRESCRIPTIONS_CREATE);
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
   const canUpdateDraft = useCan(PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT);
   const canCreateVital = useCan(PERMISSION.CLINICAL_VITALS_CREATE);
@@ -333,6 +334,14 @@ export function ClinicalEncounterDetailPage() {
         description={`${formatDateTime(item.occurredAt, timezone)} · ${item.patient.name}`}
         action={
           <span className="page-header__actions">
+            {canCreatePrescription && (item.status === 'DRAFT' || item.status === 'FINALIZED') ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/prescripciones/nueva`}
+              >
+                Nueva prescripción
+              </Button>
+            ) : null}
             {item.status === 'DRAFT' && canUpdateDraft ? (
               <Button
                 as={Link}

@@ -1,15 +1,20 @@
-# Prescriptions frontend read-only — Fase 6D.3A
+# Prescriptions frontend — Fases 6D.3A–6D.3B
 
-La interfaz web de Prescriptions está limitada a lectura. La autoridad sigue
-siendo el backend y la vista solo se habilita cuando la Membership activa tiene
-`prescriptions.read`.
+La interfaz web combina lectura histórica con operaciones explícitas sobre
+borradores. La autoridad sigue siendo el backend; los permisos de la
+Membership activa solo controlan affordances de UX y cada mutación usa el
+contrato compartido.
 
 ## Routing
 
 - `/pacientes/:patientId/historia/prescripciones` lista las recetas paginadas
   del Patient.
 - `/pacientes/:patientId/historia/prescripciones/:prescriptionId` muestra el
-  detalle read-only.
+  detalle y las acciones permitidas para ese lifecycle.
+- `/pacientes/:patientId/historia/encuentros/:encounterId/prescripciones/nueva`
+  crea un draft únicamente desde un Encounter DRAFT o FINALIZED.
+- `/pacientes/:patientId/historia/prescripciones/:prescriptionId/editar`
+  edita un draft existente; el Encounter padre se resuelve desde la receta.
 - El detalle del Encounter incorpora la misma lista filtrada por
   `clinicalEncounterId`.
 
@@ -24,8 +29,28 @@ contratos Zod compartidos y acepta `AbortSignal`. `usePatientPrescriptions`,
 cambiar de tenant o de identificador, abortan requests pendientes y no
 conservan IDs ni contenido de la organización anterior.
 
-El frontend nunca envía comandos de create, update, finalize o void en esta
-fase.
+`prescriptions.create`, `prescriptions.updateDraft`,
+`prescriptions.finalize` y `prescriptions.void` son permisos independientes.
+Clinical Assistant puede preparar drafts, pero no finaliza ni anula; la
+finalización visible exige que el actor Practitioner sea el prescriptor actual
+y tenga perfil profesional configurado.
+
+La creación no ofrece selector de Patient o Encounter: ambos son contexto de
+la URL y el Patient se deriva en backend. Editar reemplaza atómicamente el
+conjunto completo de items con `expectedVersion`; un `409 PRESCRIPTION_STALE`
+mantiene los cambios locales y solo una acción explícita recarga la versión
+actual. No hay merge automático.
+
+El editor permite cero items en un draft, texto libre para los campos clínicos,
+nombre de medicamento obligatorio, agregar/quitar y ordenar con controles
+accesibles arriba/abajo. El cliente normaliza `position` antes de enviar y
+nunca envía snapshots, tenant, auditoría o identidad derivada.
+
+Finalizar solo está disponible desde el detalle, abre una revisión explícita y
+envía el `expectedVersion` visible. Anular solo aplica a `FINALIZED`, exige
+motivo y conserva la evidencia; no existe delete físico. Si el Encounter padre
+se anula durante edición/finalización, la UI recarga el contexto y sale del
+flujo sin transformar la prescripción histórica.
 
 ## Presentación
 
@@ -70,6 +95,6 @@ clínicos existentes de Easyvet y no agrega otra librería de componentes.
 
 ## Alcance diferido
 
-La Fase 6D.3A no incluye crear o editar drafts, finalizar, anular, modificar
-items, PDF, Documents, Storage, firma, email, MedicationCatalog, Inventory,
-Sales o Billing. Esas operaciones quedan para 6D.3B o fases posteriores.
+No se implementan PDF, Documents, Storage, firma, email, MedicationCatalog,
+Inventory, Sales, Billing ni flujos de fármacos controlados. La Fase 6D.4
+queda pendiente para hardening posterior.

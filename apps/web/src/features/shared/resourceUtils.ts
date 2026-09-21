@@ -36,6 +36,30 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'ONLY_RESPONSIBLE_PRACTITIONER_CAN_FINALIZE') {
     return 'Esta consulta debe ser finalizada por el Practitioner responsable.';
   }
+  if (error.code === 'PRESCRIPTION_STALE') {
+    return 'Esta prescripción fue modificada desde otra sesión. Recarga la versión actual.';
+  }
+  if (error.code === 'PRESCRIPTION_IMMUTABLE') {
+    return 'La prescripción ya no está en borrador y no puede editarse.';
+  }
+  if (error.code === 'INVALID_PRESCRIPTION_STATE') {
+    return 'La prescripción no permite esta operación en su estado actual.';
+  }
+  if (error.code === 'PRESCRIPTION_ITEMS_REQUIRED') {
+    return 'Agrega al menos un medicamento antes de finalizar la prescripción.';
+  }
+  if (error.code === 'PRESCRIBER_REQUIRED') {
+    return 'Selecciona un profesional prescriptor antes de finalizar.';
+  }
+  if (error.code === 'PRESCRIBER_PROFILE_REQUIRED') {
+    return 'Completa el perfil profesional del prescriptor antes de finalizar.';
+  }
+  if (error.code === 'ONLY_PRESCRIBER_CAN_FINALIZE') {
+    return 'Esta prescripción debe ser finalizada por el profesional asignado.';
+  }
+  if (error.code === 'PARENT_CLINICAL_ENCOUNTER_VOIDED') {
+    return 'La consulta asociada fue anulada y la prescripción ya no puede editarse.';
+  }
   if (error.status === 409) return 'No se pudo completar la operación porque existe un conflicto.';
   if (error.code === 'RESOURCE_NOT_FOUND' || error.status === 404) {
     return 'No encontramos este recurso.';

@@ -1,4 +1,4 @@
-# API de prescripciones — Fase 6D.2
+# API de prescripciones — Fase 6D.2 / cliente 6D.3B
 
 La implementación backend de prescripciones mantiene cada receta dentro de un
 `ClinicalEncounter` y del tenant de la sesión. No crea recetas administrativas,
@@ -18,6 +18,13 @@ inventario, ventas, facturación o correo.
 
 No existen endpoints independientes para `PrescriptionItem` ni endpoint de
 delete.
+
+El cliente React de 6D.3B consume estos mismos endpoints mediante
+`prescriptionsApi`; no se creó un endpoint paralelo ni se cambió el contrato de
+Prisma. `POST` de creación recibe únicamente el Encounter contextual, `PATCH`
+reemplaza cabecera/items completos, y finalize/void reciben solo los campos CAS
+correspondientes. Snapshots, tenant, actor y auditoría permanecen derivados en
+backend.
 
 ## Contratos y reglas
 
@@ -42,13 +49,14 @@ finalizar. El estado actual del Encounter padre se devuelve como
 
 ## Errores de dominio
 
-Los errores relevantes son `PRESCRIPTION_NOT_FOUND`,
-`PRESCRIPTION_STALE`, `PRESCRIPTION_NOT_DRAFT`, `PRESCRIPTION_NOT_FINALIZED`,
-`PRESCRIPTION_PARENT_VOIDED`, `PRESCRIPTION_PATIENT_ARCHIVED`,
-`PRESCRIPTION_INVALID_PRESCRIBER`, `PRESCRIPTION_PROFILE_REQUIRED`,
-`PRESCRIPTION_ITEMS_REQUIRED`, `PRESCRIPTION_ITEM_INVALID` y
-`PRESCRIPTION_PERMISSION_DENIED`. La respuesta HTTP mantiene aislamiento de
-tenant y no revela la existencia de recursos de otra organización.
+Los errores relevantes son `PRESCRIPTION_NOT_FOUND`, `PRESCRIPTION_STALE`,
+`PRESCRIPTION_IMMUTABLE`, `INVALID_PRESCRIPTION_STATE`,
+`PARENT_CLINICAL_ENCOUNTER_VOIDED`, `INVALID_CLINICAL_ENCOUNTER_STATE`,
+`PRESCRIBER_NOT_FOUND`, `PRESCRIBER_REQUIRED`,
+`PRESCRIBER_PROFILE_REQUIRED`, `ONLY_PRESCRIBER_CAN_FINALIZE`,
+`PRESCRIPTION_ITEMS_REQUIRED` e `INSUFFICIENT_PERMISSION`. La respuesta HTTP
+mantiene aislamiento de tenant y no revela la existencia de recursos de otra
+organización.
 
 ## Auditoría
 
@@ -59,6 +67,6 @@ si se proporcionó motivo; nunca copia texto clínico ni credenciales.
 
 ## Fuera de alcance
 
-La Fase 6D.2 no implementa frontend, PDF, Documents, Storage, firma,
-notificaciones, catálogo de medicamentos, fármacos controlados, inventario,
-ventas ni facturación. La UI queda explícitamente para 6D.3.
+PDF, Documents, Storage, firma, notificaciones, catálogo de medicamentos,
+fármacos controlados, inventario, ventas y facturación siguen fuera de alcance.
+La UI operativa 6D.3B no altera el modelo ni añade migraciones.
