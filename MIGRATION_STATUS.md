@@ -29,13 +29,34 @@
 | Google Calendar              | POSTERGADO                                                   |
 | Notifications                | POSTERGADO                                                   |
 | Public booking               | POSTERGADO                                                   |
-| Clínica                      | Pendiente                                                    |
+| Clínica — análisis Fase 6A   | COMPLETADO (solo documentación; sin implementación)          |
+| Clínica — núcleo backend     | PENDIENTE (Fase 6B no iniciada)                              |
+| Clínica — frontend           | PENDIENTE (Fase 6B no iniciada)                              |
 | Inventario                   | Pendiente                                                    |
 | Facturación                  | Pendiente                                                    |
 | SaaS                         | Pendiente                                                    |
 | Multi-tenancy SaaS completo  | EN PROGRESO                                                  |
 
 La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
+
+Fase 6A — análisis y arquitectura clínica:
+
+- Se inspeccionó el checkout legacy Lativet en el commit
+  `05fea495cb13208b27bf470b3570987fd501a81e` (`05fea49`) únicamente en modo
+  lectura, sin ejecutarlo, sin conectarse a su base y sin modificarlo.
+- Se documentaron el mapa de módulos, entidades observadas, ciclo de vida,
+  seguimiento, peso/signos vitales, documentos, consentimientos, firmas,
+  remisiones y side effects en
+  `docs/migration/clinical-reference.md`.
+- Se documentaron la propuesta de núcleo/satélites, aislamiento tenant,
+  permisos, PII, decisiones abiertas y alcance exacto de una futura Fase 6B en
+  `docs/architecture/clinical-domain-proposal.md` y
+  `docs/architecture/clinical-decisions.md`.
+- Se documentaron los límites transaccionales, proyecciones de Patient,
+  idempotencia, outbox, retención y política de no hard-delete en
+  `docs/architecture/clinical-transactions.md`.
+- No se crearon modelos Prisma, migraciones, endpoints, componentes React ni
+  tablas clínicas. Fase 6B queda explícitamente detenida hasta aprobación.
 
 La Fase 2 queda detenida después del AppShell, navegación, dashboard demo y
 componentes UI compartidos. Fase 3A añadió el modelo multi-tenant fundamental y
