@@ -6,6 +6,7 @@ import { useActiveOrganizationId } from '../shared/hooks';
 import type {
   AppointmentListResponse,
   AppointmentResponse,
+  AvailableSlotsResponse,
   LocationResponse,
   MembershipResponse,
   OrganizationCurrentResponse,
@@ -20,6 +21,7 @@ const EMPTY_PATIENTS: PatientsListResponse = {
   data: [],
   pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
 };
+const EMPTY_SLOTS: AvailableSlotsResponse | null = null;
 const MOCK_ORGANIZATION: OrganizationCurrentResponse = {
   id: '00000000-0000-4000-8000-000000000010',
   name: 'Demo Easyvet',
@@ -169,6 +171,32 @@ export function useAgendaPatients(search: string): LoadState<PatientsListRespons
     (appConfig.dataMode === 'mock' || Boolean(organizationId)) && canReadPatients,
     [organizationId, canReadPatients, params.search],
     EMPTY_PATIENTS,
+  );
+}
+
+type AvailableSlotsInput = {
+  date: string;
+  clinicLocationId: string;
+  assignedMembershipId?: string;
+  durationMinutes: number;
+};
+
+// Slot reads are abortable and tenant-keyed so forms never display availability from another organization.
+export function useAgendaAvailableSlots(
+  input: AvailableSlotsInput | null,
+): LoadState<AvailableSlotsResponse | null> {
+  const organizationId = useActiveOrganizationId();
+  const enabled = appConfig.dataMode === 'mock' || Boolean(organizationId && input);
+  const loader = useCallback(
+    (signal: AbortSignal) =>
+      input ? agendaApi.availableSlots({ ...input, signal }) : Promise.resolve(EMPTY_SLOTS),
+    [input],
+  );
+  return useAbortableResource<AvailableSlotsResponse | null>(
+    loader,
+    enabled,
+    [organizationId, input ? JSON.stringify(input) : null],
+    EMPTY_SLOTS,
   );
 }
 

@@ -12,6 +12,12 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'RESOURCE_CONFLICT') {
     return 'Ya existe un propietario con ese documento en esta veterinaria.';
   }
+  if (error.code === 'APPOINTMENT_CONFLICT' || error.code === 'OWNER_PATIENT_MISMATCH') {
+    return 'El horario ya no está disponible. Selecciona otro horario.';
+  }
+  if (error.code === 'INVALID_APPOINTMENT_STATE') {
+    return 'La cita ya no permite esta operación por su estado actual.';
+  }
   if (error.status === 409) return 'No se pudo completar la operación porque existe un conflicto.';
   if (error.code === 'RESOURCE_NOT_FOUND' || error.status === 404) {
     return 'No encontramos este recurso.';

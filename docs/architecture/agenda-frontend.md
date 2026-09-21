@@ -1,12 +1,13 @@
 # Arquitectura del frontend de Agenda
 
-## Alcance de Fase 5C.1
+## Alcance de Fase 5C.2A
 
-Esta fase entrega una Agenda clínica funcional de solo lectura sobre el backend
-de Fase 5B. La pantalla vive en `/agenda` y el detalle de una cita en
-`/agenda/citas/:appointmentId`. No se implementan mutaciones, disponibilidad,
-drag-and-drop ni acciones de ciclo de vida; esas capacidades quedan para
-Fase 5C.2.
+Esta fase parte de la Agenda clínica de lectura construida sobre el backend de
+Fase 5B. La pantalla vive en `/agenda` y el detalle de una cita en
+`/agenda/citas/:appointmentId`. Fase 5C.2A añade únicamente programación:
+crear, editar información, reprogramar y cancelar. Check-in, start, complete,
+no-show, confirmaciones, administración de disponibilidad y drag-and-drop
+siguen fuera de alcance.
 
 ## Estado navegable
 
@@ -55,10 +56,49 @@ de pacientes usa la API paginada existente; no carga todo el catálogo en el
 navegador. Los seis estados muestran etiqueta en español y una combinación de
 tono, texto y punto visual para no depender solamente del color.
 
-El detalle es un modal accesible y de solo lectura. Incluye paciente, owner,
+El detalle es un modal accesible que mantiene la información principal en
+lectura y expone únicamente las operaciones permitidas por estado y permiso.
+Incluye paciente, owner,
 fecha/hora en la zona de la organización, duración, sede, profesional, motivo,
 notas, observaciones, confirmaciones y metadatos de cancelación cuando
 corresponde.
+
+## Operaciones de programación
+
+Las rutas operativas son:
+
+- `/agenda/nueva` para crear una cita;
+- `/agenda/citas/:appointmentId/editar` para editar `reason`, `notes` y
+  `assignedMembershipId`;
+- `/agenda/citas/:appointmentId/reprogramar` para cambiar exclusivamente
+  `startsAt` y `endsAt` mediante el endpoint explícito `reschedule`.
+
+Las tres rutas están protegidas por `appointments.create` o
+`appointments.update`; la cancelación vive en el detalle y exige
+`appointments.cancel`. El frontend solo controla affordances: los guards del
+backend siguen siendo la autoridad.
+
+El selector de Patient usa la búsqueda paginada de Patients activos. Al elegir
+un Patient, el Owner se deriva de `patient.ownerId` y se muestra como lectura;
+el payload nunca permite escoger un Owner independiente. Sede y memberships
+se cargan desde lookups tenant-safe, filtrando sedes, memberships y usuarios
+activos; `assignedMembershipId` puede ser `null`.
+
+La fecha y hora se editan como valores civiles de `Organization.timezone` y se
+convierten a instantes explícitos mediante Temporal. La duración es un valor de
+UI que genera `endsAt`; no se persiste como campo propio. Antes de crear o
+reprogramar se consulta `/agenda/available-slots`. Si la respuesta es
+`UNRESTRICTED`, se permite hora manual y se informa que el backend seguirá
+validando conflictos.
+
+No hay optimistic updates. Después de una mutación exitosa la agenda se
+refresca y el detalle conserva el resultado; un `409` se traduce a “El horario
+ya no está disponible” y refresca los slots. La cancelación usa su endpoint
+dedicado, conserva la cita en la agenda y actualiza el estado a `CANCELLED`.
+
+Los hooks de Agenda cancelan peticiones de slots, referencias y detalle al
+cambiar fecha, filtros o tenant. Los formularios redirigen a `/agenda` cuando
+detectan un cambio de organización para no conservar IDs del tenant anterior.
 
 ## Accesibilidad y responsive
 
@@ -75,7 +115,7 @@ con respuesta lógica `Recurso no encontrado`.
 ## Advertencia de bundle
 
 El build de producción mantiene el warning de Vite por el chunk principal de
-la web (aproximadamente 742.69 kB sin comprimir y 220.13 kB gzip). FullCalendar
+la web (aproximadamente 758.85 kB sin comprimir y 223.94 kB gzip). FullCalendar
 es el principal contribuyente esperado. No se hizo un refactor agresivo en este
 checkpoint; se recomienda evaluar code-splitting/lazy loading del calendario en
 un checkpoint posterior.

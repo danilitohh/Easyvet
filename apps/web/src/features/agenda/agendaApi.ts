@@ -1,10 +1,18 @@
 import {
   appointmentListResponseSchema,
   appointmentResponseSchema,
+  availableSlotsResponseSchema,
+  cancelAppointmentRequestSchema,
+  createAppointmentRequestSchema,
   locationResponseSchema,
   membershipResponseSchema,
   organizationCurrentResponseSchema,
   patientsListResponseSchema,
+  rescheduleAppointmentRequestSchema,
+  updateAppointmentRequestSchema,
+  type AvailableSlotsResponse,
+  type CancelAppointmentRequest,
+  type CreateAppointmentRequest,
   type AppointmentListQuery,
   type AppointmentListResponse,
   type AppointmentResponse,
@@ -12,6 +20,8 @@ import {
   type MembershipResponse,
   type OrganizationCurrentResponse,
   type PatientsListResponse,
+  type RescheduleAppointmentRequest,
+  type UpdateAppointmentRequest,
 } from '@veterinary-saas/contracts';
 import { apiClient } from '../../services/apiClient';
 
@@ -23,6 +33,14 @@ export type AgendaPatientParams = {
   page?: number;
   pageSize?: number;
   search?: string;
+  signal?: AbortSignal;
+};
+
+export type AvailableSlotsParams = {
+  date: string;
+  clinicLocationId: string;
+  assignedMembershipId?: string;
+  durationMinutes: number;
   signal?: AbortSignal;
 };
 
@@ -56,6 +74,68 @@ export const agendaApi = {
   async findAppointment(appointmentId: string, signal?: AbortSignal): Promise<AppointmentResponse> {
     return appointmentResponseSchema.parse(
       await apiClient(`/appointments/${appointmentId}`, signalInit(signal)),
+    );
+  },
+
+  async createAppointment(input: CreateAppointmentRequest): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient('/appointments', {
+        method: 'POST',
+        body: createAppointmentRequestSchema.parse(input),
+      }),
+    );
+  },
+
+  async updateAppointment(
+    appointmentId: string,
+    input: UpdateAppointmentRequest,
+  ): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient(`/appointments/${appointmentId}`, {
+        method: 'PATCH',
+        body: updateAppointmentRequestSchema.parse(input),
+      }),
+    );
+  },
+
+  async rescheduleAppointment(
+    appointmentId: string,
+    input: RescheduleAppointmentRequest,
+  ): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient(`/appointments/${appointmentId}/reschedule`, {
+        method: 'POST',
+        body: rescheduleAppointmentRequestSchema.parse(input),
+      }),
+    );
+  },
+
+  async cancelAppointment(
+    appointmentId: string,
+    input: CancelAppointmentRequest,
+  ): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient(`/appointments/${appointmentId}/cancel`, {
+        method: 'POST',
+        body: cancelAppointmentRequestSchema.parse(input),
+      }),
+    );
+  },
+
+  async availableSlots({
+    signal,
+    ...params
+  }: AvailableSlotsParams): Promise<AvailableSlotsResponse> {
+    return availableSlotsResponseSchema.parse(
+      await apiClient(
+        `/agenda/available-slots${queryString({
+          date: params.date,
+          clinicLocationId: params.clinicLocationId,
+          assignedMembershipId: params.assignedMembershipId,
+          durationMinutes: String(params.durationMinutes),
+        })}`,
+        signalInit(signal),
+      ),
     );
   },
 

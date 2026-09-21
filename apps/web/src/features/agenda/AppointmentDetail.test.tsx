@@ -1,9 +1,15 @@
 import type { AppointmentResponse } from '@veterinary-saas/contracts';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../services/apiClient';
+import { useAuth } from '../../contexts/useAuth';
 import { AppointmentDetail } from './AppointmentDetail';
+
+const detailActionMocks = vi.hoisted(() => ({ cancelAppointment: vi.fn() }));
+
+vi.mock('./agendaApi', () => ({ agendaApi: detailActionMocks }));
+vi.mock('../../contexts/useAuth', () => ({ useAuth: vi.fn() }));
 
 const detailMocks = vi.hoisted(() => ({
   state: {
@@ -75,6 +81,13 @@ function renderDetail() {
 }
 
 describe('AppointmentDetail', () => {
+  beforeEach(() => {
+    vi.mocked(useAuth).mockReturnValue({
+      activeMembership: { permissions: ['appointments.update', 'appointments.cancel'] },
+    } as never);
+    detailActionMocks.cancelAppointment.mockReset();
+  });
+
   it('renders patient, owner, location and unassigned professional', () => {
     detailMocks.state = { data: appointment, loading: false, error: null, reload: vi.fn() };
     renderDetail();
@@ -127,5 +140,34 @@ describe('AppointmentDetail', () => {
     const { onClose } = renderDetail();
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar diálogo' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('exposes scheduling actions only for mutable scheduled appointments and cancels explicitly', async () => {
+    const scheduled: AppointmentResponse = {
+      ...appointment,
+      status: 'SCHEDULED',
+      cancellationReason: null,
+    };
+    detailMocks.state = { data: scheduled, loading: false, error: null, reload: vi.fn() };
+    detailActionMocks.cancelAppointment.mockResolvedValue({
+      ...scheduled,
+      status: 'CANCELLED',
+      cancellationReason: 'Owner solicita cambio',
+    });
+    renderDetail();
+    expect(screen.getByRole('link', { name: 'Editar información' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Reprogramar' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar cita' }));
+    fireEvent.change(screen.getByLabelText('Motivo de cancelación'), {
+      target: { value: 'Owner solicita cambio' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar cancelación' }));
+    await waitFor(() =>
+      expect(detailActionMocks.cancelAppointment).toHaveBeenCalledWith(appointment.id, {
+        cancellationReason: 'Owner solicita cambio',
+      }),
+    );
+    expect(screen.getByText('Cancelada')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancelar cita' })).not.toBeInTheDocument();
   });
 });

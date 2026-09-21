@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
@@ -48,9 +49,10 @@ function rangeWithOffset(range: { from: string; to: string }, timezone: string) 
   return { from: normalize(range.from), to: normalize(range.to) };
 }
 
-// AgendaPage owns URL state, tenant resets and the read-only orchestration of calendar, filters and detail.
+// AgendaPage owns URL state, tenant resets and the calendar/detail orchestration.
 export function AgendaPage() {
   const canRead = useCan(PERMISSION.APPOINTMENTS_READ);
+  const canCreate = useCan(PERMISSION.APPOINTMENTS_CREATE);
   const { activeMembership } = useAuth();
   const organizationId = activeMembership?.organization.id;
   const organization = useAgendaOrganization();
@@ -179,10 +181,19 @@ export function AgendaPage() {
   return (
     <div className="page-stack agenda-page">
       <PageHeader
-        eyebrow="Agenda · Solo lectura"
+        eyebrow="Agenda · Programación"
         title="Agenda clínica"
         description={`Citas de ${currentOrganization.name} mostradas en ${currentOrganization.timezone}.`}
-        action={<Badge tone="info">{`${visibleAppointments.length} visibles`}</Badge>}
+        action={
+          <div className="agenda-header-actions">
+            <Badge tone="info">{`${visibleAppointments.length} visibles`}</Badge>
+            {canCreate ? (
+              <Button as={Link} to="/agenda/nueva">
+                Nueva cita
+              </Button>
+            ) : null}
+          </div>
+        }
       />
       <Card className="agenda-card agenda-card--filters">
         <AgendaFilters
@@ -235,6 +246,7 @@ export function AgendaPage() {
         appointmentId={appointmentId}
         timezone={currentOrganization.timezone}
         onClose={closeDetail}
+        onChanged={appointments.reload}
       />
     </div>
   );

@@ -18,6 +18,7 @@ import { PatientListPage } from '../features/patients/PatientListPage';
 import { PatientDetailPage } from '../features/patients/PatientDetailPage';
 import { PatientFormPage } from '../features/patients/PatientFormPage';
 import { AgendaPage } from '../features/agenda/AgendaPage';
+import { AppointmentFormPage } from '../features/agenda/AppointmentFormPage';
 
 // Route declarations keep every product area addressable without hiding sections in the DOM.
 export function App() {
@@ -44,6 +45,30 @@ export function App() {
             element={
               <PermissionRoute permission={PERMISSION.APPOINTMENTS_READ}>
                 <AgendaPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="agenda/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.APPOINTMENTS_CREATE}>
+                <AppointmentFormPage mode="create" />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="agenda/citas/:appointmentId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.APPOINTMENTS_UPDATE}>
+                <AppointmentFormPage mode="edit" />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="agenda/citas/:appointmentId/reprogramar"
+            element={
+              <PermissionRoute permission={PERMISSION.APPOINTMENTS_UPDATE}>
+                <AppointmentFormPage mode="reschedule" />
               </PermissionRoute>
             }
           />

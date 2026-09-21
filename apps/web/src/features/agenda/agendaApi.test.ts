@@ -13,10 +13,15 @@ vi.mock('@veterinary-saas/contracts', () => {
   return {
     appointmentListResponseSchema: passthrough,
     appointmentResponseSchema: passthrough,
+    availableSlotsResponseSchema: passthrough,
+    cancelAppointmentRequestSchema: { parse: (value: unknown) => value },
+    createAppointmentRequestSchema: { parse: (value: unknown) => value },
     locationResponseSchema: arrayPassthrough,
     membershipResponseSchema: arrayPassthrough,
     organizationCurrentResponseSchema: passthrough,
     patientsListResponseSchema: passthrough,
+    rescheduleAppointmentRequestSchema: { parse: (value: unknown) => value },
+    updateAppointmentRequestSchema: { parse: (value: unknown) => value },
   };
 });
 
@@ -91,6 +96,79 @@ describe('agendaApi', () => {
     await agendaApi.listPatients({ page: 2, pageSize: 20, search: ' Luna ', signal });
     expect(apiClientMock).toHaveBeenCalledWith(
       '/patients?page=2&pageSize=20&search=Luna&status=ACTIVE&sortBy=name&sortDirection=asc',
+      { signal },
+    );
+  });
+
+  it('creates, updates, reschedules and cancels through explicit endpoints', async () => {
+    apiClientMock.mockResolvedValue({ id: 'appointment' });
+    const input = {
+      clinicLocationId: '33333333-3333-4333-8333-333333333333',
+      patientId: '44444444-4444-4444-8444-444444444444',
+      ownerId: '55555555-5555-4555-8555-555555555555',
+      assignedMembershipId: null,
+      startsAt: '2030-01-08T14:00:00.000Z',
+      endsAt: '2030-01-08T14:30:00.000Z',
+      reason: 'Control',
+      notes: null,
+    };
+    await agendaApi.createAppointment(input);
+    expect(apiClientMock).toHaveBeenLastCalledWith('/appointments', {
+      method: 'POST',
+      body: input,
+    });
+    await agendaApi.updateAppointment('11111111-1111-4111-8111-111111111111', {
+      reason: 'Cambio',
+      notes: null,
+      assignedMembershipId: null,
+    });
+    expect(apiClientMock).toHaveBeenLastCalledWith(
+      '/appointments/11111111-1111-4111-8111-111111111111',
+      {
+        method: 'PATCH',
+        body: { reason: 'Cambio', notes: null, assignedMembershipId: null },
+      },
+    );
+    await agendaApi.rescheduleAppointment('11111111-1111-4111-8111-111111111111', {
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+    });
+    expect(apiClientMock).toHaveBeenLastCalledWith(
+      '/appointments/11111111-1111-4111-8111-111111111111/reschedule',
+      {
+        method: 'POST',
+        body: { startsAt: input.startsAt, endsAt: input.endsAt },
+      },
+    );
+    await agendaApi.cancelAppointment('11111111-1111-4111-8111-111111111111', {
+      cancellationReason: 'Solicita cambio',
+    });
+    expect(apiClientMock).toHaveBeenLastCalledWith(
+      '/appointments/11111111-1111-4111-8111-111111111111/cancel',
+      {
+        method: 'POST',
+        body: { cancellationReason: 'Solicita cambio' },
+      },
+    );
+  });
+
+  it('loads available slots with tenant-safe scheduling inputs', async () => {
+    apiClientMock.mockResolvedValue({
+      mode: 'UNRESTRICTED',
+      timezone: 'America/Bogota',
+      date: '2030-01-08',
+      slots: [],
+    });
+    const signal = new AbortController().signal;
+    await agendaApi.availableSlots({
+      date: '2030-01-08',
+      clinicLocationId: '33333333-3333-4333-8333-333333333333',
+      assignedMembershipId: '66666666-6666-4666-8666-666666666666',
+      durationMinutes: 30,
+      signal,
+    });
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/agenda/available-slots?date=2030-01-08&clinicLocationId=33333333-3333-4333-8333-333333333333&assignedMembershipId=66666666-6666-4666-8666-666666666666&durationMinutes=30',
       { signal },
     );
   });

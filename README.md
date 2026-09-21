@@ -113,11 +113,13 @@ El API no crea ni altera el esquema durante el arranque. Todo cambio debe pasar 
 
 ## Fase actual
 
-La Fase 5C.1 deja disponible la Agenda clínica de solo lectura, además del
+La Fase 5C.2A deja disponible la Agenda clínica con lectura y programación
+(crear, editar, reprogramar y cancelar), además del
 modelo multi-tenant, sesiones, autenticación, autorización/aislamiento y los
 flujos funcionales de Owners/Patients según
-[MIGRATION_STATUS.md](MIGRATION_STATUS.md). Las operaciones de Agenda y el
-resto del dominio veterinario permanecen pendientes de sus fases respectivas.
+[MIGRATION_STATUS.md](MIGRATION_STATUS.md). Las operaciones de workflow de
+Agenda y el resto del dominio veterinario permanecen pendientes de sus fases
+respectivas.
 
 Para revisar el shell visual:
 

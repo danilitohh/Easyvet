@@ -27,6 +27,13 @@ describe('App shell', () => {
     expect(screen.getByRole('link', { name: 'Pacientes' })).toHaveAttribute('aria-current', 'page');
   });
 
+  it('protects appointment scheduling routes with the create permission', () => {
+    renderApp('/agenda/nueva');
+
+    expect(screen.getByRole('heading', { name: /no tienes permisos/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Nueva cita' })).not.toBeInTheDocument();
+  });
+
   it('navigates from the sidebar without hiding routes in the DOM', () => {
     renderApp('/dashboard');
 

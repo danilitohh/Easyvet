@@ -6,11 +6,13 @@ import {
   STATUS_TONES,
   appointmentDurationMinutes,
   appointmentOwnerName,
+  addCivilMinutes,
   appointmentProfessionalName,
   appointmentToCalendarEvent,
   civilDateFromDate,
   fallbackRangeForView,
   formatCivilDate,
+  instantFromCivil,
   isAgendaView,
   isoAtCivilMidnight,
   nextCivilDate,
@@ -182,6 +184,14 @@ describe('agendaUtils', () => {
         dateStyle: 'long',
       }),
     ).toContain('20');
+  });
+
+  it('converts local scheduling fields to explicit instants', () => {
+    expect(instantFromCivil('2030-01-08', '09:00', 'America/Bogota')).toBe('2030-01-08T14:00:00Z');
+    expect(addCivilMinutes('2030-01-08', '09:00', 45)).toEqual({
+      date: '2030-01-08',
+      time: '09:45',
+    });
   });
 
   it('falls back to a stable organization label when data is unavailable', () => {

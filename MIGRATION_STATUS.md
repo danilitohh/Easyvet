@@ -21,7 +21,8 @@
 | Agenda analysis/design       | COMPLETADO (Fase 5A)                                         |
 | Agenda backend               | COMPLETADO (Fase 5B)                                         |
 | Agenda frontend read-only    | COMPLETADO (Fase 5C.1)                                       |
-| Agenda operations            | PENDIENTE FASE 5C.2                                          |
+| Agenda scheduling operations | COMPLETADO (Fase 5C.2A)                                      |
+| Agenda workflow operations   | PENDIENTE FASE 5C.2B                                         |
 | Agenda hardening             | PENDIENTE FASE 5D                                            |
 | Clínica                      | Pendiente                                                    |
 | Inventario                   | Pendiente                                                    |
@@ -190,8 +191,27 @@ Fase 5C.1 — frontend de Agenda de solo lectura completada:
   `Organization.timezone` y no del navegador.
 - Se añadieron cancelación de peticiones, limpieza al cambiar de tenant,
   estados de carga/error/vacío, responsive y accesibilidad básica.
-- Crear, editar, reprogramar y acciones operativas permanecen en PENDIENTE
-  FASE 5C.2; hardening permanece en PENDIENTE FASE 5D.
+- Las operaciones de programación se cerraron en Fase 5C.2A; workflow y
+  hardening permanecen pendientes.
+
+Fase 5C.2A — operaciones de programación completada:
+
+- `/agenda/nueva` crea citas usando el contrato aprobado de Fase 5B; el Owner
+  se deriva del Patient activo y no se aceptan campos de tenant, lifecycle o
+  auditoría desde el formulario.
+- Editar información y reprogramar tienen rutas separadas y permisos
+  `appointments.update`; editar no cambia tiempo y reprogramar no usa PATCH.
+- El detalle ofrece cancelación confirmada con `appointments.cancel`; las citas
+  canceladas permanecen en Agenda con estado `CANCELLED`.
+- La UI consulta `available-slots`, soporta `RULES` y `UNRESTRICTED`, convierte
+  fechas civiles con `Organization.timezone`, traduce conflictos `409` y
+  cancela requests al cambiar de tenant.
+- No se implementaron check-in, start, complete, no-show, confirmaciones,
+  administración de AvailabilityRule ni drag-and-drop. Fase 5C.2B y Fase 5D
+  permanecen pendientes.
+- Validaciones de cierre: 100 pruebas frontend, 65 pruebas DB, `test:all`,
+  format, lint, typecheck, build, generación/validación Prisma y audit
+  ejecutados sin upgrades automáticos.
 
 Checkpoint 5C.1.1 cerrado:
 
@@ -209,10 +229,10 @@ Checkpoint 5C.1.1 cerrado:
   cita Norte bajo Sur mostró `Recurso no encontrado`.
 - La cita seed `2030-01-08T14:00:00.000Z` se verificó visualmente como
   09:00 en `America/Bogota`. El build conserva el warning del chunk web de
-  aproximadamente 742.69 kB (220.13 kB gzip); code-splitting queda recomendado
+  aproximadamente 758.85 kB (223.94 kB gzip); code-splitting queda recomendado
   para un checkpoint posterior.
-- No se implementaron mutaciones de Agenda ni se requirió un test de regresión
-  adicional durante esta pasada.
+- En ese checkpoint todavía no se habían implementado mutaciones de Agenda;
+  las operaciones de programación se añadieron después en Fase 5C.2A.
 
 Para detener el entorno local:
 

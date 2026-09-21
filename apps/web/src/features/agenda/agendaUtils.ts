@@ -105,6 +105,48 @@ export function isoAtCivilMidnight(date: string, timezone: string): string {
   return zoned.toInstant().toString();
 }
 
+// Convert an organization-local civil date/time into an explicit UTC instant for API writes.
+export function instantFromCivil(date: string, time: string, timezone: string): string {
+  const zoned = Temporal.PlainDateTime.from(`${date}T${time}`).toZonedDateTime(timezone, {
+    disambiguation: 'reject',
+  });
+  return zoned.toInstant().toString();
+}
+
+// Add a duration to local civil time without letting browser timezone rules alter the date.
+export function addCivilMinutes(
+  date: string,
+  time: string,
+  minutes: number,
+): { date: string; time: string } {
+  const value = Temporal.PlainDateTime.from(`${date}T${time}`).add({ minutes });
+  return {
+    date: value.toPlainDate().toString(),
+    time: value.toPlainTime().toString({ smallestUnit: 'minute' }),
+  };
+}
+
+// Read a persisted instant back into the organization-local fields used by scheduling forms.
+export function civilFieldsFromInstant(
+  value: string,
+  timezone: string,
+): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(value));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    time: `${values.hour}:${values.minute}`,
+  };
+}
+
 export function nextCivilDate(date: string): string {
   return Temporal.PlainDate.from(date).add({ days: 1 }).toString();
 }

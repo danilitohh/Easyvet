@@ -217,7 +217,7 @@ export function AgendaCalendar({
         ) : null}
       </div>
       <p className="agenda-calendar-hint">
-        Haz clic en una cita para consultar su detalle. La agenda es de solo lectura.
+        Haz clic en una cita para consultar su detalle y operar la programación permitida.
       </p>
       <span className="sr-only">
         Fecha actual: {date}. Zona horaria: {timezone}.

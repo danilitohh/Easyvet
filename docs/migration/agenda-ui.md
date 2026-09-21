@@ -1,10 +1,11 @@
-# Migración de Agenda — frontend de solo lectura
+# Migración de Agenda — programación y lectura
 
 ## Resultado
 
-Fase 5C.1 reemplaza el placeholder visual de `/agenda` por una lectura real de
-las citas de Easyvet. La UI consume los endpoints de Agenda de Fase 5B y no
-introduce tablas, endpoints ni permisos nuevos.
+Fase 5C.1 reemplazó el placeholder visual de `/agenda` por una lectura real de
+las citas de Easyvet. Fase 5C.2A añade las operaciones de programación desde
+React consumiendo los endpoints ya existentes de Fase 5B; no introduce tablas,
+endpoints ni permisos nuevos.
 
 ## Alcance implementado
 
@@ -18,12 +19,27 @@ introduce tablas, endpoints ni permisos nuevos.
 - Estados de carga, error, vacío y advertencia parcial de referencias.
 - Responsive desktop/tablet/390 px y controles básicos de accesibilidad.
 
+## Operaciones de programación de Fase 5C.2A
+
+- `/agenda/nueva` requiere `appointments.create` y permite sede, Patient activo,
+  Owner derivado, profesional opcional, fecha, hora, duración, motivo y notas.
+- `/agenda/citas/:appointmentId/editar` requiere `appointments.update` y solo
+  envía `reason`, `notes` y `assignedMembershipId`; no cambia el horario.
+- `/agenda/citas/:appointmentId/reprogramar` requiere `appointments.update` y
+  usa exclusivamente `POST /appointments/:id/reschedule`.
+- El detalle expone `Cancelar cita` solo para estados y permisos válidos; el
+  modal solicita `cancellationReason` y usa el endpoint dedicado.
+- Las mutaciones deshabilitan el submit mientras están pendientes, no hacen
+  optimistic update y refrescan Agenda después de confirmar el backend.
+
 ## Verificación
 
-La suite web incluye 30 pruebas específicas para mapeo de eventos, estados,
-fechas civiles, rangos, filtros y navegación URL/tenant. También se conserva la
-suite existente del AppShell, auth, owners y patients. La verificación completa
-del repositorio se ejecuta como parte del checkpoint de esta fase.
+La suite web cubre mapeo de eventos, estados, fechas civiles, rangos, filtros,
+navegación URL/tenant, construcción de mutaciones, timezone, derivación
+Patient → Owner, edición, reprogramación, conflictos y cancelación. También se
+conserva la suite existente del AppShell, auth, owners y patients. La
+verificación completa del repositorio se ejecuta como parte del checkpoint de
+esta fase.
 
 ## Manual QA realizado
 
