@@ -24,14 +24,14 @@ migraciones.
 
 ## Núcleo propuesto
 
-| Concepto                                        | Responsabilidad                                                                                               | Cardinalidad propuesta                                                                                                                                        | Estado/nota                                                                                          |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ClinicalRecord`                                | Contenedor longitudinal tenant-scoped del expediente de un Patient; índice y metadatos de apertura/retención. | Producto debe decidir si es exactamente uno activo por `Organization + Patient` o si permite episodios; la propuesta base es uno activo y eventos ilimitados. | `DRAFT`/`FINALIZED` a nivel de expediente solo si el negocio realmente firma el expediente completo. |
-| `ClinicalEncounter` (visible como Consultation) | Evento clínico individual: consulta presencial, control, vacunación, fórmula, diagnóstico o procedimiento.    | Muchos por `ClinicalRecord`; puede tener `appointmentId` nullable para walk-in.                                                                               | `DRAFT` → `FINALIZED`; una vez finalizado es inmutable.                                              |
-| `ClinicalEvolution` / `Addendum`                | Nota append-only que amplía o corrige un encounter/record sin reescribirlo.                                   | Muchos por record; opcionalmente uno por encounter.                                                                                                           | Siempre autor, fecha, motivo y contenido; no “desbloquea” el original.                               |
-| `VitalMeasurement`                              | Medición temporal estructurada (peso, temperatura, frecuencias, hidratación/condición si aplica).             | Muchos por Patient; opcionalmente enlazados a encounter.                                                                                                      | La última medición puede proyectarse a `Patient.currentWeightKg`.                                    |
-| `Diagnosis`                                     | Hallazgo clínico estructurado, conservando texto libre y tipo (`PRESUMPTIVE`, `DIFFERENTIAL`, `DEFINITIVE`).  | Muchos por encounter; catálogo opcional posterior.                                                                                                            | No convertir el texto legacy en un catálogo obligatorio en 6B.                                       |
-| `ClinicalAuditEvent`                            | Evidencia de creación, edición de draft, finalización, addendum, firma y exportación.                         | Muchos por cada agregado clínico.                                                                                                                             | Puede ser módulo transversal, pero es requisito de seguridad clínica.                                |
+| Concepto                                        | Responsabilidad                                                                                               | Cardinalidad propuesta                                                                                     | Estado/nota                                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `ClinicalRecord`                                | Contenedor longitudinal tenant-scoped del expediente de un Patient; índice y metadatos de apertura/retención. | **Uno por `Organization + Patient`**, con `UNIQUE(organizationId, patientId)`; lazy al primer uso clínico. | No tiene lifecycle `DRAFT/FINALIZED`; el lifecycle pertenece al encounter. |
+| `ClinicalEncounter` (visible como Consultation) | Evento clínico individual: consulta presencial, control, vacunación, fórmula, diagnóstico o procedimiento.    | Muchos por `ClinicalRecord`; puede tener `appointmentId` nullable para walk-in.                            | `DRAFT` → `FINALIZED`; una vez finalizado es inmutable.                    |
+| `ClinicalEvolution` / `Addendum`                | Nota append-only que amplía o corrige un encounter/record sin reescribirlo.                                   | Muchos por record; opcionalmente uno por encounter.                                                        | Siempre autor, fecha, motivo y contenido; no “desbloquea” el original.     |
+| `VitalMeasurement`                              | Medición temporal estructurada (peso, temperatura, frecuencias, hidratación/condición si aplica).             | Muchos por Patient; opcionalmente enlazados a encounter.                                                   | La última medición puede proyectarse a `Patient.currentWeightKg`.          |
+| `Diagnosis`                                     | Hallazgo clínico estructurado, conservando texto libre y tipo (`PRESUMPTIVE`, `DIFFERENTIAL`, `DEFINITIVE`).  | Muchos por encounter; catálogo opcional posterior.                                                         | No convertir el texto legacy en un catálogo obligatorio en 6B.             |
+| `ClinicalAuditEvent`                            | Evidencia de creación, edición de draft, finalización, addendum, firma y exportación.                         | Muchos por cada agregado clínico.                                                                          | Puede ser módulo transversal, pero es requisito de seguridad clínica.      |
 
 ### ClinicalRecord versus Consultation
 
@@ -46,12 +46,23 @@ de record de forma explícita, si el producto requiere un resumen rápido. No se
 debe sincronizar de manera implícita “la única consulta hacia todos los campos”
 como hace `_sync_single_consultation_record` en el legacy.
 
+El legacy permite múltiples `clinical_records` porque `save_clinical_record`
+puede insertar uno nuevo, el esquema no tiene unique por Patient y varios
+flujos (consulta clínica, consulta externa, peluquería y formularios) crean un
+record draft si no encuentran el “primary record”. El frontend elige el record
+con mayor `opened_at`; no hay evidencia de episodios legales separados. Se
+clasifica como **artefacto histórico de implementación / NEEDS REVIEW**, no
+como requisito de producto. En una migración futura, varios records del mismo
+Patient se consolidarían en un `ClinicalRecord` longitudinal; encounters y
+evoluciones conservarían su `eventAt` original y una separación legal tendría
+que ser una decisión explícita.
+
 ### Ciclo de vida y bloqueo
 
 ```text
 DRAFT --finalize (CAS/version check)--> FINALIZED
-FINALIZED --addendum--> FINALIZED + ADDENDUM
-DRAFT --void/cancel (reason)----------> VOIDED
+FINALIZED --void (reason)-------------> VOIDED
+FINALIZED --addendum------------------> FINALIZED + ADDENDUM
 ```
 
 - Crear y editar draft requiere versión optimista (`version` o `updatedAt` con
@@ -60,9 +71,11 @@ DRAFT --void/cancel (reason)----------> VOIDED
   `finalizedAt`, `finalizedByMembershipId` y snapshot profesional.
 - No se propone “reopen” general. Una excepción administrativa futura debe
   generar un evento de auditoría y no sobrescribir la evidencia original.
-- `VOIDED` sirve para un draft erróneo o un evento ingresado por duplicado. Un
-  evento finalizado no se elimina: se anula mediante motivo y addendum según la
-  política legal que se apruebe.
+- Un draft no tiene delete en 6B; los abandonados se resolverán en una fase de
+  retención/limpieza posterior.
+- `VOIDED` solo se permite desde `FINALIZED`, conserva el contenido, motivo,
+  actor y timestamps. No se reutiliza el encounter; se crea otro si hubo un
+  error.
 
 ## Mapa de satélites
 
@@ -124,12 +137,18 @@ además:
 La relación viva permite permisos y revocación; el snapshot permite leer la
 evidencia si la persona cambia de nombre, rol o deja la organización.
 
+El schema actual aún no ofrece `displayName` ni matrícula profesional para
+Membership/User. Esto es un bloqueo de diseño para finalizar clínica. La
+solución recomendada es un perfil profesional 1:1 de Membership, separado del
+rol organizacional, con nivel clínico explícito; queda fuera de la implementación
+de este gate.
+
 ## Patient, Owner y Appointment
 
 - **Patient:** un archivo no cambia de Patient por un cambio de propietario.
   El encounter guarda `patientId` y, cuando la política lo requiera,
-  `ownerIdSnapshot`/datos de contacto históricos. Patient archivado conserva
-  lectura de historia, pero no acepta nuevos eventos por defecto.
+  `ownerIdAtTime` como relación histórica. Patient archivado conserva lectura de
+  historia, pero 6B rechaza nuevos eventos y finalizaciones.
 - **Owner:** `patients.read` no implica `clinicalRecords.read`. La información
   de contacto e identificación del propietario y la firma tienen controles más
   estrictos.
@@ -151,12 +170,14 @@ walk-in.
 
 ### En 6B (candidato mínimo)
 
-1. `ClinicalRecord` (o `PatientClinicalRecord`, nombre a decidir) con tenant,
-   Patient, estado, retención y auditoría básica.
+1. `ClinicalRecord` con tenant, Patient, apertura, timestamps y auditoría
+   básica; sin estado clínico propio.
 2. `ClinicalEncounter`/`Consultation` con tenant, Patient, record, Appointment
    opcional, tipo revisable, título/resumen, estado, timestamps, profesional y
    snapshots.
-3. `ClinicalEvolution`/`Addendum` append-only.
+3. `ClinicalEvolution`/`Addendum` append-only, con vínculo obligatorio al
+   `ClinicalRecord` y vínculo opcional a un `ClinicalEncounter` cuando se quiera
+   contextualizar la nota.
 4. `VitalMeasurement` mínimo para peso y signos vitales usados por la primera
    consulta.
 5. Infraestructura de `ClinicalAuditEvent` o integración con el audit log

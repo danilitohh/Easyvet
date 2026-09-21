@@ -30,6 +30,7 @@
 | Notifications                | POSTERGADO                                                   |
 | Public booking               | POSTERGADO                                                   |
 | Clínica — análisis Fase 6A   | COMPLETADO (solo documentación; sin implementación)          |
+| Clínica — design gate 6A.1   | COMPLETADO (decisiones conceptuales; sin implementación)     |
 | Clínica — núcleo backend     | PENDIENTE (Fase 6B no iniciada)                              |
 | Clínica — frontend           | PENDIENTE (Fase 6B no iniciada)                              |
 | Inventario                   | Pendiente                                                    |
@@ -57,6 +58,23 @@ Fase 6A — análisis y arquitectura clínica:
   `docs/architecture/clinical-transactions.md`.
 - No se crearon modelos Prisma, migraciones, endpoints, componentes React ni
   tablas clínicas. Fase 6B queda explícitamente detenida hasta aprobación.
+
+Checkpoint 6A.1 — Clinical Design Gate completado documentalmente:
+
+- `ClinicalRecord` queda recomendado como único expediente longitudinal por
+  `Organization + Patient`, creado lazy; no tiene lifecycle clínico.
+- `ClinicalEncounter` queda con `DRAFT`, `FINALIZED` y `VOIDED`, finalización
+  irreversible y optimistic concurrency por `version`.
+- Evoluciones son append-only; se conserva el caso legacy de notas directas al
+  Record y se permite vínculo opcional a Encounter finalizado.
+- Appointment es nullable y único por organización; ClinicLocation es requerido
+  para encuentros presenciales; Owner y profesional se congelan mediante
+  relaciones/snapshots derivados por backend.
+- Se seleccionó separar `organizationRole` de capability/perfil clínico. El
+  perfil profesional de Membership es una dependencia de diseño pendiente de
+  modelar, no una modificación realizada en este checkpoint.
+- El contrato conceptual, APIs y plan de pruebas de una futura Fase 6B están en
+  `docs/architecture/clinical-core-6b.md`. Fase 6B no comenzó.
 
 La Fase 2 queda detenida después del AppShell, navegación, dashboard demo y
 componentes UI compartidos. Fase 3A añadió el modelo multi-tenant fundamental y
