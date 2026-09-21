@@ -205,6 +205,15 @@ describeDatabase('agenda backend', () => {
     expect(list.body.data.some((item: { id: string }) => item.id === created.body.id)).toBe(true);
   });
 
+  it('rejects appointment list ranges longer than 90 days', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(userEmail, agent);
+    await agent
+      .get('/api/v1/appointments')
+      .query({ from: '2031-01-01T00:00:00Z', to: '2031-04-02T00:00:00Z' })
+      .expect(400);
+  });
+
   it('rejects ambiguous times and cross-tenant references', async () => {
     const agent = request.agent(app.getHttpServer());
     await login(userEmail, agent);
@@ -368,6 +377,10 @@ describeDatabase('agenda backend', () => {
     await agent.post(`/api/v1/appointments/${created.body.id}/complete`).expect(201);
     await agent.post(`/api/v1/appointments/${created.body.id}/cancel`).send({}).expect(409);
     await agent.post(`/api/v1/appointments/${created.body.id}/start`).expect(409);
+    await agent
+      .post(`/api/v1/appointments/${created.body.id}/confirm-by-clinic`)
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('INVALID_APPOINTMENT_STATE'));
 
     const noShow = await agent
       .post('/api/v1/appointments')
@@ -505,6 +518,122 @@ describeDatabase('agenda backend', () => {
     expect(responses.filter((response) => response.status === 409)).toHaveLength(1);
   });
 
+  it('rejects ambiguous availability overlaps and preserves half-open adjacency', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(userEmail, agent);
+    const baseline = await agent
+      .post('/api/v1/availability-rules')
+      .send({
+        clinicLocationId: locationId,
+        dayOfWeek: 5,
+        startLocalTime: '09:00',
+        endLocalTime: '10:00',
+        slotMinutes: 30,
+      })
+      .expect(201);
+    await agent
+      .post('/api/v1/availability-rules')
+      .send({
+        clinicLocationId: locationId,
+        dayOfWeek: 5,
+        startLocalTime: '09:30',
+        endLocalTime: '10:30',
+        slotMinutes: 30,
+      })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('AVAILABILITY_OVERLAP'));
+    const adjacent = await agent
+      .post('/api/v1/availability-rules')
+      .send({
+        clinicLocationId: locationId,
+        dayOfWeek: 5,
+        startLocalTime: '10:00',
+        endLocalTime: '11:00',
+        slotMinutes: 30,
+      })
+      .expect(201);
+    expect(adjacent.body.id).not.toBe(baseline.body.id);
+  });
+
+  it('applies Membership precedence and falls back after deactivation', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(userEmail, agent);
+    await agent
+      .post('/api/v1/availability-rules')
+      .send({
+        clinicLocationId: locationId,
+        dayOfWeek: 4,
+        startLocalTime: '09:00',
+        endLocalTime: '10:00',
+        slotMinutes: 30,
+      })
+      .expect(201);
+    const specific = await agent
+      .post('/api/v1/availability-rules')
+      .send({
+        clinicLocationId: locationId,
+        membershipId,
+        dayOfWeek: 4,
+        startLocalTime: '14:00',
+        endLocalTime: '15:00',
+        slotMinutes: 30,
+      })
+      .expect(201);
+    const generalSlots = await agent
+      .get('/api/v1/agenda/available-slots')
+      .query({ date: '2031-06-05', clinicLocationId: locationId, durationMinutes: 30 })
+      .expect(200);
+    expect(generalSlots.body.slots.map((slot: { startsAt: string }) => slot.startsAt)).toHaveLength(
+      2,
+    );
+    expect(generalSlots.body.slots[0].startsAt).toContain('T14:00');
+    const specificSlots = await agent
+      .get('/api/v1/agenda/available-slots')
+      .query({
+        date: '2031-06-05',
+        clinicLocationId: locationId,
+        assignedMembershipId: membershipId,
+        durationMinutes: 30,
+      })
+      .expect(200);
+    expect(specificSlots.body.slots).toHaveLength(2);
+    expect(specificSlots.body.slots[0].startsAt).toContain('T19:00');
+    await agent.delete(`/api/v1/availability-rules/${specific.body.id}`).expect(200);
+    const fallbackSlots = await agent
+      .get('/api/v1/agenda/available-slots')
+      .query({
+        date: '2031-06-05',
+        clinicLocationId: locationId,
+        assignedMembershipId: membershipId,
+        durationMinutes: 30,
+      })
+      .expect(200);
+    expect(fallbackSlots.body.slots[0].startsAt).toContain('T14:00');
+  });
+
+  it('allows exactly one concurrent lifecycle action to win', async () => {
+    const firstAgent = request.agent(app.getHttpServer());
+    const secondAgent = request.agent(app.getHttpServer());
+    await Promise.all([login(userEmail, firstAgent), login(userEmail, secondAgent)]);
+    const created = await firstAgent
+      .post('/api/v1/appointments')
+      .send({
+        clinicLocationId: locationId,
+        patientId: secondPatientId,
+        ownerId,
+        startsAt: '2031-05-12T14:00:00Z',
+        endsAt: '2031-05-12T14:30:00Z',
+        reason: 'Concurrent lifecycle',
+      })
+      .expect(201);
+    const responses = await Promise.all([
+      firstAgent.post(`/api/v1/appointments/${created.body.id}/check-in`),
+      secondAgent.post(`/api/v1/appointments/${created.body.id}/check-in`),
+    ]);
+    expect(responses.filter((response) => response.status === 201)).toHaveLength(1);
+    expect(responses.filter((response) => response.status === 409)).toHaveLength(1);
+  });
+
   it('returns unrestricted or rule-based slots without fabricating a 24-hour calendar', async () => {
     const agent = request.agent(app.getHttpServer());
     await login(userEmail, agent);
@@ -575,6 +704,7 @@ describeDatabase('agenda backend', () => {
         .post('/api/v1/availability-rules')
         .send({
           clinicLocationId: locationId,
+          membershipId,
           dayOfWeek: 0,
           startLocalTime: '02:00',
           endLocalTime: '03:00',
@@ -583,7 +713,53 @@ describeDatabase('agenda backend', () => {
         .expect(201);
       await agent
         .get('/api/v1/agenda/available-slots')
-        .query({ date: '2031-03-09', clinicLocationId: locationId, durationMinutes: 30 })
+        .query({
+          date: '2031-03-09',
+          clinicLocationId: locationId,
+          assignedMembershipId: membershipId,
+          durationMinutes: 30,
+        })
+        .expect(400);
+    } finally {
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: { timezone: 'America/Bogota' },
+      });
+    }
+  });
+
+  it('rejects an ambiguous local DST time when generating slots', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await login(userEmail, agent);
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: { timezone: 'America/New_York' },
+    });
+    try {
+      // Keep this DST rule isolated from the spring-forward fixture created above.
+      await prisma.availabilityRule.updateMany({
+        where: { organizationId, clinicLocationId: locationId, membershipId, dayOfWeek: 0 },
+        data: { isActive: false },
+      });
+      await agent
+        .post('/api/v1/availability-rules')
+        .send({
+          clinicLocationId: locationId,
+          membershipId,
+          dayOfWeek: 0,
+          startLocalTime: '01:00',
+          endLocalTime: '03:00',
+          slotMinutes: 30,
+        })
+        .expect(201);
+      await agent
+        .get('/api/v1/agenda/available-slots')
+        .query({
+          date: '2031-11-02',
+          clinicLocationId: locationId,
+          assignedMembershipId: membershipId,
+          durationMinutes: 30,
+        })
         .expect(400);
     } finally {
       await prisma.organization.update({

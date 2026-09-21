@@ -24,7 +24,11 @@
 | Agenda scheduling operations | COMPLETADO (Fase 5C.2A)                                      |
 | Agenda workflow operations   | COMPLETADO (Fase 5C.2B)                                      |
 | Agenda availability UI       | COMPLETADO (Fase 5C.2B)                                      |
-| Agenda hardening             | PENDIENTE FASE 5D                                            |
+| Agenda hardening             | COMPLETADO (Fase 5D)                                         |
+| Agenda                       | COMPLETADO (Fases 5A–5D)                                     |
+| Google Calendar              | POSTERGADO                                                   |
+| Notifications                | POSTERGADO                                                   |
+| Public booking               | POSTERGADO                                                   |
 | Clínica                      | Pendiente                                                    |
 | Inventario                   | Pendiente                                                    |
 | Facturación                  | Pendiente                                                    |
@@ -231,7 +235,28 @@ Fase 5C.2B — workflow operativo y disponibilidad completada:
 - No se modificó Prisma ni se crearon migraciones nuevas. La seguridad de
   tenant sigue delegada al backend y los deep links de otra organización no
   exponen datos.
-- Fase 5D no se inició.
+- Al cerrar este checkpoint, Fase 5D todavía no se había iniciado; su cierre
+  posterior queda documentado en la sección siguiente.
+
+Fase 5D — hardening y cierre definitivo de Agenda completada:
+
+- Se contrastó Agenda con `docs/migration/agenda-reference.md` y el checkout
+  read-only de Lativet en el commit `05fea495cb13208b27bf470b3570987fd501a81e`.
+  La matriz final está en `docs/migration/agenda-final-review.md`.
+- La máquina de estados, los estados bloqueantes/terminales, las confirmaciones
+  como timestamps UTC y la semántica `CANCELLED`/`NO_SHOW` quedaron revisados.
+  Edición, cancelación, confirmación y workflow usan compare-and-set para
+  rechazar acciones obsoletas con `409`.
+- Se rechazaron reglas de disponibilidad activas solapadas dentro del mismo
+  alcance y se conservaron los intervalos half-open `[start, end)`; se
+  añadieron regresiones de adyacencia, precedencia, `UNRESTRICTED`, carreras y
+  DST de salto/repetición.
+- Se revisaron FKs compuestas, límites de lista de 90 días, aislamiento de
+  tenant, matriz de permisos, polling Day/List, deep links, navegación de URL,
+  responsive 390 px y el warning de bundle de FullCalendar.
+- No se crearon módulos clínicos, Google Calendar, recordatorios, booking
+  público, `ScheduleBlock`, `AppointmentType`, migraciones de limpieza ni
+  placeholders. Las decisiones pendientes y límites están documentados.
 
 Checkpoint 5C.1.1 cerrado:
 

@@ -70,8 +70,21 @@ Las listas exigen rango máximo de 90 días; detalles cross-tenant devuelven 404
 CalendarIntegration, Consultation, FollowUp, Reminder, Google Calendar,
 recurrencia, recursos/equipos, auditoría legal y frontend calendario.
 
+## HARDENING CERRADO EN FASE 5D
+
+- Los endpoints de workflow, edición, cancelación y confirmación usan una
+  actualización condicional por estado para que una acción obsoleta reciba
+  `409` y no sobrescriba la operación de otro usuario.
+- Las reglas activas del mismo alcance, sede y día no pueden solaparse; la
+  precedencia Membership > sede permanece explícita y los límites adyacentes
+  siguen siendo válidos con intervalos `[start, end)`.
+- Se verificaron rangos de lectura de 90 días, FKs tenant-aware, estados
+  terminales, semántica de slots, timezone de organización y DST ambiguo/no
+  existente. El detalle comparativo está en
+  `docs/migration/agenda-final-review.md`.
+
 ## Estado de salida
 
-Fase 5B queda completada después de aplicar la migración a `easyvet_dev` y
-`easyvet_test`, ejecutar seed idempotente, pasar las pruebas DB y validar los
-gates del repositorio. Fase 5C no comienza automáticamente.
+Fase 5D queda completada después de pasar los gates del repositorio y la QA
+manual sobre `easyvet_dev`. Las fases clínicas, Google, notificaciones y
+booking público no comienzan automáticamente.

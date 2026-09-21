@@ -84,9 +84,12 @@ export function AgendaPage() {
           if (values.date) next.set('date', values.date);
           if (values.appointment === null) next.delete('appointment');
           if (values.appointment) next.set('appointment', values.appointment);
-          return next;
+          // Avoid a duplicate history entry when FullCalendar reports its
+          // already-selected range during initialisation.
+          return next.toString() === current.toString() ? current : next;
         },
-        { replace: true },
+        // Calendar navigation is user-visible state and must support Back/Forward.
+        { replace: false },
       );
     },
     [setSearchParams],

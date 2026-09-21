@@ -69,8 +69,24 @@ Patient y Membership frente a concurrencia real.
 notificaciones ni cambian `AppointmentStatus`; los endpoints son autenticados y
 tenant-safe.
 
+## Concurrencia y disponibilidad
+
+Las acciones de edición, cancelación, confirmación y transición aplican un
+compare-and-set sobre el estado leído. Si otro operador ganó la carrera, la
+segunda petición recibe `409 INVALID_APPOINTMENT_STATE` y la fila permanece
+intacta. Las exclusiones PostgreSQL siguen siendo la autoridad final para
+solapamientos de Patient/Membership y sus errores se convierten a una respuesta
+controlada sin filtrar SQL ni stack trace.
+
+Las reglas activas de un mismo alcance (sede o Membership), sede y día no se
+pueden solapar; los límites adyacentes sí son válidos porque todos los
+intervalos usan `[start, end)`. Un alcance específico puede solaparse con el
+general: la precedencia Membership > sede elimina la ambigüedad. La ausencia
+de reglas activas aplicables se expone como `UNRESTRICTED`.
+
 ## Pruebas
 
-La suite de Agenda cubre todas las transiciones válidas e inválidas, cancelación,
-confirmación independiente, reprogramación y una carrera real de dos requests
-con el mismo Patient/Membership donde exactamente uno obtiene 201 y el otro 409.
+La suite de Agenda cubre todas las transiciones válidas e inválidas, acciones
+terminales, confirmación independiente, reprogramación, reglas solapadas y
+adyacentes, DST de salto y repetición, y carreras reales de dos requests donde
+exactamente uno obtiene 201 y el otro 409.

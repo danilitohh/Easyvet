@@ -21,7 +21,9 @@ La vista y la fecha civil se mantienen en la URL:
 `view` admite `month`, `week`, `day` y `list`. Las fechas se interpretan como
 fechas civiles dentro de la zona horaria de la organización, nunca como una
 fecha local del navegador. Abrir una cita conserva esos parámetros al navegar
-a `/agenda/citas/:appointmentId`.
+a `/agenda/citas/:appointmentId`. Los cambios deliberados de vista/fecha crean
+entradas de historial para que Atrás/Adelante y refresh reproduzcan la misma
+agenda; el cambio de tenant usa reemplazo y limpia cualquier deep link anterior.
 
 ## Calendario y zona horaria
 
@@ -43,6 +45,8 @@ contratos compartidos. `useAgenda.ts` añade:
   el rango, el filtro o el tenant.
 - invalidación de organización, filtros, selección de paciente, rango y
   detalle al cambiar `activeMembership.organization.id`.
+- respuestas obsoletas abortadas y `409` de workflow tratados como estado
+  stale multi-usuario, con recarga explícita y sin optimistic update.
 - fallback de filtros profesionales a los profesionales observados en las
   citas cuando el rol actual no tiene `memberships.read`.
 
@@ -141,13 +145,14 @@ con respuesta lógica `Recurso no encontrado`.
 ## Advertencia de bundle
 
 El build de producción mantiene el warning de Vite por el chunk principal de
-la web (aproximadamente 758.85 kB sin comprimir y 223.94 kB gzip). FullCalendar
+la web (aproximadamente 775 kB sin comprimir y 228 kB gzip en el cierre de
+Fase 5D). FullCalendar
 es el principal contribuyente esperado. No se hizo un refactor agresivo en este
-checkpoint; se recomienda evaluar code-splitting/lazy loading del calendario en
-un checkpoint posterior.
+checkpoint; code-splitting/lazy loading queda como mejora posterior y no se
+introduce complejidad de bundler/CDN/SSR en esta fase.
 
 ## Dependencias diferidas
 
 Consulta, historia clínica, tipos configurables, bloques, Google Calendar,
-recordatorios y booking público permanecen fuera de Fase 5C.2B. El hardening
-final corresponde a Fase 5D.
+recordatorios y booking público permanecen fuera de Fase 5D. La matriz de
+cierre está en `docs/migration/agenda-final-review.md`.

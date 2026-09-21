@@ -2,9 +2,9 @@
 
 ## Alcance
 
-Checkpoint 2.6 y Fases 3B–4A (19–20 de septiembre de 2026). Se revisó el stack
-base antes de incorporar autenticación y el primer dominio de Owners/Patients.
-No se añadieron uploads ni endpoints clínicos.
+Checkpoint 2.6 y Fases 3B–5D (19–20 de septiembre de 2026). Se revisó el stack
+base antes de incorporar autenticación, Owners/Patients y Agenda. No se añadieron
+uploads ni endpoints clínicos.
 
 ## Versiones y cambios
 
@@ -33,9 +33,10 @@ se añadió una configuración ESM acotada (`apps/api/tsconfig.test.json` y
 | `prisma` → `@prisma/config` → `deepmerge-ts` | Alta                                                                   | Alta                                               | Alta                            | Dev/tooling        | Mantener Prisma 6.19.3; el fix propuesto por audit es un downgrade incompatible. Revisar cuando exista patch oficial compatible. |
 | `vitest` → `@vitest/mocker`                  | Moderada                                                               | Moderada                                           | Moderada                        | Dev/tooling        | Mantener Vitest 3.2.7; el fix requiere Vitest 5 y no es necesario para el runtime actual.                                        |
 
-El resultado de `npm audit` durante Fase 5B es **5 vulnerabilidades: 2 moderadas y 3
-altas**. Las entradas repetidas corresponden a los paquetes afectados y sus
-cadenas transitivas. No se ejecutó `npm audit fix --force`.
+El resultado de `npm audit` en el cierre de Fase 5D es **5 vulnerabilidades: 2
+moderadas y 3 altas**. Las entradas repetidas corresponden a los paquetes
+afectados y sus cadenas transitivas. No se ejecutó `npm audit fix --force` ni se
+aplicaron upgrades mayores.
 
 La incorporación de `argon2@0.44.0` y `luxon@3.7.x` no añadió avisos al resultado
 del audit.

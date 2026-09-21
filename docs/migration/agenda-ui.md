@@ -101,5 +101,7 @@ regresión adicional durante este checkpoint.
 
 ## Fuera de alcance
 
-El workflow operativo y la disponibilidad de Agenda quedan **COMPLETADOS EN
-FASE 5C.2B**. El hardening final queda en **PENDIENTE FASE 5D**.
+El workflow operativo y la disponibilidad de Agenda quedaron **COMPLETADOS EN
+FASE 5C.2B**. El hardening final quedó **COMPLETADO EN FASE 5D**; la matriz de
+cierre y las decisiones postergadas están en
+`docs/migration/agenda-final-review.md`.

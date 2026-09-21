@@ -268,8 +268,14 @@ export class AppointmentsService {
       });
     }
     try {
-      await this.prisma.appointment.update({
-        where: { id_organizationId: { id: appointmentId, organizationId: tenant.organizationId } },
+      // The status predicate makes a stale edit fail instead of mutating a row that
+      // another operator moved to a terminal or in-progress state meanwhile.
+      const result = await this.prisma.appointment.updateMany({
+        where: {
+          id: appointmentId,
+          organizationId: tenant.organizationId,
+          status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.WAITING_ROOM] },
+        },
         data: {
           ...(input.reason === undefined ? {} : { reason: assertReason(input.reason) }),
           ...(input.notes === undefined ? {} : { notes: trimNullable(input.notes) ?? null }),
@@ -278,6 +284,12 @@ export class AppointmentsService {
             : { assignedMembershipId: input.assignedMembershipId }),
         },
       });
+      if (result.count !== 1) {
+        throw conflict(
+          'Appointment changed before the edit was saved',
+          'INVALID_APPOINTMENT_STATE',
+        );
+      }
     } catch (error) {
       this.rethrowConflict(error);
       throw error;
@@ -314,12 +326,20 @@ export class AppointmentsService {
           endsAt,
           excludeAppointmentId: appointmentId,
         });
-        await tx.appointment.update({
+        const result = await tx.appointment.updateMany({
           where: {
-            id_organizationId: { id: appointmentId, organizationId: tenant.organizationId },
+            id: appointmentId,
+            organizationId: tenant.organizationId,
+            status: AppointmentStatus.SCHEDULED,
           },
           data: { startsAt: startsAt.toJSDate(), endsAt: endsAt.toJSDate() },
         });
+        if (result.count !== 1) {
+          throw conflict(
+            'Appointment changed before rescheduling was saved',
+            'INVALID_APPOINTMENT_STATE',
+          );
+        }
       });
     } catch (error) {
       this.rethrowConflict(error);
@@ -344,8 +364,14 @@ export class AppointmentsService {
         'INVALID_APPOINTMENT_STATE',
       );
     }
-    await this.prisma.appointment.update({
-      where: { id_organizationId: { id: appointmentId, organizationId: tenant.organizationId } },
+    // Conditional update closes the double-cancel race: exactly one request can
+    // transition SCHEDULED/WAITING_ROOM to CANCELLED.
+    const result = await this.prisma.appointment.updateMany({
+      where: {
+        id: appointmentId,
+        organizationId: tenant.organizationId,
+        status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.WAITING_ROOM] },
+      },
       data: {
         status: AppointmentStatus.CANCELLED,
         cancelledAt: new Date(),
@@ -353,6 +379,12 @@ export class AppointmentsService {
         cancellationReason: trimNullable(input.cancellationReason) ?? null,
       },
     });
+    if (result.count !== 1) {
+      throw conflict(
+        'Appointment changed before cancellation was confirmed',
+        'INVALID_APPOINTMENT_STATE',
+      );
+    }
     return this.findById(tenant.organizationId, appointmentId);
   }
 
@@ -368,10 +400,18 @@ export class AppointmentsService {
         'INVALID_APPOINTMENT_TRANSITION',
       );
     }
-    await this.prisma.appointment.update({
-      where: { id_organizationId: { id: appointmentId, organizationId } },
+    // Compare-and-set prevents two operators from applying the same transition
+    // after both observed the same previous status.
+    const result = await this.prisma.appointment.updateMany({
+      where: { id: appointmentId, organizationId, status: current.status },
       data: { status: target },
     });
+    if (result.count !== 1) {
+      throw conflict(
+        'Appointment changed before the transition was saved',
+        'INVALID_APPOINTMENT_STATE',
+      );
+    }
     return this.findById(organizationId, appointmentId);
   }
 
@@ -379,10 +419,19 @@ export class AppointmentsService {
     const current = await this.findById(organizationId, appointmentId);
     if (isTerminal(current.status))
       throw conflict('Terminal appointments cannot be confirmed', 'INVALID_APPOINTMENT_STATE');
-    await this.prisma.appointment.update({
-      where: { id_organizationId: { id: appointmentId, organizationId } },
+    // Confirmation is independent metadata, but it must never be written after
+    // a concurrent terminal transition has won the race.
+    const result = await this.prisma.appointment.updateMany({
+      where: {
+        id: appointmentId,
+        organizationId,
+        status: { notIn: TERMINAL_STATUSES },
+      },
       data: kind === 'owner' ? { ownerConfirmedAt: new Date() } : { clinicConfirmedAt: new Date() },
     });
+    if (result.count !== 1) {
+      throw conflict('Terminal appointments cannot be confirmed', 'INVALID_APPOINTMENT_STATE');
+    }
     return this.findById(organizationId, appointmentId);
   }
 
@@ -402,6 +451,13 @@ export class AppointmentsService {
       input.clinicLocationId,
       input.membershipId ?? null,
     );
+    await this.assertNoAvailabilityOverlap(this.prisma, organizationId, {
+      clinicLocationId: input.clinicLocationId,
+      membershipId: input.membershipId ?? null,
+      dayOfWeek: input.dayOfWeek,
+      startLocalTime: input.startLocalTime,
+      endLocalTime: input.endLocalTime,
+    });
     const rule = await this.prisma.availabilityRule.create({
       data: {
         organizationId,
@@ -439,6 +495,16 @@ export class AppointmentsService {
       locationId,
       membershipId,
     );
+    if (input.isActive ?? current.isActive) {
+      await this.assertNoAvailabilityOverlap(this.prisma, organizationId, {
+        clinicLocationId: locationId,
+        membershipId,
+        dayOfWeek: input.dayOfWeek ?? current.dayOfWeek,
+        startLocalTime: start,
+        endLocalTime: end,
+        excludeRuleId: ruleId,
+      });
+    }
     return this.prisma.availabilityRule.update({
       where: { id: ruleId },
       data: {
@@ -734,6 +800,41 @@ export class AppointmentsService {
   ) {
     if (await this.hasBlockingConflict(database, organizationId, input))
       throw conflict('Appointment overlaps an active appointment', 'APPOINTMENT_CONFLICT');
+  }
+
+  // Rules in the same location/day/scope must be disjoint. Membership-specific
+  // and location-wide scopes may overlap because precedence makes them explicit.
+  private async assertNoAvailabilityOverlap(
+    database: DomainDatabase,
+    organizationId: string,
+    input: {
+      clinicLocationId: string;
+      membershipId: string | null;
+      dayOfWeek: number;
+      startLocalTime: string;
+      endLocalTime: string;
+      excludeRuleId?: string;
+    },
+  ): Promise<void> {
+    const overlapping = await database.availabilityRule.findFirst({
+      where: {
+        organizationId,
+        clinicLocationId: input.clinicLocationId,
+        membershipId: input.membershipId,
+        dayOfWeek: input.dayOfWeek,
+        isActive: true,
+        ...(input.excludeRuleId ? { id: { not: input.excludeRuleId } } : {}),
+        startLocalTime: { lt: input.endLocalTime },
+        endLocalTime: { gt: input.startLocalTime },
+      },
+      select: { id: true },
+    });
+    if (overlapping) {
+      throw conflict(
+        'Availability rules cannot overlap within the same scope',
+        'AVAILABILITY_OVERLAP',
+      );
+    }
   }
 
   private async hasBlockingConflict(
