@@ -39,6 +39,24 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'PRESCRIPTION_STALE') {
     return 'Esta prescripción fue modificada desde otra sesión. Recarga la versión actual.';
   }
+  if (error.code === 'VACCINATION_STALE' || error.code === 'DEWORMING_STALE') {
+    return 'Este registro fue modificado desde otra sesión. Recarga la versión actual.';
+  }
+  if (error.code === 'VACCINATION_IMMUTABLE' || error.code === 'DEWORMING_IMMUTABLE') {
+    return 'El registro ya no está en borrador y no puede editarse.';
+  }
+  if (error.code === 'INVALID_VACCINATION_STATE' || error.code === 'INVALID_DEWORMING_STATE') {
+    return 'El registro preventivo no permite esta operación en su estado actual.';
+  }
+  if (error.code === 'VACCINE_REQUIRED' || error.code === 'DEWORMING_PRODUCT_REQUIRED') {
+    return 'Completa el nombre del producto antes de finalizar.';
+  }
+  if (error.code === 'RESPONSIBLE_PRACTITIONER_REQUIRED') {
+    return 'Selecciona un Practitioner responsable antes de finalizar.';
+  }
+  if (error.code === 'ADMINISTERED_BY_PROFILE_REQUIRED') {
+    return 'El miembro registrado como administrador debe completar su perfil profesional.';
+  }
   if (error.code === 'PRESCRIPTION_IMMUTABLE') {
     return 'La prescripción ya no está en borrador y no puede editarse.';
   }

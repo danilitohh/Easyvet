@@ -10,6 +10,7 @@ import { ResourceError } from '../shared/ResourceFeedback';
 import { useClinicalOrganization } from '../clinical/useClinical';
 import { formatDateTime } from '../clinical/clinicalUtils';
 import { useVaccination } from './useVaccinations';
+import { PreventiveDetailActions } from './PreventiveDetailActions';
 import {
   administeredByDisplay,
   formatCivilDate,
@@ -112,7 +113,6 @@ function VaccinationIdentity({ item }: { item: VaccinationDetail }) {
   );
 }
 
-// Vaccination detail is deliberately read-only; backend mutation endpoints are not exposed here.
 export function VaccinationDetailPage() {
   const { patientId, vaccinationId } = useParams<{
     patientId: string;
@@ -155,10 +155,18 @@ export function VaccinationDetailPage() {
         title={item.vaccineName || 'Vacunación'}
         description={`${item.patient.name} · ${item.status === 'DRAFT' ? 'Borrador' : item.status === 'FINALIZED' ? 'Finalizado' : 'Anulado'}`}
         action={
-          <ButtonBack
-            to={`/pacientes/${patientId}/historia/preventivos`}
-            label="Volver a cuidado preventivo"
-          />
+          <>
+            <PreventiveDetailActions
+              kind="vaccination"
+              item={item}
+              patientId={patientId}
+              reload={vaccination.reload}
+            />
+            <ButtonBack
+              to={`/pacientes/${patientId}/historia/preventivos`}
+              label="Volver a cuidado preventivo"
+            />
+          </>
         }
       />
       <Card className="preventive-status-panel">

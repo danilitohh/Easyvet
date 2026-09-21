@@ -19,6 +19,7 @@ import type {
   ClinicalVitalListResponse,
   ClinicalVitalResponse,
   ClinicalPractitionerListResponse,
+  ClinicalMemberListResponse,
   ProfessionalProfileResponse,
 } from '@veterinary-saas/contracts';
 import { CurrentTenant } from '../authorization/current-tenant.decorator';
@@ -69,6 +70,12 @@ export class ClinicalController {
     @CurrentTenant() tenant: TenantContext,
   ): Promise<ClinicalPractitionerListResponse> {
     return this.clinical.listPractitioners(tenant);
+  }
+
+  @Get('clinical/members')
+  @RequirePermissions(PERMISSIONS.CLINICAL.RECORDS_READ)
+  listClinicalMembers(@CurrentTenant() tenant: TenantContext): Promise<ClinicalMemberListResponse> {
+    return this.clinical.listClinicalMembers(tenant);
   }
 
   @Get('patients/:patientId/clinical-record')

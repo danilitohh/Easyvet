@@ -48,7 +48,7 @@
 | Vaccinations backend               | COMPLETADO (Fase 6E.2)                                                        |
 | Dewormings backend                 | COMPLETADO (Fase 6E.2)                                                        |
 | Preventive Care frontend read-only | COMPLETADO (Fase 6E.3A)                                                       |
-| Preventive Care operations         | PENDIENTE (Fase 6E.3B)                                                        |
+| Preventive Care operations         | COMPLETADO (Fase 6E.3B: create/edit/finalize/void, CAS y UX tenant-safe)      |
 | Preventive Care hardening          | PENDIENTE (Fase 6E.4)                                                         |
 | Certificates/Documents             | POSTERGADO                                                                    |
 | Inventory integration              | POSTERGADO                                                                    |
@@ -92,7 +92,23 @@ Fase 6E.3A — frontend read-only de Preventive Care completada:
 - Se documentó la arquitectura en `docs/architecture/preventive-care-frontend.md`
   y la trazabilidad de migración en `docs/migration/preventive-care-ui.md`.
 - No se modificó Prisma, no se creó migración y no se alteró el seed. La Fase
-  6E.3B permanece detenida.
+  6E.3B queda registrada en la sección siguiente.
+
+Fase 6E.3B — operaciones UI de Preventive Care completada:
+
+- Se añadieron rutas contextuales para crear Vaccination/Deworming desde un
+  Encounter y rutas de edición DRAFT; las listas permanecen read-only.
+- Finalize y Void viven únicamente en detalle, con permisos independientes,
+  validación de campos mínimos, revisión, CAS, stale UX, perfil profesional,
+  snapshots del backend y motivo obligatorio de anulación.
+- Las fechas civiles se mantienen como `YYYY-MM-DD`; `nextDueOn` se valida en
+  cliente y `expiryOn` anterior es warning no bloqueante. `administeredBy` se
+  elige explícitamente desde miembros clínicos activos del tenant.
+- Se agregó `GET /clinical/members` sin cambiar la semántica del lookup de
+  practitioners. No se modificó Prisma, no se creó migración y no se alteró el
+  seed. Reminders, inventory y certificates siguen fuera de alcance.
+- Preventive Care hardening continúa **PENDIENTE (Fase 6E.4)**; esta fase se
+  detiene aquí.
 
 Fase 6A — análisis y arquitectura clínica:
 

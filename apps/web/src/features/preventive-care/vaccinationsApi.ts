@@ -2,9 +2,17 @@ import {
   vaccinationDetailSchema,
   vaccinationListQuerySchema,
   vaccinationListResponseSchema,
+  createVaccinationRequestSchema,
+  updateVaccinationRequestSchema,
+  finalizeVaccinationRequestSchema,
+  voidVaccinationRequestSchema,
   type VaccinationDetail,
   type VaccinationListQuery,
   type VaccinationListResponse,
+  type CreateVaccinationRequest,
+  type UpdateVaccinationRequest,
+  type FinalizeVaccinationRequest,
+  type VoidVaccinationRequest,
 } from '@veterinary-saas/contracts';
 import { apiClient } from '../../services/apiClient';
 
@@ -45,6 +53,62 @@ export const vaccinationsApi = {
   async findById(vaccinationId: string, signal?: AbortSignal): Promise<VaccinationDetail> {
     return vaccinationDetailSchema.parse(
       await apiClient(`/vaccinations/${vaccinationId}`, signalInit(signal)),
+    );
+  },
+
+  async create(
+    encounterId: string,
+    input: CreateVaccinationRequest,
+    signal?: AbortSignal,
+  ): Promise<VaccinationDetail> {
+    return vaccinationDetailSchema.parse(
+      await apiClient(`/clinical-encounters/${encounterId}/vaccinations`, {
+        method: 'POST',
+        body: createVaccinationRequestSchema.parse(input),
+        ...signalInit(signal),
+      }),
+    );
+  },
+
+  async updateDraft(
+    vaccinationId: string,
+    input: UpdateVaccinationRequest,
+    signal?: AbortSignal,
+  ): Promise<VaccinationDetail> {
+    return vaccinationDetailSchema.parse(
+      await apiClient(`/vaccinations/${vaccinationId}`, {
+        method: 'PATCH',
+        body: updateVaccinationRequestSchema.parse(input),
+        ...signalInit(signal),
+      }),
+    );
+  },
+
+  async finalize(
+    vaccinationId: string,
+    input: FinalizeVaccinationRequest,
+    signal?: AbortSignal,
+  ): Promise<VaccinationDetail> {
+    return vaccinationDetailSchema.parse(
+      await apiClient(`/vaccinations/${vaccinationId}/finalize`, {
+        method: 'POST',
+        body: finalizeVaccinationRequestSchema.parse(input),
+        ...signalInit(signal),
+      }),
+    );
+  },
+
+  async void(
+    vaccinationId: string,
+    input: VoidVaccinationRequest,
+    signal?: AbortSignal,
+  ): Promise<VaccinationDetail> {
+    return vaccinationDetailSchema.parse(
+      await apiClient(`/vaccinations/${vaccinationId}/void`, {
+        method: 'POST',
+        body: voidVaccinationRequestSchema.parse(input),
+        ...signalInit(signal),
+      }),
     );
   },
 };

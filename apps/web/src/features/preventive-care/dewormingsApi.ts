@@ -2,9 +2,17 @@ import {
   dewormingDetailSchema,
   dewormingListQuerySchema,
   dewormingListResponseSchema,
+  createDewormingRequestSchema,
+  updateDewormingRequestSchema,
+  finalizeDewormingRequestSchema,
+  voidDewormingRequestSchema,
   type DewormingDetail,
   type DewormingListQuery,
   type DewormingListResponse,
+  type CreateDewormingRequest,
+  type UpdateDewormingRequest,
+  type FinalizeDewormingRequest,
+  type VoidDewormingRequest,
 } from '@veterinary-saas/contracts';
 import { apiClient } from '../../services/apiClient';
 
@@ -42,6 +50,62 @@ export const dewormingsApi = {
   async findById(dewormingId: string, signal?: AbortSignal): Promise<DewormingDetail> {
     return dewormingDetailSchema.parse(
       await apiClient(`/dewormings/${dewormingId}`, signalInit(signal)),
+    );
+  },
+
+  async create(
+    encounterId: string,
+    input: CreateDewormingRequest,
+    signal?: AbortSignal,
+  ): Promise<DewormingDetail> {
+    return dewormingDetailSchema.parse(
+      await apiClient(`/clinical-encounters/${encounterId}/dewormings`, {
+        method: 'POST',
+        body: createDewormingRequestSchema.parse(input),
+        ...signalInit(signal),
+      }),
+    );
+  },
+
+  async updateDraft(
+    dewormingId: string,
+    input: UpdateDewormingRequest,
+    signal?: AbortSignal,
+  ): Promise<DewormingDetail> {
+    return dewormingDetailSchema.parse(
+      await apiClient(`/dewormings/${dewormingId}`, {
+        method: 'PATCH',
+        body: updateDewormingRequestSchema.parse(input),
+        ...signalInit(signal),
+      }),
+    );
+  },
+
+  async finalize(
+    dewormingId: string,
+    input: FinalizeDewormingRequest,
+    signal?: AbortSignal,
+  ): Promise<DewormingDetail> {
+    return dewormingDetailSchema.parse(
+      await apiClient(`/dewormings/${dewormingId}/finalize`, {
+        method: 'POST',
+        body: finalizeDewormingRequestSchema.parse(input),
+        ...signalInit(signal),
+      }),
+    );
+  },
+
+  async void(
+    dewormingId: string,
+    input: VoidDewormingRequest,
+    signal?: AbortSignal,
+  ): Promise<DewormingDetail> {
+    return dewormingDetailSchema.parse(
+      await apiClient(`/dewormings/${dewormingId}/void`, {
+        method: 'POST',
+        body: voidDewormingRequestSchema.parse(input),
+        ...signalInit(signal),
+      }),
     );
   },
 };

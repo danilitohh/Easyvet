@@ -10,6 +10,7 @@ import { ResourceError } from '../shared/ResourceFeedback';
 import { useClinicalOrganization } from '../clinical/useClinical';
 import { formatDateTime } from '../clinical/clinicalUtils';
 import { useDeworming } from './useDewormings';
+import { PreventiveDetailActions } from './PreventiveDetailActions';
 import {
   administeredByDisplay,
   formatCivilDate,
@@ -150,12 +151,20 @@ export function DewormingDetailPage() {
         title={item.productName || 'Desparasitación'}
         description={`${item.patient.name} · ${item.status === 'DRAFT' ? 'Borrador' : item.status === 'FINALIZED' ? 'Finalizado' : 'Anulado'}`}
         action={
-          <Link
-            className="button button--secondary"
-            to={`/pacientes/${patientId}/historia/preventivos`}
-          >
-            Volver a cuidado preventivo
-          </Link>
+          <>
+            <PreventiveDetailActions
+              kind="deworming"
+              item={item}
+              patientId={patientId}
+              reload={deworming.reload}
+            />
+            <Link
+              className="button button--secondary"
+              to={`/pacientes/${patientId}/historia/preventivos`}
+            >
+              Volver a cuidado preventivo
+            </Link>
+          </>
         }
       />
       <Card className="preventive-status-panel">

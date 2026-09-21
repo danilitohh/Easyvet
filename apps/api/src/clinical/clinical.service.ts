@@ -20,6 +20,7 @@ import type {
   ClinicalRecordResponse,
   ClinicalVitalResponse,
   ClinicalPractitionerListResponse,
+  ClinicalMemberListResponse,
   ProfessionalProfileResponse,
 } from '@veterinary-saas/contracts';
 import type { TenantContext } from '../authorization/authorization.types';
@@ -281,6 +282,32 @@ export class ClinicalService {
     return {
       data: memberships.map((membership) => ({
         membershipId: membership.id,
+        displayName: membership.professionalProfile?.displayName ?? null,
+        licenseNumber: membership.professionalProfile?.licenseNumber ?? null,
+        profileConfigured: Boolean(membership.professionalProfile?.displayName?.trim()),
+      })),
+    };
+  }
+
+  async listClinicalMembers(tenant: TenantContext): Promise<ClinicalMemberListResponse> {
+    const memberships = await this.prisma.membership.findMany({
+      where: {
+        organizationId: tenant.organizationId,
+        status: MembershipStatus.ACTIVE,
+        clinicalRole: { in: [ClinicalRole.PRACTITIONER, ClinicalRole.CLINICAL_ASSISTANT] },
+        user: { status: UserStatus.ACTIVE },
+      },
+      select: {
+        id: true,
+        clinicalRole: true,
+        professionalProfile: { select: { displayName: true, licenseNumber: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return {
+      data: memberships.map((membership) => ({
+        membershipId: membership.id,
+        clinicalRole: membership.clinicalRole!,
         displayName: membership.professionalProfile?.displayName ?? null,
         licenseNumber: membership.professionalProfile?.licenseNumber ?? null,
         profileConfigured: Boolean(membership.professionalProfile?.displayName?.trim()),

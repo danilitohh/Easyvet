@@ -243,6 +243,21 @@ describeDatabase('clinical core API', () => {
         profileConfigured: true,
       },
     ]);
+    const clinicalMembers = await agent.get('/api/v1/clinical/members').expect(200);
+    expect(clinicalMembers.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          membershipId: practitionerMembershipId,
+          clinicalRole: 'PRACTITIONER',
+          profileConfigured: true,
+        }),
+        expect.objectContaining({
+          clinicalRole: 'CLINICAL_ASSISTANT',
+          profileConfigured: false,
+        }),
+      ]),
+    );
+    expect(clinicalMembers.body.data).toHaveLength(2);
     await agent
       .put('/api/v1/clinical/me/professional-profile')
       .send({ displayName: 'Dr. Clinical', licenseNumber: null })

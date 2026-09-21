@@ -189,6 +189,8 @@ export function ClinicalEncounterDetailPage() {
   const canReadVaccinations = useCan(PERMISSION.VACCINATIONS_READ);
   const canReadDewormings = useCan(PERMISSION.DEWORMINGS_READ);
   const canCreatePrescription = useCan(PERMISSION.PRESCRIPTIONS_CREATE);
+  const canCreateVaccination = useCan(PERMISSION.VACCINATIONS_CREATE);
+  const canCreateDeworming = useCan(PERMISSION.DEWORMINGS_CREATE);
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
   const canUpdateDraft = useCan(PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT);
   const canCreateVital = useCan(PERMISSION.CLINICAL_VITALS_CREATE);
@@ -344,6 +346,26 @@ export function ClinicalEncounterDetailPage() {
                 to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/prescripciones/nueva`}
               >
                 Nueva prescripción
+              </Button>
+            ) : null}
+            {canCreateVaccination &&
+            (item.status === 'DRAFT' || item.status === 'FINALIZED') &&
+            item.patient.status !== 'ARCHIVED' ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/vacunas/nueva`}
+              >
+                Registrar vacunación
+              </Button>
+            ) : null}
+            {canCreateDeworming &&
+            (item.status === 'DRAFT' || item.status === 'FINALIZED') &&
+            item.patient.status !== 'ARCHIVED' ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/desparasitaciones/nueva`}
+              >
+                Registrar desparasitación
               </Button>
             ) : null}
             {item.status === 'DRAFT' && canUpdateDraft ? (

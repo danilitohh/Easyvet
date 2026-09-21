@@ -77,6 +77,16 @@ const DewormingDetailPage = lazy(() =>
     default: module.DewormingDetailPage,
   })),
 );
+const VaccinationFormPage = lazy(() =>
+  import('../features/preventive-care/PreventiveFormPage').then((module) => ({
+    default: module.VaccinationFormPage,
+  })),
+);
+const DewormingFormPage = lazy(() =>
+  import('../features/preventive-care/PreventiveFormPage').then((module) => ({
+    default: module.DewormingFormPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -275,11 +285,51 @@ export function App() {
             }
           />
           <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/vacunas/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.VACCINATIONS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <VaccinationFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/preventivos/vacunas/:vaccinationId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.VACCINATIONS_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <VaccinationFormPage mode="edit" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
             path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId"
             element={
               <PermissionRoute permission={PERMISSION.DEWORMINGS_READ}>
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <DewormingDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/desparasitaciones/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.DEWORMINGS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <DewormingFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.DEWORMINGS_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <DewormingFormPage mode="edit" />
                 </Suspense>
               </PermissionRoute>
             }

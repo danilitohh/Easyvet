@@ -31,6 +31,12 @@ Los filtros de lista son `status`, `clinicalEncounterId`, `from` y `to`.
 Cuando se usa un rango de fechas se excluyen drafts sin `administeredOn`. El
 orden determinista es `administeredOn DESC NULLS LAST`, `createdAt DESC`, `id ASC`.
 
+El endpoint tenant-safe `GET /clinical/members` expone únicamente membresías
+activas con rol `PRACTITIONER` o `CLINICAL_ASSISTANT`, incluyendo `membershipId`,
+`clinicalRole`, nombre, matrícula y `profileConfigured`. Se protege con
+`clinicalRecords.read` y existe para el selector explícito de `administeredBy`;
+`GET /clinical/practitioners` conserva su semántica histórica.
+
 ## Reglas de mutación
 
 - Create solo acepta Encounter `DRAFT` o `FINALIZED`, crea siempre `DRAFT` y

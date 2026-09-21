@@ -42,5 +42,13 @@ export const PERMISSION = {
   PRESCRIPTIONS_FINALIZE: 'prescriptions.finalize',
   PRESCRIPTIONS_VOID: 'prescriptions.void',
   VACCINATIONS_READ: 'vaccinations.read',
+  VACCINATIONS_CREATE: 'vaccinations.create',
+  VACCINATIONS_UPDATE_DRAFT: 'vaccinations.updateDraft',
+  VACCINATIONS_FINALIZE: 'vaccinations.finalize',
+  VACCINATIONS_VOID: 'vaccinations.void',
   DEWORMINGS_READ: 'dewormings.read',
+  DEWORMINGS_CREATE: 'dewormings.create',
+  DEWORMINGS_UPDATE_DRAFT: 'dewormings.updateDraft',
+  DEWORMINGS_FINALIZE: 'dewormings.finalize',
+  DEWORMINGS_VOID: 'dewormings.void',
 } as const satisfies Record<string, Permission>;

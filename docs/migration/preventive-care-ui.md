@@ -1,11 +1,10 @@
-# Fase 6E.3A — UI read-only de cuidado preventivo
+# Fases 6E.3A–6E.3B — UI de cuidado preventivo
 
 ## Resultado
 
 Se migró la lectura de vacunaciones y desparasitaciones de la historia clínica
-de Easyvet. La superficie está limitada a consulta histórica: no crea,
-actualiza, finaliza ni anula registros y no presenta acciones de inventario,
-facturación o documentos.
+de Easyvet. La Fase 6E.3B añade borradores contextuales, edición, finalización
+y anulación sin presentar acciones de inventario, facturación o documentos.
 
 ## Correspondencia con el backend 6E.2
 
@@ -23,6 +22,18 @@ filtrados por el encuentro padre y respeta los permisos por separado. El
 detalle preventivo ofrece enlace al encuentro únicamente cuando el usuario
 tiene `clinicalEncounters.read`.
 
+En el detalle de un `ClinicalEncounter` DRAFT o FINALIZED aparecen las acciones
+`Registrar vacunación` y `Registrar desparasitación` según sus permisos.
+Encounter VOIDED y Patient ARCHIVED no ofrecen create. Los formularios no
+vuelven a pedir Patient/Encounter y la finalización/anulación vive únicamente
+en el detalle preventivo.
+
+Los formularios usan fechas civiles controladas, CAS en edición, warnings de
+vencimiento no bloqueantes, selector explícito de `administeredBy`, revisión de
+finalización y motivo obligatorio para void. Los snapshots siguen siendo
+calculados por backend. No se implementan reminders, inventory, certificates,
+catalogs, PDF, storage ni automatizaciones.
+
 ## Criterios de seguridad
 
 - Cambio de organización o paciente: se limpian datos previos y se cancela la
@@ -33,8 +44,7 @@ tiene `clinicalEncounters.read`.
 - Campos clínicos y notas: texto escapado por React.
 - Fechas civiles: componentes de fecha, no timestamps UTC.
 
-## Fuera de alcance
+## Estado
 
-La creación y operación de borradores, finalización, anulación y cualquier
-workflow de disponibilidad pertenecen a Fase 6E.3B o posteriores. No se
-crearon migraciones, modelos ni endpoints en esta fase.
+La lectura y las operaciones de Preventive Care están completadas en 6E.3A y
+6E.3B. El hardening específico queda pendiente para 6E.4.

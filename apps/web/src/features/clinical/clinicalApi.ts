@@ -7,6 +7,7 @@ import {
   clinicalVitalListResponseSchema,
   clinicalVitalResponseSchema,
   clinicalPractitionerListResponseSchema,
+  clinicalMemberListResponseSchema,
   createClinicalEncounterRequestSchema,
   createClinicalEvolutionRequestSchema,
   createClinicalVitalRequestSchema,
@@ -32,6 +33,7 @@ import {
   type ClinicalEvolutionResponse,
   type ProfessionalProfileResponse,
   type ClinicalPractitionerListResponse,
+  type ClinicalMemberListResponse,
 } from '@veterinary-saas/contracts';
 import { apiClient } from '../../services/apiClient';
 
@@ -188,6 +190,12 @@ export const clinicalApi = {
   async listPractitioners(signal?: AbortSignal): Promise<ClinicalPractitionerListResponse> {
     return clinicalPractitionerListResponseSchema.parse(
       await apiClient('/clinical/practitioners', signalInit(signal)),
+    );
+  },
+
+  async listClinicalMembers(signal?: AbortSignal): Promise<ClinicalMemberListResponse> {
+    return clinicalMemberListResponseSchema.parse(
+      await apiClient('/clinical/members', signalInit(signal)),
     );
   },
 

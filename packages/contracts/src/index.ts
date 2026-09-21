@@ -190,6 +190,16 @@ export const clinicalPractitionerListResponseSchema = z.object({
   data: z.array(clinicalPractitionerResponseSchema),
 });
 
+// Preventive-care selectors need both practitioners and clinical assistants while the
+// historical practitioner lookup remains intentionally practitioner-only.
+export const clinicalMemberResponseSchema = clinicalPractitionerResponseSchema.extend({
+  clinicalRole: clinicalRoleSchema,
+});
+
+export const clinicalMemberListResponseSchema = z.object({
+  data: z.array(clinicalMemberResponseSchema),
+});
+
 export type ProfessionalProfileResponse = z.infer<typeof professionalProfileResponseSchema>;
 export type UpsertProfessionalProfileRequest = z.infer<
   typeof upsertProfessionalProfileRequestSchema
@@ -198,6 +208,8 @@ export type ClinicalPractitionerResponse = z.infer<typeof clinicalPractitionerRe
 export type ClinicalPractitionerListResponse = z.infer<
   typeof clinicalPractitionerListResponseSchema
 >;
+export type ClinicalMemberResponse = z.infer<typeof clinicalMemberResponseSchema>;
+export type ClinicalMemberListResponse = z.infer<typeof clinicalMemberListResponseSchema>;
 
 const ownerStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
 const patientStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);

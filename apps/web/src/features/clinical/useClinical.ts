@@ -9,6 +9,7 @@ import type {
   ClinicalVitalListResponse,
   OrganizationCurrentResponse,
   ClinicalPractitionerListResponse,
+  ClinicalMemberListResponse,
 } from '@veterinary-saas/contracts';
 import { clinicalApi } from './clinicalApi';
 
@@ -67,6 +68,7 @@ const EMPTY_EVOLUTIONS: ClinicalEvolutionListResponse = {
 };
 const EMPTY_VITALS: ClinicalVitalListResponse = { data: [] };
 const EMPTY_PRACTITIONERS: ClinicalPractitionerListResponse = { data: [] };
+const EMPTY_CLINICAL_MEMBERS: ClinicalMemberListResponse = { data: [] };
 
 // Clinical reads are tenant-keyed and abort in-flight requests on organization changes.
 export function useClinicalOrganization(): LoadState<OrganizationCurrentResponse> {
@@ -106,6 +108,16 @@ export function useClinicalPractitioners(enabled: boolean) {
     enabled && (appConfig.dataMode === 'mock' || Boolean(organizationId)),
     [organizationId],
     EMPTY_PRACTITIONERS,
+  );
+}
+
+export function useClinicalMembers(enabled: boolean) {
+  const organizationId = useActiveOrganizationId();
+  return useClinicalResource(
+    (signal) => clinicalApi.listClinicalMembers(signal),
+    enabled && (appConfig.dataMode === 'mock' || Boolean(organizationId)),
+    [organizationId],
+    EMPTY_CLINICAL_MEMBERS,
   );
 }
 
