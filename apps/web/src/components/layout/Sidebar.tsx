@@ -16,11 +16,13 @@ type SidebarProps = {
 export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarProps) {
   const canReadMemberships = useCan(PERMISSION.MEMBERSHIPS_READ);
   const canUpdateOrganization = useCan(PERMISSION.ORGANIZATION_UPDATE);
+  const canReadAvailability = useCan(PERMISSION.AVAILABILITY_READ);
   const visibleGroups = NAVIGATION_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
       if (item.path === '/usuarios') return canReadMemberships;
       if (item.path === '/configuracion') return canUpdateOrganization;
+      if (item.path === '/agenda/disponibilidad') return canReadAvailability;
       return true;
     }),
   })).filter((group) => group.items.length > 0);

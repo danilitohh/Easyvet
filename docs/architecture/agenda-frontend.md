@@ -1,13 +1,14 @@
 # Arquitectura del frontend de Agenda
 
-## Alcance de Fase 5C.2A
+## Alcance de Fase 5C.2B
 
-Esta fase parte de la Agenda clínica de lectura construida sobre el backend de
-Fase 5B. La pantalla vive en `/agenda` y el detalle de una cita en
-`/agenda/citas/:appointmentId`. Fase 5C.2A añade únicamente programación:
-crear, editar información, reprogramar y cancelar. Check-in, start, complete,
-no-show, confirmaciones, administración de disponibilidad y drag-and-drop
-siguen fuera de alcance.
+Esta fase parte de la Agenda clínica de lectura y de las operaciones de
+programación construidas sobre el backend de Fase 5B. La pantalla vive en
+`/agenda` y el detalle de una cita en `/agenda/citas/:appointmentId`.
+Fase 5C.2B añade el workflow operativo (check-in, iniciar, completar, no-show
+y confirmación clínica) y la administración de disponibilidad recurrente.
+Google Calendar, recordatorios, booking público, drag-and-drop y módulos
+clínicos siguen fuera de alcance.
 
 ## Estado navegable
 
@@ -63,7 +64,7 @@ fecha/hora en la zona de la organización, duración, sede, profesional, motivo,
 notas, observaciones, confirmaciones y metadatos de cancelación cuando
 corresponde.
 
-## Operaciones de programación
+## Operaciones de programación y workflow
 
 Las rutas operativas son:
 
@@ -91,10 +92,35 @@ reprogramar se consulta `/agenda/available-slots`. Si la respuesta es
 `UNRESTRICTED`, se permite hora manual y se informa que el backend seguirá
 validando conflictos.
 
+El detalle expone las acciones de workflow solo cuando el estado y el permiso
+son compatibles: `Registrar llegada` (`SCHEDULED → WAITING_ROOM`), `Iniciar
+atención` (`WAITING_ROOM → IN_PROGRESS`), `Completar cita`
+(`IN_PROGRESS → COMPLETED`) y `No asistió` (`SCHEDULED/WAITING_ROOM →
+NO_SHOW`). La confirmación clínica es independiente del estado y usa su
+endpoint dedicado. La confirmación del Owner se muestra como lectura; no se
+simula una acción pública desde el backoffice.
+
 No hay optimistic updates. Después de una mutación exitosa la agenda se
-refresca y el detalle conserva el resultado; un `409` se traduce a “El horario
-ya no está disponible” y refresca los slots. La cancelación usa su endpoint
-dedicado, conserva la cita en la agenda y actualiza el estado a `CANCELLED`.
+refresca y el detalle conserva el resultado. Un `409` de workflow recarga el
+detalle para resolver carreras de estado y muestra un mensaje de cita
+desactualizada. Day/List refrescan automáticamente cada 45 segundos.
+
+El resumen operativo de Day/List cuenta citas por estado y permite filtrar la
+vista al pulsar un estado; reutiliza la colección ya cargada y no realiza una
+segunda consulta.
+
+## Administración de disponibilidad
+
+`/agenda/disponibilidad` requiere `availability.read`; crear, editar, activar y
+desactivar requieren además `availability.manage`. Las reglas se agrupan por
+sede y se editan con horario civil `HH:mm`, día de semana (lunes primero en la
+UI, `0 = domingo` en el contrato), intervalo de 15–240 minutos y Membership
+opcional. `membershipId = null` se presenta como “Horario general de sede”.
+
+Si no hay reglas activas aplicables, la UI explica explícitamente el modo
+`UNRESTRICTED`. La desactivación es lógica mediante `DELETE`; no se crea
+`ScheduleBlock` ni ninguna tabla adicional. Tras una mutación se invalidan los
+slots cargados para que crear y reprogramar vuelvan a consultar disponibilidad.
 
 Los hooks de Agenda cancelan peticiones de slots, referencias y detalle al
 cambiar fecha, filtros o tenant. Los formularios redirigen a `/agenda` cuando
@@ -122,7 +148,6 @@ un checkpoint posterior.
 
 ## Dependencias diferidas
 
-Crear, editar, reprogramar, cancelar, check-in, iniciar, completar, marcar
-`NO_SHOW`, confirmaciones y gestión de disponibilidad no forman parte de esta
-entrega. Antes de añadirlas se debe cerrar Fase 5C.2 y conservar el aislamiento
-tenant del backend.
+Consulta, historia clínica, tipos configurables, bloques, Google Calendar,
+recordatorios y booking público permanecen fuera de Fase 5C.2B. El hardening
+final corresponde a Fase 5D.

@@ -2,6 +2,8 @@ import {
   appointmentListResponseSchema,
   appointmentResponseSchema,
   availableSlotsResponseSchema,
+  availabilityRuleRequestSchema,
+  availabilityRuleResponseSchema,
   cancelAppointmentRequestSchema,
   createAppointmentRequestSchema,
   locationResponseSchema,
@@ -11,6 +13,8 @@ import {
   rescheduleAppointmentRequestSchema,
   updateAppointmentRequestSchema,
   type AvailableSlotsResponse,
+  type AvailabilityRuleRequest,
+  type AvailabilityRuleResponse,
   type CancelAppointmentRequest,
   type CreateAppointmentRequest,
   type AppointmentListQuery,
@@ -43,6 +47,8 @@ export type AvailableSlotsParams = {
   durationMinutes: number;
   signal?: AbortSignal;
 };
+
+export type AvailabilityRuleInput = AvailabilityRuleRequest;
 
 function queryString(values: Record<string, string | undefined>): string {
   const query = new URLSearchParams();
@@ -119,6 +125,71 @@ export const agendaApi = {
         method: 'POST',
         body: cancelAppointmentRequestSchema.parse(input),
       }),
+    );
+  },
+
+  // Lifecycle operations use explicit backend endpoints so the state machine remains authoritative.
+  async checkInAppointment(appointmentId: string): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient(`/appointments/${appointmentId}/check-in`, { method: 'POST' }),
+    );
+  },
+
+  async startAppointment(appointmentId: string): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient(`/appointments/${appointmentId}/start`, { method: 'POST' }),
+    );
+  },
+
+  async completeAppointment(appointmentId: string): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient(`/appointments/${appointmentId}/complete`, { method: 'POST' }),
+    );
+  },
+
+  async markNoShow(appointmentId: string): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient(`/appointments/${appointmentId}/no-show`, { method: 'POST' }),
+    );
+  },
+
+  async confirmByClinic(appointmentId: string): Promise<AppointmentResponse> {
+    return appointmentResponseSchema.parse(
+      await apiClient(`/appointments/${appointmentId}/confirm-by-clinic`, { method: 'POST' }),
+    );
+  },
+
+  // Availability rules are civil recurring schedules and never receive tenant fields from the UI.
+  async listAvailability(signal?: AbortSignal): Promise<AvailabilityRuleResponse[]> {
+    return availabilityRuleResponseSchema
+      .array()
+      .parse(await apiClient('/availability-rules', signalInit(signal)));
+  },
+
+  async createAvailability(input: AvailabilityRuleInput): Promise<AvailabilityRuleResponse> {
+    return availabilityRuleResponseSchema.parse(
+      await apiClient('/availability-rules', {
+        method: 'POST',
+        body: availabilityRuleRequestSchema.parse(input),
+      }),
+    );
+  },
+
+  async updateAvailability(
+    ruleId: string,
+    input: Partial<AvailabilityRuleInput> & { isActive?: boolean },
+  ): Promise<AvailabilityRuleResponse> {
+    return availabilityRuleResponseSchema.parse(
+      await apiClient(`/availability-rules/${ruleId}`, {
+        method: 'PATCH',
+        body: input,
+      }),
+    );
+  },
+
+  async deactivateAvailability(ruleId: string): Promise<AvailabilityRuleResponse> {
+    return availabilityRuleResponseSchema.parse(
+      await apiClient(`/availability-rules/${ruleId}`, { method: 'DELETE' }),
     );
   },
 

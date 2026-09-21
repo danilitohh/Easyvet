@@ -14,6 +14,8 @@ vi.mock('@veterinary-saas/contracts', () => {
     appointmentListResponseSchema: passthrough,
     appointmentResponseSchema: passthrough,
     availableSlotsResponseSchema: passthrough,
+    availabilityRuleRequestSchema: passthrough,
+    availabilityRuleResponseSchema: { ...passthrough, array: () => passthrough },
     cancelAppointmentRequestSchema: { parse: (value: unknown) => value },
     createAppointmentRequestSchema: { parse: (value: unknown) => value },
     locationResponseSchema: arrayPassthrough,
@@ -150,6 +152,61 @@ describe('agendaApi', () => {
         body: { cancellationReason: 'Solicita cambio' },
       },
     );
+  });
+
+  it('uses explicit lifecycle and clinic confirmation endpoints', async () => {
+    apiClientMock.mockResolvedValue({ id: 'appointment' });
+    const id = '11111111-1111-4111-8111-111111111111';
+    await agendaApi.checkInAppointment(id);
+    expect(apiClientMock).toHaveBeenLastCalledWith(`/appointments/${id}/check-in`, {
+      method: 'POST',
+    });
+    await agendaApi.startAppointment(id);
+    expect(apiClientMock).toHaveBeenLastCalledWith(`/appointments/${id}/start`, {
+      method: 'POST',
+    });
+    await agendaApi.completeAppointment(id);
+    expect(apiClientMock).toHaveBeenLastCalledWith(`/appointments/${id}/complete`, {
+      method: 'POST',
+    });
+    await agendaApi.markNoShow(id);
+    expect(apiClientMock).toHaveBeenLastCalledWith(`/appointments/${id}/no-show`, {
+      method: 'POST',
+    });
+    await agendaApi.confirmByClinic(id);
+    expect(apiClientMock).toHaveBeenLastCalledWith(`/appointments/${id}/confirm-by-clinic`, {
+      method: 'POST',
+    });
+  });
+
+  it('manages availability rules without adding tenant fields', async () => {
+    apiClientMock.mockResolvedValue({ id: 'rule' });
+    const id = '88888888-8888-4888-8888-888888888888';
+    const input = {
+      clinicLocationId: '33333333-3333-4333-8333-333333333333',
+      membershipId: null,
+      dayOfWeek: 1,
+      startLocalTime: '08:00',
+      endLocalTime: '17:00',
+      slotMinutes: 30,
+      notes: 'Horario general',
+    };
+    await agendaApi.listAvailability();
+    expect(apiClientMock).toHaveBeenLastCalledWith('/availability-rules', {});
+    await agendaApi.createAvailability(input);
+    expect(apiClientMock).toHaveBeenLastCalledWith('/availability-rules', {
+      method: 'POST',
+      body: input,
+    });
+    await agendaApi.updateAvailability(id, { endLocalTime: '18:00' });
+    expect(apiClientMock).toHaveBeenLastCalledWith(`/availability-rules/${id}`, {
+      method: 'PATCH',
+      body: { endLocalTime: '18:00' },
+    });
+    await agendaApi.deactivateAvailability(id);
+    expect(apiClientMock).toHaveBeenLastCalledWith(`/availability-rules/${id}`, {
+      method: 'DELETE',
+    });
   });
 
   it('loads available slots with tenant-safe scheduling inputs', async () => {

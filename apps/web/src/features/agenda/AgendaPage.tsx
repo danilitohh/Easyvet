@@ -14,6 +14,7 @@ import { useCan } from '../../auth/useCan';
 import { AgendaCalendar } from './AgendaCalendar';
 import { AgendaFilters } from './AgendaFilters';
 import { AppointmentDetail } from './AppointmentDetail';
+import { AgendaWorkflowSummary } from './AgendaWorkflowSummary';
 import {
   appointmentToCalendarEvent,
   civilDateFromDate,
@@ -119,6 +120,14 @@ export function AgendaPage() {
     filters,
   );
   const patients = useAgendaPatients(debouncedPatientSearch);
+  const reloadAppointments = appointments.reload;
+
+  // Day/List views refresh every 45 seconds for shared reception workflows without polling forms.
+  useEffect(() => {
+    if (view !== 'day' && view !== 'list') return undefined;
+    const timer = window.setInterval(() => reloadAppointments(), 45_000);
+    return () => window.clearInterval(timer);
+  }, [reloadAppointments, view]);
 
   const allAppointments = useMemo(() => appointments.data?.data ?? [], [appointments.data?.data]);
   const visibleAppointments = useMemo(
@@ -216,6 +225,15 @@ export function AgendaPage() {
           </p>
         ) : null}
       </Card>
+      {view === 'day' || view === 'list' ? (
+        <Card className="agenda-card agenda-card--workflow">
+          <AgendaWorkflowSummary
+            appointments={allAppointments}
+            selectedStatus={filters.status}
+            onStatusChange={(status) => setFilters((current) => ({ ...current, status }))}
+          />
+        </Card>
+      ) : null}
       {appointments.error ? (
         <Card className="agenda-card">
           <ResourceError error={appointments.error} onRetry={appointments.reload} />

@@ -3,9 +3,10 @@
 ## Resultado
 
 Fase 5C.1 reemplazó el placeholder visual de `/agenda` por una lectura real de
-las citas de Easyvet. Fase 5C.2A añade las operaciones de programación desde
-React consumiendo los endpoints ya existentes de Fase 5B; no introduce tablas,
-endpoints ni permisos nuevos.
+las citas de Easyvet. Fase 5C.2A añadió programación y Fase 5C.2B añade el
+workflow operativo y la administración de `AvailabilityRule` desde React,
+consumiendo los endpoints ya existentes de Fase 5B; no introduce tablas,
+migraciones ni endpoints nuevos.
 
 ## Alcance implementado
 
@@ -31,6 +32,24 @@ endpoints ni permisos nuevos.
   modal solicita `cancellationReason` y usa el endpoint dedicado.
 - Las mutaciones deshabilitan el submit mientras están pendientes, no hacen
   optimistic update y refrescan Agenda después de confirmar el backend.
+
+## Workflow y disponibilidad de Fase 5C.2B
+
+- El detalle muestra `Registrar llegada`, `Iniciar atención`, `Completar cita`
+  y `No asistió` únicamente para estados y permisos compatibles.
+- Las transiciones llaman endpoints explícitos, esperan la respuesta del
+  backend y traducen conflictos `409` a un refresh del detalle. No hay
+  optimistic updates.
+- La confirmación clínica puede registrarse desde la clínica; la confirmación
+  del Owner se muestra como lectura, sin botón manual de backoffice.
+- Day/List incluye un resumen operativo reutilizando las citas ya cargadas y
+  refresca automáticamente cada 45 segundos.
+- `/agenda/disponibilidad` lista, crea, edita y desactiva reglas recurrentes
+  por sede, con filtros de activas/inactivas, días civiles, HH:mm, intervalos
+  15–240 y Membership opcional. La UI explica el modo `UNRESTRICTED` cuando no
+  existen reglas activas y nunca crea `ScheduleBlock`.
+- El cambio de tenant limpia formularios y redirige a la ruta raíz de
+  disponibilidad; los deep links de otra organización no revelan reglas.
 
 ## Verificación
 
@@ -82,6 +101,5 @@ regresión adicional durante este checkpoint.
 
 ## Fuera de alcance
 
-Las operaciones de Agenda —crear, editar, reprogramar, cancelar, check-in,
-iniciar, completar, `NO_SHOW`, confirmaciones y disponibilidad— quedan en
-**PENDIENTE FASE 5C.2**. El hardening final queda en **PENDIENTE FASE 5D**.
+El workflow operativo y la disponibilidad de Agenda quedan **COMPLETADOS EN
+FASE 5C.2B**. El hardening final queda en **PENDIENTE FASE 5D**.

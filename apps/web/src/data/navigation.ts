@@ -27,6 +27,12 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
         icon: '◷',
         description: 'Agenda y disponibilidad futura.',
       },
+      {
+        label: 'Disponibilidad',
+        path: '/agenda/disponibilidad',
+        icon: '▦',
+        description: 'Horarios recurrentes por sede y profesional.',
+      },
     ],
   },
   {

@@ -19,6 +19,7 @@ import { PatientDetailPage } from '../features/patients/PatientDetailPage';
 import { PatientFormPage } from '../features/patients/PatientFormPage';
 import { AgendaPage } from '../features/agenda/AgendaPage';
 import { AppointmentFormPage } from '../features/agenda/AppointmentFormPage';
+import { AvailabilityPage } from '../features/agenda/AvailabilityPage';
 
 // Route declarations keep every product area addressable without hiding sections in the DOM.
 export function App() {
@@ -69,6 +70,30 @@ export function App() {
             element={
               <PermissionRoute permission={PERMISSION.APPOINTMENTS_UPDATE}>
                 <AppointmentFormPage mode="reschedule" />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="agenda/disponibilidad"
+            element={
+              <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
+                <AvailabilityPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="agenda/disponibilidad/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
+                <AvailabilityPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="agenda/disponibilidad/:ruleId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
+                <AvailabilityPage />
               </PermissionRoute>
             }
           />
@@ -140,6 +165,7 @@ export function App() {
             (route) =>
               route.path !== '/dashboard' &&
               route.path !== '/agenda' &&
+              route.path !== '/agenda/disponibilidad' &&
               route.path !== '/propietarios' &&
               route.path !== '/pacientes',
           ).map((route) => (

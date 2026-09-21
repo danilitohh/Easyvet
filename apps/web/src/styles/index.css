@@ -1163,6 +1163,54 @@ select.input {
 .agenda-card--filters {
   padding: 0;
 }
+.agenda-card--workflow {
+  padding: 0;
+}
+.agenda-workflow-summary {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+.agenda-workflow-summary__heading,
+.availability-list-heading,
+.availability-form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.agenda-workflow-summary__heading h2,
+.availability-list-heading h2,
+.availability-form-heading h2 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-ink);
+  font-size: 1.05rem;
+  letter-spacing: -0.035em;
+}
+.agenda-workflow-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.agenda-workflow-summary__item {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  text-align: left;
+}
+.agenda-workflow-summary__item:hover,
+.agenda-workflow-summary__item.is-selected {
+  border-color: rgb(15 118 110 / 34%);
+  background: var(--color-brand-soft);
+}
+.agenda-workflow-summary__item strong {
+  color: var(--color-ink);
+  font-size: 1.4rem;
+}
 .agenda-filters {
   display: grid;
   gap: var(--space-4);
@@ -1483,6 +1531,10 @@ select.input {
   justify-content: space-between;
   gap: var(--space-2);
 }
+.appointment-detail__confirmation small {
+  color: var(--color-ink-muted);
+  font-size: 0.68rem;
+}
 .appointment-detail__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1529,6 +1581,76 @@ select.input {
   color: #7e5b1d;
   font-size: 0.76rem;
 }
+.availability-page {
+  gap: var(--space-5);
+}
+.availability-page > .alert {
+  max-width: 980px;
+}
+.availability-list-card {
+  display: grid;
+  gap: var(--space-5);
+}
+.availability-location-group {
+  display: grid;
+  gap: var(--space-3);
+}
+.availability-location-group h3 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 1rem;
+}
+.availability-rule-list {
+  display: grid;
+  gap: var(--space-2);
+}
+.availability-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+.availability-rule__main {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.availability-rule__main > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+.availability-rule__main strong {
+  color: var(--color-ink);
+}
+.availability-rule__main span,
+.availability-rule__main p,
+.availability-rule__main small,
+.availability-empty {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 0.78rem;
+}
+.availability-rule__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.availability-form {
+  max-width: 760px;
+  margin-top: var(--space-5);
+}
+.form-field__error {
+  color: var(--color-danger);
+  font-size: 0.72rem;
+}
 
 @media (max-width: 980px) {
   .agenda-filter-grid {
@@ -1565,6 +1687,16 @@ select.input {
   .appointment-detail__confirmation,
   .form-grid--three {
     grid-template-columns: 1fr;
+  }
+  .agenda-workflow-summary__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .availability-rule {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .availability-rule__actions {
+    justify-content: flex-start;
   }
 }
 @media (max-width: 520px) {

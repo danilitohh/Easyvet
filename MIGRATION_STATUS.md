@@ -22,7 +22,8 @@
 | Agenda backend               | COMPLETADO (Fase 5B)                                         |
 | Agenda frontend read-only    | COMPLETADO (Fase 5C.1)                                       |
 | Agenda scheduling operations | COMPLETADO (Fase 5C.2A)                                      |
-| Agenda workflow operations   | PENDIENTE FASE 5C.2B                                         |
+| Agenda workflow operations   | COMPLETADO (Fase 5C.2B)                                      |
+| Agenda availability UI       | COMPLETADO (Fase 5C.2B)                                      |
 | Agenda hardening             | PENDIENTE FASE 5D                                            |
 | Clínica                      | Pendiente                                                    |
 | Inventario                   | Pendiente                                                    |
@@ -212,6 +213,25 @@ Fase 5C.2A — operaciones de programación completada:
 - Validaciones de cierre: 100 pruebas frontend, 65 pruebas DB, `test:all`,
   format, lint, typecheck, build, generación/validación Prisma y audit
   ejecutados sin upgrades automáticos.
+
+Fase 5C.2B — workflow operativo y disponibilidad completada:
+
+- El frontend usa las transiciones dedicadas de Agenda para check-in, inicio,
+  completado y no-show, con guards de estado/permisos, confirmación explícita
+  para no-show y refresh ante conflictos `409`.
+- El detalle muestra confirmaciones de Owner y clínica con timestamp en la zona
+  horaria de la organización. La confirmación del Owner permanece como lectura;
+  no se habilita una acción manual de backoffice.
+- Day/List incorpora resumen operativo y refresh periódico de 45 segundos sin
+  duplicar consultas. No hay optimistic updates.
+- `/agenda/disponibilidad` lista, crea, edita, activa y desactiva reglas
+  recurrentes por sede, con horas civiles, días mapeados, intervalos 15–240,
+  Membership opcional y explicación de `UNRESTRICTED`. No se añadió
+  `ScheduleBlock` ni otra entidad.
+- No se modificó Prisma ni se crearon migraciones nuevas. La seguridad de
+  tenant sigue delegada al backend y los deep links de otra organización no
+  exponen datos.
+- Fase 5D no se inició.
 
 Checkpoint 5C.1.1 cerrado:
 

@@ -35,12 +35,24 @@ timestamps de confirmación/cancelación ni timestamps técnicos.
 `ownerConfirmedAt`/`clinicConfirmedAt`. Las transiciones dedicadas se detallan
 en `appointment-state-machine.md`.
 
+La UI operativa de Fase 5C.2B invoca exclusivamente las transiciones dedicadas
+del backend. Check-in, inicio, completado y no-show no se resuelven con PATCH
+genérico ni con optimistic updates. La confirmación clínica también usa su
+endpoint explícito; la confirmación del Owner se conserva como dato de lectura
+para el personal de la clínica.
+
 ## Disponibilidad
 
 `AvailabilityRule` es semanal por sede. `membershipId = null` es regla general;
 reglas específicas de Membership tienen precedencia. `dayOfWeek` usa 0 domingo
 a 6 sábado. `startLocalTime` y `endLocalTime` son HH:mm, fin posterior, y
 `slotMinutes` está entre 15 y 240.
+
+La administración frontend vive en `/agenda/disponibilidad` y mantiene los
+horarios como reglas recurrentes civiles. El modo sin reglas activas se muestra
+como `UNRESTRICTED`; no se introducen excepciones ni `ScheduleBlock` en esta
+fase. La interfaz convierte lunes primero para el usuario y conserva el
+mapping de contrato `0 = domingo`.
 
 Sin regla aplicable, crear es permitido y slots devuelve `UNRESTRICTED` con lista
 vacía. Con reglas, el intervalo debe permanecer dentro de una ventana y el

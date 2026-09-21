@@ -6,6 +6,7 @@ import { useActiveOrganizationId } from '../shared/hooks';
 import type {
   AppointmentListResponse,
   AppointmentResponse,
+  AvailabilityRuleResponse,
   AvailableSlotsResponse,
   LocationResponse,
   MembershipResponse,
@@ -186,6 +187,13 @@ export function useAgendaAvailableSlots(
   input: AvailableSlotsInput | null,
 ): LoadState<AvailableSlotsResponse | null> {
   const organizationId = useActiveOrganizationId();
+  const [availabilityRevision, setAvailabilityRevision] = useState(0);
+  useEffect(() => {
+    const handleAvailabilityChanged = () => setAvailabilityRevision((value) => value + 1);
+    window.addEventListener('easyvet:availability-changed', handleAvailabilityChanged);
+    return () =>
+      window.removeEventListener('easyvet:availability-changed', handleAvailabilityChanged);
+  }, []);
   const enabled = appConfig.dataMode === 'mock' || Boolean(organizationId && input);
   const loader = useCallback(
     (signal: AbortSignal) =>
@@ -195,8 +203,25 @@ export function useAgendaAvailableSlots(
   return useAbortableResource<AvailableSlotsResponse | null>(
     loader,
     enabled,
-    [organizationId, input ? JSON.stringify(input) : null],
+    [organizationId, input ? JSON.stringify(input) : null, availabilityRevision],
     EMPTY_SLOTS,
+  );
+}
+
+// Availability mutations broadcast a small local invalidation event so open booking forms
+// request fresh slots without introducing a global cache or polling form state.
+export function notifyAvailabilityChanged(): void {
+  window.dispatchEvent(new Event('easyvet:availability-changed'));
+}
+
+export function useAgendaAvailability(): LoadState<AvailabilityRuleResponse[]> {
+  const organizationId = useActiveOrganizationId();
+  const enabled = appConfig.dataMode === 'mock' || Boolean(organizationId);
+  return useAbortableResource<AvailabilityRuleResponse[]>(
+    (signal) => agendaApi.listAvailability(signal),
+    enabled,
+    [organizationId],
+    [],
   );
 }
 

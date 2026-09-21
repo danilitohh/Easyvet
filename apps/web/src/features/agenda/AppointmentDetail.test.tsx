@@ -6,7 +6,14 @@ import { ApiError } from '../../services/apiClient';
 import { useAuth } from '../../contexts/useAuth';
 import { AppointmentDetail } from './AppointmentDetail';
 
-const detailActionMocks = vi.hoisted(() => ({ cancelAppointment: vi.fn() }));
+const detailActionMocks = vi.hoisted(() => ({
+  cancelAppointment: vi.fn(),
+  checkInAppointment: vi.fn(),
+  startAppointment: vi.fn(),
+  completeAppointment: vi.fn(),
+  markNoShow: vi.fn(),
+  confirmByClinic: vi.fn(),
+}));
 
 vi.mock('./agendaApi', () => ({ agendaApi: detailActionMocks }));
 vi.mock('../../contexts/useAuth', () => ({ useAuth: vi.fn() }));
@@ -86,6 +93,11 @@ describe('AppointmentDetail', () => {
       activeMembership: { permissions: ['appointments.update', 'appointments.cancel'] },
     } as never);
     detailActionMocks.cancelAppointment.mockReset();
+    detailActionMocks.checkInAppointment.mockReset();
+    detailActionMocks.startAppointment.mockReset();
+    detailActionMocks.completeAppointment.mockReset();
+    detailActionMocks.markNoShow.mockReset();
+    detailActionMocks.confirmByClinic.mockReset();
   });
 
   it('renders patient, owner, location and unassigned professional', () => {
@@ -112,9 +124,26 @@ describe('AppointmentDetail', () => {
   it('renders both confirmation values and cancellation metadata', () => {
     detailMocks.state = { data: appointment, loading: false, error: null, reload: vi.fn() };
     renderDetail();
-    expect(screen.getByText('Confirmación Owner')).toBeInTheDocument();
+    expect(screen.getByText('Confirmación propietario')).toBeInTheDocument();
     expect(screen.getByText('Confirmación clínica')).toBeInTheDocument();
     expect(screen.getByText('Owner solicitó cambio')).toBeInTheDocument();
+  });
+
+  it('renders a confirmed owner without exposing a manual owner action', () => {
+    detailMocks.state = {
+      data: {
+        ...appointment,
+        ownerConfirmedAt: '2030-01-08T14:00:00.000Z',
+      },
+      loading: false,
+      error: null,
+      reload: vi.fn(),
+    };
+    renderDetail();
+    expect(screen.getAllByText('Confirmada')).toHaveLength(2);
+    expect(
+      screen.queryByRole('button', { name: /confirmar por propietario/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders a loading state while the detail request is pending', () => {
@@ -169,5 +198,151 @@ describe('AppointmentDetail', () => {
     );
     expect(screen.getByText('Cancelada')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancelar cita' })).not.toBeInTheDocument();
+  });
+
+  it('runs the lifecycle state machine through explicit actions', async () => {
+    const scheduled: AppointmentResponse = {
+      ...appointment,
+      status: 'SCHEDULED',
+      clinicConfirmedAt: null,
+      cancellationReason: null,
+    };
+    detailMocks.state = { data: scheduled, loading: false, error: null, reload: vi.fn() };
+    vi.mocked(useAuth).mockReturnValue({
+      activeMembership: {
+        permissions: [
+          'appointments.update',
+          'appointments.checkIn',
+          'appointments.start',
+          'appointments.complete',
+          'appointments.markNoShow',
+        ],
+      },
+    } as never);
+    detailActionMocks.checkInAppointment.mockResolvedValue({
+      ...scheduled,
+      status: 'WAITING_ROOM',
+    });
+
+    renderDetail();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar llegada' }));
+    await waitFor(() =>
+      expect(detailActionMocks.checkInAppointment).toHaveBeenCalledWith(scheduled.id),
+    );
+    expect(screen.getByText('En espera')).toBeInTheDocument();
+  });
+
+  it('offers start and complete only along the approved sequence', async () => {
+    const waiting: AppointmentResponse = {
+      ...appointment,
+      status: 'WAITING_ROOM',
+      cancellationReason: null,
+    };
+    detailMocks.state = { data: waiting, loading: false, error: null, reload: vi.fn() };
+    vi.mocked(useAuth).mockReturnValue({
+      activeMembership: { permissions: ['appointments.start', 'appointments.complete'] },
+    } as never);
+    detailActionMocks.startAppointment.mockResolvedValue({
+      ...waiting,
+      status: 'IN_PROGRESS',
+    });
+    detailActionMocks.completeAppointment.mockResolvedValue({
+      ...waiting,
+      status: 'COMPLETED',
+    });
+
+    renderDetail();
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar atención' }));
+    await waitFor(() =>
+      expect(detailActionMocks.startAppointment).toHaveBeenCalledWith(waiting.id),
+    );
+    expect(screen.getByText('En curso')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Completar cita' }));
+    await waitFor(() =>
+      expect(detailActionMocks.completeAppointment).toHaveBeenCalledWith(waiting.id),
+    );
+    expect(screen.getByText('Completada')).toBeInTheDocument();
+  });
+
+  it('shows clinic confirmation as pending and updates it through its endpoint', async () => {
+    const scheduled: AppointmentResponse = {
+      ...appointment,
+      status: 'SCHEDULED',
+      clinicConfirmedAt: null,
+      cancellationReason: null,
+    };
+    detailMocks.state = { data: scheduled, loading: false, error: null, reload: vi.fn() };
+    vi.mocked(useAuth).mockReturnValue({
+      activeMembership: { permissions: ['appointments.update'] },
+    } as never);
+    detailActionMocks.confirmByClinic.mockResolvedValue({
+      ...scheduled,
+      clinicConfirmedAt: '2030-01-08T15:00:00.000Z',
+    });
+
+    renderDetail();
+    expect(screen.getAllByText('Pendiente')).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar por clínica' }));
+    await waitFor(() =>
+      expect(detailActionMocks.confirmByClinic).toHaveBeenCalledWith(scheduled.id),
+    );
+    expect(screen.getByText('Confirmada')).toBeInTheDocument();
+  });
+
+  it('hides workflow actions when the membership lacks the required permission', () => {
+    const scheduled: AppointmentResponse = {
+      ...appointment,
+      status: 'SCHEDULED',
+      cancellationReason: null,
+    };
+    detailMocks.state = { data: scheduled, loading: false, error: null, reload: vi.fn() };
+    vi.mocked(useAuth).mockReturnValue({
+      activeMembership: { permissions: ['appointments.read'] },
+    } as never);
+    renderDetail();
+    expect(screen.queryByRole('button', { name: 'Registrar llegada' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'No asistió' })).not.toBeInTheDocument();
+  });
+
+  it('requires explicit confirmation before marking a patient as no-show', async () => {
+    const scheduled: AppointmentResponse = {
+      ...appointment,
+      status: 'SCHEDULED',
+      cancellationReason: null,
+    };
+    detailMocks.state = { data: scheduled, loading: false, error: null, reload: vi.fn() };
+    vi.mocked(useAuth).mockReturnValue({
+      activeMembership: { permissions: ['appointments.markNoShow'] },
+    } as never);
+    detailActionMocks.markNoShow.mockResolvedValue({ ...scheduled, status: 'NO_SHOW' });
+    renderDetail();
+
+    fireEvent.click(screen.getByRole('button', { name: 'No asistió' }));
+    expect(screen.getByRole('heading', { name: 'Marcar como no asistió' })).toBeInTheDocument();
+    expect(detailActionMocks.markNoShow).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar no-show' }));
+    await waitFor(() => expect(detailActionMocks.markNoShow).toHaveBeenCalledWith(scheduled.id));
+    expect(screen.getByText('No asistió')).toBeInTheDocument();
+  });
+
+  it('reloads after a stale workflow conflict and explains the refresh', async () => {
+    const scheduled: AppointmentResponse = {
+      ...appointment,
+      status: 'SCHEDULED',
+      cancellationReason: null,
+    };
+    const reload = vi.fn();
+    detailMocks.state = { data: scheduled, loading: false, error: null, reload };
+    vi.mocked(useAuth).mockReturnValue({
+      activeMembership: { permissions: ['appointments.checkIn'] },
+    } as never);
+    detailActionMocks.checkInAppointment.mockRejectedValue(
+      new ApiError('Conflict', 409, 'APPOINTMENT_STATE_CONFLICT'),
+    );
+    renderDetail();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar llegada' }));
+    await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    expect(screen.getByText(/La cita cambió mientras la estabas viendo/)).toBeInTheDocument();
   });
 });

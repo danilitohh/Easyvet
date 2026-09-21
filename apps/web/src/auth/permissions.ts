@@ -20,4 +20,10 @@ export const PERMISSION = {
   APPOINTMENTS_CREATE: 'appointments.create',
   APPOINTMENTS_UPDATE: 'appointments.update',
   APPOINTMENTS_CANCEL: 'appointments.cancel',
+  APPOINTMENTS_CHECK_IN: 'appointments.checkIn',
+  APPOINTMENTS_START: 'appointments.start',
+  APPOINTMENTS_COMPLETE: 'appointments.complete',
+  APPOINTMENTS_MARK_NO_SHOW: 'appointments.markNoShow',
+  AVAILABILITY_READ: 'availability.read',
+  AVAILABILITY_MANAGE: 'availability.manage',
 } as const satisfies Record<string, Permission>;

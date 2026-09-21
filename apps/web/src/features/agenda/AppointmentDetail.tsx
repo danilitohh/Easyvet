@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { Alert } from '../../components/ui/Alert';
 import { FormField } from '../../components/ui/FormField';
 import { TextInput } from '../../components/ui/TextInput';
 import { useCan } from '../../auth/useCan';
@@ -16,7 +17,10 @@ import {
   STATUS_TONES,
 } from './agendaUtils';
 import { agendaApi } from './agendaApi';
+import type { AppointmentResponse } from '@veterinary-saas/contracts';
 import { useAgendaAppointment } from './useAgenda';
+import { ApiError } from '../../services/apiClient';
+import { errorMessage } from '../shared/resourceUtils';
 
 type AppointmentDetailProps = {
   appointmentId: string | undefined;
@@ -42,6 +46,10 @@ function formatTime(value: string, timezone: string): string {
   }).format(new Date(value));
 }
 
+function formatConfirmation(value: string | null, timezone: string): string {
+  return value ? formatDateTime(value, timezone) : 'Pendiente';
+}
+
 // Detail keeps lifecycle workflow actions explicit; status transitions remain out of this phase.
 export function AppointmentDetail({
   appointmentId,
@@ -53,11 +61,18 @@ export function AppointmentDetail({
   const location = useLocation();
   const canUpdate = useCan(PERMISSION.APPOINTMENTS_UPDATE);
   const canCancel = useCan(PERMISSION.APPOINTMENTS_CANCEL);
+  const canCheckInPermission = useCan(PERMISSION.APPOINTMENTS_CHECK_IN);
+  const canStartPermission = useCan(PERMISSION.APPOINTMENTS_START);
+  const canCompletePermission = useCan(PERMISSION.APPOINTMENTS_COMPLETE);
+  const canNoShowPermission = useCan(PERMISSION.APPOINTMENTS_MARK_NO_SHOW);
   const [updatedAppointment, setUpdatedAppointment] = useState<typeof detail.data>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState<unknown>(null);
   const [cancelSaving, setCancelSaving] = useState(false);
+  const [workflowError, setWorkflowError] = useState<unknown>(null);
+  const [workflowSaving, setWorkflowSaving] = useState(false);
+  const [noShowOpen, setNoShowOpen] = useState(false);
   const appointment = updatedAppointment ?? detail.data;
 
   useEffect(() => {
@@ -65,7 +80,29 @@ export function AppointmentDetail({
     setCancelOpen(false);
     setCancelReason('');
     setCancelError(null);
+    setWorkflowError(null);
+    setNoShowOpen(false);
   }, [appointmentId]);
+
+  async function runWorkflowAction(
+    action: (appointmentId: string) => Promise<AppointmentResponse>,
+  ) {
+    if (!appointment) return;
+    setWorkflowSaving(true);
+    setWorkflowError(null);
+    try {
+      const saved = await action(appointment.id);
+      setUpdatedAppointment(saved);
+      setNoShowOpen(false);
+      onChanged?.();
+    } catch (error: unknown) {
+      setWorkflowError(error);
+      setUpdatedAppointment(null);
+      detail.reload();
+    } finally {
+      setWorkflowSaving(false);
+    }
+  }
 
   async function cancelAppointment() {
     if (!appointment) return;
@@ -92,6 +129,32 @@ export function AppointmentDetail({
   const canCancelAppointment = Boolean(
     appointment && canCancel && ['SCHEDULED', 'WAITING_ROOM'].includes(appointment.status),
   );
+  const canCheckIn = Boolean(
+    appointment && canCheckInPermission && appointment.status === 'SCHEDULED',
+  );
+  const canStart = Boolean(
+    appointment && canStartPermission && appointment.status === 'WAITING_ROOM',
+  );
+  const canComplete = Boolean(
+    appointment && canCompletePermission && appointment.status === 'IN_PROGRESS',
+  );
+  const canNoShow = Boolean(
+    appointment &&
+    canNoShowPermission &&
+    ['SCHEDULED', 'WAITING_ROOM'].includes(appointment.status),
+  );
+  const canConfirmClinic = Boolean(
+    appointment &&
+    canUpdate &&
+    !appointment.clinicConfirmedAt &&
+    !['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(appointment.status),
+  );
+  const workflowConflict =
+    workflowError instanceof ApiError && workflowError.status === 409
+      ? 'La cita cambió mientras la estabas viendo. Actualizamos la información.'
+      : workflowError
+        ? errorMessage(workflowError, 'No fue posible actualizar el estado de la cita.')
+        : null;
   return (
     <>
       <Modal
@@ -108,6 +171,11 @@ export function AppointmentDetail({
           </div>
         ) : null}
         {detail.error ? <ResourceError error={detail.error} onRetry={detail.reload} /> : null}
+        {workflowConflict ? (
+          <Alert tone="error" role="alert">
+            {workflowConflict}
+          </Alert>
+        ) : null}
         {appointment ? (
           <div className="appointment-detail">
             <div className="appointment-detail__status-row">
@@ -168,16 +236,22 @@ export function AppointmentDetail({
             </div>
             <div className="appointment-detail__confirmation" aria-label="Confirmaciones">
               <div>
-                <span>Confirmación Owner</span>
+                <span>Confirmación propietario</span>
                 <Badge tone={appointment.ownerConfirmedAt ? 'success' : 'neutral'}>
-                  {appointment.ownerConfirmedAt ? 'Sí' : 'No'}
+                  {appointment.ownerConfirmedAt ? 'Confirmada' : 'Pendiente'}
                 </Badge>
+                {appointment.ownerConfirmedAt ? (
+                  <small>{formatConfirmation(appointment.ownerConfirmedAt, timezone)}</small>
+                ) : null}
               </div>
               <div>
                 <span>Confirmación clínica</span>
                 <Badge tone={appointment.clinicConfirmedAt ? 'success' : 'neutral'}>
-                  {appointment.clinicConfirmedAt ? 'Sí' : 'No'}
+                  {appointment.clinicConfirmedAt ? 'Confirmada' : 'Pendiente'}
                 </Badge>
+                {appointment.clinicConfirmedAt ? (
+                  <small>{formatConfirmation(appointment.clinicConfirmedAt, timezone)}</small>
+                ) : null}
               </div>
             </div>
             {appointment.status === 'CANCELLED' ? (
@@ -186,8 +260,62 @@ export function AppointmentDetail({
                 <p>{appointment.cancellationReason ?? 'Sin motivo registrado'}</p>
               </div>
             ) : null}
-            {canEdit || canReschedule || canCancelAppointment ? (
+            {canEdit ||
+            canReschedule ||
+            canCancelAppointment ||
+            canCheckIn ||
+            canStart ||
+            canComplete ||
+            canNoShow ||
+            canConfirmClinic ? (
               <div className="appointment-detail__actions">
+                {canCheckIn ? (
+                  <Button
+                    type="button"
+                    disabled={workflowSaving}
+                    onClick={() => void runWorkflowAction(agendaApi.checkInAppointment)}
+                  >
+                    {workflowSaving ? 'Registrando…' : 'Registrar llegada'}
+                  </Button>
+                ) : null}
+                {canStart ? (
+                  <Button
+                    type="button"
+                    disabled={workflowSaving}
+                    onClick={() => void runWorkflowAction(agendaApi.startAppointment)}
+                  >
+                    {workflowSaving ? 'Iniciando…' : 'Iniciar atención'}
+                  </Button>
+                ) : null}
+                {canComplete ? (
+                  <Button
+                    type="button"
+                    disabled={workflowSaving}
+                    onClick={() => void runWorkflowAction(agendaApi.completeAppointment)}
+                  >
+                    {workflowSaving ? 'Completando…' : 'Completar cita'}
+                  </Button>
+                ) : null}
+                {canConfirmClinic ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={workflowSaving}
+                    onClick={() => void runWorkflowAction(agendaApi.confirmByClinic)}
+                  >
+                    Confirmar por clínica
+                  </Button>
+                ) : null}
+                {canNoShow ? (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    disabled={workflowSaving}
+                    onClick={() => setNoShowOpen(true)}
+                  >
+                    No asistió
+                  </Button>
+                ) : null}
                 {canEdit ? (
                   <Button
                     as={Link}
@@ -215,6 +343,27 @@ export function AppointmentDetail({
             ) : null}
           </div>
         ) : null}
+      </Modal>
+      <Modal
+        open={noShowOpen}
+        title="Marcar como no asistió"
+        description="La cita permanecerá registrada con estado No asistió."
+        eyebrow="Agenda · Confirmación"
+        onClose={() => setNoShowOpen(false)}
+      >
+        <div className="modal-actions">
+          <Button type="button" variant="secondary" onClick={() => setNoShowOpen(false)}>
+            Volver
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            disabled={workflowSaving}
+            onClick={() => void runWorkflowAction(agendaApi.markNoShow)}
+          >
+            {workflowSaving ? 'Guardando…' : 'Confirmar no-show'}
+          </Button>
+        </div>
       </Modal>
       <Modal
         open={cancelOpen}
