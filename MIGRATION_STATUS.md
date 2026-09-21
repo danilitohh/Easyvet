@@ -43,6 +43,10 @@
 | Prescriptions — frontend 6D.3A    | COMPLETADO (lectura, snapshots y aislamiento)                                 |
 | Prescriptions — frontend 6D.3B    | COMPLETADO (drafts, items, CAS, finalize y void)                              |
 | Prescriptions — hardening 6D.4    | COMPLETADO (locks, lifecycle, invariantes, snapshots, tenant, auditoría y UX) |
+| Preventive care — análisis 6E.1   | COMPLETADO (referencia legacy, propuesta y decisiones; sin implementación)    |
+| Vaccinations backend              | PENDIENTE (Fase 6E.2)                                                         |
+| Dewormings backend                | PENDIENTE (Fase 6E.2)                                                         |
+| Preventive Care frontend          | PENDIENTE (Fase 6E.3)                                                         |
 | Inventario                        | Pendiente                                                                     |
 | Facturación                       | Pendiente                                                                     |
 | SaaS                              | Pendiente                                                                     |
@@ -519,3 +523,21 @@ Fase 6D.4 — hardening y cierre de Prescriptions completada:
 Prescriptions (6D.1–6D.4): **COMPLETADO**.
 Prescription documents, MedicationCatalog, Inventory, dispensing, billing,
 templates, repeat prescriptions y controlled-drug rules: **POSTERGADOS**.
+
+Fase 6E.1 — análisis y diseño de vacunación + desparasitación:
+
+- Se inspeccionó el checkout legacy Lativet en el commit exacto
+  `05fea495cb13208b27bf470b3570987fd501a81e` en modo lectura. No se ejecutó,
+  no se abrió una base y no se modificó ese checkout. El inventario estructural
+  se realizó sobre un archivo temporal creado con `git archive`.
+- Se documentó la referencia verificable de archivos, campos, serialización,
+  efectos sobre Patient, recordatorios, citas derivadas, permisos, pruebas y
+  ambigüedades en `docs/migration/preventive-care-reference.md`.
+- Se documentó la propuesta tenant-safe de `Vaccination`/`Deworming`, relación
+  obligatoria con `ClinicalEncounter`, multiplicidad `0..N`, fechas civiles,
+  lifecycle, snapshots, auditoría, CAS, lock order, APIs futuras, inventario y
+  migración en `docs/architecture/preventive-care-proposal.md`.
+- Se registraron decisiones recomendadas y preguntas que producto/regulación
+  debe cerrar antes de 6E.2 en `docs/architecture/preventive-care-decisions.md`.
+- No se modificaron Prisma, migraciones, endpoints, permisos, seed,
+  frontend ni backend. No se inició la Fase 6E.2.
