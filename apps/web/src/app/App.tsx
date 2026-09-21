@@ -32,6 +32,16 @@ const ClinicalEncounterDetailPage = lazy(() =>
     default: module.ClinicalEncounterDetailPage,
   })),
 );
+const ProfessionalProfilePage = lazy(() =>
+  import('../features/clinical/ProfessionalProfilePage').then((module) => ({
+    default: module.ProfessionalProfilePage,
+  })),
+);
+const ClinicalEncounterFormPage = lazy(() =>
+  import('../features/clinical/ClinicalEncounterFormPage').then((module) => ({
+    default: module.ClinicalEncounterFormPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -53,6 +63,16 @@ export function App() {
           <Route index element={<Navigate replace to="/dashboard" />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="health" element={<HealthPage />} />
+          <Route
+            path="perfil/profesional"
+            element={
+              <PermissionRoute permission={PERMISSION.CLINICAL_RECORDS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ProfessionalProfilePage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
           <Route
             path="agenda"
             element={
@@ -192,11 +212,31 @@ export function App() {
             }
           />
           <Route
+            path="pacientes/:patientId/historia/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ClinicalEncounterFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
             path="pacientes/:patientId/historia/encuentros/:encounterId"
             element={
               <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_READ}>
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <ClinicalEncounterDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ClinicalEncounterFormPage mode="edit" />
                 </Suspense>
               </PermissionRoute>
             }

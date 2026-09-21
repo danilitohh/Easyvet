@@ -6,6 +6,8 @@ import { Modal } from '../ui/Modal';
 import { appConfig } from '../../config/app';
 import type { NavigationItem } from '../../data/navigation';
 import { useAuth } from '../../contexts/useAuth';
+import { useCan } from '../../auth/useCan';
+import { PERMISSION } from '../../auth/permissions';
 
 type AppHeaderProps = {
   route: NavigationItem;
@@ -17,6 +19,7 @@ export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
   const [demoNoticeOpen, setDemoNoticeOpen] = useState(false);
   const navigate = useNavigate();
   const { user, activeMembership, logout } = useAuth();
+  const canReadClinical = useCan(PERMISSION.CLINICAL_RECORDS_READ);
   const workspaceName = activeMembership?.organization.name ?? 'Sin organización activa';
   const userInitials = user?.email.slice(0, 2).toUpperCase() ?? 'EV';
 
@@ -52,6 +55,14 @@ export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
           <Button variant="ghost" type="button" onClick={() => void handleLogout()}>
             Cerrar sesión
           </Button>
+          {canReadClinical ? (
+            <Link className="user-chip" to="/perfil/profesional">
+              <span className="user-chip__copy">
+                <strong>Perfil profesional</strong>
+                <small>Identidad clínica</small>
+              </span>
+            </Link>
+          ) : null}
           <Link
             className="user-chip"
             to="/configuracion"

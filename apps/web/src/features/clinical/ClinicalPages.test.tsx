@@ -106,6 +106,12 @@ vi.mock('./useClinical', () => ({
     error: null,
     reload: vi.fn(),
   }),
+  useProfessionalProfile: () => ({
+    data: { membershipId: ids.owner, displayName: 'Dr. Vega', licenseNumber: null },
+    loading: false,
+    error: null,
+    reload: vi.fn(),
+  }),
 }));
 
 function renderHistory() {

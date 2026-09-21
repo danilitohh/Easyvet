@@ -216,6 +216,39 @@ describeDatabase('clinical core API', () => {
       .expect(404);
   });
 
+  it('scopes professional profiles to the active membership and lists practitioners minimally', async () => {
+    const agent = await login(practitionerEmail);
+    const profile = await agent.get('/api/v1/clinical/me/professional-profile').expect(200);
+    expect(profile.body).toEqual({
+      membershipId: practitionerMembershipId,
+      displayName: 'Dr. Clinical',
+      licenseNumber: null,
+    });
+    const updated = await agent
+      .put('/api/v1/clinical/me/professional-profile')
+      .send({ displayName: 'Dr. Clinical Updated', licenseNumber: 'LIC-6C2A' })
+      .expect(200);
+    expect(updated.body.displayName).toBe('Dr. Clinical Updated');
+    expect(updated.body.licenseNumber).toBe('LIC-6C2A');
+    await agent
+      .put('/api/v1/clinical/me/professional-profile')
+      .send({ displayName: 'Invalid', organizationId })
+      .expect(400);
+    const practitioners = await agent.get('/api/v1/clinical/practitioners').expect(200);
+    expect(practitioners.body.data).toEqual([
+      {
+        membershipId: practitionerMembershipId,
+        displayName: 'Dr. Clinical Updated',
+        licenseNumber: 'LIC-6C2A',
+        profileConfigured: true,
+      },
+    ]);
+    await agent
+      .put('/api/v1/clinical/me/professional-profile')
+      .send({ displayName: 'Dr. Clinical', licenseNumber: null })
+      .expect(200);
+  });
+
   it('supports draft CAS updates, vitals, finalization and managed weight', async () => {
     const agent = await login(practitionerEmail);
     const created = await agent

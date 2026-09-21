@@ -18,6 +18,15 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'INVALID_APPOINTMENT_STATE') {
     return 'La cita ya no permite esta operación por su estado actual.';
   }
+  if (error.code === 'CURRENT_WEIGHT_MANAGED_BY_CLINICAL_RECORD') {
+    return 'El peso actual se actualiza desde la historia clínica.';
+  }
+  if (error.code === 'CLINICAL_ENCOUNTER_STALE') {
+    return 'Esta consulta fue modificada desde otra sesión. Recarga la versión actual.';
+  }
+  if (error.code === 'CLINICAL_ENCOUNTER_IMMUTABLE') {
+    return 'La consulta ya no está en borrador y no puede editarse.';
+  }
   if (error.status === 409) return 'No se pudo completar la operación porque existe un conflicto.';
   if (error.code === 'RESOURCE_NOT_FOUND' || error.status === 404) {
     return 'No encontramos este recurso.';

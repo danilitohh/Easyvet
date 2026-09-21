@@ -149,6 +149,41 @@ export type UpdateOrganizationRequest = z.infer<typeof updateOrganizationRequest
 export type LocationResponse = z.infer<typeof locationResponseSchema>;
 export type MembershipResponse = z.infer<typeof membershipResponseSchema>;
 
+// Professional profiles are tenant-scoped to the active membership; clients never submit
+// organization, user or membership identifiers for the self-service endpoint.
+export const professionalProfileResponseSchema = z.object({
+  membershipId: z.string().uuid(),
+  displayName: z.string(),
+  licenseNumber: z.string().nullable(),
+});
+
+export const upsertProfessionalProfileRequestSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(160),
+    licenseNumber: z.string().trim().max(80).nullable().optional(),
+  })
+  .strict();
+
+export const clinicalPractitionerResponseSchema = z.object({
+  membershipId: z.string().uuid(),
+  displayName: z.string().nullable(),
+  licenseNumber: z.string().nullable(),
+  profileConfigured: z.boolean(),
+});
+
+export const clinicalPractitionerListResponseSchema = z.object({
+  data: z.array(clinicalPractitionerResponseSchema),
+});
+
+export type ProfessionalProfileResponse = z.infer<typeof professionalProfileResponseSchema>;
+export type UpsertProfessionalProfileRequest = z.infer<
+  typeof upsertProfessionalProfileRequestSchema
+>;
+export type ClinicalPractitionerResponse = z.infer<typeof clinicalPractitionerResponseSchema>;
+export type ClinicalPractitionerListResponse = z.infer<
+  typeof clinicalPractitionerListResponseSchema
+>;
+
 const ownerStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
 const patientStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
 const patientSexSchema = z.enum(['MALE', 'FEMALE', 'UNKNOWN']);
@@ -423,6 +458,52 @@ export const clinicalVitalListResponseSchema = z.object({
   data: z.array(clinicalVitalResponseSchema),
 });
 
+const clinicalNarrativeField = (max = 20_000) => z.string().trim().max(max).nullable().optional();
+export const createClinicalEncounterRequestSchema = z
+  .object({
+    clinicLocationId: z.string().uuid(),
+    appointmentId: z.string().uuid().nullable().optional(),
+    responsibleMembershipId: z.string().uuid().nullable().optional(),
+    occurredAt: z.string().datetime({ offset: true }),
+    reason: z.string().trim().min(1).max(500),
+    anamnesis: clinicalNarrativeField(),
+    physicalExam: clinicalNarrativeField(),
+    presumptiveDiagnosis: clinicalNarrativeField(),
+    differentialDiagnosis: clinicalNarrativeField(),
+    definitiveDiagnosis: clinicalNarrativeField(),
+    diagnosticPlan: clinicalNarrativeField(),
+    therapeuticPlan: clinicalNarrativeField(),
+    recommendations: clinicalNarrativeField(),
+    followUpPlan: clinicalNarrativeField(),
+    notes: clinicalNarrativeField(),
+  })
+  .strict();
+
+export const updateClinicalEncounterRequestSchema = createClinicalEncounterRequestSchema
+  .omit({ clinicLocationId: true, occurredAt: true, reason: true })
+  .extend({
+    expectedVersion: z.number().int().positive(),
+    clinicLocationId: z.string().uuid().optional(),
+    occurredAt: z.string().datetime({ offset: true }).optional(),
+    reason: z.string().trim().min(1).max(500).optional(),
+  })
+  .strict();
+
+export const createClinicalVitalRequestSchema = z
+  .object({
+    measuredAt: z.string().datetime({ offset: true }),
+    weightKg: z.number().positive().nullable().optional(),
+    temperatureC: z.number().positive().nullable().optional(),
+    heartRateBpm: z.number().int().positive().nullable().optional(),
+    respiratoryRateBpm: z.number().int().positive().nullable().optional(),
+    bodyCondition: clinicalNarrativeField(200),
+    hydration: clinicalNarrativeField(200),
+    mucousMembranes: clinicalNarrativeField(200),
+    skinTurgor: clinicalNarrativeField(200),
+    observations: clinicalNarrativeField(),
+  })
+  .strict();
+
 export const clinicalRecordEnvelopeSchema = z.object({
   clinicalRecord: clinicalRecordResponseSchema.nullable(),
 });
@@ -438,6 +519,9 @@ export type ClinicalEvolutionResponse = z.infer<typeof clinicalEvolutionResponse
 export type ClinicalEvolutionListResponse = z.infer<typeof clinicalEvolutionListResponseSchema>;
 export type ClinicalVitalListResponse = z.infer<typeof clinicalVitalListResponseSchema>;
 export type ClinicalRecordEnvelope = z.infer<typeof clinicalRecordEnvelopeSchema>;
+export type CreateClinicalEncounterRequest = z.infer<typeof createClinicalEncounterRequestSchema>;
+export type UpdateClinicalEncounterRequest = z.infer<typeof updateClinicalEncounterRequestSchema>;
+export type CreateClinicalVitalRequest = z.infer<typeof createClinicalVitalRequestSchema>;
 
 const appointmentStatusSchema = z.enum([
   'SCHEDULED',

@@ -19,6 +19,8 @@ import type {
   ClinicalEvolutionResponse,
   ClinicalRecordResponse,
   ClinicalVitalResponse,
+  ClinicalPractitionerListResponse,
+  ProfessionalProfileResponse,
 } from '@veterinary-saas/contracts';
 import type { TenantContext } from '../authorization/authorization.types';
 import { PrismaService } from '../infrastructure/database/prisma.service';
@@ -31,6 +33,7 @@ import {
   ClinicalEvolutionQueryDto,
   UpdateClinicalEncounterDto,
   VoidClinicalEncounterDto,
+  UpsertProfessionalProfileDto,
 } from './clinical.dto';
 
 type DomainDatabase = PrismaService | Prisma.TransactionClient;
@@ -184,6 +187,83 @@ function toDecimalValue(value: number | null | undefined): number | null | undef
 @Injectable()
 export class ClinicalService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getProfessionalProfile(tenant: TenantContext): Promise<ProfessionalProfileResponse> {
+    const membership = await this.prisma.membership.findFirst({
+      where: {
+        id: tenant.membershipId,
+        organizationId: tenant.organizationId,
+        status: MembershipStatus.ACTIVE,
+        clinicalRole: { not: null },
+        user: { status: UserStatus.ACTIVE },
+      },
+      select: {
+        id: true,
+        professionalProfile: { select: { displayName: true, licenseNumber: true } },
+      },
+    });
+    if (!membership) throw notFound('RESOURCE_NOT_FOUND', 'Professional profile not found');
+    return {
+      membershipId: membership.id,
+      displayName: membership.professionalProfile?.displayName ?? '',
+      licenseNumber: membership.professionalProfile?.licenseNumber ?? null,
+    };
+  }
+
+  async upsertProfessionalProfile(
+    tenant: TenantContext,
+    input: UpsertProfessionalProfileDto,
+  ): Promise<ProfessionalProfileResponse> {
+    const displayName = trimmedRequired(input.displayName, 'displayName');
+    const licenseNumber = trimmedNullable(input.licenseNumber) ?? null;
+    const membership = await this.prisma.membership.findFirst({
+      where: {
+        id: tenant.membershipId,
+        organizationId: tenant.organizationId,
+        status: MembershipStatus.ACTIVE,
+        clinicalRole: { not: null },
+        user: { status: UserStatus.ACTIVE },
+      },
+      select: { id: true },
+    });
+    if (!membership) throw notFound('RESOURCE_NOT_FOUND', 'Professional profile not found');
+    const profile = await this.prisma.membershipProfessionalProfile.upsert({
+      where: { membershipId: membership.id },
+      create: {
+        organizationId: tenant.organizationId,
+        membershipId: membership.id,
+        displayName,
+        licenseNumber,
+      },
+      update: { displayName, licenseNumber },
+      select: { membershipId: true, displayName: true, licenseNumber: true },
+    });
+    return profile;
+  }
+
+  async listPractitioners(tenant: TenantContext): Promise<ClinicalPractitionerListResponse> {
+    const memberships = await this.prisma.membership.findMany({
+      where: {
+        organizationId: tenant.organizationId,
+        status: MembershipStatus.ACTIVE,
+        clinicalRole: ClinicalRole.PRACTITIONER,
+        user: { status: UserStatus.ACTIVE },
+      },
+      select: {
+        id: true,
+        professionalProfile: { select: { displayName: true, licenseNumber: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return {
+      data: memberships.map((membership) => ({
+        membershipId: membership.id,
+        displayName: membership.professionalProfile?.displayName ?? null,
+        licenseNumber: membership.professionalProfile?.licenseNumber ?? null,
+        profileConfigured: Boolean(membership.professionalProfile?.displayName?.trim()),
+      })),
+    };
+  }
 
   async getRecord(
     tenant: TenantContext,

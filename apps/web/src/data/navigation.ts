@@ -138,6 +138,14 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
 export const MODULE_ROUTES = NAVIGATION_GROUPS.flatMap((group) => group.items);
 
 export function getRouteMeta(pathname: string): NavigationItem {
+  if (pathname.startsWith('/perfil/profesional')) {
+    return {
+      label: 'Perfil profesional',
+      path: '/perfil/profesional',
+      icon: '♙',
+      description: 'Identidad clínica de la organización activa.',
+    };
+  }
   return (
     MODULE_ROUTES.find(
       (route) => route.path === pathname || pathname.startsWith(`${route.path}/`),

@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +18,8 @@ import type {
   ClinicalRecordEnvelope,
   ClinicalVitalListResponse,
   ClinicalVitalResponse,
+  ClinicalPractitionerListResponse,
+  ProfessionalProfileResponse,
 } from '@veterinary-saas/contracts';
 import { CurrentTenant } from '../authorization/current-tenant.decorator';
 import { PERMISSIONS } from '../authorization/permissions';
@@ -33,6 +36,7 @@ import {
   ClinicalEvolutionQueryDto,
   UpdateClinicalEncounterDto,
   VoidClinicalEncounterDto,
+  UpsertProfessionalProfileDto,
 } from './clinical.dto';
 import { ClinicalService } from './clinical.service';
 
@@ -41,6 +45,31 @@ import { ClinicalService } from './clinical.service';
 @UseGuards(TenantContextGuard, PermissionGuard)
 export class ClinicalController {
   constructor(private readonly clinical: ClinicalService) {}
+
+  @Get('clinical/me/professional-profile')
+  @RequirePermissions(PERMISSIONS.CLINICAL.RECORDS_READ)
+  getProfessionalProfile(
+    @CurrentTenant() tenant: TenantContext,
+  ): Promise<ProfessionalProfileResponse> {
+    return this.clinical.getProfessionalProfile(tenant);
+  }
+
+  @Put('clinical/me/professional-profile')
+  @RequirePermissions(PERMISSIONS.CLINICAL.RECORDS_READ)
+  upsertProfessionalProfile(
+    @CurrentTenant() tenant: TenantContext,
+    @Body() body: UpsertProfessionalProfileDto,
+  ): Promise<ProfessionalProfileResponse> {
+    return this.clinical.upsertProfessionalProfile(tenant, body);
+  }
+
+  @Get('clinical/practitioners')
+  @RequirePermissions(PERMISSIONS.CLINICAL.ENCOUNTERS_CREATE)
+  listPractitioners(
+    @CurrentTenant() tenant: TenantContext,
+  ): Promise<ClinicalPractitionerListResponse> {
+    return this.clinical.listPractitioners(tenant);
+  }
 
   @Get('patients/:patientId/clinical-record')
   @RequirePermissions(PERMISSIONS.CLINICAL.RECORDS_READ)

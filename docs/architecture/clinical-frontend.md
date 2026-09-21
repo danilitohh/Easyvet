@@ -1,4 +1,4 @@
-# Frontend clínico read-only
+# Frontend clínico
 
 ## Alcance de Fase 6C.1
 
@@ -20,3 +20,26 @@ Los hooks cancelan solicitudes en curso y limpian sus datos al cambiar `activeMe
 Las fechas se formatean con el timezone de `GET /organization/current`. El paciente actual y el propietario histórico se presentan con etiquetas explícitas. Los estados tienen texto visible (`Borrador`, `Finalizado`, `Anulado`), y el borrado lógico del paciente se muestra como `Archivado`. Los textos clínicos se renderizan como texto plano escapado con saltos conservados; no se usa HTML inseguro.
 
 La carga de las páginas es lazy para mantener el shell principal liviano. Las tarjetas y listas se adaptan a 390px sin depender de color para comunicar estado.
+
+## Fase 6C.2A — borradores y perfil profesional
+
+- `/perfil/profesional` lee y actualiza únicamente el perfil de la membresía activa. El backend
+  deriva `membershipId` y `organizationId` de `TenantContext`; el payload no puede sustituirlos.
+- `/pacientes/:patientId/historia/nueva` crea encuentros `DRAFT` y
+  `/pacientes/:patientId/historia/encuentros/:encounterId/editar` actualiza únicamente drafts
+  mediante `expectedVersion`.
+- El formulario consulta sede activa, citas del paciente en un rango acotado y profesionales
+  `PRACTITIONER` activos del tenant; si la membresía actual es Practitioner se preselecciona como
+  responsable. Las citas canceladas/no-show no se ofrecen y la sede de la cita debe coincidir.
+- Fecha/hora y mediciones se convierten con `Organization.timezone` usando instantes explícitos;
+  la zona horaria del navegador no es autoridad. Los cambios de tenant abortan solicitudes y
+  limpian identificadores de paciente, cita, sede, profesional y versión.
+- Los `409 CLINICAL_ENCOUNTER_STALE` conservan los valores locales y exigen recarga explícita.
+  Un encuentro que dejó de ser `DRAFT` abandona el editor y se muestra en lectura. No hay
+  autosave ni `beforeunload`; la confirmación cubre la navegación interna por los botones del
+  formulario.
+- Los vitales se agregan únicamente a drafts con `clinicalVitals.create`; son append-only y un
+  peso en borrador nunca modifica `Patient.currentWeightKg`.
+
+Finalizar, anular, crear evoluciones y cualquier satélite clínico siguen fuera del frontend de
+esta fase y quedan pendientes de 6C.2B.

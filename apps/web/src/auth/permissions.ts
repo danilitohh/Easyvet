@@ -28,6 +28,9 @@ export const PERMISSION = {
   AVAILABILITY_MANAGE: 'availability.manage',
   CLINICAL_RECORDS_READ: 'clinicalRecords.read',
   CLINICAL_ENCOUNTERS_READ: 'clinicalEncounters.read',
+  CLINICAL_ENCOUNTERS_CREATE: 'clinicalEncounters.create',
+  CLINICAL_ENCOUNTERS_UPDATE_DRAFT: 'clinicalEncounters.updateDraft',
   CLINICAL_EVOLUTIONS_READ: 'clinicalEvolutions.read',
   CLINICAL_VITALS_READ: 'clinicalVitals.read',
+  CLINICAL_VITALS_CREATE: 'clinicalVitals.create',
 } as const satisfies Record<string, Permission>;

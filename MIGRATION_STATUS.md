@@ -34,7 +34,8 @@
 | Clínica — fundación 6B.1          | COMPLETADO (schema, migración, seed, permisos y tests)       |
 | Clínica — núcleo API 6B.2         | COMPLETADO (API, transacciones, CAS, auditoría y tests)      |
 | Clínica — frontend read-only 6C.1 | COMPLETADO (rutas, historia y detalle en modo lectura)       |
-| Clínica — operaciones UI 6C.2     | PENDIENTE                                                    |
+| Clínica — operaciones UI 6C.2A    | COMPLETADO (borradores, vitales y perfil profesional)        |
+| Clínica — finalize/void UI 6C.2B  | PENDIENTE                                                    |
 | Clínica — hardening 6C.3          | PENDIENTE                                                    |
 | Inventario                        | Pendiente                                                    |
 | Facturación                       | Pendiente                                                    |
@@ -102,6 +103,21 @@ Fase 6B.1 — fundación del núcleo clínico completada:
   frontend clínico ni satélites.
 - La migración fue aplicada localmente solo a `easyvet_dev` y `easyvet_test`;
   no se modificaron migraciones previas ni bases externas.
+
+Fase 6C.2A — operación clínica en borrador y perfil profesional completada:
+
+- Se añadieron endpoints tenant-safe para leer/actualizar el perfil profesional de la membresía
+  activa y listar únicamente Practitioners activos con campos mínimos.
+- El frontend incorpora `/perfil/profesional`, creación y edición de encuentros DRAFT, selector de
+  sedes/citas/profesionales, CAS con recarga explícita ante stale e ingreso append-only de vitales.
+- Practitioner y Clinical Assistant conservan create/updateDraft/vitals según la matriz existente;
+  `OWNER` sin `clinicalRole` continúa denegado. Pacientes archivados no pueden iniciar drafts.
+- Las fechas se convierten en `Organization.timezone`, el cambio de tenant limpia el formulario y
+  no se implementaron finalize, void, evoluciones ni satélites.
+- QA manual en `easyvet_dev` creó un draft ficticio y una medición de 12.8 kg; el registro quedó en
+  `DRAFT` y el peso actual del paciente permaneció sin cambios. No se modificó seed ni se creó una
+  migración nueva.
+- `easyvet_test` mantiene sus datos de pruebas; no se escribieron bases compartidas o productivas.
 
 La Fase 2 queda detenida después del AppShell, navegación, dashboard demo y
 componentes UI compartidos. Fase 3A añadió el modelo multi-tenant fundamental y

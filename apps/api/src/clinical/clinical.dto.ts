@@ -14,6 +14,20 @@ import {
 } from 'class-validator';
 import { ClinicalEncounterStatus } from '@prisma/client';
 
+// Profile writes accept only tenant-local professional data; identity and tenant fields are
+// always resolved from the authenticated membership by ClinicalService.
+export class UpsertProfessionalProfileDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(160)
+  displayName!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  licenseNumber?: string | null;
+}
+
 // Clinical writes intentionally expose only editable clinical fields; tenant, audit and lifecycle
 // fields are always derived by the service from the authenticated context and database state.
 export class CreateClinicalEncounterDto {

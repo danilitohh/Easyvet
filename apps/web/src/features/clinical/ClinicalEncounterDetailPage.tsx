@@ -1,20 +1,30 @@
 import { Link, useParams } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
 import { Badge } from '../../components/ui/Badge';
+import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
+import { FormField } from '../../components/ui/FormField';
+import { TextInput } from '../../components/ui/TextInput';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../services/apiClient';
 import { usePatient } from '../patients/usePatients';
+import { useAuth } from '../../contexts/useAuth';
+import { clinicalApi } from './clinicalApi';
+import { createClinicalVitalRequestSchema } from '@veterinary-saas/contracts';
+import { civilFieldsFromInstant, instantFromCivil } from '../agenda/agendaUtils';
+import { errorMessage } from '../shared/resourceUtils';
 import { ResourceError, StatusBadge } from '../shared/ResourceFeedback';
 import {
   useClinicalEncounter,
   useClinicalEvolutions,
   useClinicalOrganization,
   useClinicalVitals,
+  useProfessionalProfile,
 } from './useClinical';
 import {
   ENCOUNTER_STATUS_LABEL,
@@ -36,12 +46,145 @@ function ReadonlyField({ label, value }: { label: string; value: string | null |
   );
 }
 
+function DraftVitalForm({
+  encounterId,
+  timezone,
+  onSaved,
+}: {
+  encounterId: string;
+  timezone: string;
+  onSaved: () => void;
+}) {
+  const now = civilFieldsFromInstant(new Date().toISOString(), timezone);
+  const [measuredAt, setMeasuredAt] = useState(`${now.date}T${now.time}`);
+  const [weightKg, setWeightKg] = useState('');
+  const [temperatureC, setTemperatureC] = useState('');
+  const [heartRateBpm, setHeartRateBpm] = useState('');
+  const [respiratoryRateBpm, setRespiratoryRateBpm] = useState('');
+  const [observations, setObservations] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const [date, time] = measuredAt.split('T');
+    const payload = {
+      measuredAt: instantFromCivil(date ?? '', time ?? '', timezone),
+      weightKg: weightKg ? Number(weightKg) : null,
+      temperatureC: temperatureC ? Number(temperatureC) : null,
+      heartRateBpm: heartRateBpm ? Number(heartRateBpm) : null,
+      respiratoryRateBpm: respiratoryRateBpm ? Number(respiratoryRateBpm) : null,
+      observations: observations.trim() || null,
+    };
+    const parsed = createClinicalVitalRequestSchema.safeParse(payload);
+    if (!parsed.success) {
+      setError(new ApiError('Revisa los valores de la medición.', 400));
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await clinicalApi.addVital(encounterId, parsed.data);
+      onSaved();
+      setWeightKg('');
+      setTemperatureC('');
+      setHeartRateBpm('');
+      setRespiratoryRateBpm('');
+      setObservations('');
+    } catch (requestError: unknown) {
+      setError(requestError);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className="domain-form clinical-vital-form" onSubmit={(event) => void submit(event)}>
+      {error ? (
+        <Alert tone="error" role="alert">
+          {errorMessage(error, 'No fue posible registrar la medición.')}
+        </Alert>
+      ) : null}
+      <div className="form-grid form-grid--three">
+        <FormField
+          label="Medición *"
+          htmlFor="vital-measured-at"
+          hint={`Zona horaria: ${timezone}`}
+        >
+          <TextInput
+            id="vital-measured-at"
+            type="datetime-local"
+            value={measuredAt}
+            onChange={(event) => setMeasuredAt(event.target.value)}
+            required
+          />
+        </FormField>
+        <FormField label="Peso (kg)" htmlFor="vital-weight">
+          <TextInput
+            id="vital-weight"
+            type="number"
+            min="0.001"
+            step="0.001"
+            value={weightKg}
+            onChange={(event) => setWeightKg(event.target.value)}
+          />
+        </FormField>
+        <FormField label="Temperatura (°C)" htmlFor="vital-temperature">
+          <TextInput
+            id="vital-temperature"
+            type="number"
+            min="0.001"
+            step="0.1"
+            value={temperatureC}
+            onChange={(event) => setTemperatureC(event.target.value)}
+          />
+        </FormField>
+        <FormField label="Frecuencia cardiaca (lpm)" htmlFor="vital-heart">
+          <TextInput
+            id="vital-heart"
+            type="number"
+            min="1"
+            step="1"
+            value={heartRateBpm}
+            onChange={(event) => setHeartRateBpm(event.target.value)}
+          />
+        </FormField>
+        <FormField label="Frecuencia respiratoria (rpm)" htmlFor="vital-respiratory">
+          <TextInput
+            id="vital-respiratory"
+            type="number"
+            min="1"
+            step="1"
+            value={respiratoryRateBpm}
+            onChange={(event) => setRespiratoryRateBpm(event.target.value)}
+          />
+        </FormField>
+      </div>
+      <FormField label="Observaciones" htmlFor="vital-observations">
+        <textarea
+          id="vital-observations"
+          className="input input--textarea"
+          value={observations}
+          maxLength={20000}
+          onChange={(event) => setObservations(event.target.value)}
+        />
+      </FormField>
+      <Button type="submit" disabled={saving}>
+        {saving ? 'Guardando…' : 'Añadir medición'}
+      </Button>
+    </form>
+  );
+}
+
 export function ClinicalEncounterDetailPage() {
   const { patientId, encounterId } = useParams<{ patientId: string; encounterId: string }>();
   const canReadEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_READ);
   const canReadVitals = useCan(PERMISSION.CLINICAL_VITALS_READ);
   const canReadEvolutions = useCan(PERMISSION.CLINICAL_EVOLUTIONS_READ);
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
+  const canUpdateDraft = useCan(PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT);
+  const canCreateVital = useCan(PERMISSION.CLINICAL_VITALS_CREATE);
+  const { activeMembership } = useAuth();
   const canReadPatients = useCan(PERMISSION.PATIENTS_READ);
   const organization = useClinicalOrganization();
   const encounter = useClinicalEncounter(encounterId, canReadEncounter);
@@ -51,6 +194,9 @@ export function ClinicalEncounterDetailPage() {
     encounter.data?.patientId,
     1,
     canReadEvolutions && Boolean(encounter.data),
+  );
+  const profile = useProfessionalProfile(
+    activeMembership?.clinicalRole === 'PRACTITIONER' && canReadEncounter,
   );
   const timezone = organization.data?.timezone ?? 'UTC';
 
@@ -82,11 +228,29 @@ export function ClinicalEncounterDetailPage() {
         title={item.reason}
         description={`${formatDateTime(item.occurredAt, timezone)} · ${item.patient.name}`}
         action={
-          <Button as={Link} to={`/pacientes/${item.patientId}/historia`} variant="secondary">
-            Volver a historia
-          </Button>
+          <span className="page-header__actions">
+            {item.status === 'DRAFT' && canUpdateDraft ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/editar`}
+              >
+                Editar borrador
+              </Button>
+            ) : null}
+            <Button as={Link} to={`/pacientes/${item.patientId}/historia`} variant="secondary">
+              Volver a historia
+            </Button>
+          </span>
         }
       />
+      {activeMembership?.clinicalRole === 'PRACTITIONER' &&
+      profile.data &&
+      !profile.data.displayName.trim() ? (
+        <Alert tone="warning" role="status">
+          Completa tu perfil profesional antes de poder finalizar consultas.{' '}
+          <Link to="/perfil/profesional">Configurar perfil profesional</Link>
+        </Alert>
+      ) : null}
       <Card className="clinical-encounter-header">
         <div className="clinical-encounter-header__top">
           <div>
@@ -254,6 +418,18 @@ export function ClinicalEncounterDetailPage() {
               description="Este encuentro no tiene mediciones para mostrar."
             />
           )}
+          {item.status === 'DRAFT' && canCreateVital ? (
+            <>
+              <div className="form-section">
+                <div>
+                  <p className="section-kicker">Nueva medición</p>
+                  <h2>Añadir signos vitales</h2>
+                </div>
+                <p>Las mediciones se agregan al borrador y quedan como historial append-only.</p>
+              </div>
+              <DraftVitalForm encounterId={item.id} timezone={timezone} onSaved={vitals.reload} />
+            </>
+          ) : null}
         </Card>
       ) : null}
       {canReadEvolutions ? (

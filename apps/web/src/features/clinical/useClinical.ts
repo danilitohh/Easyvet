@@ -8,6 +8,7 @@ import type {
   ClinicalRecordEnvelope,
   ClinicalVitalListResponse,
   OrganizationCurrentResponse,
+  ClinicalPractitionerListResponse,
 } from '@veterinary-saas/contracts';
 import { clinicalApi } from './clinicalApi';
 
@@ -65,6 +66,7 @@ const EMPTY_EVOLUTIONS: ClinicalEvolutionListResponse = {
   pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
 };
 const EMPTY_VITALS: ClinicalVitalListResponse = { data: [] };
+const EMPTY_PRACTITIONERS: ClinicalPractitionerListResponse = { data: [] };
 
 // Clinical reads are tenant-keyed and abort in-flight requests on organization changes.
 export function useClinicalOrganization(): LoadState<OrganizationCurrentResponse> {
@@ -82,6 +84,28 @@ export function useClinicalOrganization(): LoadState<OrganizationCurrentResponse
       locale: 'es-CO',
       currencyCode: 'COP',
     },
+  );
+}
+
+// Profile and practitioner resources are keyed by the active tenant so switching organization
+// immediately clears the previous membership's identity from the form.
+export function useProfessionalProfile(enabled: boolean) {
+  const organizationId = useActiveOrganizationId();
+  return useClinicalResource(
+    (signal) => clinicalApi.professionalProfile(signal),
+    enabled && (appConfig.dataMode === 'mock' || Boolean(organizationId)),
+    [organizationId],
+    { membershipId: '00000000-0000-4000-8000-000000000000', displayName: '', licenseNumber: null },
+  );
+}
+
+export function useClinicalPractitioners(enabled: boolean) {
+  const organizationId = useActiveOrganizationId();
+  return useClinicalResource(
+    (signal) => clinicalApi.listPractitioners(signal),
+    enabled && (appConfig.dataMode === 'mock' || Boolean(organizationId)),
+    [organizationId],
+    EMPTY_PRACTITIONERS,
   );
 }
 

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
+import { useAuth } from '../../contexts/useAuth';
 import { Badge } from '../../components/ui/Badge';
+import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -16,6 +18,7 @@ import {
   useClinicalEvolutions,
   useClinicalOrganization,
   useClinicalRecord,
+  useProfessionalProfile,
 } from './useClinical';
 import {
   ENCOUNTER_STATUS_LABEL,
@@ -71,8 +74,14 @@ export function ClinicalHistoryPage() {
   const canReadRecord = useCan(PERMISSION.CLINICAL_RECORDS_READ);
   const canReadEncounters = useCan(PERMISSION.CLINICAL_ENCOUNTERS_READ);
   const canReadEvolutions = useCan(PERMISSION.CLINICAL_EVOLUTIONS_READ);
+  const canCreateEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_CREATE);
+  const { activeMembership } = useAuth();
   const organization = useClinicalOrganization();
   const recordState = useClinicalRecord(patientId, canReadRecord);
+  const patientState = usePatient(canReadRecord ? patientId : undefined);
+  const profile = useProfessionalProfile(
+    canReadRecord && activeMembership?.clinicalRole === 'PRACTITIONER',
+  );
   const [page, setPage] = useState(1);
   const [evolutionPage, setEvolutionPage] = useState(1);
   const encounters = useClinicalEncounters(
@@ -105,15 +114,22 @@ export function ClinicalHistoryPage() {
           title="Historia clínica"
           description="Lectura segura del registro clínico del paciente."
           action={
-            <Button as={Link} to={`/pacientes/${patientId}`} variant="secondary">
-              Volver al paciente
-            </Button>
+            <span className="page-header__actions">
+              {canCreateEncounter && patientState.patient?.status === 'ACTIVE' ? (
+                <Button as={Link} to={`/pacientes/${patientId}/historia/nueva`}>
+                  Nueva consulta
+                </Button>
+              ) : null}
+              <Button as={Link} to={`/pacientes/${patientId}`} variant="secondary">
+                Volver al paciente
+              </Button>
+            </span>
           }
         />
         <Card>
           <EmptyState
             title="Este paciente todavía no tiene historia clínica."
-            description="La historia aparecerá cuando exista un registro clínico para este paciente."
+            description="Puedes iniciar una consulta en borrador para crear su historia clínica."
           />
         </Card>
       </div>
@@ -140,9 +156,16 @@ export function ClinicalHistoryPage() {
         title="Historia clínica"
         description="Registro longitudinal en modo lectura."
         action={
-          <Button as={Link} to={`/pacientes/${patientId}`} variant="secondary">
-            Volver al paciente
-          </Button>
+          <span className="page-header__actions">
+            {canCreateEncounter && patientState.patient?.status === 'ACTIVE' ? (
+              <Button as={Link} to={`/pacientes/${patientId}/historia/nueva`}>
+                Nueva consulta
+              </Button>
+            ) : null}
+            <Button as={Link} to={`/pacientes/${patientId}`} variant="secondary">
+              Volver al paciente
+            </Button>
+          </span>
         }
       />
       <Card className="clinical-summary-card">
@@ -156,6 +179,14 @@ export function ClinicalHistoryPage() {
           {recordState.record.encounterCount ?? 0} encuentros
         </p>
       </Card>
+      {activeMembership?.clinicalRole === 'PRACTITIONER' &&
+      profile.data &&
+      !profile.data.displayName.trim() ? (
+        <Alert tone="warning" role="status">
+          Completa tu perfil profesional antes de poder finalizar consultas.{' '}
+          <Link to="/perfil/profesional">Configurar perfil profesional</Link>
+        </Alert>
+      ) : null}
       {!canReadEncounters ? (
         <Card>
           <EmptyState

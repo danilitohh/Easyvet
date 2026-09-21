@@ -1,11 +1,17 @@
 # Clinical Core API — Fase 6B.2
 
-**Estado:** COMPLETADO en backend. No incluye UI clínica ni satélites.
+**Estado:** COMPLETADO en backend. Fase 6C.2A añade únicamente perfiles y operaciones de
+borrador sobre este núcleo; no incluye finalización/anulación desde React ni satélites.
 
 Todas las rutas están bajo `/api/v1`, requieren sesión autenticada y
 `TenantContext`. El `organizationId` nunca se acepta desde el cliente.
 
 ## Rutas
+
+| Método  | Ruta                                | Permiso                     | Comportamiento                                                             |
+| ------- | ----------------------------------- | --------------------------- | -------------------------------------------------------------------------- |
+| GET/PUT | `/clinical/me/professional-profile` | `clinicalRecords.read`      | Perfil de la membresía activa; `membershipId` se deriva del tenant.        |
+| GET     | `/clinical/practitioners`           | `clinicalEncounters.create` | Profesionales Practitioner activos del tenant con datos mínimos de perfil. |
 
 | Método   | Ruta                                         | Permiso                          | Comportamiento                                               |
 | -------- | -------------------------------------------- | -------------------------------- | ------------------------------------------------------------ |
