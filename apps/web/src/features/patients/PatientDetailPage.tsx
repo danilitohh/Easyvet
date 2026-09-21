@@ -42,6 +42,7 @@ export function PatientDetailPage() {
   const { patient, loading, error, reload } = usePatient(patientId);
   const canUpdate = useCan(PERMISSION.PATIENTS_UPDATE);
   const canArchive = useCan(PERMISSION.PATIENTS_ARCHIVE);
+  const canReadClinical = useCan(PERMISSION.CLINICAL_RECORDS_READ);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [archiveError, setArchiveError] = useState<unknown>(null);
@@ -87,6 +88,11 @@ export function PatientDetailPage() {
             {canUpdate ? (
               <Button as={Link} to={`/pacientes/${patient.id}/editar`} variant="secondary">
                 Editar
+              </Button>
+            ) : null}
+            {canReadClinical ? (
+              <Button as={Link} to={`/pacientes/${patient.id}/historia`} variant="secondary">
+                Historia clínica
               </Button>
             ) : null}
             {canArchive && patient.status === 'ACTIVE' ? (

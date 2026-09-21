@@ -26,4 +26,8 @@ export const PERMISSION = {
   APPOINTMENTS_MARK_NO_SHOW: 'appointments.markNoShow',
   AVAILABILITY_READ: 'availability.read',
   AVAILABILITY_MANAGE: 'availability.manage',
+  CLINICAL_RECORDS_READ: 'clinicalRecords.read',
+  CLINICAL_ENCOUNTERS_READ: 'clinicalEncounters.read',
+  CLINICAL_EVOLUTIONS_READ: 'clinicalEvolutions.read',
+  CLINICAL_VITALS_READ: 'clinicalVitals.read',
 } as const satisfies Record<string, Permission>;

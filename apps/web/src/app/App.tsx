@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
 import { MODULE_ROUTES } from '../data/navigation';
@@ -20,6 +21,25 @@ import { PatientFormPage } from '../features/patients/PatientFormPage';
 import { AgendaPage } from '../features/agenda/AgendaPage';
 import { AppointmentFormPage } from '../features/agenda/AppointmentFormPage';
 import { AvailabilityPage } from '../features/agenda/AvailabilityPage';
+
+const ClinicalHistoryPage = lazy(() =>
+  import('../features/clinical/ClinicalHistoryPage').then((module) => ({
+    default: module.ClinicalHistoryPage,
+  })),
+);
+const ClinicalEncounterDetailPage = lazy(() =>
+  import('../features/clinical/ClinicalEncounterDetailPage').then((module) => ({
+    default: module.ClinicalEncounterDetailPage,
+  })),
+);
+
+function ClinicalRouteFallback() {
+  return (
+    <div className="loading-state" role="status">
+      Cargando historia clínica
+    </div>
+  );
+}
 
 // Route declarations keep every product area addressable without hiding sections in the DOM.
 export function App() {
@@ -158,6 +178,26 @@ export function App() {
             element={
               <PermissionRoute permission={PERMISSION.PATIENTS_UPDATE}>
                 <PatientFormPage mode="edit" />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia"
+            element={
+              <PermissionRoute permission={PERMISSION.CLINICAL_RECORDS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ClinicalHistoryPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId"
+            element={
+              <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ClinicalEncounterDetailPage />
+                </Suspense>
               </PermissionRoute>
             }
           />

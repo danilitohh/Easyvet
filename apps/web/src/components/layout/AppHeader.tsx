@@ -69,11 +69,12 @@ export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
         open={demoNoticeOpen}
         onClose={() => setDemoNoticeOpen(false)}
         title="Datos de demostración"
-        description="El shell visual todavía no está conectado a datos clínicos."
+        description="El dashboard conserva cifras ficticias para demostración."
       >
         <p className="modal-note">
           Las cifras del dashboard son pequeñas muestras ficticias para validar jerarquía,
-          navegación y estados visuales. La sesión y la organización activa sí provienen del API.
+          navegación y estados visuales. Los módulos operativos leen datos de la organización activa
+          desde el API.
         </p>
       </Modal>
     </>
