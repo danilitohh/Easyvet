@@ -1,12 +1,13 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2 y 6E.2
+## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2 y 6F.2A
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
 autorización por permisos y el primer dominio veterinario de propietarios y
 pacientes. Agenda 5B añade reservas operativas y disponibilidad. Fases 6B.1 y
 6B.2 añaden la fundación persistente y las operaciones transaccionales del
-núcleo clínico; inventario, ventas y facturación siguen fuera de alcance.
+núcleo clínico; 6F.2A agrega Procedures/Surgery. Inventario, ventas y
+facturación siguen fuera de alcance.
 
 ### Fundación clínica 6B.1
 
@@ -171,4 +172,22 @@ modificar `veterinary_saas`. La migración se aplica a la base de pruebas con
 La idempotencia del seed se verifica ejecutando `npm run db:seed` dos veces y
 comprobando que permanecen 2 organizaciones, 2 sedes, 3 usuarios, 4
 memberships, 4 Owners, 6 Patients, 3 AvailabilityRules, 6 Appointments,
-3 Prescriptions, 3 PrescriptionItems, 2 Vaccinations y 3 Dewormings.
+3 Prescriptions, 3 PrescriptionItems, 2 Vaccinations, 3 Dewormings,
+5 ClinicalProcedures y 2 ClinicalSurgeryDetails.
+
+### Procedures/Surgery 6F.2A
+
+`ClinicalProcedure` es el agregado raíz con `kind` (`PROCEDURE`/`SURGERY`),
+estado propio `DRAFT → FINALIZED → VOIDED`, CAS por `version` y Encounter/Patient
+obligatorios del mismo tenant. `ClinicalSurgeryDetail` es una extensión 1:0..1
+que solo existe para kind `SURGERY`; cambios de kind y detalle son atómicos.
+Ambas tablas conservan historia con FKs `RESTRICT`, tenant-composite,
+constraints de lifecycle/snapshots y los índices definidos en la migración
+`20260922020040_procedures_surgery_backend`.
+
+Finalizar congela los snapshots de Patient, Owner histórico del Encounter y
+Practitioner; en cirugía puede congelar además el Assistant seleccionado. El
+modelo no crea raíces separadas, ni tablas de anestesia, Consent, documentos,
+inventario o facturación. Las rutas y contratos se documentan en
+[`procedures-api.md`](procedures-api.md); la migración se aplicó solo a
+`easyvet_dev` y `easyvet_test`.

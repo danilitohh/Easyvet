@@ -2,13 +2,14 @@
 
 ## Estado
 
-Propuesta documental de Fase 6F.1, cerrada por el Design Gate 6F.1.1. No está
-implementada ni autoriza cambios Prisma/API/UI. Las decisiones normativas y los
-contratos literales para 6F.2A/6F.2B están en
+Propuesta documental de Fase 6F.1, cerrada por el Design Gate 6F.1.1. La
+implementación backend de Procedures/Surgery 6F.2A está completada y se detalla
+en [procedures-api.md](procedures-api.md). Esta propuesta mantiene valor
+histórico: las decisiones normativas y contratos para 6F.2A/6F.2B están en
 [procedures-core-6f2.md](procedures-core-6f2.md) y
 [anesthesia-core-6f2.md](anesthesia-core-6f2.md). Las tablas conceptuales de
 esta propuesta son antecedentes y cualquier punto incompatible queda
-reemplazado por esos contratos.
+reemplazado por esos contratos y por la implementación de 6F.2A.
 
 ## Arquitectura recomendada
 

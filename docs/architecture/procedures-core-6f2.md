@@ -1,9 +1,11 @@
 # Contrato literal: Procedures/Surgery backend — Fase 6F.2A
 
-Este documento es el contrato aprobado por el Design Gate 6F.1.1 para la fase
-backend 6F.2A. Es diseño, no implementación: no añade todavía Prisma,
-migraciones, endpoints, permisos registrados, seed ni código funcional. La
-anestesia queda fuera y tiene contrato separado en
+Este documento conserva el contrato aprobado por el Design Gate 6F.1.1 para la
+fase backend 6F.2A. **Procedures/Surgery Backend 6F.2A está implementado** en
+Prisma, migración, API, contratos, permisos, seed y pruebas; el detalle de las
+rutas está en [procedures-api.md](procedures-api.md). Las pruebas de hardening y
+frontend continúan pendientes como fases separadas. La anestesia queda fuera y
+tiene contrato separado en
 [anesthesia-core-6f2.md](anesthesia-core-6f2.md).
 
 ## 1. Alcance e invariantes

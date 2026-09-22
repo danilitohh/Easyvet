@@ -1,4 +1,4 @@
-# Autorización clínica — Fases 6B.1–6B.2 y 6E.2
+# Autorización clínica — Fases 6B.1–6B.2, 6E.2 y 6F.2A
 
 ## Separación de responsabilidades
 
@@ -29,6 +29,8 @@ El catálogo base contiene exactamente:
   `vaccinations.finalize`, `vaccinations.void`
 - `dewormings.read`, `dewormings.create`, `dewormings.updateDraft`,
   `dewormings.finalize`, `dewormings.void`
+- `procedures.read`, `procedures.create`, `procedures.updateDraft`,
+  `procedures.finalize`, `procedures.void`
 
 `PRACTITIONER` recibe todos los permisos clínicos, incluidos los cinco de
 prescripciones. `CLINICAL_ASSISTANT` recibe lectura
@@ -63,3 +65,25 @@ Devuelve solo `membershipId`, `clinicalRole`, `displayName` y
 `profileConfigured`; no es un endpoint de directorio y no expone email ni
 matrícula. Todas las operaciones de Preventive Care vuelven a validar estas
 condiciones dentro de su transacción antes de congelar snapshots o anular.
+
+## Procedures/Surgery 6F.2A
+
+`PRACTITIONER` obtiene los cinco permisos `procedures.*`. `CLINICAL_ASSISTANT`
+puede leer, crear y editar únicamente drafts; no puede finalizar ni anular. La
+finalización requiere que el actor sea el Practitioner responsable con perfil
+configurado. Un Assistant activo con perfil puede ser miembro de equipo en
+`ClinicalSurgeryDetail`, pero su selección no le concede autoridad para
+finalizar. Los roles organizacionales por sí solos y `PLATFORM_ADMIN` sin
+Membership clínico no reciben capacidades clínicas implícitas. Las
+Membership/User/Profile se revalidan bajo locks dentro de las transacciones.
+
+## Procedures/Surgery 6F.2A
+
+`PRACTITIONER` obtiene los cinco permisos `procedures.*`. `CLINICAL_ASSISTANT`
+puede leer, crear y editar únicamente drafts; no puede finalizar ni anular. La
+finalización requiere que el actor sea el Practitioner responsable con perfil
+configurado. Un Assistant activo con perfil puede ser miembro de equipo en
+`ClinicalSurgeryDetail`, pero su selección no le concede autoridad para
+finalizar. Los roles organizacionales por sí solos y `PLATFORM_ADMIN` sin
+Membership clínico no reciben capacidades clínicas implícitas. Las
+Membership/User/Profile se revalidan bajo locks dentro de las transacciones.

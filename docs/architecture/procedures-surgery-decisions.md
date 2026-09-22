@@ -6,7 +6,9 @@ propuestas; donde diga “pendiente”, “resolver en gate” o proponga otra o
 prevalecen las decisiones normativas de la sección final y los contratos
 literales [6F.2A](procedures-core-6f2.md) y
 [6F.2B](anesthesia-core-6f2.md). Este documento no implementa ni autoriza
-cambios funcionales.
+cambios funcionales. La fase backend 6F.2A ya está implementada; para su
+comportamiento vigente prevalecen el contrato y
+[procedures-api.md](procedures-api.md). La anestesia continúa pendiente en 6F.2B.
 
 | ID    | Tema                             | Estado / decisión propuesta                                                                                                                                                                        |
 | ----- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

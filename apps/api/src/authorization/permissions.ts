@@ -67,6 +67,11 @@ export const PERMISSIONS = {
     DEWORMINGS_UPDATE_DRAFT: 'dewormings.updateDraft',
     DEWORMINGS_FINALIZE: 'dewormings.finalize',
     DEWORMINGS_VOID: 'dewormings.void',
+    PROCEDURES_READ: 'procedures.read',
+    PROCEDURES_CREATE: 'procedures.create',
+    PROCEDURES_UPDATE_DRAFT: 'procedures.updateDraft',
+    PROCEDURES_FINALIZE: 'procedures.finalize',
+    PROCEDURES_VOID: 'procedures.void',
   },
 } as const satisfies Record<string, Record<string, Permission>>;
 
@@ -208,6 +213,11 @@ export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission
     'dewormings.updateDraft',
     'dewormings.finalize',
     'dewormings.void',
+    'procedures.read',
+    'procedures.create',
+    'procedures.updateDraft',
+    'procedures.finalize',
+    'procedures.void',
   ],
   CLINICAL_ASSISTANT: [
     'clinicalRecords.read',
@@ -226,6 +236,9 @@ export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission
     'dewormings.read',
     'dewormings.create',
     'dewormings.updateDraft',
+    'procedures.read',
+    'procedures.create',
+    'procedures.updateDraft',
   ],
 };
 

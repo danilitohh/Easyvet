@@ -15,7 +15,7 @@
     "lint": "eslint .",
     "typecheck": "npm run build --workspace @veterinary-saas/config && npm run build --workspace @veterinary-saas/contracts && npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "test:db": "cross-env RUN_DB_TESTS=1 DATABASE_URL_TEST=postgresql://veterinary:veterinary_dev_only@localhost:5432/easyvet_test npm run test --workspace @veterinary-saas/api",
+    "test:db": "cross-env RUN_DB_TESTS=1 DATABASE_URL=postgresql://veterinary:veterinary_dev_only@localhost:5432/easyvet_test DATABASE_URL_TEST=postgresql://veterinary:veterinary_dev_only@localhost:5432/easyvet_test npm run test --workspace @veterinary-saas/api",
     "test:all": "npm test && npm run test:db",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",

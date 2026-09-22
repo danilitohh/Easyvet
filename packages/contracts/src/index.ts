@@ -69,6 +69,11 @@ export const permissionSchema = z.enum([
   'dewormings.updateDraft',
   'dewormings.finalize',
   'dewormings.void',
+  'procedures.read',
+  'procedures.create',
+  'procedures.updateDraft',
+  'procedures.finalize',
+  'procedures.void',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -867,6 +872,187 @@ export type DewormingSummary = z.infer<typeof dewormingSummarySchema>;
 export type DewormingDetail = z.infer<typeof dewormingDetailSchema>;
 export type DewormingListResponse = z.infer<typeof dewormingListResponseSchema>;
 export type DewormingListQuery = z.infer<typeof dewormingListQuerySchema>;
+
+// Procedures contracts expose snapshots and aggregate surgery detail without coupling consumers to Prisma.
+export const clinicalProcedureKindSchema = z.enum(['PROCEDURE', 'SURGERY']);
+export const clinicalProcedureStatusSchema = z.enum(['DRAFT', 'FINALIZED', 'VOIDED']);
+const procedureDateTimeSchema = z.string().datetime({ offset: true });
+const procedureText = (max: number) => z.string().trim().max(max).nullable();
+
+export const clinicalSurgeryDetailSchema = z
+  .object({
+    id: z.string().uuid(),
+    organizationId: z.string().uuid(),
+    clinicalProcedureId: z.string().uuid(),
+    assistantMembershipId: z.string().uuid().nullable(),
+    assistantDisplayNameSnapshot: z.string().nullable(),
+    surgicalArea: z.string().nullable(),
+    surgicalSide: z.string().nullable(),
+    bleedingNotes: z.string().nullable(),
+    closureNotes: z.string().nullable(),
+    createdAt: procedureDateTimeSchema,
+    updatedAt: procedureDateTimeSchema,
+    assistant: preventiveProfessionalSummarySchema.nullable(),
+  })
+  .strict();
+
+const clinicalProcedureResponseBaseSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  kind: clinicalProcedureKindSchema,
+  status: clinicalProcedureStatusSchema,
+  version: z.number().int().positive(),
+  procedureName: z.string().nullable(),
+  performedAt: procedureDateTimeSchema.nullable(),
+  indication: z.string().nullable(),
+  description: z.string().nullable(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  ownerDisplayNameSnapshot: z.string().nullable(),
+  professionalDisplayNameSnapshot: z.string().nullable(),
+  professionalLicenseSnapshot: z.string().nullable(),
+  finalizedAt: procedureDateTimeSchema.nullable(),
+  finalizedByMembershipId: z.string().uuid().nullable(),
+  voidedAt: procedureDateTimeSchema.nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: z.string().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  createdAt: procedureDateTimeSchema,
+  updatedAt: procedureDateTimeSchema,
+  parentEncounterStatus: clinicalEncounterStatusSchema,
+  patient: preventivePatientSummarySchema,
+  encounter: preventiveEncounterSummarySchema,
+  responsiblePractitioner: preventiveProfessionalSummarySchema.nullable(),
+});
+
+export const clinicalProcedureSummarySchema = clinicalProcedureResponseBaseSchema
+  .pick({
+    id: true,
+    organizationId: true,
+    clinicalEncounterId: true,
+    patientId: true,
+    kind: true,
+    status: true,
+    version: true,
+    procedureName: true,
+    performedAt: true,
+    responsiblePractitionerMembershipId: true,
+    patientNameSnapshot: true,
+    ownerDisplayNameSnapshot: true,
+    professionalDisplayNameSnapshot: true,
+    professionalLicenseSnapshot: true,
+    finalizedAt: true,
+    voidedAt: true,
+    createdAt: true,
+    updatedAt: true,
+    parentEncounterStatus: true,
+    patient: true,
+    encounter: true,
+    responsiblePractitioner: true,
+  })
+  .strict();
+
+export const clinicalProcedureDetailSchema = clinicalProcedureResponseBaseSchema
+  .extend({
+    indication: z.string().nullable(),
+    description: z.string().nullable(),
+    technique: z.string().nullable(),
+    findings: z.string().nullable(),
+    complications: z.string().nullable(),
+    recoveryNotes: z.string().nullable(),
+    postoperativePlan: z.string().nullable(),
+    notes: z.string().nullable(),
+    surgeryDetail: clinicalSurgeryDetailSchema.nullable(),
+  })
+  .strict();
+
+export const clinicalProcedureListResponseSchema = z.object({
+  data: z.array(clinicalProcedureSummarySchema),
+  pagination: paginationSchema,
+});
+
+const clinicalSurgeryDetailInputSchema = z
+  .object({
+    assistantMembershipId: z.string().uuid().nullable().optional(),
+    surgicalArea: procedureText(500).optional(),
+    surgicalSide: procedureText(200).optional(),
+    bleedingNotes: procedureText(5000).optional(),
+    closureNotes: procedureText(5000).optional(),
+  })
+  .strict();
+
+const clinicalProcedureEditableFieldsSchema = {
+  responsiblePractitionerMembershipId: z.string().uuid().nullable().optional(),
+  procedureName: procedureText(200).optional(),
+  performedAt: procedureDateTimeSchema.nullable().optional(),
+  indication: procedureText(5000).optional(),
+  description: procedureText(10000).optional(),
+  technique: procedureText(10000).optional(),
+  findings: procedureText(10000).optional(),
+  complications: procedureText(10000).optional(),
+  recoveryNotes: procedureText(10000).optional(),
+  postoperativePlan: procedureText(10000).optional(),
+  notes: procedureText(10000).optional(),
+};
+
+export const createClinicalProcedureRequestSchema = z
+  .object({
+    kind: clinicalProcedureKindSchema,
+    ...clinicalProcedureEditableFieldsSchema,
+    surgeryDetail: clinicalSurgeryDetailInputSchema.nullable().optional(),
+  })
+  .strict();
+
+export const updateClinicalProcedureRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    kind: clinicalProcedureKindSchema.optional(),
+    ...clinicalProcedureEditableFieldsSchema,
+    surgeryDetail: clinicalSurgeryDetailInputSchema.nullable().optional(),
+  })
+  .strict();
+
+export const finalizeClinicalProcedureRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+export const voidClinicalProcedureRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(1000),
+  })
+  .strict();
+
+export const clinicalProcedureListQuerySchema = z
+  .object({
+    page: pageSchema.default(1),
+    pageSize: pageSizeSchema.default(20),
+    status: clinicalProcedureStatusSchema.optional(),
+    kind: clinicalProcedureKindSchema.optional(),
+    clinicalEncounterId: z.string().uuid().optional(),
+    from: procedureDateTimeSchema.optional(),
+    to: procedureDateTimeSchema.optional(),
+  })
+  .strict()
+  .refine((query) => !query.from || !query.to || query.from <= query.to, {
+    message: 'from must be on or before to',
+    path: ['from'],
+  });
+
+export type ClinicalProcedureKind = z.infer<typeof clinicalProcedureKindSchema>;
+export type ClinicalProcedureStatus = z.infer<typeof clinicalProcedureStatusSchema>;
+export type ClinicalSurgeryDetail = z.infer<typeof clinicalSurgeryDetailSchema>;
+export type ClinicalProcedureSummary = z.infer<typeof clinicalProcedureSummarySchema>;
+export type ClinicalProcedureDetail = z.infer<typeof clinicalProcedureDetailSchema>;
+export type ClinicalProcedureListResponse = z.infer<typeof clinicalProcedureListResponseSchema>;
+export type CreateClinicalProcedureRequest = z.infer<typeof createClinicalProcedureRequestSchema>;
+export type UpdateClinicalProcedureRequest = z.infer<typeof updateClinicalProcedureRequestSchema>;
+export type FinalizeClinicalProcedureRequest = z.infer<
+  typeof finalizeClinicalProcedureRequestSchema
+>;
+export type VoidClinicalProcedureRequest = z.infer<typeof voidClinicalProcedureRequestSchema>;
+export type ClinicalProcedureListQuery = z.infer<typeof clinicalProcedureListQuerySchema>;
 export type CreateDewormingRequest = z.infer<typeof createDewormingRequestSchema>;
 export type UpdateDewormingRequest = z.infer<typeof updateDewormingRequestSchema>;
 export type FinalizeDewormingRequest = z.infer<typeof finalizeDewormingRequestSchema>;

@@ -51,6 +51,11 @@
 | Preventive Care operations         | COMPLETADO (Fase 6E.3B: create/edit/finalize/void, CAS y UX tenant-safe)      |
 | Preventive Care hardening          | COMPLETADO (Fase 6E.4: invariantes, concurrencia, PII, UX y auditoría)        |
 | Preventive Care                    | COMPLETADO (Fases 6E.1–6E.4)                                                  |
+| Procedures/Surgery analysis 6F.1   | COMPLETADO (análisis y Design Gate 6F.1.1)                                    |
+| Procedures/Surgery backend 6F.2A   | COMPLETADO (schema, migración, API, permisos, seed y tests)                   |
+| Anesthesia backend 6F.2B           | PENDIENTE                                                                     |
+| Procedures/Surgery frontend        | PENDIENTE                                                                     |
+| Procedures/Surgery hardening       | PENDIENTE                                                                     |
 | Certificates/Documents             | POSTERGADO                                                                    |
 | Inventory integration              | POSTERGADO                                                                    |
 | External preventive records        | POSTERGADO                                                                    |
@@ -655,8 +660,47 @@ Fase 6F.1 — análisis y diseño de procedimientos / cirugía completado:
   contratos, índices y política de legacy.
 - Los contratos literales para las fases backend separadas están en
   `docs/architecture/procedures-core-6f2.md` (6F.2A) y
-  `docs/architecture/anesthesia-core-6f2.md` (6F.2B). Ambas fases siguen
-  PENDIENTES; frontend continúa PENDIENTE.
+  `docs/architecture/anesthesia-core-6f2.md` (6F.2B). En ese checkpoint ambas
+  fases estaban pendientes; el estado actualizado de 6F.2A aparece abajo.
 - Este checkpoint fue documental: no se modificaron Prisma, migraciones, seed,
   API, permisos registrados, dependencias, frontend ni backend funcional. No se
   inició Fase 6F.2A ni 6F.2B.
+
+Fase 6F.2A — Procedures/Surgery backend completada:
+
+- `ClinicalProcedure` es el agregado único `PROCEDURE`/`SURGERY` con lifecycle
+  `DRAFT → FINALIZED → VOIDED`, CAS, Encounter/Patient obligatorios y tenant
+  isolation. `ClinicalSurgeryDetail` es opcional 1:0..1 y solo existe para
+  `SURGERY`; cambio de kind y detalle es atómico.
+- La migración `20260922020040_procedures_surgery_backend` se aplicó solo a
+  `easyvet_dev` y `easyvet_test`. Incluye FKs tenant-aware `RESTRICT`, checks
+  de lifecycle, snapshots y versionado, además de índices. Se inspeccionaron
+  directamente en PostgreSQL los checks, FKs, índices y unicidad del detalle.
+- Se implementaron contratos Zod/DTO, permisos `procedures.*`, endpoints de
+  historial/detalle/create/update/finalize/void, snapshots congelados,
+  auditoría sin narrativa clínica, seed idempotente ficticio y pruebas reales
+  PostgreSQL. El lock order protege contra carreras con void de Encounter y
+  archive de Patient.
+- QA manual ficticio se ejecutó solo en `easyvet_dev`: Procedure draft/edit/finalize/void,
+  Surgery detail y cambio Surgery→Procedure, Surgery con Assistant snapshot, Encounter ya
+  FINALIZED, y permisos de Assistant tras seleccionar tenant. Create/update/finalize bloqueados
+  cuando una anulación de Encounter gana la carrera; create bloqueado cuando gana el archive de
+  Patient. Los 5 registros QA nuevos y sus SurgeryDetail permanecen en la base sin hard delete.
+- No-side-effects comprobado en `easyvet_dev`: los conteos de Appointments (12) y Prescriptions
+  (10) no cambiaron; no hay tablas de AnesthesiaRecord ni AnesthesiaObservation. No se alteró el
+  seed para introducir QA.
+- Docker Compose/PostgreSQL local quedó `healthy`; la migración 6F.2A está aplicada únicamente a
+  `easyvet_dev` y `easyvet_test`. No se accedió a `veterinary_saas`, otras bases ni servicios
+  externos.
+- Validaciones finales: `format:check`, `lint`, `typecheck`, `npm test`, `test:db`, `test:all`,
+  `build`, `prisma:generate` y `prisma:validate` pasan. `test:db` ejecutó 129 pruebas y `test:all`
+  las repitió correctamente. El build conserva avisos no bloqueantes de anotaciones Zod/Rollup y
+  del chunk principal mayor a 500 kB.
+- `npm audit` informa 5 registros de paquetes afectados: 3 altos (cadena Prisma CLI/config) y 2
+  moderados (Vitest/mockers), provenientes de 2 advisories. El árbol `--omit=dev` aún incluye la
+  cadena Prisma por el peer opcional de `@prisma/client`; el servidor API no ejecuta el CLI ni
+  consume configuración Prisma proporcionada por usuarios. Las correcciones que ofrece npm son
+  cambios breaking/downgrade mayor, por lo que no se aplicaron upgrades automáticos.
+- `prisma:generate` falló inicialmente con `EPERM` porque el API dev server mantenía abierto el
+  motor nativo de Prisma; se detuvo el proceso y la generación y validación pasaron. Fase 6F.2B,
+  frontend y hardening permanecen **PENDIENTES**; no se iniciaron.

@@ -299,6 +299,13 @@ const seedProfessionalProfiles = [
     displayName: 'Dra. Camila Rojas',
     licenseNumber: 'VET-DEMO-001',
   },
+  {
+    id: '00000000-0000-4000-8000-000000000702',
+    organizationId: seedOrganizations[0].id,
+    membershipId: seedUsers[2].membershipId,
+    displayName: 'Asistente clínica demo',
+    licenseNumber: null,
+  },
 ];
 
 const seedClinicalEncounters = [
@@ -375,6 +382,117 @@ const seedClinicalEncounters = [
     voidReason: null,
     occurredAt: '2030-01-08T16:00:00.000Z',
     createdByMembershipId: '00000000-0000-4000-8000-000000000204',
+  },
+];
+
+// Procedures and surgeries use fictional records in both demo tenants for phase 6F.2A.
+const seedClinicalProcedures = [
+  {
+    id: '00000000-0000-4000-8000-000000001501',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[0].id,
+    patientId: seedPatients[0].id,
+    kind: 'PROCEDURE',
+    status: 'DRAFT',
+    version: 1,
+    procedureName: 'Limpieza ótica de control',
+    performedAt: '2030-01-08T15:20:00.000Z',
+    indication: 'Control preventivo ficticio.',
+    description: 'Registro demostrativo editable.',
+    createdByMembershipId: seedUsers[2].membershipId,
+    responsiblePractitionerMembershipId: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001502',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    patientId: seedPatients[0].id,
+    kind: 'PROCEDURE',
+    status: 'FINALIZED',
+    version: 2,
+    procedureName: 'Limpieza dental',
+    performedAt: '2030-01-08T14:35:00.000Z',
+    indication: 'Profilaxis dental de demostración.',
+    description: 'Procedimiento ficticio registrado para visualizar historia clínica.',
+    createdByMembershipId: seedUsers[0].membershipId,
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    finalizedAt: '2030-01-08T14:45:00.000Z',
+    finalizedByMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001503',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[0].id,
+    patientId: seedPatients[0].id,
+    kind: 'SURGERY',
+    status: 'DRAFT',
+    version: 1,
+    procedureName: 'Evaluación quirúrgica',
+    performedAt: null,
+    createdByMembershipId: seedUsers[2].membershipId,
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001504',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    patientId: seedPatients[0].id,
+    kind: 'SURGERY',
+    status: 'FINALIZED',
+    version: 2,
+    procedureName: 'Ovariohisterectomía',
+    performedAt: '2030-01-08T14:50:00.000Z',
+    indication: 'Cirugía demostrativa ficticia.',
+    technique: 'Abordaje convencional descrito para QA.',
+    findings: 'Sin hallazgos inesperados.',
+    recoveryNotes: 'Recuperación inicial estable.',
+    postoperativePlan: 'Control clínico de seguimiento.',
+    createdByMembershipId: seedUsers[0].membershipId,
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    finalizedAt: '2030-01-08T15:10:00.000Z',
+    finalizedByMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001505',
+    organizationId: seedOrganizations[1].id,
+    clinicalEncounterId: seedClinicalEncounters[2].id,
+    patientId: seedPatients[3].id,
+    kind: 'PROCEDURE',
+    status: 'DRAFT',
+    version: 1,
+    procedureName: 'Evaluación dermatológica Sur',
+    performedAt: null,
+    createdByMembershipId: '00000000-0000-4000-8000-000000000204',
+    responsiblePractitionerMembershipId: '00000000-0000-4000-8000-000000000204',
+  },
+];
+
+const seedClinicalSurgeryDetails = [
+  {
+    id: '00000000-0000-4000-8000-000000001601',
+    organizationId: seedOrganizations[0].id,
+    clinicalProcedureId: seedClinicalProcedures[2].id,
+    assistantMembershipId: seedUsers[2].membershipId,
+    surgicalArea: 'Abdomen',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001602',
+    organizationId: seedOrganizations[0].id,
+    clinicalProcedureId: seedClinicalProcedures[3].id,
+    assistantMembershipId: seedUsers[2].membershipId,
+    assistantDisplayNameSnapshot: 'Asistente clínica demo',
+    surgicalArea: 'Abdomen',
+    surgicalSide: 'Línea media',
+    bleedingNotes: 'Control adecuado durante el procedimiento.',
+    closureNotes: 'Cierre por planos, nota ficticia.',
   },
 ];
 
@@ -795,6 +913,69 @@ const seedClinicalAuditEvents = [
     action: 'FINALIZED',
     metadata: { source: 'seed', stage: '6E.2', previousVersion: 1, newVersion: 2 },
   },
+  {
+    id: '00000000-0000-4000-8000-000000001213',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'CLINICAL_PROCEDURE',
+    entityId: seedClinicalProcedures[0].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6F.2A', kind: 'PROCEDURE', newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001214',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'CLINICAL_PROCEDURE',
+    entityId: seedClinicalProcedures[1].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6F.2A', kind: 'PROCEDURE', newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001215',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'CLINICAL_PROCEDURE',
+    entityId: seedClinicalProcedures[1].id,
+    action: 'FINALIZED',
+    metadata: { source: 'seed', stage: '6F.2A', newVersion: 2 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001216',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'CLINICAL_PROCEDURE',
+    entityId: seedClinicalProcedures[2].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6F.2A', kind: 'SURGERY', newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001217',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'CLINICAL_PROCEDURE',
+    entityId: seedClinicalProcedures[3].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6F.2A', kind: 'SURGERY', newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001218',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'CLINICAL_PROCEDURE',
+    entityId: seedClinicalProcedures[3].id,
+    action: 'FINALIZED',
+    metadata: { source: 'seed', stage: '6F.2A', newVersion: 2 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001219',
+    organizationId: seedOrganizations[1].id,
+    actorMembershipId: '00000000-0000-4000-8000-000000000204',
+    entityType: 'CLINICAL_PROCEDURE',
+    entityId: seedClinicalProcedures[4].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6F.2A', kind: 'PROCEDURE', newVersion: 1 },
+  },
 ];
 
 async function main() {
@@ -1026,6 +1207,39 @@ async function main() {
       });
     }
 
+    // Seed procedure lifecycle timestamps as UTC instants and retain stable demo IDs.
+    for (const procedure of seedClinicalProcedures) {
+      const data = {
+        ...procedure,
+        performedAt: procedure.performedAt ? new Date(procedure.performedAt) : null,
+        finalizedAt: procedure.finalizedAt ? new Date(procedure.finalizedAt) : null,
+        voidedAt: procedure.voidedAt ? new Date(procedure.voidedAt) : null,
+      };
+      await transaction.clinicalProcedure.upsert({
+        where: { id: procedure.id },
+        update: data,
+        create: data,
+      });
+    }
+
+    // Surgery details stay subordinate to their parent procedure and have no separate lifecycle.
+    for (const detail of seedClinicalSurgeryDetails) {
+      const data = {
+        ...detail,
+        assistantDisplayNameSnapshot: detail.assistantDisplayNameSnapshot ?? null,
+        assistantMembershipId: detail.assistantMembershipId ?? null,
+        surgicalArea: detail.surgicalArea ?? null,
+        surgicalSide: detail.surgicalSide ?? null,
+        bleedingNotes: detail.bleedingNotes ?? null,
+        closureNotes: detail.closureNotes ?? null,
+      };
+      await transaction.clinicalSurgeryDetail.upsert({
+        where: { id: detail.id },
+        update: data,
+        create: data,
+      });
+    }
+
     for (const prescription of seedPrescriptions) {
       const { id: prescriptionId, finalizedAt, voidedAt, ...prescriptionFields } = prescription;
       const data = {
@@ -1129,7 +1343,7 @@ async function main() {
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 1 profile, 2 records, 3 encounters, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 12 audits.',
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 3 encounters, 5 procedures, 2 surgery details, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 19 audits.',
   );
 }
 
