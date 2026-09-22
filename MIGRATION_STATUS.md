@@ -638,3 +638,21 @@ Checkpoint 6E.1.1 — Preventive Care Design Gate completado:
 - Durante ese checkpoint no se modificaron `prisma/schema.prisma`, migraciones,
   backend, frontend, endpoints, permisos, seeds ni dependencias; la
   implementación posterior queda registrada en la sección 6E.2 anterior.
+
+Fase 6F.1 — análisis y diseño de procedimientos / cirugía completado:
+
+- Se inspeccionó en modo lectura el checkout Lativet fijado en
+  `05fea495cb13208b27bf470b3570987fd501a81e`; procedimiento y cirugía legacy
+  son consultas genéricas con protocolo JSON, mientras anestesia es otra
+  consulta con JSON y monitorización flexible.
+- La referencia, propuesta de dominio y matriz de decisiones están en
+  `docs/migration/procedures-surgery-reference.md`,
+  `docs/architecture/procedures-surgery-proposal.md` y
+  `docs/architecture/procedures-surgery-decisions.md`.
+- Se recomienda un Design Gate 6F.1.1 para cerrar cardinalidad de anestesia,
+  mínimos de finalización, Consent, equipo/Assistant, parent Void y detalle de
+  medicación antes de implementar backend.
+- Procedures/Surgery analysis: COMPLETADO; Design Gate: PENDIENTE; Backend y
+  Frontend: PENDIENTES.
+- No se modificaron Prisma, migraciones, seed, API, permisos, dependencias,
+  frontend ni backend funcional. No se inició Fase 6F.2.
