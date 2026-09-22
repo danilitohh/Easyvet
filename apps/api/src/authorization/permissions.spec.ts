@@ -104,4 +104,39 @@ describe('clinical permission foundation', () => {
     expect(assistant).not.toContain('diagnostics.void');
     expect(nonClinical).not.toContain('diagnostics.read');
   });
+
+  it('grants document and consent workflows by clinical role without assistant issue or void authority', () => {
+    const practitioner = permissionsForRole('RECEPTION', 'PRACTITIONER');
+    const assistant = permissionsForRole('ASSISTANT', 'CLINICAL_ASSISTANT');
+    const nonClinical = permissionsForRole('ADMIN', null);
+
+    expect(practitioner).toEqual(
+      expect.arrayContaining([
+        'documents.read',
+        'documents.generate',
+        'documents.upload',
+        'documents.void',
+        'consents.read',
+        'consents.create',
+        'consents.updateDraft',
+        'consents.issue',
+        'consents.void',
+      ]),
+    );
+    expect(assistant).toEqual(
+      expect.arrayContaining([
+        'documents.read',
+        'documents.generate',
+        'documents.upload',
+        'consents.read',
+        'consents.create',
+        'consents.updateDraft',
+      ]),
+    );
+    expect(assistant).not.toContain('documents.void');
+    expect(assistant).not.toContain('consents.issue');
+    expect(assistant).not.toContain('consents.void');
+    expect(nonClinical).not.toContain('documents.read');
+    expect(nonClinical).not.toContain('consents.read');
+  });
 });

@@ -74,4 +74,13 @@ export const PERMISSION = {
   DIAGNOSTICS_REQUEST: 'diagnostics.request',
   DIAGNOSTICS_RESULT: 'diagnostics.result',
   DIAGNOSTICS_VOID: 'diagnostics.void',
+  DOCUMENTS_READ: 'documents.read',
+  DOCUMENTS_GENERATE: 'documents.generate',
+  DOCUMENTS_UPLOAD: 'documents.upload',
+  DOCUMENTS_VOID: 'documents.void',
+  CONSENTS_READ: 'consents.read',
+  CONSENTS_CREATE: 'consents.create',
+  CONSENTS_UPDATE_DRAFT: 'consents.updateDraft',
+  CONSENTS_ISSUE: 'consents.issue',
+  CONSENTS_VOID: 'consents.void',
 } as const satisfies Record<string, Permission>;

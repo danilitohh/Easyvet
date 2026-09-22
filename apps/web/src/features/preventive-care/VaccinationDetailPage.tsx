@@ -2,6 +2,7 @@ import type { VaccinationDetail } from '@veterinary-saas/contracts';
 import { Link, useParams } from 'react-router-dom';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
+import { DocumentGenerationAction } from '../documents/DocumentGenerationAction';
 import { Card } from '../../components/ui/Card';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -168,6 +169,11 @@ export function VaccinationDetailPage() {
             />
           </>
         }
+      />
+      <DocumentGenerationAction
+        documentType="VACCINATION_CERTIFICATE"
+        sourceId={item.id}
+        sourceStatus={item.status}
       />
       <Card className="preventive-status-panel">
         <div className="preventive-status-panel__top">

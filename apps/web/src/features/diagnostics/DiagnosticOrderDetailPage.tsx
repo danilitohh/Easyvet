@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
+import { DocumentGenerationAction } from '../documents/DocumentGenerationAction';
 import { useAuth } from '../../contexts/useAuth';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
@@ -185,6 +186,11 @@ export function DiagnosticOrderDetailPage() {
             Volver al historial
           </Link>
         }
+      />
+      <DocumentGenerationAction
+        documentType="DIAGNOSTIC_RESULT"
+        sourceId={order.id}
+        sourceStatus={order.status}
       />
       {encounterVoided ? (
         <Alert tone="warning" role="status">

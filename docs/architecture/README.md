@@ -8,16 +8,18 @@ Prisma administra cambios mediante migraciones versionadas explícitas.
 
 - `apps/web` y `apps/api` son aplicaciones separadas con contratos TypeScript compartidos.
 - `packages/contracts` contiene tipos/esquemas que cruzan la frontera HTTP,
-  incluidos los contratos clínicos, Preventive Care, Procedures/Surgery 6F.2A y
-  Anesthesia 6F.2B.
+  incluidos los dominios clínicos, documentos y consentimientos.
 - `packages/config` solo expone primitivas de configuración compartidas.
 - El schema Prisma mantiene las entidades core tenant/auth y los dominios
   clínicos implementados por fase; Preventive Care 6E.2 añade únicamente
   `Vaccination` y `Deworming` como satélites de `ClinicalEncounter`, y
-  `ClinicalProcedure`/`ClinicalSurgeryDetail` en 6F.2A y
-  `AnesthesiaRecord`/`AnesthesiaObservation` en 6F.2B.
-- La autenticación de Fase 3B usa sesiones HttpOnly. Storage, correo, calendarios,
-  permisos completos y módulos clínicos permanecen pendientes.
+  `ClinicalProcedure`/`ClinicalSurgeryDetail` en 6F.2A,
+  `AnesthesiaRecord`/`AnesthesiaObservation` en 6F.2B,
+  `DiagnosticOrder` en 6H y `ClinicalDocument`/`Consent`/`ConsentSignatureRequest`
+  en 6I.
+- La autenticación usa sesiones HttpOnly. Storage clínico local/S3-compatible y
+  módulos clínicos por fase están implementados; entrega de correo/SMS y canales
+  externos siguen pendientes.
 - El API no modifica el esquema al iniciar.
 - Toda configuración productiva debe llegar por variables/secret manager; los defaults son exclusivamente locales.
 

@@ -23,6 +23,8 @@ import { ProceduresModule } from './procedures/procedures.module';
 import { AnesthesiaModule } from './anesthesia/anesthesia.module';
 import { HospitalizationsModule } from './hospitalizations/hospitalizations.module';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
+import { DocumentsModule } from './documents/documents.module';
+import { ConsentsModule } from './consents/consents.module';
 
 @Module({
   imports: [
@@ -50,6 +52,8 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
     AnesthesiaModule,
     HospitalizationsModule,
     DiagnosticsModule,
+    DocumentsModule,
+    ConsentsModule,
   ],
   providers: [ApiExceptionFilter],
 })

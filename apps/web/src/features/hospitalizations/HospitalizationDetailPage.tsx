@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
+import { DocumentGenerationAction } from '../documents/DocumentGenerationAction';
 import { useAuth } from '../../contexts/useAuth';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
@@ -404,6 +405,11 @@ export function HospitalizationDetailPage() {
             </Button>
           </span>
         }
+      />
+      <DocumentGenerationAction
+        documentType="HOSPITALIZATION_DISCHARGE"
+        sourceId={episode.id}
+        sourceStatus={episode.status}
       />
       <Card className="hospitalization-status-card">
         <div className="detail-card__heading">

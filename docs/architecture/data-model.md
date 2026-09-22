@@ -235,3 +235,22 @@ una fila por archivo/categoría. Su lifecycle es DRAFT/REQUESTED/RESULTED/VOIDED
 con CAS y snapshots al emitir la solicitud. FKs `RESTRICT`, checks SQL de
 estado/version/metadata e índices por tenant, Patient, Encounter, estado y
 categoría se encuentran en `20260922130000_add_diagnostic_orders`.
+
+## Documents / Consents 6I
+
+`ClinicalDocument` conserva metadatos/hash del PDF o adjunto inmutable y referencia
+una clave opaca de storage privado; las sources clínicas existentes siguen siendo
+la autoridad. Tipos generados son Prescription, Vaccination, Procedure,
+Anesthesia, Hospitalization discharge, Diagnostic result y Signed Consent.
+Adjuntos manuales aceptan PDF/PNG/JPEG. `Consent` es hijo del Patient y Encounter,
+opcionalmente Procedure del mismo tenant; `ConsentSignatureRequest` guarda hash de
+token y OTP, expiración, intentos y evidencia, no los secretos en claro. Estados,
+índices, checks y FKs tenant-composite se definen en
+`20260922170000_add_documents_consents_signatures`.
+
+Las tres entidades conservan evidencia con FKs `RESTRICT`; void es lógico. El
+tenant/Patient/Encounter/Procedure se valida durante las operaciones y los
+artefactos no se hard-delete al anular un Patient, Encounter, Consent o documento.
+El API y las claves privadas se documentan en
+[`documents-api.md`](documents-api.md), [`documents.md`](documents.md) y
+[`consents-signatures.md`](consents-signatures.md).

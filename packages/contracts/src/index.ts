@@ -92,6 +92,15 @@ export const permissionSchema = z.enum([
   'diagnostics.request',
   'diagnostics.result',
   'diagnostics.void',
+  'documents.read',
+  'documents.generate',
+  'documents.upload',
+  'documents.void',
+  'consents.read',
+  'consents.create',
+  'consents.updateDraft',
+  'consents.issue',
+  'consents.void',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -1756,3 +1765,151 @@ export type AppointmentListQuery = z.infer<typeof appointmentListQuerySchema>;
 export type AvailabilityRuleResponse = z.infer<typeof availabilityRuleResponseSchema>;
 export type AvailabilityRuleRequest = z.infer<typeof availabilityRuleRequestSchema>;
 export type AvailableSlotsResponse = z.infer<typeof availableSlotsResponseSchema>;
+
+// Clinical document contracts keep upload, generated-artifact, and download metadata typed at both app boundaries.
+export const clinicalDocumentOriginSchema = z.enum(['GENERATED', 'UPLOADED']);
+export const clinicalDocumentStatusSchema = z.enum(['ACTIVE', 'VOIDED']);
+export const clinicalDocumentTypeSchema = z.enum([
+  'PRESCRIPTION',
+  'VACCINATION_CERTIFICATE',
+  'PROCEDURE_REPORT',
+  'ANESTHESIA_REPORT',
+  'HOSPITALIZATION_DISCHARGE',
+  'DIAGNOSTIC_RESULT',
+  'SIGNED_CONSENT',
+  'CLINICAL_ATTACHMENT',
+]);
+export const clinicalDocumentSourceTypeSchema = z.enum([
+  'PRESCRIPTION',
+  'VACCINATION',
+  'CLINICAL_PROCEDURE',
+  'ANESTHESIA_RECORD',
+  'HOSPITALIZATION',
+  'DIAGNOSTIC_ORDER',
+  'CONSENT',
+]);
+export const generatedClinicalDocumentTypeSchema = clinicalDocumentTypeSchema.exclude([
+  'CLINICAL_ATTACHMENT',
+]);
+export const clinicalDocumentMetadataSchema = z.object({
+  id: z.string().uuid(),
+  patientId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid().nullable(),
+  origin: clinicalDocumentOriginSchema,
+  status: clinicalDocumentStatusSchema,
+  documentType: clinicalDocumentTypeSchema,
+  title: z.string(),
+  originalFileName: z.string().nullable(),
+  sourceType: clinicalDocumentSourceTypeSchema.nullable(),
+  sourceId: z.string().uuid().nullable(),
+  sourceVersion: z.number().int().nullable(),
+  mimeType: z.string(),
+  sizeBytes: z.number().int().nonnegative(),
+  sha256: z.string().length(64),
+  voidReason: z.string().nullable(),
+  voidedAt: z.string().datetime({ offset: true }).nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+  sourceStatus: z.string().nullable().optional(),
+});
+export const clinicalDocumentListResponseSchema = z.object({
+  data: z.array(clinicalDocumentMetadataSchema),
+  pagination: z.object({
+    page: z.number().int(),
+    pageSize: z.number().int(),
+    total: z.number().int(),
+  }),
+});
+export const generateClinicalDocumentRequestSchema = z.object({
+  documentType: generatedClinicalDocumentTypeSchema,
+  sourceId: z.string().uuid(),
+});
+export const consentStatusSchema = z.enum(['DRAFT', 'ISSUED', 'SIGNED', 'VOIDED']);
+export const consentSignatureMethodSchema = z.enum(['TYPED', 'DRAWN']);
+export const consentDetailSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid(),
+  clinicalProcedureId: z.string().uuid().nullable(),
+  status: consentStatusSchema,
+  version: z.number().int().min(1),
+  title: z.string(),
+  purposeText: z.string().nullable(),
+  risksText: z.string().nullable(),
+  benefitsText: z.string().nullable(),
+  alternativesText: z.string().nullable(),
+  estimatedCostText: z.string().nullable(),
+  declarationText: z.string().nullable(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  ownerDisplayNameSnapshot: z.string().nullable(),
+  ownerDocumentTypeSnapshot: z.string().nullable(),
+  ownerDocumentNumberSnapshot: z.string().nullable(),
+  professionalDisplayNameSnapshot: z.string().nullable(),
+  professionalLicenseSnapshot: z.string().nullable(),
+  contentSha256: z.string().length(64).nullable(),
+  issuedAt: z.string().datetime({ offset: true }).nullable(),
+  signedAt: z.string().datetime({ offset: true }).nullable(),
+  voidedAt: z.string().datetime({ offset: true }).nullable(),
+  voidReason: z.string().nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+  encounterStatus: z.enum(['DRAFT', 'FINALIZED', 'VOIDED']),
+  procedureStatus: z.string().nullable(),
+  patientStatus: z.enum(['ACTIVE', 'ARCHIVED']),
+  signerName: z.string().nullable(),
+  signatureMethod: consentSignatureMethodSchema.nullable(),
+  signedDocumentId: z.string().uuid().nullable(),
+});
+export const consentCreateRequestSchema = z.object({
+  title: z.string().trim().max(300).optional(),
+  purposeText: optionalText(10000),
+  risksText: optionalText(10000),
+  benefitsText: optionalText(10000),
+  alternativesText: optionalText(10000),
+  estimatedCostText: optionalText(2000),
+  declarationText: optionalText(10000),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable().optional(),
+  clinicalProcedureId: z.string().uuid().nullable().optional(),
+});
+export const consentUpdateDraftRequestSchema = consentCreateRequestSchema.extend({
+  expectedVersion: z.number().int().min(1),
+});
+export const consentExpectedVersionRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+});
+export const consentVoidRequestSchema = consentExpectedVersionRequestSchema.extend({
+  reason: z.string().trim().min(1).max(1000),
+});
+export const signatureIssueResponseSchema = z.object({
+  consent: consentDetailSchema,
+  signingPath: z.string().startsWith('/firmar/'),
+  verificationCode: z.string().regex(/^\d{6}$/),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export const publicConsentSchema = z.object({
+  organizationDisplayName: z.string(),
+  patientName: z.string(),
+  ownerDisplayName: z.string(),
+  ownerDocumentMasked: z.string().nullable(),
+  title: z.string(),
+  purposeText: z.string().nullable(),
+  risksText: z.string().nullable(),
+  benefitsText: z.string().nullable(),
+  alternativesText: z.string().nullable(),
+  estimatedCostText: z.string().nullable(),
+  declarationText: z.string(),
+  professionalDisplayName: z.string(),
+  professionalLicense: z.string().nullable(),
+  expiresAt: z.string().datetime({ offset: true }),
+});
+export const publicSignatureResultSchema = z.object({
+  signedAt: z.string().datetime({ offset: true }),
+  signerName: z.string(),
+  signatureMethod: consentSignatureMethodSchema,
+});
+export type ClinicalDocumentMetadata = z.infer<typeof clinicalDocumentMetadataSchema>;
+export type ClinicalDocumentType = z.infer<typeof clinicalDocumentTypeSchema>;
+export type ClinicalDocumentSourceType = z.infer<typeof clinicalDocumentSourceTypeSchema>;
+export type ConsentDetail = z.infer<typeof consentDetailSchema>;
+export type PublicConsent = z.infer<typeof publicConsentSchema>;

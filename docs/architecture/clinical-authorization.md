@@ -1,4 +1,4 @@
-# Autorización clínica — Fases 6B.1–6B.2, 6E.2, 6F.2A y 6F.2B
+# Autorización clínica — Fases 6B–6I
 
 ## Separación de responsabilidades
 
@@ -15,7 +15,7 @@ válido cuando la operación lo requiere.
 
 ## Permisos implementados
 
-El catálogo base contiene exactamente:
+El catálogo del núcleo clínico implementado en 6B contenía:
 
 - `clinicalRecords.read`
 - `clinicalEncounters.read`, `clinicalEncounters.create`,
@@ -113,3 +113,16 @@ exige que el actor sea el responsable asignado y tenga perfil profesional activo
 con `displayName`. Result y void pueden ejecutarse por otro Practitioner
 autorizado. Un rol organizacional por sí solo y `PLATFORM_ADMIN` sin
 `ClinicalRole` no obtienen permiso clínico implícito.
+
+## Documents / Consents 6I
+
+Practitioner recibe `documents.read/generate/upload/void` y
+`consents.read/create/updateDraft/issue/void`. Clinical Assistant puede leer,
+generar, subir y crear/editar drafts de Consent, pero no anular documentos,
+emitir/reemitir firma ni anular Consent. Los guards de ruta y las comprobaciones
+del service aplican la capacidad por acción y por source; `documents.generate` no
+otorga acceso a la fuente clínica. La solicitud pública de firma usa bearer token
+hasheado y OTP, no sesión, y solo devuelve datos mínimos con identificación del
+Owner enmascarada. Actor, tenant, Membership, perfil responsable, Patient activo,
+Encounter no anulado y Procedure elegible se vuelven a comprobar dentro de la
+transacción.

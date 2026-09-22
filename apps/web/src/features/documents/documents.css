@@ -1,0 +1,408 @@
+.documents-page {
+  width: min(100%, 1180px);
+}
+
+.document-list__rows {
+  display: grid;
+  gap: 10px;
+}
+
+.document-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.document-row:hover {
+  border-color: var(--color-line-strong);
+  background: #fff;
+}
+
+.document-row__copy {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.document-row__copy > small {
+  color: var(--color-ink-muted);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.document-row__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.document-row__title strong {
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+}
+
+.document-row__actions,
+.copy-field,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.document-upload,
+.consent-form {
+  display: grid;
+  gap: 18px;
+}
+
+.document-upload__file {
+  padding: 9px;
+}
+
+.document-generation-card {
+  display: grid;
+  gap: 16px;
+  border-color: var(--color-line-strong);
+  background: linear-gradient(140deg, #fff 0%, #f0f8f5 100%);
+}
+
+.document-generation-card h2 {
+  margin: 4px 0 7px;
+  font-size: 1.05rem;
+}
+
+.document-generation-card .clinical-muted {
+  max-width: 68ch;
+  line-height: 1.55;
+}
+
+.consent-row {
+  color: inherit;
+}
+
+.consent-row__arrow {
+  color: var(--color-brand);
+  font-size: 1.4rem;
+}
+
+.consent-form__textarea {
+  min-height: 132px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.consent-status-card,
+.consent-actions {
+  display: grid;
+  gap: 16px;
+}
+
+.consent-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+
+.consent-meta > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.consent-meta dt,
+.consent-content dt {
+  color: var(--color-ink-muted);
+  font-size: 0.73rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.consent-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+}
+
+.consent-content {
+  display: grid;
+  gap: 17px;
+}
+
+.consent-content .clinical-field {
+  display: grid;
+  gap: 6px;
+}
+
+.consent-content dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.one-time-secrets {
+  display: grid;
+  gap: 18px;
+}
+
+.one-time-secrets .form-field {
+  min-width: 0;
+}
+
+.copy-field .input {
+  min-width: 0;
+  flex: 1 1 260px;
+  font-size: 0.82rem;
+}
+
+.copy-field .button {
+  flex: 0 0 auto;
+}
+
+.public-signing {
+  display: grid;
+  min-height: 100dvh;
+  place-items: start center;
+  padding: clamp(14px, 5vw, 54px) 16px;
+  background:
+    radial-gradient(circle at 15% 0%, rgb(15 118 110 / 11%), transparent 34%),
+    linear-gradient(180deg, #f9fcfb, var(--color-canvas));
+}
+
+.public-signing__card {
+  display: grid;
+  width: min(100%, 840px);
+  gap: 22px;
+  padding: clamp(20px, 5vw, 48px);
+  border-color: var(--color-line-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.public-signing__brand {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-brand-strong);
+  font-size: 1.1rem;
+  font-weight: 750;
+}
+
+.public-signing__brand span {
+  color: var(--color-ink-muted);
+  font-size: 0.86rem;
+  font-weight: 550;
+  text-align: right;
+}
+
+.public-signing__card > h1 {
+  margin: -12px 0 0;
+  font-size: clamp(1.45rem, 4vw, 2.15rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.public-signing__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+.public-signing__summary p {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  margin: 0;
+}
+
+.public-signing__summary strong {
+  color: var(--color-ink-muted);
+  font-size: 0.73rem;
+  text-transform: uppercase;
+}
+
+.public-signing__summary span {
+  overflow-wrap: anywhere;
+  font-size: 0.88rem;
+}
+
+.public-consent-copy {
+  display: grid;
+  max-height: min(45vh, 460px);
+  gap: 17px;
+  padding: 20px;
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: #fff;
+  overscroll-behavior: contain;
+}
+
+.public-consent-copy h2 {
+  margin: 0 0 7px;
+  color: var(--color-ink-soft);
+  font-size: 0.84rem;
+}
+
+.public-consent-copy p {
+  margin: 0;
+  color: var(--color-ink);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.public-signing__expiry,
+.public-signing__privacy {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.public-signing__form {
+  display: grid;
+  gap: 18px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-line);
+}
+
+.public-signing__form > h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.signature-method {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  padding: 0;
+  border: 0;
+}
+
+.signature-method legend {
+  margin-bottom: 10px;
+  color: var(--color-ink);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.signature-method label,
+.signature-acceptance {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--color-ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.signature-method input,
+.signature-acceptance input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 1px 0 0;
+  accent-color: var(--color-brand);
+}
+
+.signature-canvas-wrap {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.signature-canvas {
+  display: block;
+  width: 100%;
+  height: clamp(128px, 32vw, 190px);
+  touch-action: none;
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: linear-gradient(transparent calc(100% - 1px), rgb(201 221 216 / 45%) 1px), #fff;
+  background-size: 100% 34px;
+}
+
+.signature-canvas__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-ink-muted);
+  font-size: 0.78rem;
+}
+
+.public-signing__privacy {
+  padding-top: 4px;
+}
+
+@media (max-width: 720px) {
+  /* Keep upload-card headings readable when the format badge no longer fits beside them. */
+  .documents-page .detail-card__heading {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .documents-page .detail-card__heading > div {
+    min-width: 0;
+  }
+
+  .documents-page .detail-card__heading .badge {
+    align-self: flex-start;
+  }
+
+  .document-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .document-row__actions {
+    width: 100%;
+  }
+
+  .document-row__actions .button {
+    flex: 1 1 auto;
+  }
+
+  .consent-meta,
+  .public-signing__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .public-signing__summary {
+    gap: 14px;
+  }
+
+  .copy-field {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .copy-field .button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .document-row {
+    transition: none;
+  }
+}

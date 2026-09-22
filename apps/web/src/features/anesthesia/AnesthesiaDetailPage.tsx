@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import type { AnesthesiaObservation, AnesthesiaRecordDetail } from '@veterinary-saas/contracts';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
+import { DocumentGenerationAction } from '../documents/DocumentGenerationAction';
 import { useAuth } from '../../contexts/useAuth';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
@@ -561,6 +562,11 @@ export function AnesthesiaDetailPage() {
             </Button>
           </span>
         }
+      />
+      <DocumentGenerationAction
+        documentType="ANESTHESIA_REPORT"
+        sourceId={item.id}
+        sourceStatus={item.status}
       />
       {item.status === 'DRAFT' && patientArchived ? (
         <Alert tone="warning" role="status">

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import type { ClinicalProcedureDetail } from '@veterinary-saas/contracts';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
+import { DocumentGenerationAction } from '../documents/DocumentGenerationAction';
 import { useAuth } from '../../contexts/useAuth';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
@@ -219,6 +220,11 @@ export function ProcedureDetailPage() {
             </Button>
           </span>
         }
+      />
+      <DocumentGenerationAction
+        documentType="PROCEDURE_REPORT"
+        sourceId={item.id}
+        sourceStatus={item.status}
       />
       {item.status === 'DRAFT' && parentVoided ? (
         <Alert tone="warning" role="status">

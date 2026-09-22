@@ -58,7 +58,7 @@
 | Anesthesia frontend/monitoring          | COMPLETADO (Fase 6F.3)                                                        |
 | Procedures/Surgery/Anesthesia hardening | COMPLETADO (Fase 6F.3)                                                        |
 | Fase 6F                                 | COMPLETADA                                                                    |
-| Certificates/Documents                  | POSTERGADO                                                                    |
+| Documents/Consents/Signatures           | COMPLETADO (Fase 6I)                                                          |
 | Inventory integration                   | POSTERGADO                                                                    |
 | External preventive records             | POSTERGADO                                                                    |
 | Inventario                              | Pendiente                                                                     |
@@ -888,3 +888,57 @@ Fase 6H — Diagnostics / Exámenes / Ayudas diagnósticas: COMPLETADA
   `npm audit fix --force`.
 - No quedan bugs funcionales conocidos de 6H. Documents/Consents/Signatures y
   cualquier módulo posterior no se iniciaron.
+
+Fase 6I — Documents / Consents / Signatures: COMPLETADA
+
+- Revisión legacy de solo lectura en Lativet-reference commit
+  `05fea495cb13208b27bf470b3570987fd501a81e`: Consent se persistía como firma ya
+  finalizada, producía PDF y correo SMTP si estaba configurado; solicitudes OTP
+  por consulta conservaban bearer token en claro y dibujo como Data URL, aunque
+  limitaban intentos/expiración y detectaban cambios del documento. La comparación
+  completa está en `docs/migration/documents-consents-signatures-final-review.md`.
+- Prisma añade `ClinicalDocument`, `Consent` y `ConsentSignatureRequest`, enums,
+  checks/FKs tenant-composite e índices en
+  `20260922170000_add_documents_consents_signatures`. Aplicada/verificada solo en
+  `easyvet_dev` y `easyvet_test`; no se modificó el seed ni bases compartidas o
+  productivas.
+- `StorageService` selecciona driver local privado o S3-compatible configurable.
+  QA ejerció local en `.easyvet-storage`; no había credenciales/servicio S3 para
+  probar el proveedor remoto. No se emiten URLs públicas; void conserva bytes.
+- Documentos: seis PDFs clínicos + PDF de Consent firmado, upload PDF/PNG/JPEG
+  hasta 10 MiB, magic/MIME, SHA-256 server-side, idempotencia por source/version,
+  descargas autenticadas verificadas y anulación lógica. Consent usa Draft/Issue/
+  Signed/Void, snapshots y content hash al emitir, CAS, bearer de 256 bits solo en
+  claro una vez, OTP Argon2id, expiración/intentos, reissue con revocación y firma
+  TYPED/DRAWN con hash de evidencia y PDF firmado.
+- QA ficticio manual exclusivamente en `easyvet_dev`: se descargaron los seis
+  PDFs de source; se subieron PDF y PNG; el PDF se anuló y siguió descargable; tres
+  Consent quedaron SIGNED mediante typed, drawn y flujo real del navegador. Se
+  comprobó OTP incorrecto controlado, reissue, hash PNG/PDF y aislamiento Sur→Norte
+  (404, sin exposición de storage). No se borró físicamente ningún artefacto.
+- UI interna y firma pública medidas en viewport 390×844. Listas/detalle y el flujo
+  de firma typed completado no presentan overflow horizontal. Se corrigió el
+  encabezado responsive de la tarjeta de upload. El navegador reportó solo las
+  respuestas 401 esperadas del sondeo global `auth/me` después de limpiar la
+  sesión; la ruta pública cargó y firmó sin autenticación.
+- Conteo final en `easyvet_dev`: 11 ClinicalDocuments (9 generados activos; 2
+  cargados: 1 activo y 1 voided), 3 Consent SIGNED y 6 SignatureRequests (3 signed,
+  3 revoked; ninguno pending). No-side-effects verificado: 12 Appointments, 10
+  Prescriptions y peso actual de Luna `12.4 kg`.
+- Se añadieron dependencias runtime `pdfkit@0.20.2` y
+  `@aws-sdk/client-s3@3.1138.0`, además de tipos de desarrollo. Ninguna de las
+  dependencias nuevas aparece en los advisories de `npm audit`.
+- Validaciones finales: `format:check`, `lint`, `typecheck`, `npm test`,
+  `npm run test:db`, `npm run test:all`, `npm run build`,
+  `npm run prisma:generate` y `npm run prisma:validate` pasan. Suite web: 312/312;
+  API `test:db`: 172/172. Build incluye avisos no bloqueantes de anotaciones Zod/
+  Rollup y chunk principal 827.13 kB (238.34 kB gzip).
+- `npm audit`: 5 vulnerabilidades (2 moderadas en Vitest y 3 altas en Prisma/
+  deepmerge-ts). El camino alto es configuración/CLI Prisma opcional de desarrollo;
+  no se halló uso del merge vulnerable con entradas del runtime. Los únicos fixes
+  propuestos fuerzan cambios breaking; no se ejecutaron upgrades ni
+  `npm audit fix --force`.
+- Limitaciones POST-V1: email/SMS de firma, firmas cualificadas/certificadas,
+  plantillas, antivirus, OCR, DICOM, PDF integral de historia, DOCX editable,
+  generación masiva y reglas nacionales de Consent. El alcance 6I termina aquí;
+  no se inició Follow-ups / Reminders.

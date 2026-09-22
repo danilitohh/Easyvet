@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
 import { useAuth } from '../../contexts/useAuth';
+import { DocumentGenerationAction } from '../documents/DocumentGenerationAction';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -308,6 +309,11 @@ export function PrescriptionDetailPage() {
             </Link>
           </span>
         }
+      />
+      <DocumentGenerationAction
+        documentType="PRESCRIPTION"
+        sourceId={item.id}
+        sourceStatus={item.status}
       />
       {location.state && typeof location.state === 'object' && 'notice' in location.state ? (
         <Alert tone="warning" role="status">

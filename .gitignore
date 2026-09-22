@@ -11,6 +11,9 @@ coverage/
 .env.*
 !.env.example
 
+# Clinical document bytes are local runtime data and never belong in Git.
+.easyvet-storage/
+
 # Local logs, temporary files and editor metadata.
 *.log
 *.tmp

@@ -139,6 +139,46 @@ function DiagnosticHistoryEntry({ patientId }: { patientId: string }) {
   );
 }
 
+// Keeps documents and signed evidence discoverable without changing the record timeline itself.
+function DocumentsHistoryEntry({ patientId }: { patientId: string }) {
+  const canRead = useCan(PERMISSION.DOCUMENTS_READ);
+  if (!canRead) return null;
+  return (
+    <Card className="prescription-history-entry clinical-domain-history-entry">
+      <div>
+        <p className="section-kicker">Archivo clínico</p>
+        <h2>Documentos</h2>
+        <p className="clinical-muted">
+          Consulta PDFs generados, adjuntos y evidencia histórica del paciente.
+        </p>
+      </div>
+      <Button as={Link} to={`/pacientes/${patientId}/historia/documentos`} variant="secondary">
+        Ver documentos
+      </Button>
+    </Card>
+  );
+}
+
+// Gives the patient history a dedicated consent route while creation remains bound to an encounter.
+function ConsentsHistoryEntry({ patientId }: { patientId: string }) {
+  const canRead = useCan(PERMISSION.CONSENTS_READ);
+  if (!canRead) return null;
+  return (
+    <Card className="prescription-history-entry clinical-domain-history-entry">
+      <div>
+        <p className="section-kicker">Consentimiento informado</p>
+        <h2>Consentimientos</h2>
+        <p className="clinical-muted">
+          Consulta borradores, estado de firma y evidencia electrónica conservada.
+        </p>
+      </div>
+      <Button as={Link} to={`/pacientes/${patientId}/historia/consentimientos`} variant="secondary">
+        Ver consentimientos
+      </Button>
+    </Card>
+  );
+}
+
 export function ClinicalHistoryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const canReadRecord = useCan(PERMISSION.CLINICAL_RECORDS_READ);
@@ -151,6 +191,8 @@ export function ClinicalHistoryPage() {
   const canReadAnesthesia = useCan(PERMISSION.ANESTHESIA_READ);
   const canReadHospitalizations = useCan(PERMISSION.HOSPITALIZATIONS_READ);
   const canReadDiagnostics = useCan(PERMISSION.DIAGNOSTICS_READ);
+  const canReadDocuments = useCan(PERMISSION.DOCUMENTS_READ);
+  const canReadConsents = useCan(PERMISSION.CONSENTS_READ);
   const canCreateEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_CREATE);
   const canCreateEvolution = useCan(PERMISSION.CLINICAL_EVOLUTIONS_CREATE);
   const { activeMembership } = useAuth();
@@ -193,6 +235,8 @@ export function ClinicalHistoryPage() {
         ) : null}
         {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
         {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
+        {canReadDocuments ? <DocumentsHistoryEntry patientId={patientId} /> : null}
+        {canReadConsents ? <ConsentsHistoryEntry patientId={patientId} /> : null}
         {canReadPrescriptions ? (
           <Card className="prescription-history-entry">
             <div>
@@ -268,6 +312,8 @@ export function ClinicalHistoryPage() {
         ) : null}
         {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
         {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
+        {canReadDocuments ? <DocumentsHistoryEntry patientId={patientId} /> : null}
+        {canReadConsents ? <ConsentsHistoryEntry patientId={patientId} /> : null}
         <Card>
           <EmptyState
             title="Este paciente todavía no tiene historia clínica."
@@ -372,6 +418,8 @@ export function ClinicalHistoryPage() {
       ) : null}
       {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
       {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
+      {canReadDocuments ? <DocumentsHistoryEntry patientId={patientId} /> : null}
+      {canReadConsents ? <ConsentsHistoryEntry patientId={patientId} /> : null}
       {!canReadEncounters ? (
         <Card>
           <EmptyState

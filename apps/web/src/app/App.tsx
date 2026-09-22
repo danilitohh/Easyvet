@@ -142,6 +142,29 @@ const DiagnosticOrderFormPage = lazy(() =>
     default: module.DiagnosticOrderFormPage,
   })),
 );
+const DocumentsPage = lazy(() =>
+  import('../features/documents/DocumentsPage').then((module) => ({
+    default: module.DocumentsPage,
+  })),
+);
+const ConsentsPage = lazy(() =>
+  import('../features/documents/ConsentsPage').then((module) => ({ default: module.ConsentsPage })),
+);
+const ConsentDetailPage = lazy(() =>
+  import('../features/documents/ConsentDetailPage').then((module) => ({
+    default: module.ConsentDetailPage,
+  })),
+);
+const ConsentFormPage = lazy(() =>
+  import('../features/documents/ConsentFormPage').then((module) => ({
+    default: module.ConsentFormPage,
+  })),
+);
+const PublicSignaturePage = lazy(() =>
+  import('../features/documents/PublicSignaturePage').then((module) => ({
+    default: module.PublicSignaturePage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -155,6 +178,14 @@ function ClinicalRouteFallback() {
 export function App() {
   return (
     <Routes>
+      <Route
+        path="firmar/:token"
+        element={
+          <Suspense fallback={<ClinicalRouteFallback />}>
+            <PublicSignaturePage />
+          </Suspense>
+        }
+      />
       <Route path="login" element={<LoginPage />} />
       <Route element={<AuthBoundary />}>
         <Route path="seleccionar-organizacion" element={<OrganizationSelectorPage />} />
@@ -316,12 +347,64 @@ export function App() {
                   PERMISSION.ANESTHESIA_READ,
                   PERMISSION.HOSPITALIZATIONS_READ,
                   PERMISSION.DIAGNOSTICS_READ,
+                  PERMISSION.DOCUMENTS_READ,
+                  PERMISSION.CONSENTS_READ,
                 ]}
               >
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <ClinicalHistoryPage />
                 </Suspense>
               </AnyPermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/documentos"
+            element={
+              <PermissionRoute permission={PERMISSION.DOCUMENTS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <DocumentsPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/consentimientos"
+            element={
+              <PermissionRoute permission={PERMISSION.CONSENTS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ConsentsPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/consentimientos/:consentId"
+            element={
+              <PermissionRoute permission={PERMISSION.CONSENTS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ConsentDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/consentimientos/:consentId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.CONSENTS_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ConsentFormPage mode="edit" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/consentimientos/nuevo"
+            element={
+              <PermissionRoute permission={PERMISSION.CONSENTS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ConsentFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
             }
           />
           <Route
