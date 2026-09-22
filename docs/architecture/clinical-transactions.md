@@ -1,8 +1,8 @@
 # Límites transaccionales del dominio clínico
 
 Este documento registra los límites atómicos implementados en el Clinical Core
-6B.2, la operación de frontend 6C.2B, el hardening 6C.3 y Preventive Care
-6E.2 y Procedures/Surgery 6F.2A. No modifica la implementación actual de
+6B.2, la operación de frontend 6C.2B, el hardening 6C.3, Preventive Care
+6E.2, Procedures/Surgery 6F.2A y Anesthesia 6F.2B. No modifica la implementación actual de
 Agenda ni introduce side effects externos.
 
 ## Regla general
@@ -28,6 +28,7 @@ Todas las operaciones verifican `organizationId` en cada lookup. Un `patientId`,
 | Vacunación/desparasitación | Crear `Vaccination` o `Deworming` DRAFT sobre Encounter, validar tenant/Patient, fechas, memberships y CAS; finalizar congela snapshots y registra auditoría. No modifica Patient ni crea efectos externos.                                                                                                                   | Ninguno en 6E.2; reminders, Appointment, inventario, documentos y notificaciones están postergados.                              |
 | Prescripción               | Crear una `Prescription` sobre un Encounter existente; validar tenant, Patient derivado, estado y prescriptor. Create/update/finalize bloquean `ClinicalEncounter → Patient → Prescription`; el draft reemplaza todos sus items en una única transacción; finalizar/anular usan CAS, congelan snapshots y escriben auditoría. | PDF, email al Owner, Storage, inventario, ventas y facturación quedan fuera de 6D.2/6D.4.                                        |
 | Procedimiento/cirugía      | `ClinicalProcedure` raíz única; create/update/finalize/void tenant-safe con CAS; detail de Surgery atómico con el draft; Encounter → Patient → Procedure → Owner histórico → Memberships ordenadas; snapshots y auditoría en la misma transacción.                                                                            | Sin efectos externos en 6F.2A; Consent, anestesia, documentos, Storage, notificación, inventario y facturación fuera de alcance. |
+| Anestesia                  | `AnesthesiaRecord` independiente; create/update/finalize/void y observations con CAS del padre; Encounter → Patient → Procedure vinculado → AnesthesiaRecord → Owner histórico → Memberships ordenadas; snapshots y auditoría sin payload clínico.                                                                            | Sin efectos externos en 6F.2B; frontend, Consent, documentos, Storage, dispositivos, prescripciones, inventario y billing fuera. |
 | Hospitalización            | Abrir/actualizar estancia y sus observaciones; alta es transición validada y auditada.                                                                                                                                                                                                                                        | Kardex PDF y avisos al Owner.                                                                                                    |
 | Diagnóstico                | Crear `DiagnosticOrder` y sus items; cada resultado es una transición idempotente y tenant-safe; no sobrescribir resultado previo sin versión.                                                                                                                                                                                | Ingesta de archivo, análisis externo y aviso al profesional.                                                                     |
 | Consentimiento/firma       | Crear versión/hash; transición de `SignatureRequest` (`pending` → `code_sent` → `signed`) con control de expiración/intentos; guardar identidad/evidencia y ligar hash exacto.                                                                                                                                                | Email OTP, PDF sellado y almacenamiento durable.                                                                                 |
@@ -170,6 +171,13 @@ agregado: upsert/cambio de Assistant y eliminación al cambiar `SURGERY` a
 `PROCEDURE` ocurren junto con el CAS del root. El orden de locks incluye Owner
 histórico para snapshots y Memberships en orden determinista. La lista de rutas,
 payloads y errores está en [procedures-api.md](procedures-api.md).
+
+En 6F.2B Anesthesia usa el mismo patrón sin side effects externos. El lock de
+Procedure se toma solo si el record está vinculado, y siempre antes del
+AnesthesiaRecord para serializar contra `Procedure VOID`. Las observations son
+filas hijas editables únicamente en Draft; no tienen version propia y delegan la
+concurrencia en `AnesthesiaRecord.version`. La lista de rutas, payloads y
+errores está en [anesthesia-api.md](anesthesia-api.md).
 
 ## Checklist para implementación futura
 

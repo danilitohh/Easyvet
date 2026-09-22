@@ -1,10 +1,11 @@
-# Contrato literal: Anesthesia backend — Fase 6F.2B
+# Anesthesia backend — Fase 6F.2B
 
 Este es el contrato aprobado por el Design Gate 6F.1.1 para la fase backend
-6F.2B. Es diseño, no implementación: no añade todavía modelos Prisma,
-migraciones, endpoints, permisos registrados, seed ni código funcional. Depende
-del núcleo Procedure de [procedures-core-6f2.md](procedures-core-6f2.md), que
-se implementa y verifica por separado en 6F.2A.
+6F.2B. **Anesthesia Backend 6F.2B está implementado** en Prisma, migración,
+API, contratos, permisos, seed y pruebas. Depende del núcleo Procedure de
+[procedures-core-6f2.md](procedures-core-6f2.md), ya verificado en 6F.2A. El
+detalle operativo de rutas y errores vive en
+[anesthesia-api.md](anesthesia-api.md).
 
 ## 1. Agregado y cardinalidades
 
@@ -40,39 +41,39 @@ labels. No agregar `IN_PROGRESS`, cancelación ni estado heredado.
 
 Campos completos. `String?` es nullable; instantes son `TIMESTAMPTZ(3)` UTC.
 
-| Campo                                 | Tipo                     | Nullable / regla                                                             |
-| ------------------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
-| `id`                                  | UUID                     | No; PK generado.                                                             |
-| `organizationId`                      | UUID                     | No; derivado de TenantContext.                                               |
-| `clinicalEncounterId`                 | UUID                     | No; Encounter requerido.                                                     |
-| `clinicalProcedureId`                 | UUID                     | Sí; si existe, parents deben coincidir en organization, patient y encounter. |
-| `patientId`                           | UUID                     | No; debe coincidir con Encounter y Procedure vinculado.                      |
-| `status`                              | `AnesthesiaRecordStatus` | No; default `DRAFT`.                                                         |
-| `version`                             | Int                      | No; default `1`, siempre `>= 1`.                                             |
-| `startedAt`                           | TIMESTAMPTZ(3)           | Sí en DRAFT; requerido en FINALIZED/VOIDED.                                  |
-| `endedAt`                             | TIMESTAMPTZ(3)           | Sí en DRAFT; requerido en FINALIZED/VOIDED; no anterior a startedAt.         |
-| `asaClassification`                   | String                   | Sí; se conserva como texto nullable, sin enum ASA.                           |
-| `technique`                           | String                   | Sí; técnica anestésica narrativa.                                            |
-| `preAnestheticAssessment`             | String                   | Sí; evaluación narrativa previa.                                             |
-| `medicationsText`                     | String                   | Sí; lista narrativa heterogénea, sin estructura farmacológica.               |
-| `airwayManagement`                    | String                   | Sí; manejo de vía aérea narrativo.                                           |
-| `fluidsText`                          | String                   | Sí; fluidos narrativos, sin tasas/volúmenes asumidos.                        |
-| `complications`                       | String                   | Sí; `NULL` no documentado; texto explícito puede registrar ausencia.         |
-| `recoveryNotes`                       | String                   | Sí; observación narrativa de recuperación, no enum.                          |
-| `notes`                               | String                   | Sí; nota anestésica residual.                                                |
-| `createdByMembershipId`               | UUID                     | No; actor server-derived al crear.                                           |
-| `responsiblePractitionerMembershipId` | UUID                     | Sí en DRAFT; Practitioner requerido al finalizar.                            |
-| `patientNameSnapshot`                 | String                   | Sí en DRAFT; requerido al finalizar.                                         |
-| `ownerDisplayNameSnapshot`            | String                   | Sí en DRAFT; requerido al finalizar, desde Owner histórico del Encounter.    |
-| `professionalDisplayNameSnapshot`     | String                   | Sí en DRAFT; requerido al finalizar desde perfil profesional.                |
-| `professionalLicenseSnapshot`         | String                   | Sí; copia nullable de la licencia vigente.                                   |
-| `finalizedAt`                         | TIMESTAMPTZ(3)           | Sí; requerido en FINALIZED/VOIDED.                                           |
-| `finalizedByMembershipId`             | UUID                     | Sí; requerido en FINALIZED/VOIDED.                                           |
-| `voidedAt`                            | TIMESTAMPTZ(3)           | Sí; requerido solo en VOIDED.                                                |
-| `voidedByMembershipId`                | UUID                     | Sí; requerido solo en VOIDED.                                                |
-| `voidReason`                          | String                   | Sí; requerido, trim no vacío, solo en VOIDED.                                |
-| `createdAt`                           | TIMESTAMPTZ(3)           | No; default now.                                                             |
-| `updatedAt`                           | TIMESTAMPTZ(3)           | No; cambia con cada mutación aceptada del agregado.                          |
+| Campo                                 | Tipo                     | Nullable / regla                                                                |
+| ------------------------------------- | ------------------------ | ------------------------------------------------------------------------------- |
+| `id`                                  | UUID                     | No; PK generado.                                                                |
+| `organizationId`                      | UUID                     | No; derivado de TenantContext.                                                  |
+| `clinicalEncounterId`                 | UUID                     | No; Encounter requerido.                                                        |
+| `clinicalProcedureId`                 | UUID                     | Sí; si existe, parents deben coincidir en organization, patient y encounter.    |
+| `patientId`                           | UUID                     | No; debe coincidir con Encounter y Procedure vinculado.                         |
+| `status`                              | `AnesthesiaRecordStatus` | No; default `DRAFT`.                                                            |
+| `version`                             | Int                      | No; default `1`, siempre `>= 1`.                                                |
+| `startedAt`                           | TIMESTAMPTZ(3)           | Sí en DRAFT; requerido en FINALIZED/VOIDED.                                     |
+| `endedAt`                             | TIMESTAMPTZ(3)           | Sí; opcional incluso al finalizar; si existe no puede ser anterior a startedAt. |
+| `asaClassification`                   | String                   | Sí; se conserva como texto nullable, sin enum ASA.                              |
+| `technique`                           | String                   | Sí; técnica anestésica narrativa.                                               |
+| `preAnestheticAssessment`             | String                   | Sí; evaluación narrativa previa.                                                |
+| `medicationsText`                     | String                   | Sí; lista narrativa heterogénea, sin estructura farmacológica.                  |
+| `airwayManagement`                    | String                   | Sí; manejo de vía aérea narrativo.                                              |
+| `fluidsText`                          | String                   | Sí; fluidos narrativos, sin tasas/volúmenes asumidos.                           |
+| `complications`                       | String                   | Sí; `NULL` no documentado; texto explícito puede registrar ausencia.            |
+| `recoveryNotes`                       | String                   | Sí; observación narrativa de recuperación, no enum.                             |
+| `notes`                               | String                   | Sí; nota anestésica residual.                                                   |
+| `createdByMembershipId`               | UUID                     | No; actor server-derived al crear.                                              |
+| `responsiblePractitionerMembershipId` | UUID                     | Sí en DRAFT; Practitioner requerido al finalizar.                               |
+| `patientNameSnapshot`                 | String                   | Sí en DRAFT; requerido al finalizar.                                            |
+| `ownerDisplayNameSnapshot`            | String                   | Sí en DRAFT; requerido al finalizar, desde Owner histórico del Encounter.       |
+| `professionalDisplayNameSnapshot`     | String                   | Sí en DRAFT; requerido al finalizar desde perfil profesional.                   |
+| `professionalLicenseSnapshot`         | String                   | Sí; copia nullable de la licencia vigente.                                      |
+| `finalizedAt`                         | TIMESTAMPTZ(3)           | Sí; requerido en FINALIZED/VOIDED.                                              |
+| `finalizedByMembershipId`             | UUID                     | Sí; requerido en FINALIZED/VOIDED.                                              |
+| `voidedAt`                            | TIMESTAMPTZ(3)           | Sí; requerido solo en VOIDED.                                                   |
+| `voidedByMembershipId`                | UUID                     | Sí; requerido solo en VOIDED.                                                   |
+| `voidReason`                          | String                   | Sí; requerido, trim no vacío, solo en VOIDED.                                   |
+| `createdAt`                           | TIMESTAMPTZ(3)           | No; default now.                                                                |
+| `updatedAt`                           | TIMESTAMPTZ(3)           | No; cambia con cada mutación aceptada del agregado.                             |
 
 No se almacenan snapshots de especie/raza/sexo/microchip/peso ni un owner
 mutable. `clinicalRecordId` se deriva del Encounter.
@@ -92,15 +93,16 @@ Cada fila es un punto de monitorización. Lista exacta, sin campos genéricos JS
 | `temperatureC`             | Decimal(5,2)   | Sí; temperatura en °C.                                                  |
 | `bloodPressureText`        | String         | Sí; texto original, puede contener sistólica/diastólica y forma legacy. |
 | `spo2Percent`              | Decimal(5,2)   | Sí; porcentaje, sin imponer rango clínico no acordado.                  |
-| `etco2MmHg`                | Decimal(6,2)   | Sí; CO₂ al final de espiración en mmHg.                                 |
+| `etco2MmHg`                | Decimal(8,2)   | Sí; CO₂ al final de espiración en mmHg.                                 |
 | `anestheticPlane`          | String         | Sí; descripción textual, no enum.                                       |
 | `notes`                    | String         | Sí; observación libre equivalente a `observations` legacy.              |
 | `createdAt`                | TIMESTAMPTZ(3) | No; default now.                                                        |
 | `updatedAt`                | TIMESTAMPTZ(3) | No; se actualiza al corregir un Draft.                                  |
 
 Null significa no registrado; no sustituirlo por cero. Inputs numéricos deben
-ser números finitos en las unidades anteriores. No agregar límites de dosis,
-rangos clínicos ni valores default sin política clínica. Un punto requiere
+ser números finitos en las unidades anteriores: FC/FR `>= 0`, temperatura `> 0`,
+SpO₂ entre `0..100` y EtCO₂ `>= 0`. No agregar límites de dosis,
+rangos clínicos adicionales ni valores default sin política clínica. Un punto requiere
 `observedAt` y al menos un campo de medida/plano/nota con dato; no se persisten
 filas vacías. Los nombres de campo normalizan los campos legacy verificados
 `time`, `heartRate`, `respiratoryRate`, `temperature`, `bloodPressure`, `spo2`,
@@ -112,7 +114,8 @@ filas vacías. Los nombres de campo normalizan los campos legacy verificados
   AnesthesiaRecord. Void solo acepta FINALIZED con motivo no vacío y conserva
   las observaciones.
 - Draft admite campos incompletos, timestamps null y observaciones editables.
-- Para FINALIZE se requieren `startedAt`, `endedAt`, `endedAt >= startedAt`,
+- Para FINALIZE se requiere `startedAt`; `endedAt` es opcional y, si existe,
+  debe cumplir `endedAt >= startedAt`,
   Practitioner responsable activo, perfil Professional con `displayName` no
   vacío y autoría del actor igual al responsable. Licencia puede ser null.
 - No exigir ASA, medicamento, fluido, vía aérea, técnica ni al menos una
@@ -273,13 +276,14 @@ patientId)` a la unique compuesta de ClinicalProcedure establecida en 6F.2A;
   `(id, organizationId)`.
 
 Checks SQL: `version >= 1`; DRAFT sin terminal metadata; FINALIZED requiere
-startedAt/endedAt, responsable, snapshots obligatorios y finalizedAt/by con
+startedAt, responsable, snapshots obligatorios y finalizedAt/by con
 void metadata nula; VOIDED conserva requisitos finales y añade voidedAt/by y
 voidReason trim no vacío; `endedAt >= startedAt` si ambos están presentes.
-Observations requieren `observedAt`; sus medidas son nullable y no se agregan
-checks de intervalo clínico ni timestamps dentro del episodio. El servicio
-valida rol clínico y consistencia de parent status, invariantes que cruzan
-Membership/otra fila.
+Observations requieren `observedAt`, al menos un campo clínico no vacío, HR/RR
+`>= 0`, temperatura `> 0`, SpO₂ `0..100` y EtCO₂ `>= 0`. No se agregan checks de
+intervalo clínico ni timestamps dentro del episodio. El servicio valida rol
+clínico y consistencia de parent status, invariantes que cruzan Membership/otra
+fila.
 
 Índices mínimos:
 
@@ -301,10 +305,11 @@ OBSERVATION_REMOVED`, `previousVersion`, `newVersion`, `changedFieldNames` y
 count mínima. Nunca guardar valores monitorizados, narrative, medicamentos,
 findings, complicaciones ni nombres/PII en metadata.
 
-Seed dev idempotente añade un AnesthesiaRecord Draft enlazado al fixture
-Procedure de cirugía de 6F.2A con dos observations sintéticas completas en
-unidades declaradas. No requiere que toda anesthesia tenga Procedure; esa
-cardinalidad se prueba en DB tests, junto con episodios múltiples.
+Seed dev idempotente añade tres AnesthesiaRecord ficticios: Norte draft
+standalone, Norte finalizado enlazado a cirugía y Sur draft, con tres
+observations sintéticas en unidades declaradas. No requiere que toda anesthesia
+tenga Procedure; esa cardinalidad se prueba en DB tests, junto con episodios
+múltiples.
 
 `test:db` cubre mismo tenant/parents, link null y válido, rechazo de link cross-
 tenant/patient/encounter, multiplicidad 0..N, lifecycle independiente,

@@ -496,6 +496,148 @@ const seedClinicalSurgeryDetails = [
   },
 ];
 
+// Anesthesia records are independent evidence: one standalone Draft, one finalized Surgery link and one South tenant draft.
+const seedAnesthesiaRecords = [
+  {
+    id: '00000000-0000-4000-8000-000000001701',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[0].id,
+    clinicalProcedureId: null,
+    patientId: seedPatients[0].id,
+    status: 'DRAFT',
+    version: 2,
+    startedAt: '2030-01-08T15:10:00.000Z',
+    endedAt: null,
+    asaClassification: null,
+    technique: 'Sedación demostrativa en borrador.',
+    preAnestheticAssessment: null,
+    medicationsText: 'Narrativa ficticia sin integración a prescripción.',
+    airwayManagement: null,
+    fluidsText: null,
+    complications: null,
+    recoveryNotes: null,
+    notes: 'Registro anestésico draft de seed.',
+    createdByMembershipId: seedUsers[2].membershipId,
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+    patientNameSnapshot: null,
+    ownerDisplayNameSnapshot: null,
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001702',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    clinicalProcedureId: seedClinicalProcedures[3].id,
+    patientId: seedPatients[0].id,
+    status: 'FINALIZED',
+    version: 2,
+    startedAt: '2030-01-08T14:50:00.000Z',
+    endedAt: '2030-01-08T15:05:00.000Z',
+    asaClassification: 'II',
+    technique: 'Anestesia general ficticia para cirugía demo.',
+    preAnestheticAssessment: 'Evaluación preanestésica ficticia sin hallazgos.',
+    medicationsText: 'Narrativa libre de medicamentos anestésicos demo.',
+    airwayManagement: 'Tubo endotraqueal demo.',
+    fluidsText: 'Fluidos cristaloides demo.',
+    complications: null,
+    recoveryNotes: 'Recuperación inicial estable, dato ficticio.',
+    notes: 'Finalized anesthesia seed.',
+    createdByMembershipId: seedUsers[0].membershipId,
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    finalizedAt: '2030-01-08T15:08:00.000Z',
+    finalizedByMembershipId: seedUsers[0].membershipId,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001703',
+    organizationId: seedOrganizations[1].id,
+    clinicalEncounterId: seedClinicalEncounters[2].id,
+    clinicalProcedureId: null,
+    patientId: seedPatients[3].id,
+    status: 'DRAFT',
+    version: 1,
+    startedAt: null,
+    endedAt: null,
+    asaClassification: null,
+    technique: null,
+    preAnestheticAssessment: null,
+    medicationsText: null,
+    airwayManagement: null,
+    fluidsText: null,
+    complications: null,
+    recoveryNotes: null,
+    notes: 'Registro anestésico draft Sur ficticio.',
+    createdByMembershipId: '00000000-0000-4000-8000-000000000204',
+    responsiblePractitionerMembershipId: '00000000-0000-4000-8000-000000000204',
+    patientNameSnapshot: null,
+    ownerDisplayNameSnapshot: null,
+    professionalDisplayNameSnapshot: null,
+    professionalLicenseSnapshot: null,
+    finalizedAt: null,
+    finalizedByMembershipId: null,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+  },
+];
+
+const seedAnesthesiaObservations = [
+  {
+    id: '00000000-0000-4000-8000-000000001801',
+    organizationId: seedOrganizations[0].id,
+    anesthesiaRecordId: seedAnesthesiaRecords[0].id,
+    observedAt: '2030-01-08T15:15:00.000Z',
+    heartRateBpm: 88,
+    respiratoryRatePerMinute: 0,
+    temperatureC: null,
+    bloodPressureText: null,
+    spo2Percent: 98,
+    etco2MmHg: 34,
+    anestheticPlane: null,
+    notes: 'Observación ficticia con FR cero documentable.',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001802',
+    organizationId: seedOrganizations[0].id,
+    anesthesiaRecordId: seedAnesthesiaRecords[1].id,
+    observedAt: '2030-01-08T14:55:00.000Z',
+    heartRateBpm: 96,
+    respiratoryRatePerMinute: 18,
+    temperatureC: 38.2,
+    bloodPressureText: 'Doppler 95 mmHg',
+    spo2Percent: 99,
+    etco2MmHg: 35,
+    anestheticPlane: 'Plano estable demo',
+    notes: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001803',
+    organizationId: seedOrganizations[0].id,
+    anesthesiaRecordId: seedAnesthesiaRecords[1].id,
+    observedAt: '2030-01-08T15:00:00.000Z',
+    heartRateBpm: null,
+    respiratoryRatePerMinute: null,
+    temperatureC: null,
+    bloodPressureText: 'MAP 70',
+    spo2Percent: null,
+    etco2MmHg: null,
+    anestheticPlane: null,
+    notes: 'Lectura de presión ficticia.',
+  },
+];
+
 const seedVitalMeasurements = [
   {
     id: '00000000-0000-4000-8000-000000001001',
@@ -976,6 +1118,57 @@ const seedClinicalAuditEvents = [
     action: 'CREATED',
     metadata: { source: 'seed', stage: '6F.2A', kind: 'PROCEDURE', newVersion: 1 },
   },
+  {
+    id: '00000000-0000-4000-8000-000000001220',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'ANESTHESIA_RECORD',
+    entityId: seedAnesthesiaRecords[0].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6F.2B', newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001221',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'ANESTHESIA_RECORD',
+    entityId: seedAnesthesiaRecords[0].id,
+    action: 'UPDATED',
+    metadata: {
+      source: 'seed',
+      stage: '6F.2B',
+      observationAction: 'ADDED',
+      previousVersion: 1,
+      newVersion: 2,
+    },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001222',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'ANESTHESIA_RECORD',
+    entityId: seedAnesthesiaRecords[1].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6F.2B', newVersion: 1 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001223',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'ANESTHESIA_RECORD',
+    entityId: seedAnesthesiaRecords[1].id,
+    action: 'FINALIZED',
+    metadata: { source: 'seed', stage: '6F.2B', previousVersion: 1, newVersion: 2 },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001224',
+    organizationId: seedOrganizations[1].id,
+    actorMembershipId: '00000000-0000-4000-8000-000000000204',
+    entityType: 'ANESTHESIA_RECORD',
+    entityId: seedAnesthesiaRecords[2].id,
+    action: 'CREATED',
+    metadata: { source: 'seed', stage: '6F.2B', newVersion: 1 },
+  },
 ];
 
 async function main() {
@@ -1240,6 +1433,42 @@ async function main() {
       });
     }
 
+    for (const anesthesia of seedAnesthesiaRecords) {
+      const {
+        id: anesthesiaId,
+        startedAt,
+        endedAt,
+        finalizedAt,
+        voidedAt,
+        ...anesthesiaFields
+      } = anesthesia;
+      const data = {
+        ...anesthesiaFields,
+        startedAt: startedAt ? new Date(startedAt) : null,
+        endedAt: endedAt ? new Date(endedAt) : null,
+        finalizedAt: finalizedAt ? new Date(finalizedAt) : null,
+        voidedAt: voidedAt ? new Date(voidedAt) : null,
+      };
+      await transaction.anesthesiaRecord.upsert({
+        where: { id: anesthesia.id },
+        update: data,
+        create: { id: anesthesiaId, ...data },
+      });
+    }
+
+    for (const observation of seedAnesthesiaObservations) {
+      const { id: observationId, observedAt, ...observationFields } = observation;
+      const data = {
+        ...observationFields,
+        observedAt: new Date(observedAt),
+      };
+      await transaction.anesthesiaObservation.upsert({
+        where: { id: observation.id },
+        update: data,
+        create: { id: observationId, ...data },
+      });
+    }
+
     for (const prescription of seedPrescriptions) {
       const { id: prescriptionId, finalizedAt, voidedAt, ...prescriptionFields } = prescription;
       const data = {
@@ -1343,7 +1572,7 @@ async function main() {
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 3 encounters, 5 procedures, 2 surgery details, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 19 audits.',
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 3 encounters, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 24 audits.',
   );
 }
 

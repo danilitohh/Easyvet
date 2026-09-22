@@ -1,4 +1,4 @@
-# Autorización clínica — Fases 6B.1–6B.2, 6E.2 y 6F.2A
+# Autorización clínica — Fases 6B.1–6B.2, 6E.2, 6F.2A y 6F.2B
 
 ## Separación de responsabilidades
 
@@ -31,15 +31,17 @@ El catálogo base contiene exactamente:
   `dewormings.finalize`, `dewormings.void`
 - `procedures.read`, `procedures.create`, `procedures.updateDraft`,
   `procedures.finalize`, `procedures.void`
+- `anesthesia.read`, `anesthesia.create`, `anesthesia.updateDraft`,
+  `anesthesia.finalize`, `anesthesia.void`
 
 `PRACTITIONER` recibe todos los permisos clínicos, incluidos los cinco de
 prescripciones. `CLINICAL_ASSISTANT` recibe lectura
 del expediente/encuentro/evolución/vitales, creación y edición de drafts de
 encuentro y creación de vitales, además de leer/crear/editar drafts de
-prescripciones, vacunaciones y desparasitaciones; no recibe `finalize` ni `void`
-de prescripciones, vacunaciones o desparasitaciones, ni
-`clinicalEvolutions.create` por defecto. Las funciones de autorización
-combinan permisos organizacionales y clínicos, eliminando duplicados.
+prescripciones, vacunaciones, desparasitaciones, procedimientos y anestesia; no
+recibe `finalize` ni `void` de esos satélites ni `clinicalEvolutions.create` por
+defecto. Las funciones de autorización combinan permisos organizacionales y
+clínicos, eliminando duplicados.
 
 La finalización de una receta o de un preventivo requiere además que el
 Membership actor sea el responsable indicado y tenga perfil profesional con
@@ -77,13 +79,13 @@ finalizar. Los roles organizacionales por sí solos y `PLATFORM_ADMIN` sin
 Membership clínico no reciben capacidades clínicas implícitas. Las
 Membership/User/Profile se revalidan bajo locks dentro de las transacciones.
 
-## Procedures/Surgery 6F.2A
+## Anesthesia 6F.2B
 
-`PRACTITIONER` obtiene los cinco permisos `procedures.*`. `CLINICAL_ASSISTANT`
-puede leer, crear y editar únicamente drafts; no puede finalizar ni anular. La
-finalización requiere que el actor sea el Practitioner responsable con perfil
-configurado. Un Assistant activo con perfil puede ser miembro de equipo en
-`ClinicalSurgeryDetail`, pero su selección no le concede autoridad para
-finalizar. Los roles organizacionales por sí solos y `PLATFORM_ADMIN` sin
-Membership clínico no reciben capacidades clínicas implícitas. Las
-Membership/User/Profile se revalidan bajo locks dentro de las transacciones.
+`PRACTITIONER` obtiene los cinco permisos `anesthesia.*`. `CLINICAL_ASSISTANT`
+puede leer, crear y editar únicamente drafts, incluyendo agregar, corregir y
+eliminar observations mientras el `AnesthesiaRecord` siga en `DRAFT`; no puede
+finalizar ni anular. Finalizar requiere que el actor sea el Practitioner
+responsable con perfil configurado. Los roles organizacionales por sí solos y
+`PLATFORM_ADMIN` sin Membership clínico no reciben capacidades clínicas
+implícitas. Membership/User/Profile se revalidan bajo locks dentro de las
+transacciones.

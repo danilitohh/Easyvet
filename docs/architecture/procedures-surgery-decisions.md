@@ -8,7 +8,10 @@ literales [6F.2A](procedures-core-6f2.md) y
 [6F.2B](anesthesia-core-6f2.md). Este documento no implementa ni autoriza
 cambios funcionales. La fase backend 6F.2A ya está implementada; para su
 comportamiento vigente prevalecen el contrato y
-[procedures-api.md](procedures-api.md). La anestesia continúa pendiente en 6F.2B.
+[procedures-api.md](procedures-api.md). La fase backend 6F.2B de anestesia
+también está implementada; para su comportamiento vigente prevalecen
+[anesthesia-core-6f2.md](anesthesia-core-6f2.md) y
+[anesthesia-api.md](anesthesia-api.md).
 
 | ID    | Tema                             | Estado / decisión propuesta                                                                                                                                                                        |
 | ----- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -106,7 +109,7 @@ jurisdicción, procedimientos históricos externos, ServiceCatalog, inventario,
 farmacología anestésica avanzada y dispositivos/integración de monitorización.
 Ninguno bloquea el schema de 6F.2.
 
-## Contratos backend aprobados (aún no implementados)
+## Contratos backend aprobados e implementados
 
 - [6F.2A — ClinicalProcedure + ClinicalSurgeryDetail](procedures-core-6f2.md):
   modelos/enums, migración, permisos, APIs/Zod, transición de kind y SurgeryDetail
@@ -114,12 +117,14 @@ Ninguno bloquea el schema de 6F.2.
 - [6F.2B — AnesthesiaRecord + AnesthesiaObservation](anesthesia-core-6f2.md):
   modelos, relación opcional al Procedure, observaciones con parent CAS,
   migración, permisos, APIs/Zod, snapshots, locks, audit, seed y DB tests.
-- Las fases se ejecutan separadamente; el presente checkpoint no inicia 6F.2A.
+- Las fases se ejecutaron separadamente; este documento no inicia frontend ni
+  hardening posterior.
 
 ## Resultado Fase 6F.1
 
 - Procedures/Surgery analysis: **COMPLETADO**.
 - Design Gate 6F.1.1: **COMPLETADO**.
-- Backend 6F.2: **PENDIENTE**.
+- Backend 6F.2A/6F.2B: **COMPLETADO**.
 - Frontend: **PENDIENTE**.
-- Esquema, migraciones, API, permisos y frontend: **sin cambios**.
+- Esquema, migraciones, API y permisos: **implementados para backend**; frontend
+  sigue sin cambios en esta fase.

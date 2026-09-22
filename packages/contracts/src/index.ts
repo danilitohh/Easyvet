@@ -74,6 +74,11 @@ export const permissionSchema = z.enum([
   'procedures.updateDraft',
   'procedures.finalize',
   'procedures.void',
+  'anesthesia.read',
+  'anesthesia.create',
+  'anesthesia.updateDraft',
+  'anesthesia.finalize',
+  'anesthesia.void',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -371,6 +376,8 @@ export const clinicalAuditEntityTypeSchema = z.enum([
   'VITAL_MEASUREMENT',
   'VACCINATION',
   'DEWORMING',
+  'CLINICAL_PROCEDURE',
+  'ANESTHESIA_RECORD',
 ]);
 export const clinicalAuditActionSchema = z.enum([
   'CREATED',
@@ -1053,6 +1060,233 @@ export type FinalizeClinicalProcedureRequest = z.infer<
 >;
 export type VoidClinicalProcedureRequest = z.infer<typeof voidClinicalProcedureRequestSchema>;
 export type ClinicalProcedureListQuery = z.infer<typeof clinicalProcedureListQuerySchema>;
+
+// Anesthesia contracts model an independent clinical aggregate and its ordered monitoring rows.
+export const anesthesiaRecordStatusSchema = z.enum(['DRAFT', 'FINALIZED', 'VOIDED']);
+const anesthesiaDateTimeSchema = z.string().datetime({ offset: true });
+const anesthesiaText = (max: number) => z.string().trim().max(max).nullable();
+const anesthesiaObservationFieldsSchema = {
+  observedAt: anesthesiaDateTimeSchema,
+  heartRateBpm: z.number().int().min(0).nullable().optional(),
+  respiratoryRatePerMinute: z.number().int().min(0).nullable().optional(),
+  temperatureC: z.number().positive().nullable().optional(),
+  bloodPressureText: anesthesiaText(200).optional(),
+  spo2Percent: z.number().min(0).max(100).nullable().optional(),
+  etco2MmHg: z.number().min(0).nullable().optional(),
+  anestheticPlane: anesthesiaText(500).optional(),
+  notes: anesthesiaText(5000).optional(),
+};
+const anesthesiaEditableFieldsSchema = {
+  clinicalProcedureId: z.string().uuid().nullable().optional(),
+  startedAt: anesthesiaDateTimeSchema.nullable().optional(),
+  endedAt: anesthesiaDateTimeSchema.nullable().optional(),
+  asaClassification: anesthesiaText(100).optional(),
+  technique: anesthesiaText(10000).optional(),
+  preAnestheticAssessment: anesthesiaText(10000).optional(),
+  medicationsText: anesthesiaText(10000).optional(),
+  airwayManagement: anesthesiaText(5000).optional(),
+  fluidsText: anesthesiaText(10000).optional(),
+  complications: anesthesiaText(10000).optional(),
+  recoveryNotes: anesthesiaText(10000).optional(),
+  notes: anesthesiaText(10000).optional(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable().optional(),
+};
+
+export const anesthesiaObservationSchema = z
+  .object({
+    id: z.string().uuid(),
+    organizationId: z.string().uuid(),
+    anesthesiaRecordId: z.string().uuid(),
+    observedAt: anesthesiaDateTimeSchema,
+    heartRateBpm: z.number().int().nonnegative().nullable(),
+    respiratoryRatePerMinute: z.number().int().nonnegative().nullable(),
+    temperatureC: z.number().positive().nullable(),
+    bloodPressureText: z.string().nullable(),
+    spo2Percent: z.number().min(0).max(100).nullable(),
+    etco2MmHg: z.number().min(0).nullable(),
+    anestheticPlane: z.string().nullable(),
+    notes: z.string().nullable(),
+    createdAt: anesthesiaDateTimeSchema,
+    updatedAt: anesthesiaDateTimeSchema,
+  })
+  .strict();
+
+const linkedProcedureSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    kind: clinicalProcedureKindSchema,
+    status: clinicalProcedureStatusSchema,
+    procedureName: z.string().nullable(),
+  })
+  .strict();
+
+const anesthesiaRecordResponseBaseSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid(),
+  clinicalProcedureId: z.string().uuid().nullable(),
+  patientId: z.string().uuid(),
+  status: anesthesiaRecordStatusSchema,
+  version: z.number().int().positive(),
+  startedAt: anesthesiaDateTimeSchema.nullable(),
+  endedAt: anesthesiaDateTimeSchema.nullable(),
+  asaClassification: z.string().nullable(),
+  technique: z.string().nullable(),
+  preAnestheticAssessment: z.string().nullable(),
+  medicationsText: z.string().nullable(),
+  airwayManagement: z.string().nullable(),
+  fluidsText: z.string().nullable(),
+  complications: z.string().nullable(),
+  recoveryNotes: z.string().nullable(),
+  notes: z.string().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  ownerDisplayNameSnapshot: z.string().nullable(),
+  professionalDisplayNameSnapshot: z.string().nullable(),
+  professionalLicenseSnapshot: z.string().nullable(),
+  finalizedAt: anesthesiaDateTimeSchema.nullable(),
+  finalizedByMembershipId: z.string().uuid().nullable(),
+  voidedAt: anesthesiaDateTimeSchema.nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: z.string().nullable(),
+  createdAt: anesthesiaDateTimeSchema,
+  updatedAt: anesthesiaDateTimeSchema,
+  parentEncounterStatus: clinicalEncounterStatusSchema,
+  linkedProcedureStatus: clinicalProcedureStatusSchema.nullable(),
+  patient: preventivePatientSummarySchema,
+  encounter: preventiveEncounterSummarySchema,
+  linkedProcedure: linkedProcedureSummarySchema.nullable(),
+  responsiblePractitioner: preventiveProfessionalSummarySchema.nullable(),
+  observationCount: z.number().int().nonnegative(),
+});
+
+export const anesthesiaRecordSummarySchema = anesthesiaRecordResponseBaseSchema
+  .pick({
+    id: true,
+    organizationId: true,
+    clinicalEncounterId: true,
+    clinicalProcedureId: true,
+    patientId: true,
+    status: true,
+    version: true,
+    startedAt: true,
+    endedAt: true,
+    responsiblePractitionerMembershipId: true,
+    patientNameSnapshot: true,
+    ownerDisplayNameSnapshot: true,
+    professionalDisplayNameSnapshot: true,
+    professionalLicenseSnapshot: true,
+    finalizedAt: true,
+    voidedAt: true,
+    createdAt: true,
+    updatedAt: true,
+    parentEncounterStatus: true,
+    linkedProcedureStatus: true,
+    patient: true,
+    encounter: true,
+    linkedProcedure: true,
+    responsiblePractitioner: true,
+    observationCount: true,
+  })
+  .strict();
+export const anesthesiaRecordDetailSchema = anesthesiaRecordResponseBaseSchema.strict();
+export const anesthesiaRecordListResponseSchema = z.object({
+  data: z.array(anesthesiaRecordSummarySchema),
+  pagination: paginationSchema,
+});
+export const anesthesiaObservationListResponseSchema = z.object({
+  data: z.array(anesthesiaObservationSchema),
+  pagination: paginationSchema,
+});
+export const anesthesiaObservationMutationResponseSchema = z.object({
+  anesthesiaRecordVersion: z.number().int().positive(),
+  observation: anesthesiaObservationSchema.nullable(),
+});
+
+export const createAnesthesiaRecordRequestSchema = z
+  .object(anesthesiaEditableFieldsSchema)
+  .strict();
+export const updateAnesthesiaRecordRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive(), ...anesthesiaEditableFieldsSchema })
+  .strict();
+export const finalizeAnesthesiaRecordRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+export const voidAnesthesiaRecordRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(1000),
+  })
+  .strict();
+export const anesthesiaRecordListQuerySchema = z
+  .object({
+    page: pageSchema.default(1),
+    pageSize: pageSizeSchema.default(20),
+    status: anesthesiaRecordStatusSchema.optional(),
+    clinicalEncounterId: z.string().uuid().optional(),
+    clinicalProcedureId: z.string().uuid().optional(),
+    from: anesthesiaDateTimeSchema.optional(),
+    to: anesthesiaDateTimeSchema.optional(),
+  })
+  .strict()
+  .refine((query) => !query.from || !query.to || query.from <= query.to, {
+    message: 'from must be on or before to',
+    path: ['from'],
+  });
+export const anesthesiaObservationListQuerySchema = z
+  .object({
+    page: pageSchema.default(1),
+    pageSize: pageSizeSchema.default(20),
+  })
+  .strict();
+export const createAnesthesiaObservationRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive(), ...anesthesiaObservationFieldsSchema })
+  .strict();
+export const updateAnesthesiaObservationRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    observedAt: anesthesiaDateTimeSchema.optional(),
+    heartRateBpm: z.number().int().min(0).nullable().optional(),
+    respiratoryRatePerMinute: z.number().int().min(0).nullable().optional(),
+    temperatureC: z.number().positive().nullable().optional(),
+    bloodPressureText: anesthesiaText(200).optional(),
+    spo2Percent: z.number().min(0).max(100).nullable().optional(),
+    etco2MmHg: z.number().min(0).nullable().optional(),
+    anestheticPlane: anesthesiaText(500).optional(),
+    notes: anesthesiaText(5000).optional(),
+  })
+  .strict();
+export const removeAnesthesiaObservationRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+
+export type AnesthesiaRecordStatus = z.infer<typeof anesthesiaRecordStatusSchema>;
+export type AnesthesiaObservation = z.infer<typeof anesthesiaObservationSchema>;
+export type AnesthesiaRecordSummary = z.infer<typeof anesthesiaRecordSummarySchema>;
+export type AnesthesiaRecordDetail = z.infer<typeof anesthesiaRecordDetailSchema>;
+export type AnesthesiaRecordListResponse = z.infer<typeof anesthesiaRecordListResponseSchema>;
+export type AnesthesiaObservationListResponse = z.infer<
+  typeof anesthesiaObservationListResponseSchema
+>;
+export type AnesthesiaObservationMutationResponse = z.infer<
+  typeof anesthesiaObservationMutationResponseSchema
+>;
+export type CreateAnesthesiaRecordRequest = z.infer<typeof createAnesthesiaRecordRequestSchema>;
+export type UpdateAnesthesiaRecordRequest = z.infer<typeof updateAnesthesiaRecordRequestSchema>;
+export type FinalizeAnesthesiaRecordRequest = z.infer<typeof finalizeAnesthesiaRecordRequestSchema>;
+export type VoidAnesthesiaRecordRequest = z.infer<typeof voidAnesthesiaRecordRequestSchema>;
+export type AnesthesiaRecordListQuery = z.infer<typeof anesthesiaRecordListQuerySchema>;
+export type AnesthesiaObservationListQuery = z.infer<typeof anesthesiaObservationListQuerySchema>;
+export type CreateAnesthesiaObservationRequest = z.infer<
+  typeof createAnesthesiaObservationRequestSchema
+>;
+export type UpdateAnesthesiaObservationRequest = z.infer<
+  typeof updateAnesthesiaObservationRequestSchema
+>;
+export type RemoveAnesthesiaObservationRequest = z.infer<
+  typeof removeAnesthesiaObservationRequestSchema
+>;
 export type CreateDewormingRequest = z.infer<typeof createDewormingRequestSchema>;
 export type UpdateDewormingRequest = z.infer<typeof updateDewormingRequestSchema>;
 export type FinalizeDewormingRequest = z.infer<typeof finalizeDewormingRequestSchema>;

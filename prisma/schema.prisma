@@ -33,6 +33,8 @@ model Organization {
   prescriptions          Prescription[]
   clinicalProcedures     ClinicalProcedure[]
   clinicalSurgeryDetails ClinicalSurgeryDetail[]
+  anesthesiaRecords      AnesthesiaRecord[]
+  anesthesiaObservations AnesthesiaObservation[]
   vaccinations           Vaccination[]
   dewormings             Deworming[]
 
@@ -108,6 +110,10 @@ model Membership {
   finalizedClinicalProcedures     ClinicalProcedure[]            @relation("ClinicalProcedureFinalizedByMembership")
   voidedClinicalProcedures        ClinicalProcedure[]            @relation("ClinicalProcedureVoidedByMembership")
   assistantClinicalSurgeryDetails ClinicalSurgeryDetail[]        @relation("ClinicalSurgeryDetailAssistantMembership")
+  createdAnesthesiaRecords        AnesthesiaRecord[]             @relation("AnesthesiaRecordCreatedByMembership")
+  responsibleAnesthesiaRecords    AnesthesiaRecord[]             @relation("AnesthesiaRecordResponsibleMembership")
+  finalizedAnesthesiaRecords      AnesthesiaRecord[]             @relation("AnesthesiaRecordFinalizedByMembership")
+  voidedAnesthesiaRecords         AnesthesiaRecord[]             @relation("AnesthesiaRecordVoidedByMembership")
   createdVaccinations             Vaccination[]                  @relation("VaccinationCreatedByMembership")
   responsibleVaccinations         Vaccination[]                  @relation("VaccinationResponsibleMembership")
   administeredVaccinations        Vaccination[]                  @relation("VaccinationAdministeredByMembership")
@@ -212,6 +218,7 @@ model Patient {
   vitalMeasurements  VitalMeasurement[]
   prescriptions      Prescription[]
   clinicalProcedures ClinicalProcedure[]
+  anesthesiaRecords  AnesthesiaRecord[]
   vaccinations       Vaccination[]       @relation("VaccinationPatient")
   dewormings         Deworming[]         @relation("DewormingPatient")
 
@@ -309,6 +316,12 @@ enum ClinicalProcedureStatus {
   VOIDED
 }
 
+enum AnesthesiaRecordStatus {
+  DRAFT
+  FINALIZED
+  VOIDED
+}
+
 enum ClinicalAuditEntityType {
   CLINICAL_RECORD
   CLINICAL_ENCOUNTER
@@ -318,6 +331,7 @@ enum ClinicalAuditEntityType {
   VACCINATION
   DEWORMING
   CLINICAL_PROCEDURE
+  ANESTHESIA_RECORD
 }
 
 enum ClinicalAuditAction {
@@ -420,6 +434,7 @@ model ClinicalEncounter {
   vaccinations                    Vaccination[]           @relation("VaccinationEncounter")
   dewormings                      Deworming[]             @relation("DewormingEncounter")
   clinicalProcedures              ClinicalProcedure[]
+  anesthesiaRecords               AnesthesiaRecord[]
 
   @@unique([id, organizationId], map: "clinical_encounters_id_organization_id_key")
   @@unique([id, organizationId, clinicalRecordId], map: "clinical_encounters_id_org_record_key")
@@ -517,8 +532,10 @@ model ClinicalProcedure {
   finalizedByMembership               Membership?             @relation("ClinicalProcedureFinalizedByMembership", fields: [finalizedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   voidedByMembership                  Membership?             @relation("ClinicalProcedureVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   surgeryDetail                       ClinicalSurgeryDetail?
+  anesthesiaRecords                   AnesthesiaRecord[]
 
   @@unique([id, organizationId], map: "clinical_procedures_id_organization_id_key")
+  @@unique([id, organizationId, patientId, clinicalEncounterId], map: "clinical_procedures_id_org_patient_encounter_key")
   @@index([organizationId, patientId, performedAt, createdAt])
   @@index([organizationId, clinicalEncounterId])
   @@index([organizationId, status])
@@ -548,6 +565,80 @@ model ClinicalSurgeryDetail {
   @@unique([clinicalProcedureId, organizationId], map: "clinical_surgery_details_procedure_org_key")
   @@index([organizationId, assistantMembershipId])
   @@map("clinical_surgery_details")
+}
+
+// AnesthesiaRecord is an independent auditable aggregate rooted in one clinical encounter.
+model AnesthesiaRecord {
+  id                                  String                  @id @default(uuid()) @db.Uuid
+  organizationId                      String                  @map("organization_id") @db.Uuid
+  clinicalEncounterId                 String                  @map("clinical_encounter_id") @db.Uuid
+  clinicalProcedureId                 String?                 @map("clinical_procedure_id") @db.Uuid
+  patientId                           String                  @map("patient_id") @db.Uuid
+  status                              AnesthesiaRecordStatus  @default(DRAFT)
+  version                             Int                     @default(1)
+  startedAt                           DateTime?               @map("started_at") @db.Timestamptz(3)
+  endedAt                             DateTime?               @map("ended_at") @db.Timestamptz(3)
+  asaClassification                   String?                 @map("asa_classification") @db.VarChar(100)
+  technique                           String?                 @db.VarChar(10000)
+  preAnestheticAssessment             String?                 @map("pre_anesthetic_assessment") @db.VarChar(10000)
+  medicationsText                     String?                 @map("medications_text") @db.VarChar(10000)
+  airwayManagement                    String?                 @map("airway_management") @db.VarChar(5000)
+  fluidsText                          String?                 @map("fluids_text") @db.VarChar(10000)
+  complications                       String?                 @db.VarChar(10000)
+  recoveryNotes                       String?                 @map("recovery_notes") @db.VarChar(10000)
+  notes                               String?                 @db.VarChar(10000)
+  createdByMembershipId               String                  @map("created_by_membership_id") @db.Uuid
+  responsiblePractitionerMembershipId String?                 @map("responsible_practitioner_membership_id") @db.Uuid
+  patientNameSnapshot                 String?                 @map("patient_name_snapshot") @db.VarChar(200)
+  ownerDisplayNameSnapshot            String?                 @map("owner_display_name_snapshot") @db.VarChar(200)
+  professionalDisplayNameSnapshot     String?                 @map("professional_display_name_snapshot") @db.VarChar(200)
+  professionalLicenseSnapshot         String?                 @map("professional_license_snapshot") @db.VarChar(160)
+  finalizedAt                         DateTime?               @map("finalized_at") @db.Timestamptz(3)
+  finalizedByMembershipId             String?                 @map("finalized_by_membership_id") @db.Uuid
+  voidedAt                            DateTime?               @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId                String?                 @map("voided_by_membership_id") @db.Uuid
+  voidReason                          String?                 @map("void_reason") @db.VarChar(1000)
+  createdAt                           DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                           DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                        Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_records_organization_id_fkey")
+  clinicalEncounter                   ClinicalEncounter       @relation(fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_records_encounter_org_patient_fkey")
+  clinicalProcedure                   ClinicalProcedure?      @relation(fields: [clinicalProcedureId, organizationId, patientId, clinicalEncounterId], references: [id, organizationId, patientId, clinicalEncounterId], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_records_procedure_org_patient_encounter_fkey")
+  patient                             Patient                 @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_records_patient_org_fkey")
+  createdByMembership                 Membership              @relation("AnesthesiaRecordCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_records_created_by_membership_org_fkey")
+  responsiblePractitionerMembership   Membership?             @relation("AnesthesiaRecordResponsibleMembership", fields: [responsiblePractitionerMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_records_responsible_membership_org_fkey")
+  finalizedByMembership               Membership?             @relation("AnesthesiaRecordFinalizedByMembership", fields: [finalizedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_records_finalized_by_membership_org_fkey")
+  voidedByMembership                  Membership?             @relation("AnesthesiaRecordVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_records_voided_by_membership_org_fkey")
+  observations                        AnesthesiaObservation[]
+
+  @@unique([id, organizationId], map: "anesthesia_records_id_organization_id_key")
+  @@index([organizationId, patientId, startedAt(sort: Desc), createdAt(sort: Desc), id], map: "anesthesia_records_org_patient_started_created_idx")
+  @@index([organizationId, clinicalEncounterId], map: "anesthesia_records_org_encounter_idx")
+  @@index([organizationId, status], map: "anesthesia_records_org_status_idx")
+  @@index([organizationId, responsiblePractitionerMembershipId, startedAt(sort: Desc)], map: "anesthesia_records_org_responsible_started_idx")
+  @@map("anesthesia_records")
+}
+
+// AnesthesiaObservation is mutable only while its parent anesthesia record remains DRAFT.
+model AnesthesiaObservation {
+  id                       String           @id @default(uuid()) @db.Uuid
+  organizationId           String           @map("organization_id") @db.Uuid
+  anesthesiaRecordId       String           @map("anesthesia_record_id") @db.Uuid
+  observedAt               DateTime         @map("observed_at") @db.Timestamptz(3)
+  heartRateBpm             Int?             @map("heart_rate_bpm")
+  respiratoryRatePerMinute Int?             @map("respiratory_rate_per_minute")
+  temperatureC             Decimal?         @map("temperature_c") @db.Decimal(5, 2)
+  bloodPressureText        String?          @map("blood_pressure_text") @db.VarChar(200)
+  spo2Percent              Decimal?         @map("spo2_percent") @db.Decimal(5, 2)
+  etco2MmHg                Decimal?         @map("etco2_mm_hg") @db.Decimal(8, 2)
+  anestheticPlane          String?          @map("anesthetic_plane") @db.VarChar(500)
+  notes                    String?          @db.VarChar(5000)
+  createdAt                DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization             Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_observations_organization_id_fkey")
+  anesthesiaRecord         AnesthesiaRecord @relation(fields: [anesthesiaRecordId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "anesthesia_observations_record_org_fkey")
+
+  @@index([organizationId, anesthesiaRecordId, observedAt, createdAt, id], map: "anesthesia_observations_org_record_observed_created_id_idx")
+  @@map("anesthesia_observations")
 }
 
 // Vaccination stores a tenant-safe preventive-care event with a dedicated lifecycle.

@@ -1,13 +1,13 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2 y 6F.2A
+## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A y 6F.2B
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
 autorización por permisos y el primer dominio veterinario de propietarios y
 pacientes. Agenda 5B añade reservas operativas y disponibilidad. Fases 6B.1 y
 6B.2 añaden la fundación persistente y las operaciones transaccionales del
-núcleo clínico; 6F.2A agrega Procedures/Surgery. Inventario, ventas y
-facturación siguen fuera de alcance.
+núcleo clínico; 6F.2A agrega Procedures/Surgery y 6F.2B agrega el backend de
+Anesthesia. Inventario, ventas y facturación siguen fuera de alcance.
 
 ### Fundación clínica 6B.1
 
@@ -50,7 +50,9 @@ Organization
 ClinicalEncounter
   └── Prescription[] ──< PrescriptionItem[]
   ├── Vaccination[]
-  └── Deworming[]
+  ├── Deworming[]
+  ├── ClinicalProcedure[] ── ClinicalSurgeryDetail (0..1)
+  └── AnesthesiaRecord[] ──< AnesthesiaObservation[]
 ```
 
 ## Entidades
@@ -138,6 +140,15 @@ organizationId, patientId)`, `(patientId, organizationId)` y Memberships
   tenant-safe, además de índices por Patient/fecha, Encounter, status y
   responsable. Sus migraciones añaden checks de fecha civil, lifecycle,
   snapshots finales y `version >= 1`; todas las relaciones usan `RESTRICT`.
+- ClinicalProcedure/ClinicalSurgeryDetail usan FKs tenant-safe hacia Encounter,
+  Patient y Memberships, checks de lifecycle/snapshots y una unique compuesta
+  que permite a Anesthesia validar Procedure + Organization + Patient +
+  Encounter sin cruces de tenant.
+- AnesthesiaRecord/AnesthesiaObservation usan FKs compuestas tenant-safe hacia
+  Encounter, Patient, Procedure opcional, Memberships y record padre. Sus checks
+  cubren `version >= 1`, lifecycle terminal, `startedAt` obligatorio al
+  finalizar, `endedAt >= startedAt` cuando ambos existen, observaciones no
+  vacías y límites numéricos de monitorización. No hay cascadas destructivas.
 - Los servicios normalizan emails a minúsculas antes de escribir o buscar.
 
 ## Delete y archive behavior
@@ -173,7 +184,8 @@ La idempotencia del seed se verifica ejecutando `npm run db:seed` dos veces y
 comprobando que permanecen 2 organizaciones, 2 sedes, 3 usuarios, 4
 memberships, 4 Owners, 6 Patients, 3 AvailabilityRules, 6 Appointments,
 3 Prescriptions, 3 PrescriptionItems, 2 Vaccinations, 3 Dewormings,
-5 ClinicalProcedures y 2 ClinicalSurgeryDetails.
+5 ClinicalProcedures, 2 ClinicalSurgeryDetails, 3 AnesthesiaRecords y
+3 AnesthesiaObservations.
 
 ### Procedures/Surgery 6F.2A
 
@@ -191,3 +203,20 @@ modelo no crea raíces separadas, ni tablas de anestesia, Consent, documentos,
 inventario o facturación. Las rutas y contratos se documentan en
 [`procedures-api.md`](procedures-api.md); la migración se aplicó solo a
 `easyvet_dev` y `easyvet_test`.
+
+### Anesthesia 6F.2B
+
+`AnesthesiaRecord` es un agregado independiente con estado propio
+`DRAFT → FINALIZED → VOIDED`, CAS por `version`, Encounter/Patient obligatorios
+del mismo tenant y vínculo opcional a `ClinicalProcedure` del mismo
+Organization/Patient/Encounter. `AnesthesiaObservation` es una serie 0..N sin
+version propia; toda mutación de observation exige `expectedVersion` del padre,
+actualiza la fila hija y aumenta la versión del record exactamente una vez.
+
+Finalizar congela snapshots de Patient, Owner histórico del Encounter y
+Practitioner responsable. `endedAt` es opcional y solo se valida contra
+`startedAt` si existe. El modelo no crea medicamentos estructurados, devices,
+consentimientos, documentos, inventario ni facturación. Las rutas y contratos se
+documentan en [`anesthesia-api.md`](anesthesia-api.md); la migración se aplicó
+solo a `easyvet_dev` y `easyvet_test`, incluida la alineación posterior de
+índices/defaults.

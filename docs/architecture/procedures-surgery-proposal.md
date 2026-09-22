@@ -4,12 +4,14 @@
 
 Propuesta documental de Fase 6F.1, cerrada por el Design Gate 6F.1.1. La
 implementación backend de Procedures/Surgery 6F.2A está completada y se detalla
-en [procedures-api.md](procedures-api.md). Esta propuesta mantiene valor
+en [procedures-api.md](procedures-api.md). La implementación backend de
+Anesthesia 6F.2B también está completada y se detalla en
+[anesthesia-api.md](anesthesia-api.md). Esta propuesta mantiene valor
 histórico: las decisiones normativas y contratos para 6F.2A/6F.2B están en
 [procedures-core-6f2.md](procedures-core-6f2.md) y
 [anesthesia-core-6f2.md](anesthesia-core-6f2.md). Las tablas conceptuales de
 esta propuesta son antecedentes y cualquier punto incompatible queda
-reemplazado por esos contratos y por la implementación de 6F.2A.
+reemplazado por esos contratos y por las implementaciones backend.
 
 ## Arquitectura recomendada
 

@@ -150,6 +150,8 @@ describeDatabase('fundamental multi-tenant model', () => {
       encounters,
       procedures,
       surgeryDetails,
+      anesthesiaRecords,
+      anesthesiaObservations,
       prescriptions,
       prescriptionItems,
       vaccinations,
@@ -182,6 +184,14 @@ describeDatabase('fundamental multi-tenant model', () => {
       }),
       prisma.clinicalSurgeryDetail.count({
         where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
+      prisma.anesthesiaRecord.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
+      prisma.anesthesiaObservation.count({
+        where: {
+          anesthesiaRecord: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+        },
       }),
       prisma.prescription.count({
         where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
@@ -218,6 +228,8 @@ describeDatabase('fundamental multi-tenant model', () => {
       encounters,
       procedures,
       surgeryDetails,
+      anesthesiaRecords,
+      anesthesiaObservations,
       prescriptions,
       prescriptionItems,
       vaccinations,
@@ -237,13 +249,15 @@ describeDatabase('fundamental multi-tenant model', () => {
       encounters: 3,
       procedures: 5,
       surgeryDetails: 2,
+      anesthesiaRecords: 3,
+      anesthesiaObservations: 3,
       prescriptions: 3,
       prescriptionItems: 3,
       vaccinations: 2,
       dewormings: 3,
       vitals: 2,
       evolutions: 1,
-      audits: 19,
+      audits: 24,
     });
   });
 });

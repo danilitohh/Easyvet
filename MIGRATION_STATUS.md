@@ -53,7 +53,7 @@
 | Preventive Care                    | COMPLETADO (Fases 6E.1–6E.4)                                                  |
 | Procedures/Surgery analysis 6F.1   | COMPLETADO (análisis y Design Gate 6F.1.1)                                    |
 | Procedures/Surgery backend 6F.2A   | COMPLETADO (schema, migración, API, permisos, seed y tests)                   |
-| Anesthesia backend 6F.2B           | PENDIENTE                                                                     |
+| Anesthesia backend 6F.2B           | COMPLETADO (schema, migración, API, permisos, seed y tests)                   |
 | Procedures/Surgery frontend        | PENDIENTE                                                                     |
 | Procedures/Surgery hardening       | PENDIENTE                                                                     |
 | Certificates/Documents             | POSTERGADO                                                                    |
@@ -702,5 +702,51 @@ Fase 6F.2A — Procedures/Surgery backend completada:
   consume configuración Prisma proporcionada por usuarios. Las correcciones que ofrece npm son
   cambios breaking/downgrade mayor, por lo que no se aplicaron upgrades automáticos.
 - `prisma:generate` falló inicialmente con `EPERM` porque el API dev server mantenía abierto el
-  motor nativo de Prisma; se detuvo el proceso y la generación y validación pasaron. Fase 6F.2B,
-  frontend y hardening permanecen **PENDIENTES**; no se iniciaron.
+  motor nativo de Prisma; se detuvo el proceso y la generación y validación pasaron. Fase 6F.2B
+  queda registrada abajo; frontend y hardening permanecen **PENDIENTES**.
+
+Fase 6F.2B — Anesthesia backend completada:
+
+- `AnesthesiaRecord` es un agregado independiente con enum propio
+  `AnesthesiaRecordStatus`, lifecycle `DRAFT → FINALIZED → VOIDED`, CAS y
+  Encounter/Patient obligatorios. `clinicalProcedureId` es opcional y, cuando
+  existe, debe pertenecer al mismo Organization, Patient y Encounter.
+- `AnesthesiaObservation` queda como serie 0..N sin version propia. Create,
+  update y delete de observations solo operan en parent `DRAFT`, exigen
+  `expectedVersion` del `AnesthesiaRecord`, incrementan la versión padre una
+  sola vez y auditan `UPDATED` sin valores clínicos.
+- Las migraciones `20260922043000_anesthesia_backend` y
+  `20260922050000_anesthesia_backend_alignment` se aplicaron solo a
+  `easyvet_dev` y `easyvet_test`. Añaden FKs compuestas tenant-aware
+  `RESTRICT`, checks de lifecycle, `startedAt` requerido al finalizar, `endedAt`
+  opcional con orden temporal si existe, observaciones no vacías, límites
+  numéricos e índices alineados con el contrato de lectura.
+- Se implementaron contratos Zod/DTO, permisos `anesthesia.*`, endpoints de
+  historial/detalle/create/update/finalize/void y CRUD de observations, snapshots
+  de Patient/Owner histórico/Professional al finalizar, seed ficticio idempotente
+  y pruebas reales PostgreSQL. Assistant puede leer/crear/editar drafts y
+  observations; no puede finalizar ni anular.
+- No se creó frontend, Consent, PDF, firma, Storage, inventario, billing,
+  Prescription/Medication estructurado, device integration, templates ni
+  importación legacy. Procedures/Surgery frontend y hardening siguen
+  **PENDIENTES**.
+- QA HTTP real se ejecutó únicamente sobre `easyvet_dev`: health/login,
+  creación standalone, creación ligada a Surgery finalizada, validación de
+  timestamp con offset, update Draft, add/update/delete/list de observations,
+  conflictos 409 por stale y observation vacía, finalize con `endedAt = null`,
+  inmutabilidad posterior, void, rechazo de link cross-tenant, Assistant
+  create/updateDraft sin finalize y deep link cross-tenant 404. Los registros
+  QA ficticios permanecen en `easyvet_dev`; no se hizo hard delete.
+- No-side-effects verificado: Appointments permaneció en 12 y Prescriptions en
+  10 antes/después del QA. Solo crecieron `AnesthesiaRecord` y
+  `AnesthesiaObservation` por los datos QA autorizados.
+- Validaciones finales completadas: `format:check`, `lint`, `typecheck`,
+  `npm test`, `test:db`, `test:all`, `build`, `prisma:generate` y
+  `prisma:validate` pasan. `test:db` ejecutó 137 pruebas; `test:all` repitió
+  correctamente la suite no-DB y la suite PostgreSQL.
+- `npm audit` informa 5 paquetes afectados: 3 altos en la cadena Prisma
+  CLI/config/deepmerge-ts y 2 moderados en Vitest/@vitest/mocker. No se aplicó
+  `npm audit fix --force`; los fixes ofrecidos son breaking/downgrade mayor.
+  No se identificó riesgo real de runtime API Easyvet para esta fase porque el
+  servidor no ejecuta Vitest ni procesa configuración Prisma controlada por
+  usuarios.
