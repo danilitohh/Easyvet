@@ -2,15 +2,30 @@
 
 ## Estado
 
-Propuesta documental de Fase 6F.1. No está implementada ni autoriza cambios Prisma/API/UI. Por decisiones aún abiertas se recomienda **Design Gate 6F.1.1** antes del backend 6F.2. Contrato de implementación condicionado al gate.
+Propuesta documental de Fase 6F.1, cerrada por el Design Gate 6F.1.1. No está
+implementada ni autoriza cambios Prisma/API/UI. Las decisiones normativas y los
+contratos literales para 6F.2A/6F.2B están en
+[procedures-core-6f2.md](procedures-core-6f2.md) y
+[anesthesia-core-6f2.md](anesthesia-core-6f2.md). Las tablas conceptuales de
+esta propuesta son antecedentes y cualquier punto incompatible queda
+reemplazado por esos contratos.
 
 ## Arquitectura recomendada
 
-Híbrido: `ClinicalProcedure` común para cirugía y otros procedimientos; `ClinicalSurgeryDetail` 1:1 opcional para campos exclusivos de cirugía; `AnesthesiaRecord` como agregado aparte; `AnesthesiaObservation` como lecturas seriadas 0..N. Todos cuelgan de Encounter; la anestesia puede asociarse a un procedure opcionalmente mientras producto decide si elimina la opción independiente observada en Lativet.
+Híbrido: `ClinicalProcedure` común para cirugía y otros procedimientos;
+`ClinicalSurgeryDetail` 1:0..1 solo para cirugía; `AnesthesiaRecord` como
+agregado independiente y `AnesthesiaObservation` como serie temporal 0..N.
+Procedure y AnesthesiaRecord siempre requieren Encounter; el vínculo de
+AnesthesiaRecord a Procedure es opcional y exige Organization, Patient y
+Encounter coincidentes. El gate 6F.1.1 cerró estas cardinalidades.
 
 No crear raíces distintas `Procedure` y `Surgery`: legado no demuestra límites ni workflows distintos. No usar un modelo genérico con JSON libre: impediría validar y auditar campos clínicos. El detalle 1:1 evita columnas quirúrgicas nulas en todos los procedimientos. Medicaciones perioperatorias/anestésicas son documentación clínica, no inventario/receta/facturación.
 
-## Modelo conceptual (no es DDL)
+## Modelo conceptual preliminar de 6F.1 (no es DDL ni es normativo tras el gate)
+
+El contenido de esta sección conserva alternativas de análisis previas. Para
+cualquier implementación posterior, usar exclusivamente los contratos finales
+6F.2A/6F.2B enlazados arriba.
 
 ### `ClinicalProcedure`
 
@@ -63,12 +78,17 @@ Observation: `id`, `organizationId`, `anesthesiaRecordId`, `observedAt` (`TIMEST
 
 - `DRAFT`: editable con expectedVersion y campos parciales.
 - `FINALIZED`: inmutable; requiere mínimos acordados, responsable Practitioner, snapshots server-derived, tiempo/actor y audit en misma transacción.
-- `VOIDED`: motivo requerido, actor y tiempo; preservar evidencia, sin reopen ni hard delete. Se recomienda también anular DRAFT en vez de borrar; confirmar en gate.
-- Child VOIDED no se escribe más. Si parent se anula, child historial sigue visible con aviso; Encounter VOID bloquea child create/edit/finalize. Definir si Encounter VOID advierte o exige razón reforzada cuando hay hijos FINALIZED.
+- `VOIDED`: motivo requerido, actor y tiempo; preservar evidencia, sin reopen ni hard delete. Solo se anula un registro FINALIZED; Draft no se elimina ni se anula.
+- Si parent se anula, child FINALIZED permanece como evidencia y se informa el estado actual del parent; Encounter VOID bloquea create/update/finalize de Draft. No hay cascada de lifecycle.
 - Patient ARCHIVED permite leer historia pero bloquea actividad nueva/edit draft/finalize; Void correctivo sigue posible al actor autorizado.
 - Sin DELETE HTTP ni cascadas de historia; FK RESTRICT.
 
-## Backend 6F.2 condicionado al gate
+## Backend 6F.2: resumen histórico no normativo
+
+El siguiente resumen y sus propuestas son de la versión preliminar 6F.1; no
+implementar desde aquí. Rutas, permisos, contratos, constraints, índices, locks y
+pruebas definitivos están en [6F.2A](procedures-core-6f2.md) y
+[6F.2B](anesthesia-core-6f2.md).
 
 Rutas candidatas bajo `/api/v1`:
 

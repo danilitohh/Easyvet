@@ -649,10 +649,14 @@ Fase 6F.1 — análisis y diseño de procedimientos / cirugía completado:
   `docs/migration/procedures-surgery-reference.md`,
   `docs/architecture/procedures-surgery-proposal.md` y
   `docs/architecture/procedures-surgery-decisions.md`.
-- Se recomienda un Design Gate 6F.1.1 para cerrar cardinalidad de anestesia,
-  mínimos de finalización, Consent, equipo/Assistant, parent Void y detalle de
-  medicación antes de implementar backend.
-- Procedures/Surgery analysis: COMPLETADO; Design Gate: PENDIENTE; Backend y
-  Frontend: PENDIENTES.
-- No se modificaron Prisma, migraciones, seed, API, permisos, dependencias,
-  frontend ni backend funcional. No se inició Fase 6F.2.
+- El Design Gate 6F.1.1 quedó COMPLETADO: se cerraron aggregate roots,
+  cardinalidades, lifecycle, campos, mínimos de finalización, Consent, equipo,
+  anestesia, observaciones, permisos, CAS/locks, auditoría, constraints, APIs,
+  contratos, índices y política de legacy.
+- Los contratos literales para las fases backend separadas están en
+  `docs/architecture/procedures-core-6f2.md` (6F.2A) y
+  `docs/architecture/anesthesia-core-6f2.md` (6F.2B). Ambas fases siguen
+  PENDIENTES; frontend continúa PENDIENTE.
+- Este checkpoint fue documental: no se modificaron Prisma, migraciones, seed,
+  API, permisos registrados, dependencias, frontend ni backend funcional. No se
+  inició Fase 6F.2A ni 6F.2B.

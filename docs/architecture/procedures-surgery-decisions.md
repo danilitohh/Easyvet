@@ -1,6 +1,12 @@
 # Decisiones: procedimientos, cirugía y anestesia
 
-Registro de recomendaciones y dudas de producto para Fase 6F.1. No implementa ni autoriza cambios. Se propone cerrar las decisiones estructurales mediante **Design Gate 6F.1.1**.
+Registro de recomendaciones y decisiones de 6F.1. El Design Gate 6F.1.1 está
+COMPLETADO. La matriz PS-* que sigue conserva el histórico de preguntas y
+propuestas; donde diga “pendiente”, “resolver en gate” o proponga otra opción,
+prevalecen las decisiones normativas de la sección final y los contratos
+literales [6F.2A](procedures-core-6f2.md) y
+[6F.2B](anesthesia-core-6f2.md). Este documento no implementa ni autoriza
+cambios funcionales.
 
 | ID    | Tema                             | Estado / decisión propuesta                                                                                                                                                                        |
 | ----- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -69,18 +75,49 @@ No ejecutar en 6F.2. Valores y reglas siguientes son clasificación documental, 
 | `record_id` appointments/source consultation                                                                 | Appointment                             | AMBIGUO                | Referencia de control/seguimiento no prueba que la cita sea la cirugía. No crear Appointment desde protocolo.                                                         |
 | filas borradas legacy/audit inexistente                                                                      | Void/audit                              | DESCARTADO             | No hay historia borrada recuperable ni actor/razón de transiciones físicas. No inventar audit.                                                                        |
 
-## Checkpoint recomendado: 6F.1.1
+## Decisiones normativas cerradas por 6F.1.1
 
-**Requerido antes de 6F.2.** Resolver al menos PS-04/11 (anesthesia independiente), PS-07 (mínimos de finalize), PS-12 (ASA/urgencia), PS-15/16/17 (responsables/equipo/Assistant), PS-20 (exigencia y prueba de Consent), PS-24 (parent Void) y PS-29 (medicación perioperatoria). Confirmar también fechas, límites de texto y si se retiene `nextControlOn`. Son decisiones de cardinalidad, constraints, permisos y UX; no se infieren de la forma legacy.
+| Tema                         | Decisión final                                                                                                                                                                                                  |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agregado/kind                | `ClinicalProcedure` único; `ClinicalProcedureKind = PROCEDURE \| SURGERY`.                                                                                                                                      |
+| Surgery detail               | Relación 1:0..1; solo `SURGERY`; lista exacta y mutación anidada están en contrato 6F.2A.                                                                                                                       |
+| Encounter/cardinalidad       | Encounter obligatorio, estados elegibles DRAFT/FINALIZED; 0..N Procedures; VOIDED bloquea escrituras Draft.                                                                                                     |
+| Lifecycle/delete             | DRAFT → FINALIZED → VOIDED; no hard delete, DELETE endpoint ni Void Draft.                                                                                                                                      |
+| Finalize Procedure           | Solo performedAt, procedureName no vacío, Practitioner responsable y ProfessionalProfile.displayName son mínimos.                                                                                               |
+| Campos                       | indication, narrative description, technique específica, findings, nullable complications, recoveryNotes y postoperativePlan semánticamente separado; no nextControlOn ni duplicación diagnóstica.              |
+| Tiempo                       | Procedure no tiene startedAt/endedAt; performedAt UTC requerido al finalizar. Anesthesia mantiene su intervalo.                                                                                                 |
+| Anesthesia                   | Agregado/lifecycle propio; Encounter/Patient obligatorios; link a Procedure nullable y 0..N en ambos lados.                                                                                                     |
+| Anesthesia finalize          | startedAt/endedAt ordenados, Practitioner responsable, perfil/displayName y finalización por el mismo actor; no se exigen ASA ni lecturas.                                                                      |
+| Anesthesia data              | medicationsText/fluidsText libres; asaClassification String nullable; no catálogo ni medicamentos estructurados.                                                                                                |
+| Equipo                       | Alternativa B: responsable Practitioner por registro; assistantMembershipId opcional solo en SurgeryDetail; no Participant genérico.                                                                            |
+| Monitorización               | AnesthesiaObservation tipada, independiente de VitalMeasurement; mutation Draft con CAS sobre version padre, audit y orden observado ASC.                                                                       |
+| Parent VOID/Patient archived | No auto-void de evidencia final; reportar estado actual de padres. Los registros DRAFT quedan bloqueados por padre VOID/Patient archived; la historia final permite lectura y void correctivo por Practitioner. |
+| Consent/documentos           | No Consent, booleano consentSigned autoritativo, PDF, firma, Storage ni documentos en 6F.2.                                                                                                                     |
+| Roles/permisos               | Claves `procedures.*` y `anesthesia.*`; Practitioner todo; Assistant read/create/updateDraft; ninguna herencia de OWNER/ADMIN/Platform Admin.                                                                   |
+| CAS/locks/audit              | expectedVersion en mutation; Encounter → Patient → Procedure vinculado → agregado → Owner histórico cuando snapshot → Memberships ordenadas. Reutilizar ClinicalAuditEvent, sin payload clínico.                |
+| DB/migración                 | FKs compuestas tenant-safe, RESTRICT, checks de lifecycle/version/tiempo y límites de validación cruzada en servicio bajo parent lock. Sin backfill automático legacy.                                          |
+| API/índices/fases            | Contratos, rutas, paginación 20/max100, orden e índices mínimos están definidos literalmente en los dos contratos; 6F.2A y 6F.2B son fases separadas.                                                           |
 
-## Contrato de backend 6F.2
+Temas que sí permanecen futuros son únicamente decisiones regulatorias/producto:
+consentimiento obligatorio por tipo, plantillas quirúrgicas, licencias por
+jurisdicción, procedimientos históricos externos, ServiceCatalog, inventario,
+farmacología anestésica avanzada y dispositivos/integración de monitorización.
+Ninguno bloquea el schema de 6F.2.
 
-El contrato propuesto, si el gate aprueba, es el de [procedures-surgery-proposal.md](procedures-surgery-proposal.md): cuatro entidades conceptuales (`ClinicalProcedure`, `ClinicalSurgeryDetail`, `AnesthesiaRecord`, `AnesthesiaObservation`); enums y migrations/constraints tenant-safe; Encounter requerido; permisos por acción; CAS/versionado y snapshots; locks con Encounter→Patient→child→memberships; APIs y contratos compartidos; audit metadata mínima; pruebas de lifecycle/tenant/roles/snapshots/carreras. No crear Consent/Document, catálogos, Inventory, Billing, Appointment ni frontend dentro de 6F.2 backend. Este contrato es **propuesta condicionada**, no está suficientemente cerrado para implementar hasta resolver el gate.
+## Contratos backend aprobados (aún no implementados)
+
+- [6F.2A — ClinicalProcedure + ClinicalSurgeryDetail](procedures-core-6f2.md):
+  modelos/enums, migración, permisos, APIs/Zod, transición de kind y SurgeryDetail
+  transaccionales, CAS, snapshots, locks, audit, seed y DB tests.
+- [6F.2B — AnesthesiaRecord + AnesthesiaObservation](anesthesia-core-6f2.md):
+  modelos, relación opcional al Procedure, observaciones con parent CAS,
+  migración, permisos, APIs/Zod, snapshots, locks, audit, seed y DB tests.
+- Las fases se ejecutan separadamente; el presente checkpoint no inicia 6F.2A.
 
 ## Resultado Fase 6F.1
 
 - Procedures/Surgery analysis: **COMPLETADO**.
-- Design Gate: **PENDIENTE — recomendado checkpoint 6F.1.1**.
+- Design Gate 6F.1.1: **COMPLETADO**.
 - Backend 6F.2: **PENDIENTE**.
 - Frontend: **PENDIENTE**.
 - Esquema, migraciones, API, permisos y frontend: **sin cambios**.
