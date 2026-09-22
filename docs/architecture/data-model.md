@@ -220,3 +220,7 @@ consentimientos, documentos, inventario ni facturación. Las rutas y contratos s
 documentan en [`anesthesia-api.md`](anesthesia-api.md); la migración se aplicó
 solo a `easyvet_dev` y `easyvet_test`, incluida la alineación posterior de
 índices/defaults.
+
+## Hospitalization 6G
+
+Hospitalization es un agregado opcional 0..1 por ClinicalEncounter, con Patient y Organization obligatorios, lifecycle DRAFT/ACTIVE/DISCHARGED/VOIDED, version CAS y snapshots de identidad al activar. HospitalizationEntry es una colección append-only, siempre tenant-safe y sin proyección de peso a Patient. La migración y restricciones están en prisma/migrations/20260922120000_add_hospitalizations.

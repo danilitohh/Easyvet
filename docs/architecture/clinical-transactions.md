@@ -2,8 +2,10 @@
 
 Este documento registra los límites atómicos implementados en el Clinical Core
 6B.2, la operación de frontend 6C.2B, el hardening 6C.3, Preventive Care
-6E.2, Procedures/Surgery 6F.2A y Anesthesia 6F.2B. No modifica la implementación actual de
-Agenda ni introduce side effects externos.
+6E.2, Procedures/Surgery 6F.2A y Anesthesia 6F.2B. La UI y hardening de
+Procedures/Anesthesia se completaron en 6F.3 sin añadir transacciones nuevas.
+No modifica la implementación actual de Agenda ni introduce side effects
+externos.
 
 ## Regla general
 
@@ -16,6 +18,17 @@ debe dejar una consulta medio guardada.
 Todas las operaciones verifican `organizationId` en cada lookup. Un `patientId`,
 `ownerId`, `membershipId` o `appointmentId` de otro tenant debe producir
 `404`/`RESOURCE_NOT_FOUND`, nunca una fuga de existencia.
+
+## Procedures/Surgery/Anesthesia 6F.3
+
+La fase frontend conserva los límites transaccionales backend de 6F.2A/6F.2B:
+los formularios solo presentan acciones autorizadas y cada mutación envía la
+versión observada; no existen escrituras optimistas locales que se traten como
+confirmadas. Observations usan CAS del AnesthesiaRecord padre y el servidor
+actualiza versión, observation y auditoría de forma atómica. Cambiar el tenant
+cancela/descarta lecturas pendientes del dominio clínico y vuelve a resolver
+los recursos bajo el contexto nuevo. No se generan side effects sobre
+Appointment, Prescription, Storage, PDF, notificaciones ni servicios externos.
 
 ## Flujos y atomicidad
 
@@ -178,6 +191,8 @@ AnesthesiaRecord para serializar contra `Procedure VOID`. Las observations son
 filas hijas editables únicamente en Draft; no tienen version propia y delegan la
 concurrencia en `AnesthesiaRecord.version`. La lista de rutas, payloads y
 errores está en [anesthesia-api.md](anesthesia-api.md).
+
+En 6G Hospitalization mantiene el orden Encounter → Patient → Hospitalization → Owner → Memberships y usa version para CAS en edición, activación, entries, discharge y void. Encounter VOID y Patient archive toman las mismas filas padre, por lo que una carrera no deja una mutación clínica parcial. La entrada Kardex y su auditoría se confirman en la misma transacción; un episodio DISCHARGED o VOIDED no recibe nuevas entries.
 
 ## Checklist para implementación futura
 

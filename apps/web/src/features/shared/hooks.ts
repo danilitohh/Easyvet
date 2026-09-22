@@ -70,8 +70,8 @@ export function useTenantResource<T>({
   return useMemo(() => ({ ...state, reload }), [reload, state]);
 }
 
-// Forms use the same tenant marker so cached detail state is never reused after a switch.
+// Missing organization context keeps tenant-scoped reads disabled and forms isolated.
 export function useActiveOrganizationId(): string | undefined {
   const { activeMembership } = useAuth();
-  return activeMembership?.organization.id;
+  return activeMembership?.organization?.id;
 }

@@ -45,6 +45,34 @@ describe('clinical permission foundation', () => {
     expect(permissions).not.toContain('clinicalEvolutions.create');
   });
 
+  it('limits hospitalization operations by clinical role', () => {
+    const practitioner = permissionsForRole('RECEPTION', 'PRACTITIONER');
+    const assistant = permissionsForRole('ASSISTANT', 'CLINICAL_ASSISTANT');
+
+    expect(practitioner).toEqual(
+      expect.arrayContaining([
+        'hospitalizations.read',
+        'hospitalizations.create',
+        'hospitalizations.update',
+        'hospitalizations.activate',
+        'hospitalizations.discharge',
+        'hospitalizations.void',
+        'hospitalizations.entries.create',
+      ]),
+    );
+    expect(assistant).toEqual(
+      expect.arrayContaining([
+        'hospitalizations.read',
+        'hospitalizations.create',
+        'hospitalizations.update',
+        'hospitalizations.entries.create',
+      ]),
+    );
+    expect(assistant).not.toContain('hospitalizations.activate');
+    expect(assistant).not.toContain('hospitalizations.discharge');
+    expect(assistant).not.toContain('hospitalizations.void');
+  });
+
   it('resolves required permissions from both role dimensions', () => {
     expect(hasPermissions('OWNER', null, ['clinicalEncounters.finalize'])).toBe(false);
     expect(hasPermissions('OWNER', 'PRACTITIONER', ['clinicalEncounters.finalize'])).toBe(true);

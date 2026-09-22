@@ -246,7 +246,7 @@ describeDatabase('fundamental multi-tenant model', () => {
       patients: 6,
       profiles: 2,
       records: 2,
-      encounters: 3,
+      encounters: 4,
       procedures: 5,
       surgeryDetails: 2,
       anesthesiaRecords: 3,
@@ -257,7 +257,7 @@ describeDatabase('fundamental multi-tenant model', () => {
       dewormings: 3,
       vitals: 2,
       evolutions: 1,
-      audits: 24,
+      audits: 33,
     });
   });
 });

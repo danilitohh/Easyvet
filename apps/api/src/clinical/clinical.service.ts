@@ -9,6 +9,7 @@ import {
   ClinicalEncounterStatus,
   ClinicalRole,
   ClinicLocationStatus,
+  HospitalizationStatus,
   MembershipStatus,
   PatientStatus,
   Prisma,
@@ -720,13 +721,28 @@ export class ClinicalService {
     input: VoidClinicalEncounterDto,
   ): Promise<ClinicalEncounterResponse> {
     await this.prisma.$transaction(async (tx) => {
-      // Parent void must serialize with Prescription create/update/finalize checks.
+      // Parent void locks follow the same Encounter -> Patient order as clinical satellite writes.
       await this.lockEncounter(tx, tenant.organizationId, encounterId);
       const current = await tx.clinicalEncounter.findFirst({
         where: { id: encounterId, organizationId: tenant.organizationId },
         select: { id: true, status: true, version: true, patientId: true },
       });
       if (!current) throw notFound('CLINICAL_ENCOUNTER_NOT_FOUND', 'Clinical encounter not found');
+      await this.lockPatient(tx, tenant.organizationId, current.patientId);
+      const openHospitalization = await tx.hospitalization.findFirst({
+        where: {
+          organizationId: tenant.organizationId,
+          clinicalEncounterId: encounterId,
+          status: { in: [HospitalizationStatus.DRAFT, HospitalizationStatus.ACTIVE] },
+        },
+        select: { id: true },
+      });
+      if (openHospitalization) {
+        throw conflict(
+          'ACTIVE_HOSPITALIZATION_EXISTS',
+          'A draft or active hospitalization prevents voiding this encounter',
+        );
+      }
       if (current.status !== ClinicalEncounterStatus.FINALIZED) {
         throw conflict(
           'INVALID_CLINICAL_ENCOUNTER_STATE',

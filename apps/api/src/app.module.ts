@@ -21,6 +21,7 @@ import { VaccinationsModule } from './vaccinations/vaccinations.module';
 import { DewormingsModule } from './dewormings/dewormings.module';
 import { ProceduresModule } from './procedures/procedures.module';
 import { AnesthesiaModule } from './anesthesia/anesthesia.module';
+import { HospitalizationsModule } from './hospitalizations/hospitalizations.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AnesthesiaModule } from './anesthesia/anesthesia.module';
     DewormingsModule,
     ProceduresModule,
     AnesthesiaModule,
+    HospitalizationsModule,
   ],
   providers: [ApiExceptionFilter],
 })

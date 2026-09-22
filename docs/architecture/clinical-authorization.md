@@ -89,3 +89,17 @@ responsable con perfil configurado. Los roles organizacionales por sí solos y
 `PLATFORM_ADMIN` sin Membership clínico no reciben capacidades clínicas
 implícitas. Membership/User/Profile se revalidan bajo locks dentro de las
 transacciones.
+
+## Presentación de permisos 6F.3
+
+El frontend de Procedures/Surgery/Anesthesia consulta las capacidades efectivas
+`procedures.*` y `anesthesia.*`, sin inferirlas directamente desde
+`MembershipRole`. Cada dominio consulta solo cuando el usuario tiene su permiso
+`read`; los permisos parciales no exponen contadores ni estados vacíos del
+dominio no autorizado. Create/update Draft, finalize, void y mutations de
+observations se muestran por acción. La regla backend sigue siendo autoritativa
+y revalida actor, tenant, Membership y perfil.
+
+## Hospitalization 6G
+
+PRACTITIONER recibe hospitalizations.* y hospitalizationEntries.create. CLINICAL_ASSISTANT puede leer, crear y editar DRAFT y añadir Kardex en ACTIVE, pero no activar, dar de alta ni anular. Activar exige Practitioner responsable con perfil configurado; discharge y void exigen Practitioner activo. La UI refleja permisos efectivos y nunca convierte un rol organizacional en autoridad clínica implícita.

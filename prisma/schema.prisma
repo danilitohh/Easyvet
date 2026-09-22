@@ -37,6 +37,8 @@ model Organization {
   anesthesiaObservations AnesthesiaObservation[]
   vaccinations           Vaccination[]
   dewormings             Deworming[]
+  hospitalizations       Hospitalization[]
+  hospitalizationEntries HospitalizationEntry[]
 
   @@map("organizations")
 }
@@ -124,6 +126,12 @@ model Membership {
   administeredDewormings          Deworming[]                    @relation("DewormingAdministeredByMembership")
   finalizedDewormings             Deworming[]                    @relation("DewormingFinalizedByMembership")
   voidedDewormings                Deworming[]                    @relation("DewormingVoidedByMembership")
+  createdHospitalizations        Hospitalization[]               @relation("HospitalizationCreatedByMembership")
+  responsibleHospitalizations    Hospitalization[]               @relation("HospitalizationResponsibleMembership")
+  activatedHospitalizations      Hospitalization[]               @relation("HospitalizationActivatedByMembership")
+  dischargedHospitalizations     Hospitalization[]               @relation("HospitalizationDischargedByMembership")
+  voidedHospitalizations         Hospitalization[]               @relation("HospitalizationVoidedByMembership")
+  hospitalizationEntries         HospitalizationEntry[]          @relation("HospitalizationEntryRecordedByMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -221,6 +229,7 @@ model Patient {
   anesthesiaRecords  AnesthesiaRecord[]
   vaccinations       Vaccination[]       @relation("VaccinationPatient")
   dewormings         Deworming[]         @relation("DewormingPatient")
+  hospitalizations   Hospitalization[]
 
   @@unique([id, organizationId], map: "patients_id_organization_id_key")
   @@index([organizationId])
@@ -332,6 +341,7 @@ enum ClinicalAuditEntityType {
   DEWORMING
   CLINICAL_PROCEDURE
   ANESTHESIA_RECORD
+  HOSPITALIZATION
 }
 
 enum ClinicalAuditAction {
@@ -345,6 +355,12 @@ enum ClinicalAuditAction {
   PRESCRIPTION_UPDATED
   PRESCRIPTION_FINALIZED
   PRESCRIPTION_VOIDED
+  HOSPITALIZATION_CREATED
+  HOSPITALIZATION_UPDATED
+  HOSPITALIZATION_ACTIVATED
+  HOSPITALIZATION_ENTRY_ADDED
+  HOSPITALIZATION_DISCHARGED
+  HOSPITALIZATION_VOIDED
 }
 
 // A tenant-scoped professional profile is optional for every membership.
@@ -435,6 +451,7 @@ model ClinicalEncounter {
   dewormings                      Deworming[]             @relation("DewormingEncounter")
   clinicalProcedures              ClinicalProcedure[]
   anesthesiaRecords               AnesthesiaRecord[]
+  hospitalization                 Hospitalization?
 
   @@unique([id, organizationId], map: "clinical_encounters_id_organization_id_key")
   @@unique([id, organizationId, clinicalRecordId], map: "clinical_encounters_id_org_record_key")
@@ -445,6 +462,95 @@ model ClinicalEncounter {
   @@index([organizationId, responsibleMembershipId, occurredAt])
   @@index([organizationId, status])
   @@map("clinical_encounters")
+}
+
+enum HospitalizationStatus {
+  DRAFT
+  ACTIVE
+  DISCHARGED
+  VOIDED
+}
+
+enum HospitalizationEntryType {
+  EVOLUTION
+  MONITORING
+  MEDICATION
+  NURSING
+  DIET
+  OTHER
+}
+
+// A hospitalization is an audited episode rooted in one tenant-scoped encounter.
+model Hospitalization {
+  id                                  String                @id @default(uuid()) @db.Uuid
+  organizationId                      String                @map("organization_id") @db.Uuid
+  clinicalEncounterId                 String                @map("clinical_encounter_id") @db.Uuid
+  patientId                           String                @map("patient_id") @db.Uuid
+  status                              HospitalizationStatus @default(DRAFT)
+  version                             Int                   @default(1)
+  admittedAt                          DateTime?             @map("admitted_at") @db.Timestamptz(3)
+  dischargedAt                       DateTime?             @map("discharged_at") @db.Timestamptz(3)
+  locationName                        String?               @map("location_name") @db.VarChar(160)
+  admissionReason                     String?               @map("admission_reason") @db.VarChar(5000)
+  diagnosis                           String?               @db.VarChar(10000)
+  treatmentPlan                       String?               @map("treatment_plan") @db.VarChar(10000)
+  medicationsText                     String?               @map("medications_text") @db.VarChar(10000)
+  dietInstructions                    String?               @map("diet_instructions") @db.VarChar(5000)
+  dischargeSummary                    String?               @map("discharge_summary") @db.VarChar(10000)
+  dischargeRecommendations            String?               @map("discharge_recommendations") @db.VarChar(10000)
+  notes                               String?               @db.VarChar(10000)
+  responsiblePractitionerMembershipId String?               @map("responsible_practitioner_membership_id") @db.Uuid
+  createdByMembershipId               String                @map("created_by_membership_id") @db.Uuid
+  patientNameSnapshot                 String?               @map("patient_name_snapshot") @db.VarChar(200)
+  ownerDisplayNameSnapshot            String?               @map("owner_display_name_snapshot") @db.VarChar(300)
+  professionalDisplayNameSnapshot    String?               @map("professional_display_name_snapshot") @db.VarChar(200)
+  professionalLicenseSnapshot        String?               @map("professional_license_snapshot") @db.VarChar(120)
+  activatedAt                         DateTime?             @map("activated_at") @db.Timestamptz(3)
+  activatedByMembershipId             String?               @map("activated_by_membership_id") @db.Uuid
+  dischargedByMembershipId            String?               @map("discharged_by_membership_id") @db.Uuid
+  voidedAt                            DateTime?             @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId                String?               @map("voided_by_membership_id") @db.Uuid
+  voidReason                          String?               @map("void_reason") @db.VarChar(1000)
+  createdAt                           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                           DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                        Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "hospitalizations_organization_id_fkey")
+  clinicalEncounter                   ClinicalEncounter     @relation(fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalizations_encounter_org_patient_fkey")
+  patient                              Patient               @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalizations_patient_org_fkey")
+  createdByMembership                 Membership            @relation("HospitalizationCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalizations_created_by_membership_org_fkey")
+  responsiblePractitioner              Membership?           @relation("HospitalizationResponsibleMembership", fields: [responsiblePractitionerMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalizations_responsible_membership_org_fkey")
+  activatedByMembership               Membership?           @relation("HospitalizationActivatedByMembership", fields: [activatedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalizations_activated_by_membership_org_fkey")
+  dischargedByMembership              Membership?           @relation("HospitalizationDischargedByMembership", fields: [dischargedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalizations_discharged_by_membership_org_fkey")
+  voidedByMembership                  Membership?           @relation("HospitalizationVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalizations_voided_by_membership_org_fkey")
+  entries                              HospitalizationEntry[]
+
+  @@unique([id, organizationId], map: "hospitalizations_id_organization_id_key")
+  @@unique([clinicalEncounterId, organizationId], map: "hospitalizations_encounter_org_key")
+  @@unique([clinicalEncounterId, organizationId, patientId], map: "hospitalizations_encounter_org_patient_key")
+  @@index([organizationId, patientId, admittedAt, createdAt], map: "hospitalizations_org_patient_admitted_created_idx")
+  @@index([organizationId, status], map: "hospitalizations_org_status_idx")
+  @@map("hospitalizations")
+}
+
+// Entries are append-only Kardex observations; a correction is a new entry.
+model HospitalizationEntry {
+  id                     String                   @id @default(uuid()) @db.Uuid
+  organizationId         String                   @map("organization_id") @db.Uuid
+  hospitalizationId      String                   @map("hospitalization_id") @db.Uuid
+  entryType              HospitalizationEntryType @map("entry_type")
+  recordedAt             DateTime                 @map("recorded_at") @db.Timestamptz(3)
+  content                String?                  @db.VarChar(10000)
+  temperatureC           Decimal?                 @map("temperature_c") @db.Decimal(20, 6)
+  heartRateBpm            Int?                     @map("heart_rate_bpm")
+  respiratoryRatePerMinute Int?                     @map("respiratory_rate_per_minute")
+  weightKg                Decimal?                 @map("weight_kg") @db.Decimal(20, 6)
+  recordedByMembershipId  String                   @map("recorded_by_membership_id") @db.Uuid
+  createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "hospitalization_entries_organization_id_fkey")
+  hospitalization         Hospitalization          @relation(fields: [hospitalizationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalization_entries_episode_org_fkey")
+  recordedByMembership    Membership               @relation("HospitalizationEntryRecordedByMembership", fields: [recordedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade, map: "hospitalization_entries_recorded_by_membership_org_fkey")
+
+  @@index([organizationId, hospitalizationId, recordedAt, createdAt, id], map: "hospitalization_entries_org_episode_time_idx")
+  @@map("hospitalization_entries")
 }
 
 enum PrescriptionStatus {

@@ -99,3 +99,15 @@ integración de procedimientos comprueba aislamiento, permisos, transiciones de
 kind, snapshots, carreras CAS y auditoría contra PostgreSQL `easyvet_test`.
 Consent, anestesia, documentos/PDF/Storage, firma, inventario, billing,
 catálogos y UI están fuera de 6F.2A.
+
+## Integración con Anesthesia y frontend 6F.3
+
+El frontend de Fase 6F.3 presenta Procedure y Surgery en una sección de
+historia compartida, conservando agregados, permisos y rutas de API separados.
+Si un Procedure enlazado pasa a `VOIDED`, un `AnesthesiaRecord` Draft puede
+quitar el vínculo o seleccionar otro Procedure válido mediante PATCH con
+`expectedVersion`; el servicio valida el destino y serializa los cambios bajo
+los locks documentados en `anesthesia-api.md`. La UI de Surgery confirma el
+cambio a Procedure antes de descartar el `SurgeryDetail`. Los flujos de
+anestesia, observaciones y navegación de React están descritos en
+[`procedures-anesthesia-frontend.md`](procedures-anesthesia-frontend.md).

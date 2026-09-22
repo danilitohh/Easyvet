@@ -577,6 +577,30 @@ describeDatabase('anesthesia API', () => {
       .expect(({ body }) => expect(body.code).toBe('ANESTHESIA_STALE'));
   });
 
+  it('allows a draft to clear a linked procedure after that procedure is voided', async () => {
+    const practitioner = await login(practitionerEmail);
+    const encounter = await createEncounter();
+    const procedure = await createProcedure(encounter.id, { status: 'FINALIZED' });
+    const record = await createAnesthesia(practitioner, encounter.id, {
+      clinicalProcedureId: procedure.id,
+      startedAt: '2033-02-01T10:00:00.000Z',
+    });
+
+    await practitioner
+      .post(`/api/v1/procedures/${procedure.id}/void`)
+      .send({ expectedVersion: 2, reason: 'Corrección QA de vínculo' })
+      .expect(201);
+
+    const cleared = await practitioner
+      .patch(`/api/v1/anesthesia-records/${record.body.id}`)
+      .send({ expectedVersion: 1, clinicalProcedureId: null })
+      .expect(200);
+
+    expect(cleared.body.version).toBe(2);
+    expect(cleared.body.clinicalProcedureId).toBeNull();
+    expect(cleared.body.linkedProcedureStatus).toBeNull();
+  });
+
   it('finalizes with historical snapshots, rejects invalid responsible actors, and allows void corrections', async () => {
     const practitioner = await login(practitionerEmail);
     const assistant = await login(assistantEmail);

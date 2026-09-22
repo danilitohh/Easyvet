@@ -114,3 +114,19 @@ con tres observaciones. La suite de integración cubre aislamiento, permisos,
 link opcional/Procedure, lifecycle, timestamps, snapshots de Owner histórico,
 Patient archivado, CAS, carreras con padres y auditoría privada contra
 PostgreSQL `easyvet_test`.
+
+## Vínculo opcional y frontend 6F.3
+
+El vínculo `clinicalProcedureId` sigue siendo opcional e independiente del
+lifecycle de anestesia. En un Draft puede retirarse o cambiarse con
+`expectedVersion`; si el vínculo actual apunta a un Procedure VOIDED, ese
+estado del padre no impide retirar la referencia, pero el nuevo destino (si lo
+hay) debe estar vigente y pertenecer al mismo tenant, Patient y Encounter. Si
+la relación no cambia, la validación del padre VOIDED sigue bloqueando cambios
+clínicos del Draft. Esto evita bloquear la reparación del vínculo sin permitir
+que un registro Draft ligado a un padre anulado siga mutándose normalmente.
+
+La experiencia de listado, detalle, formularios Draft y observaciones se
+implementó en Fase 6F.3; el comportamiento de tenant, cero válido, estados
+read-only, stale/CAS y rutas está documentado en
+[`procedures-anesthesia-frontend.md`](procedures-anesthesia-frontend.md).

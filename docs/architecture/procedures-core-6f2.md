@@ -302,3 +302,14 @@ firma, PDF, Storage, Appointment, reminders, Inventory, Sales, Billing, import
 histórico, catálogos ni permisos de esos módulos. El trabajo de 6F.2A se detiene
 al contrato aquí definido y no inicia Fase 6F.2B sin finalizar/verificar la
 secuencia de fase solicitada.
+
+## Cierre frontend 6F.3
+
+El estado anterior describe el alcance histórico de 6F.1/6F.2, no el estado
+actual del producto. La Fase 6F.3 implementó las pantallas React de listado,
+detalle, alta y edición Draft de `PROCEDURE`/`SURGERY`, la sección de
+`ClinicalSurgeryDetail`, transiciones de kind con confirmación y acciones
+autorizadas de finalize/void. Rutas, navegación, permisos efectivos, tenant
+safety y límites restantes constan en
+[`procedures-anesthesia-frontend.md`](procedures-anesthesia-frontend.md).
+El frontend no añade modelos, permisos ni migraciones a los contratos 6F.2.

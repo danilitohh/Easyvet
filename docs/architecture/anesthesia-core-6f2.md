@@ -325,3 +325,14 @@ No UI React, PDFs, Consent, Signature, Storage, Inventory, billing, Medication
 catalog/administración estructurada, dispositivos, integración de monitores,
 exportaciones ni importación legacy automática. No empezar esta fase como parte
 de 6F.2A: se ejecuta únicamente después de cerrar y validar 6F.2A.
+
+## 12. Cierre frontend 6F.3
+
+La exclusión de UI anterior pertenece al alcance histórico de 6F.2B. Fase 6F.3
+añadió lectura de registros y monitorización, formularios de anestesia Draft,
+vínculo opcional a Procedure, manejo de conflicto/stale, finalize y void según
+permisos. Observations pueden agregarse, corregirse y retirarse solo en Draft,
+y sus campos numéricos preservan `0` como valor. Rutas y comportamiento de
+tenant están documentados en
+[`procedures-anesthesia-frontend.md`](procedures-anesthesia-frontend.md); no
+se añadieron entidades ni migraciones en la fase frontend.

@@ -231,6 +231,16 @@ export class PatientsService {
       });
       if (!current) throw resourceNotFound();
       if (current.status === PatientStatus.ARCHIVED) return;
+      // Serialize archival with hospitalization writes and preserve an active clinical stay.
+      const activeHospitalizations = await tx.hospitalization.count({
+        where: { organizationId, patientId, status: 'ACTIVE' },
+      });
+      if (activeHospitalizations > 0) {
+        throw new ConflictException({
+          code: 'ACTIVE_HOSPITALIZATION_EXISTS',
+          message: 'An active hospitalization prevents archiving this patient',
+        });
+      }
       const futureAppointments = await tx.appointment.count({
         where: {
           organizationId,

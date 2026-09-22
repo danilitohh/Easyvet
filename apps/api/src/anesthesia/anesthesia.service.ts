@@ -350,7 +350,10 @@ export class AnesthesiaService {
       }
       await requireEncounter(tx, tenant.organizationId, current.clinicalEncounterId);
       await requireActivePatient(tx, tenant.organizationId, current.patientId);
-      if (current.clinicalProcedureId) {
+      const procedureLinkChanged =
+        input.clinicalProcedureId !== undefined &&
+        input.clinicalProcedureId !== current.clinicalProcedureId;
+      if (current.clinicalProcedureId && !procedureLinkChanged) {
         await this.requireEligibleProcedure(
           tx,
           tenant.organizationId,

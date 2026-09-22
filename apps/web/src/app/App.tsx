@@ -11,7 +11,7 @@ import { OrganizationSelectorPage } from '../pages/OrganizationSelectorPage';
 import { AccessDeniedPage } from '../pages/AccessDeniedPage';
 import { AuthBoundary } from './AuthBoundary';
 import { PERMISSION } from '../auth/permissions';
-import { PermissionRoute } from '../features/shared/ResourceFeedback';
+import { AnyPermissionRoute, PermissionRoute } from '../features/shared/ResourceFeedback';
 import { OwnerListPage } from '../features/owners/OwnerListPage';
 import { OwnerDetailPage } from '../features/owners/OwnerDetailPage';
 import { OwnerFormPage } from '../features/owners/OwnerFormPage';
@@ -85,6 +85,46 @@ const VaccinationFormPage = lazy(() =>
 const DewormingFormPage = lazy(() =>
   import('../features/preventive-care/PreventiveFormPage').then((module) => ({
     default: module.DewormingFormPage,
+  })),
+);
+const ProceduresAnesthesiaListPage = lazy(() =>
+  import('../features/procedures/ProceduresAnesthesiaListPage').then((module) => ({
+    default: module.ProceduresAnesthesiaListPage,
+  })),
+);
+const ProcedureDetailPage = lazy(() =>
+  import('../features/procedures/ProcedureDetailPage').then((module) => ({
+    default: module.ProcedureDetailPage,
+  })),
+);
+const ProcedureFormPage = lazy(() =>
+  import('../features/procedures/ProcedureFormPage').then((module) => ({
+    default: module.ProcedureFormPage,
+  })),
+);
+const AnesthesiaDetailPage = lazy(() =>
+  import('../features/anesthesia/AnesthesiaDetailPage').then((module) => ({
+    default: module.AnesthesiaDetailPage,
+  })),
+);
+const AnesthesiaFormPage = lazy(() =>
+  import('../features/anesthesia/AnesthesiaFormPage').then((module) => ({
+    default: module.AnesthesiaFormPage,
+  })),
+);
+const HospitalizationListPage = lazy(() =>
+  import('../features/hospitalizations/HospitalizationListPage').then((module) => ({
+    default: module.HospitalizationListPage,
+  })),
+);
+const HospitalizationDetailPage = lazy(() =>
+  import('../features/hospitalizations/HospitalizationDetailPage').then((module) => ({
+    default: module.HospitalizationDetailPage,
+  })),
+);
+const HospitalizationFormPage = lazy(() =>
+  import('../features/hospitalizations/HospitalizationFormPage').then((module) => ({
+    default: module.HospitalizationFormPage,
   })),
 );
 
@@ -249,9 +289,133 @@ export function App() {
           <Route
             path="pacientes/:patientId/historia"
             element={
-              <PermissionRoute permission={PERMISSION.CLINICAL_RECORDS_READ}>
+              <AnyPermissionRoute
+                permissions={[
+                  PERMISSION.CLINICAL_RECORDS_READ,
+                  PERMISSION.CLINICAL_ENCOUNTERS_READ,
+                  PERMISSION.CLINICAL_EVOLUTIONS_READ,
+                  PERMISSION.PRESCRIPTIONS_READ,
+                  PERMISSION.VACCINATIONS_READ,
+                  PERMISSION.DEWORMINGS_READ,
+                  PERMISSION.PROCEDURES_READ,
+                  PERMISSION.ANESTHESIA_READ,
+                  PERMISSION.HOSPITALIZATIONS_READ,
+                ]}
+              >
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <ClinicalHistoryPage />
+                </Suspense>
+              </AnyPermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/procedimientos"
+            element={
+              <AnyPermissionRoute
+                permissions={[PERMISSION.PROCEDURES_READ, PERMISSION.ANESTHESIA_READ]}
+              >
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ProceduresAnesthesiaListPage />
+                </Suspense>
+              </AnyPermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/hospitalizaciones"
+            element={
+              <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <HospitalizationListPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/hospitalizaciones/:hospitalizationId"
+            element={
+              <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <HospitalizationDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/hospitalizaciones/:hospitalizationId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_UPDATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <HospitalizationFormPage mode="edit" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/hospitalizacion/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <HospitalizationFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/procedimientos/:procedureId"
+            element={
+              <PermissionRoute permission={PERMISSION.PROCEDURES_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ProcedureDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/procedimientos/nuevo"
+            element={
+              <PermissionRoute permission={PERMISSION.PROCEDURES_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ProcedureFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/procedimientos/:procedureId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.PROCEDURES_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ProcedureFormPage mode="edit" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/anestesias/:anesthesiaRecordId"
+            element={
+              <PermissionRoute permission={PERMISSION.ANESTHESIA_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <AnesthesiaDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/anestesias/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.ANESTHESIA_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <AnesthesiaFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/anestesias/:anesthesiaRecordId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.ANESTHESIA_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <AnesthesiaFormPage mode="edit" />
                 </Suspense>
               </PermissionRoute>
             }

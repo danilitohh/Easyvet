@@ -69,6 +69,56 @@ function PatientHeader({
   return <span className="clinical-muted">Paciente {patientId}</span>;
 }
 
+function ProceduresAnesthesiaEntry({ patientId }: { patientId: string }) {
+  const canReadProcedures = useCan(PERMISSION.PROCEDURES_READ);
+  const canReadAnesthesia = useCan(PERMISSION.ANESTHESIA_READ);
+  if (!canReadProcedures && !canReadAnesthesia) return null;
+  return (
+    <Card className="prescription-history-entry clinical-domain-history-entry">
+      <div>
+        <p className="section-kicker">Procedimientos y anestesia</p>
+        <h2>Procedimientos y anestesia</h2>
+        <p className="clinical-muted">
+          Consulta procedimientos, cirugías y registros anestésicos con su historial de
+          monitorización.
+        </p>
+      </div>
+      <Button as={Link} to={`/pacientes/${patientId}/historia/procedimientos`} variant="secondary">
+        Ver{' '}
+        {canReadProcedures && canReadAnesthesia
+          ? 'procedimientos y anestesia'
+          : canReadProcedures
+            ? 'procedimientos'
+            : 'anestesia'}
+      </Button>
+    </Card>
+  );
+}
+
+// Exposes hospitalization history independently from access to general clinical-record content.
+function HospitalizationHistoryEntry({ patientId }: { patientId: string }) {
+  const canRead = useCan(PERMISSION.HOSPITALIZATIONS_READ);
+  if (!canRead) return null;
+  return (
+    <Card className="prescription-history-entry clinical-domain-history-entry">
+      <div>
+        <p className="section-kicker">Cuidado intrahospitalario</p>
+        <h2>Hospitalizaciones</h2>
+        <p className="clinical-muted">
+          Consulta ingresos, plan de cuidado, registros cronológicos y altas del paciente.
+        </p>
+      </div>
+      <Button
+        as={Link}
+        to={`/pacientes/${patientId}/historia/hospitalizaciones`}
+        variant="secondary"
+      >
+        Ver hospitalizaciones
+      </Button>
+    </Card>
+  );
+}
+
 export function ClinicalHistoryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const canReadRecord = useCan(PERMISSION.CLINICAL_RECORDS_READ);
@@ -77,6 +127,9 @@ export function ClinicalHistoryPage() {
   const canReadPrescriptions = useCan(PERMISSION.PRESCRIPTIONS_READ);
   const canReadVaccinations = useCan(PERMISSION.VACCINATIONS_READ);
   const canReadDewormings = useCan(PERMISSION.DEWORMINGS_READ);
+  const canReadProcedures = useCan(PERMISSION.PROCEDURES_READ);
+  const canReadAnesthesia = useCan(PERMISSION.ANESTHESIA_READ);
+  const canReadHospitalizations = useCan(PERMISSION.HOSPITALIZATIONS_READ);
   const canCreateEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_CREATE);
   const canCreateEvolution = useCan(PERMISSION.CLINICAL_EVOLUTIONS_CREATE);
   const { activeMembership } = useAuth();
@@ -101,6 +154,64 @@ export function ClinicalHistoryPage() {
   const timezone = organization.data?.timezone ?? 'UTC';
 
   if (!patientId) return <ResourceError error={new ApiError('Paciente no encontrado', 404)} />;
+  if (!canReadRecord) {
+    return (
+      <div className="page-stack clinical-page">
+        <PageHeader
+          eyebrow="Historia clínica"
+          title="Historia clínica"
+          description="Acceso a los módulos clínicos habilitados para tu membresía."
+          action={
+            <Button as={Link} to={`/pacientes/${patientId}`} variant="secondary">
+              Volver al paciente
+            </Button>
+          }
+        />
+        {canReadProcedures || canReadAnesthesia ? (
+          <ProceduresAnesthesiaEntry patientId={patientId} />
+        ) : null}
+        {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
+        {canReadPrescriptions ? (
+          <Card className="prescription-history-entry">
+            <div>
+              <p className="section-kicker">Tratamientos</p>
+              <h2>Prescripciones</h2>
+            </div>
+            <Button
+              as={Link}
+              to={`/pacientes/${patientId}/historia/prescripciones`}
+              variant="secondary"
+            >
+              Ver prescripciones
+            </Button>
+          </Card>
+        ) : null}
+        {canReadVaccinations || canReadDewormings ? (
+          <Card className="prescription-history-entry">
+            <div>
+              <p className="section-kicker">Cuidado preventivo</p>
+              <h2>Vacunaciones y desparasitaciones</h2>
+            </div>
+            <Button
+              as={Link}
+              to={`/pacientes/${patientId}/historia/preventivos`}
+              variant="secondary"
+            >
+              Ver cuidado preventivo
+            </Button>
+          </Card>
+        ) : null}
+        {canReadEncounters || canReadEvolutions ? (
+          <Card>
+            <EmptyState
+              title="Historia clínica restringida"
+              description="El detalle del expediente y de los encuentros requiere un permiso clínico independiente."
+            />
+          </Card>
+        ) : null}
+      </div>
+    );
+  }
   if (recordState.loading) {
     return (
       <div className="page-stack">
@@ -130,6 +241,10 @@ export function ClinicalHistoryPage() {
             </span>
           }
         />
+        {canReadProcedures || canReadAnesthesia ? (
+          <ProceduresAnesthesiaEntry patientId={patientId} />
+        ) : null}
+        {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
         <Card>
           <EmptyState
             title="Este paciente todavía no tiene historia clínica."
@@ -229,6 +344,10 @@ export function ClinicalHistoryPage() {
           </Button>
         </Card>
       ) : null}
+      {canReadProcedures || canReadAnesthesia ? (
+        <ProceduresAnesthesiaEntry patientId={patientId} />
+      ) : null}
+      {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
       {!canReadEncounters ? (
         <Card>
           <EmptyState

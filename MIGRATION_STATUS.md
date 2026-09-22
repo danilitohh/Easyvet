@@ -1,68 +1,70 @@
 # Estado de migración
 
-| Área                               | Estado                                                                        |
-| ---------------------------------- | ----------------------------------------------------------------------------- |
-| Auditoría legacy                   | Completada                                                                    |
-| Monorepo                           | Completado                                                                    |
-| React/Vite                         | App shell y base visual de Fase 2 completados                                 |
-| NestJS                             | Infraestructura; Nest 12.0.3 verificado                                       |
-| PostgreSQL                         | VERIFICADO LOCALMENTE                                                         |
-| Prisma                             | Modelos Fases 3A/3B/4A/5B y migraciones aplicados localmente                  |
-| Core tenant model                  | COMPLETADO (Fase 3A)                                                          |
-| Multi-tenancy                      | Fundación de aislamiento completada (Fase 3C)                                 |
-| Autenticación                      | COMPLETADA (Fase 3B)                                                          |
-| Autorización                       | COMPLETADA (Fase 3C)                                                          |
-| UI Lativet                         | Referencia analizada; adaptación React completada                             |
-| Owners backend                     | COMPLETADO (Fase 4A)                                                          |
-| Patients backend                   | COMPLETADO (Fase 4A)                                                          |
-| Owners frontend                    | COMPLETADO (Fase 4B)                                                          |
-| Patients frontend                  | COMPLETADO (Fase 4B)                                                          |
-| Owners/Patients final review       | COMPLETADO (Fase 4C)                                                          |
-| Agenda analysis/design             | COMPLETADO (Fase 5A)                                                          |
-| Agenda backend                     | COMPLETADO (Fase 5B)                                                          |
-| Agenda frontend read-only          | COMPLETADO (Fase 5C.1)                                                        |
-| Agenda scheduling operations       | COMPLETADO (Fase 5C.2A)                                                       |
-| Agenda workflow operations         | COMPLETADO (Fase 5C.2B)                                                       |
-| Agenda availability UI             | COMPLETADO (Fase 5C.2B)                                                       |
-| Agenda hardening                   | COMPLETADO (Fase 5D)                                                          |
-| Agenda                             | COMPLETADO (Fases 5A–5D)                                                      |
-| Google Calendar                    | POSTERGADO                                                                    |
-| Notifications                      | POSTERGADO                                                                    |
-| Public booking                     | POSTERGADO                                                                    |
-| Clínica — análisis Fase 6A         | COMPLETADO                                                                    |
-| Clínica — design gate 6A.1         | COMPLETADO                                                                    |
-| Clínica — fundación 6B.1           | COMPLETADO (schema, migración, seed, permisos y tests)                        |
-| Clínica — núcleo API 6B.2          | COMPLETADO (API, transacciones, CAS, auditoría y tests)                       |
-| Clínica — frontend read-only 6C.1  | COMPLETADO (rutas, historia y detalle en modo lectura)                        |
-| Clínica — operaciones UI 6C.2A     | COMPLETADO (borradores, vitales y perfil profesional)                         |
-| Clínica — finalize/void UI 6C.2B   | COMPLETADO (finalización, evoluciones y anulación)                            |
-| Clínica — hardening 6C.3           | COMPLETADO (invariantes, concurrencia, tenant, UX y auditoría)                |
-| Clinical Core                      | COMPLETADO                                                                    |
-| Prescriptions — análisis 6D.1      | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
-| Prescriptions — backend 6D.2       | COMPLETADO                                                                    |
-| Prescriptions — frontend 6D.3A     | COMPLETADO (lectura, snapshots y aislamiento)                                 |
-| Prescriptions — frontend 6D.3B     | COMPLETADO (drafts, items, CAS, finalize y void)                              |
-| Prescriptions — hardening 6D.4     | COMPLETADO (locks, lifecycle, invariantes, snapshots, tenant, auditoría y UX) |
-| Preventive care — análisis 6E.1    | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
-| Preventive care — backend 6E.2     | COMPLETADO (schema, migración, API, lifecycle, CAS, auditoría y tests)        |
-| Vaccinations backend               | COMPLETADO (Fase 6E.2)                                                        |
-| Dewormings backend                 | COMPLETADO (Fase 6E.2)                                                        |
-| Preventive Care frontend read-only | COMPLETADO (Fase 6E.3A)                                                       |
-| Preventive Care operations         | COMPLETADO (Fase 6E.3B: create/edit/finalize/void, CAS y UX tenant-safe)      |
-| Preventive Care hardening          | COMPLETADO (Fase 6E.4: invariantes, concurrencia, PII, UX y auditoría)        |
-| Preventive Care                    | COMPLETADO (Fases 6E.1–6E.4)                                                  |
-| Procedures/Surgery analysis 6F.1   | COMPLETADO (análisis y Design Gate 6F.1.1)                                    |
-| Procedures/Surgery backend 6F.2A   | COMPLETADO (schema, migración, API, permisos, seed y tests)                   |
-| Anesthesia backend 6F.2B           | COMPLETADO (schema, migración, API, permisos, seed y tests)                   |
-| Procedures/Surgery frontend        | PENDIENTE                                                                     |
-| Procedures/Surgery hardening       | PENDIENTE                                                                     |
-| Certificates/Documents             | POSTERGADO                                                                    |
-| Inventory integration              | POSTERGADO                                                                    |
-| External preventive records        | POSTERGADO                                                                    |
-| Inventario                         | Pendiente                                                                     |
-| Facturación                        | Pendiente                                                                     |
-| SaaS                               | Pendiente                                                                     |
-| Multi-tenancy SaaS completo        | EN PROGRESO                                                                   |
+| Área                                    | Estado                                                                        |
+| --------------------------------------- | ----------------------------------------------------------------------------- |
+| Auditoría legacy                        | Completada                                                                    |
+| Monorepo                                | Completado                                                                    |
+| React/Vite                              | App shell y base visual de Fase 2 completados                                 |
+| NestJS                                  | Infraestructura; Nest 12.0.3 verificado                                       |
+| PostgreSQL                              | VERIFICADO LOCALMENTE                                                         |
+| Prisma                                  | Modelos Fases 3A/3B/4A/5B y migraciones aplicados localmente                  |
+| Core tenant model                       | COMPLETADO (Fase 3A)                                                          |
+| Multi-tenancy                           | Fundación de aislamiento completada (Fase 3C)                                 |
+| Autenticación                           | COMPLETADA (Fase 3B)                                                          |
+| Autorización                            | COMPLETADA (Fase 3C)                                                          |
+| UI Lativet                              | Referencia analizada; adaptación React completada                             |
+| Owners backend                          | COMPLETADO (Fase 4A)                                                          |
+| Patients backend                        | COMPLETADO (Fase 4A)                                                          |
+| Owners frontend                         | COMPLETADO (Fase 4B)                                                          |
+| Patients frontend                       | COMPLETADO (Fase 4B)                                                          |
+| Owners/Patients final review            | COMPLETADO (Fase 4C)                                                          |
+| Agenda analysis/design                  | COMPLETADO (Fase 5A)                                                          |
+| Agenda backend                          | COMPLETADO (Fase 5B)                                                          |
+| Agenda frontend read-only               | COMPLETADO (Fase 5C.1)                                                        |
+| Agenda scheduling operations            | COMPLETADO (Fase 5C.2A)                                                       |
+| Agenda workflow operations              | COMPLETADO (Fase 5C.2B)                                                       |
+| Agenda availability UI                  | COMPLETADO (Fase 5C.2B)                                                       |
+| Agenda hardening                        | COMPLETADO (Fase 5D)                                                          |
+| Agenda                                  | COMPLETADO (Fases 5A–5D)                                                      |
+| Google Calendar                         | POSTERGADO                                                                    |
+| Notifications                           | POSTERGADO                                                                    |
+| Public booking                          | POSTERGADO                                                                    |
+| Clínica — análisis Fase 6A              | COMPLETADO                                                                    |
+| Clínica — design gate 6A.1              | COMPLETADO                                                                    |
+| Clínica — fundación 6B.1                | COMPLETADO (schema, migración, seed, permisos y tests)                        |
+| Clínica — núcleo API 6B.2               | COMPLETADO (API, transacciones, CAS, auditoría y tests)                       |
+| Clínica — frontend read-only 6C.1       | COMPLETADO (rutas, historia y detalle en modo lectura)                        |
+| Clínica — operaciones UI 6C.2A          | COMPLETADO (borradores, vitales y perfil profesional)                         |
+| Clínica — finalize/void UI 6C.2B        | COMPLETADO (finalización, evoluciones y anulación)                            |
+| Clínica — hardening 6C.3                | COMPLETADO (invariantes, concurrencia, tenant, UX y auditoría)                |
+| Clinical Core                           | COMPLETADO                                                                    |
+| Prescriptions — análisis 6D.1           | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
+| Prescriptions — backend 6D.2            | COMPLETADO                                                                    |
+| Prescriptions — frontend 6D.3A          | COMPLETADO (lectura, snapshots y aislamiento)                                 |
+| Prescriptions — frontend 6D.3B          | COMPLETADO (drafts, items, CAS, finalize y void)                              |
+| Prescriptions — hardening 6D.4          | COMPLETADO (locks, lifecycle, invariantes, snapshots, tenant, auditoría y UX) |
+| Preventive care — análisis 6E.1         | COMPLETADO (referencia legacy, propuesta y decisiones)                        |
+| Preventive care — backend 6E.2          | COMPLETADO (schema, migración, API, lifecycle, CAS, auditoría y tests)        |
+| Vaccinations backend                    | COMPLETADO (Fase 6E.2)                                                        |
+| Dewormings backend                      | COMPLETADO (Fase 6E.2)                                                        |
+| Preventive Care frontend read-only      | COMPLETADO (Fase 6E.3A)                                                       |
+| Preventive Care operations              | COMPLETADO (Fase 6E.3B: create/edit/finalize/void, CAS y UX tenant-safe)      |
+| Preventive Care hardening               | COMPLETADO (Fase 6E.4: invariantes, concurrencia, PII, UX y auditoría)        |
+| Preventive Care                         | COMPLETADO (Fases 6E.1–6E.4)                                                  |
+| Procedures/Surgery analysis 6F.1        | COMPLETADO (análisis y Design Gate 6F.1.1)                                    |
+| Procedures/Surgery backend 6F.2A        | COMPLETADO (schema, migración, API, permisos, seed y tests)                   |
+| Anesthesia backend 6F.2B                | COMPLETADO (schema, migración, API, permisos, seed y tests)                   |
+| Procedures/Surgery frontend             | COMPLETADO (Fase 6F.3)                                                        |
+| Anesthesia frontend/monitoring          | COMPLETADO (Fase 6F.3)                                                        |
+| Procedures/Surgery/Anesthesia hardening | COMPLETADO (Fase 6F.3)                                                        |
+| Fase 6F                                 | COMPLETADA                                                                    |
+| Certificates/Documents                  | POSTERGADO                                                                    |
+| Inventory integration                   | POSTERGADO                                                                    |
+| External preventive records             | POSTERGADO                                                                    |
+| Inventario                              | Pendiente                                                                     |
+| Facturación                             | Pendiente                                                                     |
+| SaaS                                    | Pendiente                                                                     |
+| Multi-tenancy SaaS completo             | EN PROGRESO                                                                   |
 
 La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
 
@@ -726,10 +728,10 @@ Fase 6F.2B — Anesthesia backend completada:
   de Patient/Owner histórico/Professional al finalizar, seed ficticio idempotente
   y pruebas reales PostgreSQL. Assistant puede leer/crear/editar drafts y
   observations; no puede finalizar ni anular.
-- No se creó frontend, Consent, PDF, firma, Storage, inventario, billing,
-  Prescription/Medication estructurado, device integration, templates ni
-  importación legacy. Procedures/Surgery frontend y hardening siguen
-  **PENDIENTES**.
+- En esta fase no se creó frontend, Consent, PDF, firma, Storage, inventario,
+  billing, Prescription/Medication estructurado, device integration, templates
+  ni importación legacy. Procedures/Surgery frontend y hardening estaban
+  pendientes entonces y se completaron en Fase 6F.3, registrada abajo.
 - QA HTTP real se ejecutó únicamente sobre `easyvet_dev`: health/login,
   creación standalone, creación ligada a Surgery finalizada, validación de
   timestamp con offset, update Draft, add/update/delete/list de observations,
@@ -750,3 +752,71 @@ Fase 6F.2B — Anesthesia backend completada:
   No se identificó riesgo real de runtime API Easyvet para esta fase porque el
   servidor no ejecuta Vitest ni procesa configuración Prisma controlada por
   usuarios.
+
+Fase 6F.3 — Procedures/Surgery/Anesthesia frontend, hardening y cierre:
+
+- Se implementaron rutas independientes y deep-linkable para historial,
+  detalle, creación y edición Draft de procedimientos/cirugías y anestesia;
+  el detalle Surgery se integra con el kind del procedimiento.
+- La UI usa permisos efectivos `procedures.*` y `anesthesia.*`, ofrece lectura
+  parcial por dominio, CRUD de observaciones anestésicas en Draft, presenta
+  cero como valor válido y mantiene lectura histórica de snapshots.
+- Los recursos clínicos se aíslan por organización durante lecturas y cambios
+  de tenant. En el QA manual se descartó un texto de formulario Norte sin
+  guardar, y su deep link devolvió “Recurso no encontrado” al cambiar a Sur.
+  En vista de paciente de Sur a 390 px no hubo overflow horizontal.
+- Se actualizó la documentación de API, transacciones, autorización y
+  decisiones; se añadió la guía frontend y la matriz legacy final. Consent,
+  documentos/PDF, firma, medicamentos estructurados, dispositivos, catálogos,
+  inventario, facturación, datos históricos externos y plantillas
+  configurables siguen POSTERGADOS, no son bugs de esta fase.
+- QA manual con registros ficticios se ejecutó exclusivamente en `easyvet_dev`;
+  los registros permanecen sin hard delete. No se modificaron Appointment,
+  Prescription, seed ni migraciones. El cambio backend de 6F.3 permite retirar
+  o cambiar un vínculo anestésico Draft cuando el Procedure vinculado fue
+  anulado, y se agregó regresión de integración.
+- Batería final (22-sep-2026): `format:check`, `lint`, `typecheck`, `npm test`,
+  `test:db`, `test:all`, `build`, `prisma:generate` y `prisma:validate`
+  finalizaron correctamente. `npm test` ejecutó 293 pruebas frontend y 5
+  pruebas API sin DB; omitió 133 pruebas que requieren DB. `test:db` pasó con
+  138 pruebas (133 DB-gated + 5 API comunes).
+- Build aprobado con advertencias no bloqueantes: anotaciones Zod removidas por
+  Rollup y chunk JS principal de 811.03 kB (235.20 kB gzip), sobre el umbral
+  configurado de 500 kB.
+- QA con registros ficticios solo en `easyvet_dev`; Docker/PostgreSQL estuvo
+  disponible y healthy. Conteos finales: 12 Appointments, 10 Prescriptions,
+  13 ClinicalProcedures, 9 AnesthesiaRecords y 7 AnesthesiaObservations. No se
+  modificaron citas, prescripciones, seed ni migraciones; no se hicieron
+  hard-deletes. No se creó commit.
+- Tenant switch Norte a Sur, descarte del formulario no guardado y deep link
+  cross-tenant se verificaron manualmente; el recurso de Norte respondió 404.
+  El layout a 390 px no mostró overflow horizontal. Se verificó la advertencia
+  de Anesthesia FINALIZED con Procedure VOIDED. No se mutó un ClinicalEncounter,
+  por lo que el caso manual Procedure FINALIZED + Encounter VOIDED quedó fuera
+  del QA autorizado; el estado se conserva visible en la UI y los tests de
+  backend cubren las transiciones/races del padre.
+- `npm audit` reportó 5 vulnerabilidades: 2 moderadas relacionadas con Vitest /
+  `@vitest/mocker` y 3 altas en la cadena de configuración/herramientas Prisma /
+  `deepmerge-ts`. Vitest es dev-only; la cadena Prisma aparece también en el
+  árbol `--omit=dev` vía dependencia/peer de `@prisma/client`, pero el hallazgo
+  identificado afecta herramientas/configuración y no expone una ruta de
+  entrada de datos controlados por usuario en el runtime API actual. No se
+  encontró actualización patch/minor compatible; no se ejecutó `audit fix`.
+- `prisma:generate` tuvo inicialmente un `EPERM` al reemplazar el engine DLL
+  mientras el servidor de desarrollo lo mantenía abierto; después de detener
+  el servidor, el comando pasó. PostgreSQL continúa como verificado localmente
+  en `easyvet_dev`; no se afirmó ninguna verificación de producción.
+
+Fase 6G — Hospitalization / Ambulatorio completo: COMPLETADA
+
+- Hospitalization: COMPLETADO.
+- Hospitalization backend: COMPLETADO.
+- Hospitalization frontend: COMPLETADO.
+- Hospitalization Kardex: COMPLETADO.
+- Hospitalization hardening: COMPLETADO.
+- La migración 20260922120000_add_hospitalizations y el seed idempotente fueron aplicados/verificados únicamente en easyvet_dev y easyvet_test.
+- La suite de integración PostgreSQL de Hospitalization cubre lifecycle, permisos clínicos, tenant isolation, snapshots, CAS, Kardex append-only, mediciones, alta, void y no mutación de Patient. La suite frontend cubre rutas, lifecycle y permisos.
+- El QA manual y los datos demo de esta fase permanecen limitados a easyvet_dev. No se inició Diagnostics/Exams y no se creó commit.
+- Validación final del 22-sep-2026: `format:check`, `lint`, `typecheck`, `npm test`, `test:db`, `test:all`, `build`, `prisma:generate` y `prisma:validate` finalizaron correctamente; `test:db` cubrió 142 pruebas y la suite web llegó a 296 pruebas.
+- Docker Engine 29.8.0 / Compose v5.5.1 y `easyvet-postgres-1` permanecen disponibles y `healthy`; la configuración local verificada apunta a `easyvet_dev`, sin afirmar verificación de producción.
+- `npm audit` reporta 5 hallazgos actuales (2 moderados en Vitest/@vitest/mocker, dev-only, y 3 altos agregados en la cadena Prisma/deepmerge-ts). No hay actualización patch/minor segura identificada; no se ejecutó `npm audit fix --force`.

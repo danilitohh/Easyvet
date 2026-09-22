@@ -383,6 +383,151 @@ const seedClinicalEncounters = [
     occurredAt: '2030-01-08T16:00:00.000Z',
     createdByMembershipId: '00000000-0000-4000-8000-000000000204',
   },
+  {
+    id: '00000000-0000-4000-8000-000000000904',
+    organizationId: seedOrganizations[0].id,
+    clinicalRecordId: seedClinicalRecords[0].id,
+    patientId: seedPatients[0].id,
+    ownerIdAtTime: seedOwners[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    appointmentId: null,
+    responsibleMembershipId: seedUsers[0].membershipId,
+    status: 'FINALIZED',
+    version: 1,
+    reason: 'Seguimiento posterior al alta ficticio',
+    anamnesis: 'Encuentro de demostración para el historial de hospitalización.',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    finalizedAt: '2030-01-07T20:30:00.000Z',
+    finalizedByMembershipId: seedUsers[0].membershipId,
+    voidedAt: null,
+    voidedByMembershipId: null,
+    voidReason: null,
+    occurredAt: '2030-01-07T20:00:00.000Z',
+    createdByMembershipId: seedUsers[0].membershipId,
+  },
+];
+
+// Stable fictional episodes cover Norte lifecycle states and one Sur tenant record.
+const seedHospitalizations = [
+  {
+    id: '00000000-0000-4000-8000-000000001601',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[0].id,
+    patientId: seedPatients[0].id,
+    status: 'DRAFT',
+    version: 1,
+    admittedAt: null,
+    locationName: 'Norte · observación',
+    admissionReason: 'Borrador de ingreso de demostración.',
+    diagnosis: null,
+    treatmentPlan: null,
+    medicationsText: null,
+    dietInstructions: null,
+    notes: 'Registro ficticio; todavía no inicia la hospitalización.',
+    responsiblePractitionerMembershipId: null,
+    createdByMembershipId: seedUsers[2].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001602',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[1].id,
+    patientId: seedPatients[0].id,
+    status: 'ACTIVE',
+    version: 3,
+    admittedAt: '2030-01-08T15:35:00.000Z',
+    locationName: 'Norte · observación 1',
+    admissionReason: 'Observación clínica de demostración.',
+    diagnosis: 'Paciente estable en observación.',
+    treatmentPlan: 'Monitorear tolerancia oral y confort.',
+    medicationsText: 'Medicaciones de ejemplo: según indicación clínica.',
+    dietInstructions: 'Agua disponible; dieta habitual en porciones pequeñas.',
+    notes: 'Episodio ficticio para revisar el Kardex activo.',
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+    createdByMembershipId: seedUsers[0].membershipId,
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    activatedAt: '2030-01-08T15:40:00.000Z',
+    activatedByMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001603',
+    organizationId: seedOrganizations[0].id,
+    clinicalEncounterId: seedClinicalEncounters[3].id,
+    patientId: seedPatients[0].id,
+    status: 'DISCHARGED',
+    version: 4,
+    admittedAt: '2030-01-07T14:00:00.000Z',
+    dischargedAt: '2030-01-07T20:00:00.000Z',
+    locationName: 'Norte · recuperación',
+    admissionReason: 'Recuperación de demostración.',
+    diagnosis: 'Recuperación sin complicaciones.',
+    treatmentPlan: 'Observación y soporte.',
+    medicationsText: 'Medicaciones de ejemplo registradas en la historia.',
+    dietInstructions: 'Reintroducción gradual de alimento.',
+    dischargeSummary: 'Paciente estable al momento del alta.',
+    dischargeRecommendations: 'Control según evolución clínica.',
+    notes: 'Episodio histórico ficticio de demostración.',
+    responsiblePractitionerMembershipId: seedUsers[0].membershipId,
+    createdByMembershipId: seedUsers[0].membershipId,
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+    activatedAt: '2030-01-07T14:05:00.000Z',
+    activatedByMembershipId: seedUsers[0].membershipId,
+    dischargedByMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001604',
+    organizationId: seedOrganizations[1].id,
+    clinicalEncounterId: seedClinicalEncounters[2].id,
+    patientId: seedPatients[3].id,
+    status: 'DRAFT',
+    version: 1,
+    admittedAt: null,
+    locationName: 'Sur · consulta',
+    admissionReason: 'Ingreso de demostración del tenant Sur.',
+    diagnosis: null,
+    treatmentPlan: null,
+    medicationsText: null,
+    dietInstructions: null,
+    notes: null,
+    responsiblePractitionerMembershipId: null,
+    createdByMembershipId: '00000000-0000-4000-8000-000000000204',
+  },
+];
+
+// Kardex fixtures exist only for active or discharged episodes, matching the write lifecycle.
+const seedHospitalizationEntries = [
+  {
+    id: '00000000-0000-4000-8000-000000001611',
+    organizationId: seedOrganizations[0].id,
+    hospitalizationId: seedHospitalizations[1].id,
+    entryType: 'EVOLUTION',
+    recordedAt: '2030-01-08T15:45:00.000Z',
+    content: 'Paciente tranquila, tolera agua y responde al entorno.',
+    temperatureC: 38.2,
+    heartRateBpm: 96,
+    respiratoryRatePerMinute: 24,
+    weightKg: null,
+    recordedByMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001612',
+    organizationId: seedOrganizations[0].id,
+    hospitalizationId: seedHospitalizations[2].id,
+    entryType: 'MONITORING',
+    recordedAt: '2030-01-07T18:00:00.000Z',
+    content: 'Control de recuperación previo al alta.',
+    temperatureC: 38.1,
+    heartRateBpm: 92,
+    respiratoryRatePerMinute: 22,
+    weightKg: null,
+    recordedByMembershipId: seedUsers[0].membershipId,
+  },
 ];
 
 // Procedures and surgeries use fictional records in both demo tenants for phase 6F.2A.
@@ -1169,6 +1314,87 @@ const seedClinicalAuditEvents = [
     action: 'CREATED',
     metadata: { source: 'seed', stage: '6F.2B', newVersion: 1 },
   },
+  {
+    id: '00000000-0000-4000-8000-000000001301',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[2].membershipId,
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[0].id,
+    action: 'HOSPITALIZATION_CREATED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 0, versionTo: 1, status: 'DRAFT' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001302',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[1].id,
+    action: 'HOSPITALIZATION_CREATED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 0, versionTo: 1, status: 'DRAFT' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001303',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[1].id,
+    action: 'HOSPITALIZATION_ACTIVATED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 1, versionTo: 2, status: 'ACTIVE' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001304',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[1].id,
+    action: 'HOSPITALIZATION_ENTRY_ADDED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 2, versionTo: 3, status: 'ACTIVE' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001305',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[2].id,
+    action: 'HOSPITALIZATION_CREATED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 0, versionTo: 1, status: 'DRAFT' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001306',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[2].id,
+    action: 'HOSPITALIZATION_ACTIVATED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 1, versionTo: 2, status: 'ACTIVE' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001307',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[2].id,
+    action: 'HOSPITALIZATION_ENTRY_ADDED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 2, versionTo: 3, status: 'ACTIVE' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001308',
+    organizationId: seedOrganizations[0].id,
+    actorMembershipId: seedUsers[0].membershipId,
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[2].id,
+    action: 'HOSPITALIZATION_DISCHARGED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 3, versionTo: 4, status: 'DISCHARGED' },
+  },
+  {
+    id: '00000000-0000-4000-8000-000000001309',
+    organizationId: seedOrganizations[1].id,
+    actorMembershipId: '00000000-0000-4000-8000-000000000204',
+    entityType: 'HOSPITALIZATION',
+    entityId: seedHospitalizations[3].id,
+    action: 'HOSPITALIZATION_CREATED',
+    metadata: { source: 'seed', stage: '6G', versionFrom: 0, versionTo: 1, status: 'DRAFT' },
+  },
 ];
 
 async function main() {
@@ -1561,6 +1787,31 @@ async function main() {
       });
     }
 
+    // Seed hospitalization status dates as UTC instants while preserving stable episode identifiers.
+    for (const hospitalization of seedHospitalizations) {
+      const dateFields = ['admittedAt', 'dischargedAt', 'activatedAt', 'voidedAt'];
+      const data = { ...hospitalization };
+      for (const field of dateFields) {
+        const value = data[field];
+        data[field] = value ? new Date(value) : null;
+      }
+      await transaction.hospitalization.upsert({
+        where: { id: hospitalization.id },
+        update: data,
+        create: data,
+      });
+    }
+
+    // Seed immutable Kardex entries; draft records intentionally have none until activation.
+    for (const entry of seedHospitalizationEntries) {
+      const data = { ...entry, recordedAt: new Date(entry.recordedAt) };
+      await transaction.hospitalizationEntry.upsert({
+        where: { id: entry.id },
+        update: data,
+        create: data,
+      });
+    }
+
     for (const audit of seedClinicalAuditEvents) {
       const { id: auditId, ...auditFields } = audit;
       await transaction.clinicalAuditEvent.upsert({
@@ -1572,7 +1823,7 @@ async function main() {
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 3 encounters, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 24 audits.',
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 4 encounters, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 4 hospitalizations, 2 Kardex entries, 33 audits.',
   );
 }
 

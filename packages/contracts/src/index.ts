@@ -79,6 +79,13 @@ export const permissionSchema = z.enum([
   'anesthesia.updateDraft',
   'anesthesia.finalize',
   'anesthesia.void',
+  'hospitalizations.read',
+  'hospitalizations.create',
+  'hospitalizations.update',
+  'hospitalizations.activate',
+  'hospitalizations.discharge',
+  'hospitalizations.void',
+  'hospitalizations.entries.create',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -1265,6 +1272,147 @@ export type AnesthesiaRecordStatus = z.infer<typeof anesthesiaRecordStatusSchema
 export type AnesthesiaObservation = z.infer<typeof anesthesiaObservationSchema>;
 export type AnesthesiaRecordSummary = z.infer<typeof anesthesiaRecordSummarySchema>;
 export type AnesthesiaRecordDetail = z.infer<typeof anesthesiaRecordDetailSchema>;
+
+// Shared schemas keep hospitalization payloads independent from Prisma model types.
+export const hospitalizationStatusSchema = z.enum(['DRAFT', 'ACTIVE', 'DISCHARGED', 'VOIDED']);
+export const hospitalizationEntryTypeSchema = z.enum([
+  'EVOLUTION',
+  'MONITORING',
+  'MEDICATION',
+  'NURSING',
+  'DIET',
+  'OTHER',
+]);
+const nullableText = (max: number) => z.string().max(max).nullable();
+const offsetDateTimeSchema = z.string().datetime({ offset: true });
+
+export const hospitalizationSummarySchema = z.object({
+  id: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  status: hospitalizationStatusSchema,
+  version: z.number().int().min(1),
+  admittedAt: z.string().datetime().nullable(),
+  dischargedAt: z.string().datetime().nullable(),
+  locationName: nullableText(160),
+  admissionReason: nullableText(5000),
+  diagnosis: nullableText(10000),
+  patientNameSnapshot: nullableText(200),
+  ownerDisplayNameSnapshot: nullableText(300),
+  professionalDisplayNameSnapshot: nullableText(200),
+  professionalLicenseSnapshot: nullableText(120),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export const hospitalizationListResponseSchema = z.object({
+  data: z.array(hospitalizationSummarySchema),
+  pagination: z.object({
+    page: z.number().int(),
+    pageSize: z.number().int(),
+    total: z.number().int(),
+    totalPages: z.number().int(),
+  }),
+});
+export const hospitalizationEntrySchema = z.object({
+  id: z.string().uuid(),
+  hospitalizationId: z.string().uuid(),
+  entryType: hospitalizationEntryTypeSchema,
+  recordedAt: z.string().datetime(),
+  content: nullableText(10000),
+  temperatureC: z.number().positive().nullable(),
+  heartRateBpm: z.number().int().min(0).nullable(),
+  respiratoryRatePerMinute: z.number().int().min(0).nullable(),
+  weightKg: z.number().positive().nullable(),
+  recordedByMembershipId: z.string().uuid(),
+  recordedByDisplayName: z.string().nullable(),
+  createdAt: z.string().datetime(),
+});
+export const hospitalizationEntriesResponseSchema = z.object({
+  data: z.array(hospitalizationEntrySchema),
+  pagination: z.object({
+    page: z.number().int(),
+    pageSize: z.number().int(),
+    total: z.number().int(),
+    totalPages: z.number().int(),
+  }),
+});
+export const hospitalizationDetailSchema = hospitalizationSummarySchema.extend({
+  organizationId: z.string().uuid(),
+  parentEncounterStatus: clinicalEncounterStatusSchema,
+  responsiblePractitionerMembershipId: z.string().uuid().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  activatedAt: z.string().datetime().nullable(),
+  activatedByMembershipId: z.string().uuid().nullable(),
+  dischargedByMembershipId: z.string().uuid().nullable(),
+  voidedAt: z.string().datetime().nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: nullableText(1000),
+  treatmentPlan: nullableText(10000),
+  medicationsText: nullableText(10000),
+  dietInstructions: nullableText(5000),
+  dischargeSummary: nullableText(10000),
+  dischargeRecommendations: nullableText(10000),
+  notes: nullableText(10000),
+  entryCount: z.number().int().min(0),
+  patient: z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    status: z.enum(['ACTIVE', 'ARCHIVED']),
+  }),
+});
+export const createHospitalizationRequestSchema = z.object({
+  admittedAt: offsetDateTimeSchema.nullable().optional(),
+  locationName: nullableText(160).optional(),
+  admissionReason: nullableText(5000).optional(),
+  diagnosis: nullableText(10000).optional(),
+  treatmentPlan: nullableText(10000).optional(),
+  medicationsText: nullableText(10000).optional(),
+  dietInstructions: nullableText(5000).optional(),
+  notes: nullableText(10000).optional(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable().optional(),
+});
+export const updateHospitalizationRequestSchema = createHospitalizationRequestSchema
+  .partial()
+  .extend({ expectedVersion: z.number().int().min(1) });
+export const activateHospitalizationRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+});
+export const dischargeHospitalizationRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+  dischargedAt: offsetDateTimeSchema,
+  dischargeSummary: nullableText(10000).optional(),
+  dischargeRecommendations: nullableText(10000).optional(),
+});
+export const voidHospitalizationRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+  reason: z.string().trim().min(1).max(1000),
+});
+export const createHospitalizationEntryRequestSchema = z.object({
+  expectedVersion: z.number().int().min(1),
+  entryType: hospitalizationEntryTypeSchema,
+  recordedAt: offsetDateTimeSchema,
+  content: nullableText(10000).optional(),
+  temperatureC: z.number().positive().nullable().optional(),
+  heartRateBpm: z.number().int().min(0).nullable().optional(),
+  respiratoryRatePerMinute: z.number().int().min(0).nullable().optional(),
+  weightKg: z.number().positive().nullable().optional(),
+});
+export const hospitalizationDetailResponseSchema = hospitalizationDetailSchema;
+export type HospitalizationStatusValue = z.infer<typeof hospitalizationStatusSchema>;
+export type HospitalizationEntryTypeValue = z.infer<typeof hospitalizationEntryTypeSchema>;
+export type HospitalizationSummary = z.infer<typeof hospitalizationSummarySchema>;
+export type HospitalizationListResponse = z.infer<typeof hospitalizationListResponseSchema>;
+export type HospitalizationEntry = z.infer<typeof hospitalizationEntrySchema>;
+export type HospitalizationEntriesResponse = z.infer<typeof hospitalizationEntriesResponseSchema>;
+export type HospitalizationDetail = z.infer<typeof hospitalizationDetailSchema>;
+export type CreateHospitalizationRequest = z.infer<typeof createHospitalizationRequestSchema>;
+export type UpdateHospitalizationRequest = z.infer<typeof updateHospitalizationRequestSchema>;
+export type ActivateHospitalizationRequest = z.infer<typeof activateHospitalizationRequestSchema>;
+export type DischargeHospitalizationRequest = z.infer<typeof dischargeHospitalizationRequestSchema>;
+export type VoidHospitalizationRequest = z.infer<typeof voidHospitalizationRequestSchema>;
+export type CreateHospitalizationEntryRequest = z.infer<
+  typeof createHospitalizationEntryRequestSchema
+>;
 export type AnesthesiaRecordListResponse = z.infer<typeof anesthesiaRecordListResponseSchema>;
 export type AnesthesiaObservationListResponse = z.infer<
   typeof anesthesiaObservationListResponseSchema

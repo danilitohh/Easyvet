@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useState, type FormEvent } from 'react';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
+import { EncounterProcedureSections } from '../procedures/EncounterProcedureSections';
 import { Badge } from '../../components/ui/Badge';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
@@ -39,6 +40,7 @@ import {
 import { PrescriptionListSection } from '../prescriptions/PrescriptionListSection';
 import { VaccinationListSection } from '../preventive-care/VaccinationListSection';
 import { DewormingListSection } from '../preventive-care/DewormingListSection';
+import { useHospitalizationListResource } from '../shared/useClinicalDomainResource';
 
 function ReadonlyField({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value?.trim()) return null;
@@ -191,6 +193,10 @@ export function ClinicalEncounterDetailPage() {
   const canCreatePrescription = useCan(PERMISSION.PRESCRIPTIONS_CREATE);
   const canCreateVaccination = useCan(PERMISSION.VACCINATIONS_CREATE);
   const canCreateDeworming = useCan(PERMISSION.DEWORMINGS_CREATE);
+  const canCreateProcedure = useCan(PERMISSION.PROCEDURES_CREATE);
+  const canCreateAnesthesia = useCan(PERMISSION.ANESTHESIA_CREATE);
+  const canReadHospitalizations = useCan(PERMISSION.HOSPITALIZATIONS_READ);
+  const canCreateHospitalization = useCan(PERMISSION.HOSPITALIZATIONS_CREATE);
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
   const canUpdateDraft = useCan(PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT);
   const canCreateVital = useCan(PERMISSION.CLINICAL_VITALS_CREATE);
@@ -202,6 +208,12 @@ export function ClinicalEncounterDetailPage() {
   const organization = useClinicalOrganization();
   const encounter = useClinicalEncounter(encounterId, canReadEncounter);
   const patientState = usePatient(canReadPatients ? encounter.data?.patientId : undefined);
+  const hospitalizations = useHospitalizationListResource(
+    encounter.data?.patientId,
+    1,
+    canReadHospitalizations && Boolean(encounter.data),
+    encounter.data?.id,
+  );
   const vitals = useClinicalVitals(encounter.data?.id, canReadVitals && Boolean(encounter.data));
   const evolutions = useClinicalEvolutions(
     encounter.data?.patientId,
@@ -340,6 +352,22 @@ export function ClinicalEncounterDetailPage() {
         description={`${formatDateTime(item.occurredAt, timezone)} · ${item.patient.name}`}
         action={
           <span className="page-header__actions">
+            {canCreateProcedure && item.status !== 'VOIDED' && item.patient.status === 'ACTIVE' ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/procedimientos/nuevo`}
+              >
+                Nuevo procedimiento
+              </Button>
+            ) : null}
+            {canCreateAnesthesia && item.status !== 'VOIDED' && item.patient.status === 'ACTIVE' ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/anestesias/nueva`}
+              >
+                Nuevo registro anestésico
+              </Button>
+            ) : null}
             {canCreatePrescription && (item.status === 'DRAFT' || item.status === 'FINALIZED') ? (
               <Button
                 as={Link}
@@ -448,6 +476,62 @@ export function ClinicalEncounterDetailPage() {
           </p>
         ) : null}
       </Card>
+      {canReadHospitalizations || canCreateHospitalization ? (
+        <Card className="hospitalization-encounter-card">
+          <div className="detail-card__heading">
+            <div>
+              <p className="section-kicker">Ingreso intrahospitalario</p>
+              <h2>Hospitalización del encuentro</h2>
+            </div>
+          </div>
+          {hospitalizations.loading && canReadHospitalizations ? (
+            <LoadingState label="Consultando episodio de hospitalización" />
+          ) : hospitalizations.error && canReadHospitalizations ? (
+            <ResourceError error={hospitalizations.error} onRetry={hospitalizations.reload} />
+          ) : hospitalizations.data?.data[0] ? (
+            <div className="hospitalization-encounter-card__content">
+              <p>
+                Episodio:{' '}
+                <strong>
+                  {hospitalizations.data.data[0].status === 'DRAFT'
+                    ? 'Borrador'
+                    : hospitalizations.data.data[0].status === 'ACTIVE'
+                      ? 'Hospitalizado'
+                      : hospitalizations.data.data[0].status === 'DISCHARGED'
+                        ? 'Alta'
+                        : 'Anulado'}
+                </strong>
+                {hospitalizations.data.data[0].locationName
+                  ? ` · ${hospitalizations.data.data[0].locationName}`
+                  : ''}
+              </p>
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/hospitalizaciones/${hospitalizations.data.data[0].id}`}
+                variant="secondary"
+              >
+                Abrir episodio
+              </Button>
+            </div>
+          ) : canCreateHospitalization &&
+            item.status !== 'VOIDED' &&
+            item.patient.status === 'ACTIVE' ? (
+            <>
+              <p className="clinical-muted">
+                Este encuentro todavía no tiene episodio de hospitalización.
+              </p>
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/historia/encuentros/${item.id}/hospitalizacion/nueva`}
+              >
+                Crear borrador de ingreso
+              </Button>
+            </>
+          ) : (
+            <p className="clinical-muted">Este encuentro no tiene un ingreso asociado.</p>
+          )}
+        </Card>
+      ) : null}
       <div className="detail-grid">
         <Card className="detail-card">
           <div className="detail-card__heading">
@@ -686,6 +770,12 @@ export function ClinicalEncounterDetailPage() {
           )}
         </Card>
       ) : null}
+      <EncounterProcedureSections
+        patientId={item.patientId}
+        encounterId={item.id}
+        encounterStatus={item.status}
+        patientStatus={item.patient.status}
+      />
       <Modal
         open={finalizeOpen}
         onClose={() => {

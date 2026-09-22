@@ -128,3 +128,14 @@ Ninguno bloquea el schema de 6F.2.
 - Frontend: **PENDIENTE**.
 - Esquema, migraciones, API y permisos: **implementados para backend**; frontend
   sigue sin cambios en esta fase.
+
+## Estado actual al cierre de 6F.3
+
+La sección anterior es el estado histórico al completar 6F.1. Al cierre de
+Fase 6F.3, Procedures/Surgery frontend, Anesthesia frontend/monitoring y el
+hardening conjunto están completados. El frontend conserva dominios y
+permisos separados, habilita solo acciones autorizadas, y maneja conflictos
+CAS, observaciones numéricas con cero válido y cambios de tenant. El detalle
+está en [`procedures-anesthesia-frontend.md`](procedures-anesthesia-frontend.md);
+las decisiones de alcance legacy están en
+[`procedures-anesthesia-final-review.md`](../migration/procedures-anesthesia-final-review.md).

@@ -27,6 +27,36 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'CLINICAL_ENCOUNTER_IMMUTABLE') {
     return 'La consulta ya no está en borrador y no puede editarse.';
   }
+  if (error.code === 'PROCEDURE_STALE') {
+    return 'Este procedimiento cambió en otra sesión. Recarga la versión actual antes de guardar.';
+  }
+  if (error.code === 'PROCEDURE_IMMUTABLE') {
+    return 'El procedimiento ya no está en borrador y no puede editarse.';
+  }
+  if (error.code === 'ANESTHESIA_STALE') {
+    return 'Este registro anestésico cambió en otra sesión. Recarga la versión actual antes de guardar.';
+  }
+  if (error.code === 'ANESTHESIA_IMMUTABLE') {
+    return 'El registro anestésico ya no está en borrador y no puede editarse.';
+  }
+  if (error.code === 'ANESTHESIA_OBSERVATION_EMPTY') {
+    return 'Añade al menos un valor clínico, plano anestésico o nota además de la hora.';
+  }
+  if (error.code === 'PARENT_CLINICAL_PROCEDURE_VOIDED') {
+    return 'El procedimiento asociado fue anulado. Cambia o limpia el vínculo antes de continuar.';
+  }
+  if (error.code === 'ASSISTANT_PROFILE_REQUIRED') {
+    return 'El asistente asignado debe tener un perfil profesional para finalizar la cirugía.';
+  }
+  if (error.code === 'PROCEDURE_NAME_REQUIRED') {
+    return 'Completa el nombre del procedimiento antes de finalizar.';
+  }
+  if (error.code === 'PROCEDURE_PERFORMED_AT_REQUIRED') {
+    return 'Registra la fecha y hora de realización antes de finalizar.';
+  }
+  if (error.code === 'ANESTHESIA_STARTED_AT_REQUIRED') {
+    return 'Registra la fecha y hora de inicio antes de finalizar la anestesia.';
+  }
   if (error.code === 'INVALID_CLINICAL_ENCOUNTER_STATE') {
     return 'La consulta no permite esta operación en su estado actual.';
   }

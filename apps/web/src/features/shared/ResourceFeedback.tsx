@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { appConfig } from '../../config/app';
 import { useCan } from '../../auth/useCan';
+import { useAuth } from '../../contexts/useAuth';
 import type { Permission } from '@veterinary-saas/contracts';
 import { AccessDeniedPage } from '../../pages/AccessDeniedPage';
 import { Alert } from '../../components/ui/Alert';
@@ -63,6 +64,22 @@ export function PermissionRoute({
 }) {
   const allowed = useCan(permission);
   if (appConfig.dataMode === 'mock' || allowed) return children;
+  return <AccessDeniedPage />;
+}
+
+// Some clinical history routes are readable through multiple independent domain permissions.
+export function AnyPermissionRoute({
+  permissions,
+  children,
+}: {
+  permissions: Permission[];
+  children: ReactNode;
+}) {
+  const { activeMembership } = useAuth();
+  const canAccess = permissions.some((permission) =>
+    activeMembership?.permissions.includes(permission),
+  );
+  if (appConfig.dataMode === 'mock' || canAccess) return children;
   return <AccessDeniedPage />;
 }
 
