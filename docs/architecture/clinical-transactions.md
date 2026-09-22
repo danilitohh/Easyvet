@@ -162,7 +162,7 @@ ClinicalRecord ──< ClinicalEncounter (DRAFT)
                          ├──< ClinicalEvolution / Addendum
                          ├──< VitalMeasurement ──► Patient projection
                          ├──< Diagnosis / Prescription / Preventive / Procedure
-                         ├──< DiagnosticOrder ──< DiagnosticResult
+                         ├──< DiagnosticOrder (solicitud + resultado + anulación)
                          ├──< Consent ──< SignatureRequest
                          ├──< FollowUp ──► Reminder/Appointment (outbox)
                          └──< DocumentVersion ──► Storage / export (outbox)
@@ -193,6 +193,16 @@ concurrencia en `AnesthesiaRecord.version`. La lista de rutas, payloads y
 errores está en [anesthesia-api.md](anesthesia-api.md).
 
 En 6G Hospitalization mantiene el orden Encounter → Patient → Hospitalization → Owner → Memberships y usa version para CAS en edición, activación, entries, discharge y void. Encounter VOID y Patient archive toman las mismas filas padre, por lo que una carrera no deja una mutación clínica parcial. La entrada Kardex y su auditoría se confirman en la misma transacción; un episodio DISCHARGED o VOIDED no recibe nuevas entries.
+
+En 6H `DiagnosticOrder` mantiene solicitud y resultado en el agregado, con
+transiciones CAS DRAFT → REQUESTED → RESULTED y VOID explícito. El orden de
+locks es Encounter → Patient → DiagnosticOrder → Owner (al congelar contexto)
+→ Memberships ordenadas/deduplicadas. Encounter VOID y Patient archive toman
+los locks padre compatibles: si la operación clínica gana primero, el cambio
+posterior del padre conserva su evidencia; si gana el cierre del padre, la
+mutación Draft/Requested se rechaza. Archive de Patient se permite con órdenes
+pendientes, que luego quedan de solo lectura salvo void. Auditoría lifecycle y
+datos se escriben atómicamente; no hay dependencia de archivos ni side effects.
 
 ## Checklist para implementación futura
 

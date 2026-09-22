@@ -224,3 +224,14 @@ solo a `easyvet_dev` y `easyvet_test`, incluida la alineación posterior de
 ## Hospitalization 6G
 
 Hospitalization es un agregado opcional 0..1 por ClinicalEncounter, con Patient y Organization obligatorios, lifecycle DRAFT/ACTIVE/DISCHARGED/VOIDED, version CAS y snapshots de identidad al activar. HospitalizationEntry es una colección append-only, siempre tenant-safe y sin proyección de peso a Patient. La migración y restricciones están en prisma/migrations/20260922120000_add_hospitalizations.
+
+## Diagnostics 6H
+
+`DiagnosticOrder` es un agregado único para las categorías LABORATORY, IMAGING,
+PATHOLOGY y OTHER. Requiere `ClinicalEncounter` y `Patient` del mismo tenant,
+admite multiplicidad 0..N por Encounter y conserva solicitud, resultado y
+anulación en la misma fila. No existe una tabla `DiagnosticResult` ni se crea
+una fila por archivo/categoría. Su lifecycle es DRAFT/REQUESTED/RESULTED/VOIDED,
+con CAS y snapshots al emitir la solicitud. FKs `RESTRICT`, checks SQL de
+estado/version/metadata e índices por tenant, Patient, Encounter, estado y
+categoría se encuentran en `20260922130000_add_diagnostic_orders`.

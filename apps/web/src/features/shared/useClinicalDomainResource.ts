@@ -4,6 +4,7 @@ import { useActiveOrganizationId } from './hooks';
 import { proceduresApi } from '../procedures/proceduresApi';
 import { anesthesiaApi } from '../anesthesia/anesthesiaApi';
 import { hospitalizationsApi } from '../hospitalizations/hospitalizationsApi';
+import { diagnosticsApi } from '../diagnostics/diagnosticsApi';
 
 export type ClinicalDomainLoadState<T> = {
   data: T | null;
@@ -82,6 +83,10 @@ const EMPTY_HOSPITALIZATIONS = {
   pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
 } as const;
 const EMPTY_HOSPITALIZATION_ENTRIES = {
+  data: [],
+  pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
+} as const;
+const EMPTY_DIAGNOSTIC_ORDERS = {
   data: [],
   pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
 } as const;
@@ -182,6 +187,34 @@ export function useHospitalizationEntriesResource(
   );
 }
 
+// Diagnostic history is tenant-keyed, paginated, and can be narrowed to one encounter.
+export function useDiagnosticOrderListResource(
+  patientId: string | undefined,
+  page: number,
+  enabled: boolean,
+  clinicalEncounterId?: string,
+) {
+  return useClinicalDomainResource(
+    `diagnostic-orders:${patientId ?? ''}:${page}:${clinicalEncounterId ?? ''}`,
+    enabled && Boolean(patientId),
+    (signal) =>
+      diagnosticsApi.listByPatient(
+        patientId!,
+        { page, pageSize: 20, ...(clinicalEncounterId ? { clinicalEncounterId } : {}) },
+        signal,
+      ),
+  );
+}
+
+// Diagnostic detail clears and aborts whenever the active organization or route id changes.
+export function useDiagnosticOrderResource(id: string | undefined, enabled: boolean) {
+  return useClinicalDomainResource(
+    `diagnostic-order:${id ?? ''}`,
+    enabled && Boolean(id),
+    (signal) => diagnosticsApi.findById(id!, signal),
+  );
+}
+
 // Mutations are canceled when the active organization changes or the owning screen unmounts.
 export function useClinicalMutationGuard() {
   const organizationId = useActiveOrganizationId();
@@ -203,6 +236,7 @@ export {
   EMPTY_ANESTHESIA,
   EMPTY_HOSPITALIZATION_ENTRIES,
   EMPTY_HOSPITALIZATIONS,
+  EMPTY_DIAGNOSTIC_ORDERS,
   EMPTY_OBSERVATIONS,
   EMPTY_PROCEDURES,
 };

@@ -41,6 +41,7 @@ import { PrescriptionListSection } from '../prescriptions/PrescriptionListSectio
 import { VaccinationListSection } from '../preventive-care/VaccinationListSection';
 import { DewormingListSection } from '../preventive-care/DewormingListSection';
 import { useHospitalizationListResource } from '../shared/useClinicalDomainResource';
+import { DiagnosticEncounterSection } from '../diagnostics/DiagnosticEncounterSection';
 
 function ReadonlyField({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value?.trim()) return null;
@@ -532,6 +533,12 @@ export function ClinicalEncounterDetailPage() {
           )}
         </Card>
       ) : null}
+      <DiagnosticEncounterSection
+        patientId={item.patientId}
+        encounterId={item.id}
+        encounterStatus={item.status}
+        patientStatus={item.patient.status}
+      />
       <div className="detail-grid">
         <Card className="detail-card">
           <div className="detail-card__heading">

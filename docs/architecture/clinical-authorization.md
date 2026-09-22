@@ -103,3 +103,13 @@ y revalida actor, tenant, Membership y perfil.
 ## Hospitalization 6G
 
 PRACTITIONER recibe hospitalizations.* y hospitalizationEntries.create. CLINICAL_ASSISTANT puede leer, crear y editar DRAFT y añadir Kardex en ACTIVE, pero no activar, dar de alta ni anular. Activar exige Practitioner responsable con perfil configurado; discharge y void exigen Practitioner activo. La UI refleja permisos efectivos y nunca convierte un rol organizacional en autoridad clínica implícita.
+
+## Diagnostics 6H
+
+`PRACTITIONER` recibe `diagnostics.read`, `create`, `updateDraft`, `request`,
+`result` y `void`. `CLINICAL_ASSISTANT` recibe únicamente read/create/updateDraft;
+request, result y void permanecen exclusivos de Practitioners. Request además
+exige que el actor sea el responsable asignado y tenga perfil profesional activo
+con `displayName`. Result y void pueden ejecutarse por otro Practitioner
+autorizado. Un rol organizacional por sí solo y `PLATFORM_ADMIN` sin
+`ClinicalRole` no obtienen permiso clínico implícito.

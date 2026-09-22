@@ -820,3 +820,71 @@ Fase 6G — Hospitalization / Ambulatorio completo: COMPLETADA
 - Validación final del 22-sep-2026: `format:check`, `lint`, `typecheck`, `npm test`, `test:db`, `test:all`, `build`, `prisma:generate` y `prisma:validate` finalizaron correctamente; `test:db` cubrió 142 pruebas y la suite web llegó a 296 pruebas.
 - Docker Engine 29.8.0 / Compose v5.5.1 y `easyvet-postgres-1` permanecen disponibles y `healthy`; la configuración local verificada apunta a `easyvet_dev`, sin afirmar verificación de producción.
 - `npm audit` reporta 5 hallazgos actuales (2 moderados en Vitest/@vitest/mocker, dev-only, y 3 altos agregados en la cadena Prisma/deepmerge-ts). No hay actualización patch/minor segura identificada; no se ejecutó `npm audit fix --force`.
+
+Fase 6H — Diagnostics / Exámenes / Ayudas diagnósticas: COMPLETADA
+
+- Revisión legacy del commit `05fea495cb13208b27bf470b3570987fd501a81e`:
+  ayudas diagnósticas reutilizaban consultas genéricas con `document_reference`
+  y estado libre; Exámenes era principalmente un selector/resumen, sin un
+  agregado relacional tenant-safe para su lifecycle. El comparativo está en
+  `docs/migration/diagnostics-final-review.md`.
+- Se implementó el aggregate único `DiagnosticOrder`, categorías
+  `LABORATORY`, `IMAGING`, `PATHOLOGY` y `OTHER`, y lifecycle
+  `DRAFT → REQUESTED → RESULTED → VOIDED`; no se añadieron tablas de resultados,
+  documentos ni archivos. La migración
+  `20260922130000_add_diagnostic_orders` se aplicó únicamente a
+  `easyvet_dev` y `easyvet_test`.
+- API y contratos compartidos incluyen lectura por paciente, detalle, creación
+  contextual por encuentro, edición Draft con CAS, request, result y void. Los
+  locks protegen carreras con Encounter VOIDED y Patient ARCHIVED. Request
+  congela los snapshots de Patient, Owner histórico y Practitioner; los
+  resultados y narrativa clínica no se copian a los eventos de auditoría.
+- Practitioners pueden solicitar, registrar resultados y anular; Clinical
+  Assistants pueden leer y crear/editar Draft, pero no solicitar, registrar
+  resultados ni anular. Patient archivado permite lectura y anulación, pero
+  bloquea el resto de mutaciones; Encounter anulado bloquea nuevas mutaciones
+  sin cambiar automáticamente el estado de órdenes existentes.
+- Frontend lazy-loaded y deep-linkable en historia de paciente y encuentro;
+  incluye lista, detalle, formulario Draft, confirmación de request, resultado,
+  anulación, avisos de Patient/Encounter y recarga explícita ante stale. El
+  cambio de tenant limpia los borradores sin guardar. Documentación añadida en
+  `docs/architecture/diagnostics*.md` y actualizada en data model,
+  autorización y transacciones.
+- Seed idempotente: cuatro órdenes ficticias (Norte: DRAFT/REQUESTED/RESULTED;
+  Sur: DRAFT). El primer seed QA reveló metadatos terminales obsoletos en una
+  hospitalización demo estable; el seed ahora reinicia de forma determinista
+  esos campos opcionales al estado definido. No se añadieron registros QA al
+  seed.
+- QA manual ficticio exclusivamente en `easyvet_dev`: Practitioner creó,
+  editó, solicitó, revisó, registró resultado y anuló; Assistant creó/editó
+  Draft y no vio acciones de request/result/void. La navegación cross-tenant
+  directa devolvió 404. Lista, detalle, formulario, review y modales de
+  resultado/anulación se comprobaron a 390 px, sin overflow horizontal.
+  Tres órdenes manuales permanecen: dos `VOIDED` con su evidencia y una Draft
+  creada/editada por Assistant. No hubo hard delete.
+- No-side-effects en `easyvet_dev`: 12 Appointments, 10 Prescriptions y peso
+  actual de Luna `12.4 kg`, sin cambios tras el QA. Conteo de DiagnosticOrders:
+  7 (cuatro seed y tres QA). No se crearon Documents, reminders, ventas ni
+  facturas.
+- Infraestructura verificada localmente: Docker Engine 29.8.0, Compose 5.5.1 y
+  `easyvet-postgres-1` `healthy`; `DATABASE_URL` apunta a `easyvet_dev`.
+  `npm run dev` inició API y frontend; `GET /api/v1/health` respondió 200.
+  No se afirmó prueba en una base compartida o productiva.
+- Validaciones finales pasan: `format:check`, `lint`, `typecheck`, `npm test`,
+  `npm run test:db`, `npm run test:all`, `npm run build`,
+  `npm run prisma:generate` y `npm run prisma:validate`. `npm test` pasó con
+  303 pruebas frontend y 7 pruebas API comunes; 143 API DB-gated quedaron
+  omitidas en esa pasada. `test:db` pasó con 150/150 pruebas API y `test:all`
+  repitió satisfactoriamente ambas suites. Build: advertencias no bloqueantes
+  de anotaciones de Zod/Rollup y chunk principal de 820.64 kB (237.09 kB gzip),
+  sobre el umbral configurado de 500 kB.
+- `npm audit` informa 5 entradas (3 altas y 2 moderadas; dos advisories):
+  `deepmerge-ts` bajo la configuración/CLI de Prisma y
+  `@vitest/mocker` bajo Vitest. Prisma figura además en `--omit=dev` por el
+  peer opcional de `@prisma/client`, pero el servidor Easyvet utiliza Prisma
+  Client y no ejecuta el CLI ni expone la fusión de configuración a entradas
+  de usuario. No se identificó un camino explotable en el runtime actual. Los
+  fixes ofrecidos requieren cambios mayores; no se ejecutaron upgrades ni
+  `npm audit fix --force`.
+- No quedan bugs funcionales conocidos de 6H. Documents/Consents/Signatures y
+  cualquier módulo posterior no se iniciaron.

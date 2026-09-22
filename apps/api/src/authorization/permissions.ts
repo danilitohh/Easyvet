@@ -84,6 +84,12 @@ export const PERMISSIONS = {
     HOSPITALIZATIONS_DISCHARGE: 'hospitalizations.discharge',
     HOSPITALIZATIONS_VOID: 'hospitalizations.void',
     HOSPITALIZATION_ENTRIES_CREATE: 'hospitalizations.entries.create',
+    DIAGNOSTICS_READ: 'diagnostics.read',
+    DIAGNOSTICS_CREATE: 'diagnostics.create',
+    DIAGNOSTICS_UPDATE_DRAFT: 'diagnostics.updateDraft',
+    DIAGNOSTICS_REQUEST: 'diagnostics.request',
+    DIAGNOSTICS_RESULT: 'diagnostics.result',
+    DIAGNOSTICS_VOID: 'diagnostics.void',
   },
 } as const satisfies Record<string, Record<string, Permission>>;
 
@@ -242,6 +248,12 @@ export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission
     'hospitalizations.discharge',
     'hospitalizations.void',
     'hospitalizations.entries.create',
+    'diagnostics.read',
+    'diagnostics.create',
+    'diagnostics.updateDraft',
+    'diagnostics.request',
+    'diagnostics.result',
+    'diagnostics.void',
   ],
   CLINICAL_ASSISTANT: [
     'clinicalRecords.read',
@@ -270,6 +282,9 @@ export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission
     'hospitalizations.create',
     'hospitalizations.update',
     'hospitalizations.entries.create',
+    'diagnostics.read',
+    'diagnostics.create',
+    'diagnostics.updateDraft',
   ],
 };
 

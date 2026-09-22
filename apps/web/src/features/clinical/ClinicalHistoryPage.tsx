@@ -119,6 +119,26 @@ function HospitalizationHistoryEntry({ patientId }: { patientId: string }) {
   );
 }
 
+// Keeps diagnostic history discoverable without requiring access to the full clinical record.
+function DiagnosticHistoryEntry({ patientId }: { patientId: string }) {
+  const canRead = useCan(PERMISSION.DIAGNOSTICS_READ);
+  if (!canRead) return null;
+  return (
+    <Card className="prescription-history-entry clinical-domain-history-entry">
+      <div>
+        <p className="section-kicker">Diagnósticos</p>
+        <h2>Diagnósticos y exámenes</h2>
+        <p className="clinical-muted">
+          Consulta solicitudes, resultados y el contexto histórico de cada estudio.
+        </p>
+      </div>
+      <Button as={Link} to={`/pacientes/${patientId}/historia/diagnosticos`} variant="secondary">
+        Ver diagnósticos y exámenes
+      </Button>
+    </Card>
+  );
+}
+
 export function ClinicalHistoryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const canReadRecord = useCan(PERMISSION.CLINICAL_RECORDS_READ);
@@ -130,6 +150,7 @@ export function ClinicalHistoryPage() {
   const canReadProcedures = useCan(PERMISSION.PROCEDURES_READ);
   const canReadAnesthesia = useCan(PERMISSION.ANESTHESIA_READ);
   const canReadHospitalizations = useCan(PERMISSION.HOSPITALIZATIONS_READ);
+  const canReadDiagnostics = useCan(PERMISSION.DIAGNOSTICS_READ);
   const canCreateEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_CREATE);
   const canCreateEvolution = useCan(PERMISSION.CLINICAL_EVOLUTIONS_CREATE);
   const { activeMembership } = useAuth();
@@ -171,6 +192,7 @@ export function ClinicalHistoryPage() {
           <ProceduresAnesthesiaEntry patientId={patientId} />
         ) : null}
         {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
+        {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
         {canReadPrescriptions ? (
           <Card className="prescription-history-entry">
             <div>
@@ -245,6 +267,7 @@ export function ClinicalHistoryPage() {
           <ProceduresAnesthesiaEntry patientId={patientId} />
         ) : null}
         {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
+        {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
         <Card>
           <EmptyState
             title="Este paciente todavía no tiene historia clínica."
@@ -348,6 +371,7 @@ export function ClinicalHistoryPage() {
         <ProceduresAnesthesiaEntry patientId={patientId} />
       ) : null}
       {canReadHospitalizations ? <HospitalizationHistoryEntry patientId={patientId} /> : null}
+      {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
       {!canReadEncounters ? (
         <Card>
           <EmptyState

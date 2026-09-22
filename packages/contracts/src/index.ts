@@ -86,6 +86,12 @@ export const permissionSchema = z.enum([
   'hospitalizations.discharge',
   'hospitalizations.void',
   'hospitalizations.entries.create',
+  'diagnostics.read',
+  'diagnostics.create',
+  'diagnostics.updateDraft',
+  'diagnostics.request',
+  'diagnostics.result',
+  'diagnostics.void',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -385,6 +391,8 @@ export const clinicalAuditEntityTypeSchema = z.enum([
   'DEWORMING',
   'CLINICAL_PROCEDURE',
   'ANESTHESIA_RECORD',
+  'HOSPITALIZATION',
+  'DIAGNOSTIC_ORDER',
 ]);
 export const clinicalAuditActionSchema = z.enum([
   'CREATED',
@@ -393,6 +401,21 @@ export const clinicalAuditActionSchema = z.enum([
   'VOIDED',
   'EVOLUTION_ADDED',
   'VITAL_ADDED',
+  'PRESCRIPTION_CREATED',
+  'PRESCRIPTION_UPDATED',
+  'PRESCRIPTION_FINALIZED',
+  'PRESCRIPTION_VOIDED',
+  'HOSPITALIZATION_CREATED',
+  'HOSPITALIZATION_UPDATED',
+  'HOSPITALIZATION_ACTIVATED',
+  'HOSPITALIZATION_ENTRY_ADDED',
+  'HOSPITALIZATION_DISCHARGED',
+  'HOSPITALIZATION_VOIDED',
+  'DIAGNOSTIC_ORDER_CREATED',
+  'DIAGNOSTIC_ORDER_UPDATED',
+  'DIAGNOSTIC_ORDER_REQUESTED',
+  'DIAGNOSTIC_ORDER_RESULTED',
+  'DIAGNOSTIC_ORDER_VOIDED',
 ]);
 
 const clinicalLocationSummarySchema = locationResponseSchema;
@@ -1413,6 +1436,143 @@ export type VoidHospitalizationRequest = z.infer<typeof voidHospitalizationReque
 export type CreateHospitalizationEntryRequest = z.infer<
   typeof createHospitalizationEntryRequestSchema
 >;
+
+// Diagnostic order contracts model request, result, and void as one tenant-scoped lifecycle.
+export const diagnosticCategorySchema = z.enum(['LABORATORY', 'IMAGING', 'PATHOLOGY', 'OTHER']);
+export const diagnosticOrderStatusSchema = z.enum(['DRAFT', 'REQUESTED', 'RESULTED', 'VOIDED']);
+const diagnosticDateTimeSchema = z.string().datetime({ offset: true });
+const diagnosticNullableText = (max: number) => z.string().trim().max(max).nullable();
+const diagnosticOptionalText = (max: number) => diagnosticNullableText(max).optional();
+const diagnosticActorSchema = z.object({
+  membershipId: z.string().uuid(),
+  displayName: z.string().nullable(),
+  licenseNumber: z.string().nullable(),
+});
+
+export const diagnosticOrderSummarySchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicalEncounterId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  category: diagnosticCategorySchema,
+  status: diagnosticOrderStatusSchema,
+  version: z.number().int().positive(),
+  testName: diagnosticNullableText(300),
+  requestedAt: diagnosticDateTimeSchema.nullable(),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  patientNameSnapshot: diagnosticNullableText(200),
+  ownerDisplayNameSnapshot: diagnosticNullableText(300),
+  professionalDisplayNameSnapshot: diagnosticNullableText(200),
+  professionalLicenseSnapshot: diagnosticNullableText(160),
+  requestedByMembershipId: z.string().uuid().nullable(),
+  resultedAt: diagnosticDateTimeSchema.nullable(),
+  voidedAt: diagnosticDateTimeSchema.nullable(),
+  createdAt: diagnosticDateTimeSchema,
+  updatedAt: diagnosticDateTimeSchema,
+  parentEncounterStatus: clinicalEncounterStatusSchema,
+  patient: z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    status: patientStatusSchema,
+  }),
+  encounter: z.object({
+    id: z.string().uuid(),
+    status: clinicalEncounterStatusSchema,
+    occurredAt: diagnosticDateTimeSchema,
+    reason: z.string(),
+  }),
+  responsiblePractitioner: diagnosticActorSchema.nullable(),
+});
+
+export const diagnosticOrderDetailSchema = diagnosticOrderSummarySchema.extend({
+  reason: diagnosticNullableText(5000),
+  instructions: diagnosticNullableText(10000),
+  notes: diagnosticNullableText(10000),
+  requestedBy: diagnosticActorSchema.nullable(),
+  resultText: diagnosticNullableText(20000),
+  interpretation: diagnosticNullableText(10000),
+  resultedByMembershipId: z.string().uuid().nullable(),
+  resultedBy: diagnosticActorSchema.nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: diagnosticNullableText(1000),
+  voidedByDisplayName: z.string().nullable(),
+});
+
+export const diagnosticOrderListResponseSchema = z.object({
+  data: z.array(diagnosticOrderSummarySchema),
+  pagination: paginationSchema,
+});
+
+const diagnosticEditableFieldsSchema = {
+  testName: diagnosticOptionalText(300),
+  requestedAt: diagnosticDateTimeSchema.nullable().optional(),
+  reason: diagnosticOptionalText(5000),
+  instructions: diagnosticOptionalText(10000),
+  notes: diagnosticOptionalText(10000),
+  responsiblePractitionerMembershipId: z.string().uuid().nullable().optional(),
+};
+
+export const createDiagnosticOrderRequestSchema = z
+  .object({ category: diagnosticCategorySchema, ...diagnosticEditableFieldsSchema })
+  .strict();
+export const updateDiagnosticOrderRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    category: diagnosticCategorySchema.optional(),
+    ...diagnosticEditableFieldsSchema,
+  })
+  .strict();
+export const requestDiagnosticOrderRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+export const resultDiagnosticOrderRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    resultedAt: diagnosticDateTimeSchema,
+    resultText: diagnosticOptionalText(20000),
+    interpretation: diagnosticOptionalText(10000),
+  })
+  .strict()
+  .refine(
+    ({ resultText, interpretation }) => Boolean(resultText?.trim() || interpretation?.trim()),
+    { message: 'At least one result field is required', path: ['resultText'] },
+  );
+export const voidDiagnosticOrderRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(1000),
+  })
+  .strict();
+
+export const diagnosticOrderListQuerySchema = z
+  .object({
+    page: pageSchema.default(1),
+    pageSize: pageSizeSchema.default(20),
+    status: diagnosticOrderStatusSchema.optional(),
+    category: diagnosticCategorySchema.optional(),
+    clinicalEncounterId: z.string().uuid().optional(),
+    from: diagnosticDateTimeSchema.optional(),
+    to: diagnosticDateTimeSchema.optional(),
+  })
+  .strict()
+  .refine((query) => !query.from || !query.to || query.from <= query.to, {
+    message: 'from must be on or before to',
+    path: ['from'],
+  });
+
+export type DiagnosticCategory = z.infer<typeof diagnosticCategorySchema>;
+export type DiagnosticOrderStatus = z.infer<typeof diagnosticOrderStatusSchema>;
+export type DiagnosticOrderSummary = z.infer<typeof diagnosticOrderSummarySchema>;
+export type DiagnosticOrderDetail = z.infer<typeof diagnosticOrderDetailSchema>;
+export type DiagnosticOrderListResponse = z.infer<typeof diagnosticOrderListResponseSchema>;
+export type CreateDiagnosticOrderRequest = z.infer<typeof createDiagnosticOrderRequestSchema>;
+export type UpdateDiagnosticOrderRequest = z.infer<typeof updateDiagnosticOrderRequestSchema>;
+export type RequestDiagnosticOrderRequest = z.infer<typeof requestDiagnosticOrderRequestSchema>;
+export type ResultDiagnosticOrderRequest = z.infer<typeof resultDiagnosticOrderRequestSchema>;
+export type VoidDiagnosticOrderRequest = z.infer<typeof voidDiagnosticOrderRequestSchema>;
+export type DiagnosticOrderListQuery = z.infer<typeof diagnosticOrderListQuerySchema>;
+
 export type AnesthesiaRecordListResponse = z.infer<typeof anesthesiaRecordListResponseSchema>;
 export type AnesthesiaObservationListResponse = z.infer<
   typeof anesthesiaObservationListResponseSchema

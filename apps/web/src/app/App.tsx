@@ -127,6 +127,21 @@ const HospitalizationFormPage = lazy(() =>
     default: module.HospitalizationFormPage,
   })),
 );
+const DiagnosticOrderListPage = lazy(() =>
+  import('../features/diagnostics/DiagnosticOrderListPage').then((module) => ({
+    default: module.DiagnosticOrderListPage,
+  })),
+);
+const DiagnosticOrderDetailPage = lazy(() =>
+  import('../features/diagnostics/DiagnosticOrderDetailPage').then((module) => ({
+    default: module.DiagnosticOrderDetailPage,
+  })),
+);
+const DiagnosticOrderFormPage = lazy(() =>
+  import('../features/diagnostics/DiagnosticOrderFormPage').then((module) => ({
+    default: module.DiagnosticOrderFormPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -300,6 +315,7 @@ export function App() {
                   PERMISSION.PROCEDURES_READ,
                   PERMISSION.ANESTHESIA_READ,
                   PERMISSION.HOSPITALIZATIONS_READ,
+                  PERMISSION.DIAGNOSTICS_READ,
                 ]}
               >
                 <Suspense fallback={<ClinicalRouteFallback />}>
@@ -326,6 +342,46 @@ export function App() {
               <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <HospitalizationListPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/diagnosticos"
+            element={
+              <PermissionRoute permission={PERMISSION.DIAGNOSTICS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <DiagnosticOrderListPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/diagnosticos/:diagnosticOrderId"
+            element={
+              <PermissionRoute permission={PERMISSION.DIAGNOSTICS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <DiagnosticOrderDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/diagnosticos/:diagnosticOrderId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.DIAGNOSTICS_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <DiagnosticOrderFormPage mode="edit" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/encuentros/:encounterId/diagnosticos/nuevo"
+            element={
+              <PermissionRoute permission={PERMISSION.DIAGNOSTICS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <DiagnosticOrderFormPage mode="create" />
                 </Suspense>
               </PermissionRoute>
             }

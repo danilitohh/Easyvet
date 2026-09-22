@@ -80,4 +80,28 @@ describe('clinical permission foundation', () => {
       false,
     );
   });
+
+  it('grants diagnostics lifecycle permissions by clinical role only', () => {
+    const practitioner = permissionsForRole('OWNER', 'PRACTITIONER');
+    const assistant = permissionsForRole('ASSISTANT', 'CLINICAL_ASSISTANT');
+    const nonClinical = permissionsForRole('ADMIN', null);
+
+    expect(practitioner).toEqual(
+      expect.arrayContaining([
+        'diagnostics.read',
+        'diagnostics.create',
+        'diagnostics.updateDraft',
+        'diagnostics.request',
+        'diagnostics.result',
+        'diagnostics.void',
+      ]),
+    );
+    expect(assistant).toEqual(
+      expect.arrayContaining(['diagnostics.read', 'diagnostics.create', 'diagnostics.updateDraft']),
+    );
+    expect(assistant).not.toContain('diagnostics.request');
+    expect(assistant).not.toContain('diagnostics.result');
+    expect(assistant).not.toContain('diagnostics.void');
+    expect(nonClinical).not.toContain('diagnostics.read');
+  });
 });
