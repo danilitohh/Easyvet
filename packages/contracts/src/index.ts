@@ -101,6 +101,11 @@ export const permissionSchema = z.enum([
   'consents.updateDraft',
   'consents.issue',
   'consents.void',
+  'followUps.read',
+  'followUps.create',
+  'followUps.update',
+  'followUps.complete',
+  'followUps.void',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -402,6 +407,7 @@ export const clinicalAuditEntityTypeSchema = z.enum([
   'ANESTHESIA_RECORD',
   'HOSPITALIZATION',
   'DIAGNOSTIC_ORDER',
+  'CLINICAL_FOLLOW_UP',
 ]);
 export const clinicalAuditActionSchema = z.enum([
   'CREATED',
@@ -425,6 +431,10 @@ export const clinicalAuditActionSchema = z.enum([
   'DIAGNOSTIC_ORDER_REQUESTED',
   'DIAGNOSTIC_ORDER_RESULTED',
   'DIAGNOSTIC_ORDER_VOIDED',
+  'FOLLOW_UP_CREATED',
+  'FOLLOW_UP_UPDATED',
+  'FOLLOW_UP_COMPLETED',
+  'FOLLOW_UP_VOIDED',
 ]);
 
 const clinicalLocationSummarySchema = locationResponseSchema;
@@ -1913,3 +1923,162 @@ export type ClinicalDocumentType = z.infer<typeof clinicalDocumentTypeSchema>;
 export type ClinicalDocumentSourceType = z.infer<typeof clinicalDocumentSourceTypeSchema>;
 export type ConsentDetail = z.infer<typeof consentDetailSchema>;
 export type PublicConsent = z.infer<typeof publicConsentSchema>;
+
+// Follow-up contracts keep civil due dates distinct from organization-local reminder instants.
+export const clinicalFollowUpStatusSchema = z.enum(['OPEN', 'COMPLETED', 'VOIDED']);
+const clinicalFollowUpCivilDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(0);
+    date.setUTCFullYear(year!, month! - 1, day!);
+    date.setUTCHours(0, 0, 0, 0);
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month! - 1 &&
+      date.getUTCDate() === day
+    );
+  }, 'Expected a valid YYYY-MM-DD civil date');
+const clinicalFollowUpInstantSchema = z.string().datetime({ offset: true });
+const followUpMembershipSummarySchema = z.object({
+  membershipId: z.string().uuid(),
+  displayName: z.string().nullable(),
+  clinicalRole: clinicalRoleSchema.nullable(),
+});
+const followUpActorSummarySchema = z.object({
+  membershipId: z.string().uuid(),
+  displayName: z.string().nullable(),
+});
+const followUpPatientSummarySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  species: z.string(),
+  status: z.enum(['ACTIVE', 'ARCHIVED']),
+  owner: z.object({ id: z.string().uuid(), displayName: z.string() }),
+});
+const followUpEncounterSummarySchema = z.object({
+  id: z.string().uuid(),
+  status: clinicalEncounterStatusSchema,
+  reason: z.string(),
+  occurredAt: clinicalFollowUpInstantSchema,
+});
+
+export const clinicalFollowUpSummarySchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  patientId: z.string().uuid(),
+  sourceClinicalEncounterId: z.string().uuid().nullable(),
+  status: clinicalFollowUpStatusSchema,
+  version: z.number().int().min(1),
+  title: z.string(),
+  reason: z.string().nullable(),
+  dueOn: clinicalFollowUpCivilDateSchema,
+  reminderAt: clinicalFollowUpInstantSchema.nullable(),
+  reminderDue: z.boolean(),
+  assignedMembershipId: z.string().uuid().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  completedAt: clinicalFollowUpInstantSchema.nullable(),
+  completedByMembershipId: z.string().uuid().nullable(),
+  outcome: z.string().nullable(),
+  voidedAt: clinicalFollowUpInstantSchema.nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: z.string().nullable(),
+  createdAt: clinicalFollowUpInstantSchema,
+  updatedAt: clinicalFollowUpInstantSchema,
+  patient: followUpPatientSummarySchema,
+  sourceEncounter: followUpEncounterSummarySchema.nullable(),
+  assignedMember: followUpMembershipSummarySchema.nullable(),
+  createdBy: followUpActorSummarySchema,
+  completedBy: followUpActorSummarySchema.nullable(),
+});
+export const clinicalFollowUpDetailSchema = clinicalFollowUpSummarySchema.extend({
+  notes: z.string().nullable(),
+  completionNotes: z.string().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  ownerDisplayNameSnapshot: z.string().nullable(),
+  professionalDisplayNameSnapshot: z.string().nullable(),
+  professionalLicenseSnapshot: z.string().nullable(),
+  voidedBy: followUpActorSummarySchema.nullable(),
+});
+export const clinicalFollowUpListResponseSchema = z.object({
+  data: z.array(clinicalFollowUpSummarySchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
+});
+export const clinicalFollowUpListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    status: clinicalFollowUpStatusSchema.optional(),
+    patientId: z.string().uuid().optional(),
+    assignedMembershipId: z.string().uuid().optional(),
+    sourceClinicalEncounterId: z.string().uuid().optional(),
+    dueFrom: clinicalFollowUpCivilDateSchema.optional(),
+    dueTo: clinicalFollowUpCivilDateSchema.optional(),
+    reminderBefore: clinicalFollowUpInstantSchema.optional(),
+    sort: z.enum(['due_asc', 'due_desc', 'created_desc']).default('due_asc'),
+  })
+  .strict();
+export const createClinicalFollowUpRequestSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    reason: optionalText(2_000),
+    dueOn: clinicalFollowUpCivilDateSchema,
+    reminderAt: clinicalFollowUpInstantSchema.nullable().optional(),
+    assignedMembershipId: z.string().uuid().nullable().optional(),
+    sourceClinicalEncounterId: z.string().uuid().nullable().optional(),
+    notes: optionalText(20_000),
+  })
+  .strict();
+export const updateClinicalFollowUpRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().min(1),
+    title: z.string().trim().min(1).max(200).optional(),
+    reason: optionalText(2_000),
+    dueOn: clinicalFollowUpCivilDateSchema.optional(),
+    reminderAt: clinicalFollowUpInstantSchema.nullable().optional(),
+    assignedMembershipId: z.string().uuid().nullable().optional(),
+    sourceClinicalEncounterId: z.string().uuid().nullable().optional(),
+    notes: optionalText(20_000),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).some((key) => key !== 'expectedVersion'), {
+    message: 'At least one editable field is required',
+  });
+export const completeClinicalFollowUpRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().min(1),
+    outcome: z.string().trim().min(1).max(4_000),
+    completionNotes: optionalText(20_000),
+  })
+  .strict();
+export const voidClinicalFollowUpRequestSchema = z
+  .object({ expectedVersion: z.number().int().min(1), reason: z.string().trim().min(1).max(2_000) })
+  .strict();
+export const clinicalFollowUpDashboardSchema = z.object({
+  timezone: z.string(),
+  today: clinicalFollowUpCivilDateSchema,
+  counts: z.object({
+    overdue: z.number().int().nonnegative(),
+    today: z.number().int().nonnegative(),
+    upcoming7Days: z.number().int().nonnegative(),
+    remindersDue: z.number().int().nonnegative(),
+  }),
+  nextItems: z.array(clinicalFollowUpSummarySchema),
+});
+
+export type ClinicalFollowUpStatus = z.infer<typeof clinicalFollowUpStatusSchema>;
+export type ClinicalFollowUpSummary = z.infer<typeof clinicalFollowUpSummarySchema>;
+export type ClinicalFollowUpDetail = z.infer<typeof clinicalFollowUpDetailSchema>;
+export type ClinicalFollowUpListResponse = z.infer<typeof clinicalFollowUpListResponseSchema>;
+export type ClinicalFollowUpListQuery = z.infer<typeof clinicalFollowUpListQuerySchema>;
+export type CreateClinicalFollowUpRequest = z.infer<typeof createClinicalFollowUpRequestSchema>;
+export type UpdateClinicalFollowUpRequest = z.infer<typeof updateClinicalFollowUpRequestSchema>;
+export type CompleteClinicalFollowUpRequest = z.infer<typeof completeClinicalFollowUpRequestSchema>;
+export type VoidClinicalFollowUpRequest = z.infer<typeof voidClinicalFollowUpRequestSchema>;
+export type ClinicalFollowUpDashboard = z.infer<typeof clinicalFollowUpDashboardSchema>;

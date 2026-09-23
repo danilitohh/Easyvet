@@ -59,6 +59,7 @@
 | Procedures/Surgery/Anesthesia hardening | COMPLETADO (Fase 6F.3)                                                        |
 | Fase 6F                                 | COMPLETADA                                                                    |
 | Documents/Consents/Signatures           | COMPLETADO (Fase 6I)                                                          |
+| FollowUps / recordatorios internos      | EN PROGRESO (Fase 6J; backend, frontend y hardening en verificación)          |
 | Inventory integration                   | POSTERGADO                                                                    |
 | External preventive records             | POSTERGADO                                                                    |
 | Inventario                              | Pendiente                                                                     |
@@ -941,4 +942,50 @@ Fase 6I — Documents / Consents / Signatures: COMPLETADA
 - Limitaciones POST-V1: email/SMS de firma, firmas cualificadas/certificadas,
   plantillas, antivirus, OCR, DICOM, PDF integral de historia, DOCX editable,
   generación masiva y reglas nacionales de Consent. El alcance 6I termina aquí;
-  no se inició Follow-ups / Reminders.
+  FollowUps / Reminders se registra como Fase 6J a continuación.
+
+## Fase 6J — FollowUps / recordatorios internos
+
+- Se añadió el agregado `ClinicalFollowUp`, contratos, permisos, API, cola,
+  historia Patient, detalle, operaciones de create/edit/complete/void y widget
+  de dashboard. No se creó entidad `Reminder` ni se implementaron notificaciones
+  externas, evolución/consulta sintética, next-follow-up ni Appointment automático.
+- Migración `20260922231809_clinical_follow_ups` aplicada únicamente a
+  `easyvet_dev` y `easyvet_test`. Al reconciliar el estado físico con Prisma,
+  también normaliza nombres de índices existentes de Diagnostics/Hospitalization
+  (recreándolos con nombres/campos equivalentes) y de FKs/índices de
+  Documents/Consents/Diagnostics; no modifica filas de esos dominios.
+- El seed incluye 4 seguimientos ficticios Norte (3 OPEN y 1 COMPLETED) y 1 OPEN
+  ficticio Sur, con fechas relativas a `America/Bogota`.
+- QA manual ficticio solo en `easyvet_dev`: se creó, editó, asignó, completó y
+  anuló desde la UI un seguimiento de Luna asociado a un Encounter finalizado;
+  permanece `VOIDED` como registro histórico. Se verificaron vencido/hoy/próximo,
+  recordatorio pendiente, filtros, historia Patient, detalle, dashboard, warning
+  de Encounter, permisos Practitioner/Assistant, tenant switch Norte→Sur y
+  deep link cross-tenant 404. A 390 px, cola, formularios, modales e historia no
+  muestran overflow horizontal. No hubo hard delete.
+- No-side-effects confirmado por pruebas: completion no crea Appointment,
+  Encounter, Evolution ni Reminder y no modifica peso del Patient. No se enviaron
+  notificaciones ni se crearon Documents, ventas o facturas.
+- Docker Engine 29.8.0, Compose 5.5.1; `easyvet-postgres-1` `healthy`.
+  `DATABASE_URL` se confirmó como `easyvet_dev`; health local devolvió 200.
+- Validaciones: `format:check`, `lint`, `typecheck`, `npm test`, `npm run test:db`,
+  `npm run test:all`, `npm run build`, `npm run prisma:generate` y
+  `npm run prisma:validate` completadas correctamente. `npm test`: 25 pruebas API
+  pasaron (155 DB-gated omitidas en esa ejecución) y 319 web pasaron;
+  `test:db`: 180/180 API pasaron. Build sin advertencia de importación mixta;
+  permanecen advertencias no bloqueantes de anotaciones Zod/Rollup y chunk
+  principal de 847.61 kB (242.91 kB gzip), sobre el umbral configurado de 500 kB.
+- `npm audit`: 5 entradas (3 high en `prisma` → `@prisma/config` →
+  `deepmerge-ts`; 2 moderate en Vitest/`@vitest/mocker`). `prisma` y Vitest son
+  dependencias dev directas; `deepmerge-ts` y `@vitest/mocker`, transitivas.
+  `--omit=dev` conserva el camino Prisma porque `@prisma/client` declara el peer
+  opcional `prisma`; la vulnerabilidad de merge está en el CLI/config y no se
+  encontró invocación desde handlers/API. El advisory Vitest está limitado a
+  tooling/mockers. El audit no ofrece actualización patch/minor compatible: sus
+  propuestas son un downgrade/breaking para Prisma y salto mayor para Vitest.
+  No se aplicaron upgrades ni `npm audit fix --force`.
+- Sin bugs funcionales conocidos pendientes. Limitaciones POST-V1: email/SMS/
+  WhatsApp/push, recurrencia, automatización de siguiente seguimiento o cita,
+  campañas, calendario externo y preferencias de notificación. Fase 6J cerrada;
+  Grooming no iniciado.

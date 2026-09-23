@@ -179,6 +179,26 @@ function ConsentsHistoryEntry({ patientId }: { patientId: string }) {
   );
 }
 
+// Follow-up history has independent permission and remains accessible without the full clinical record.
+function FollowUpsHistoryEntry({ patientId }: { patientId: string }) {
+  const canRead = useCan(PERMISSION.FOLLOW_UPS_READ);
+  if (!canRead) return null;
+  return (
+    <Card className="prescription-history-entry clinical-domain-history-entry">
+      <div>
+        <p className="section-kicker">Continuidad del cuidado</p>
+        <h2>Seguimientos</h2>
+        <p className="clinical-muted">
+          Consulta tareas abiertas, resultados y anulaciones conservadas en el historial.
+        </p>
+      </div>
+      <Button as={Link} to={`/pacientes/${patientId}/historia/seguimientos`} variant="secondary">
+        Ver seguimientos
+      </Button>
+    </Card>
+  );
+}
+
 export function ClinicalHistoryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const canReadRecord = useCan(PERMISSION.CLINICAL_RECORDS_READ);
@@ -193,6 +213,7 @@ export function ClinicalHistoryPage() {
   const canReadDiagnostics = useCan(PERMISSION.DIAGNOSTICS_READ);
   const canReadDocuments = useCan(PERMISSION.DOCUMENTS_READ);
   const canReadConsents = useCan(PERMISSION.CONSENTS_READ);
+  const canReadFollowUps = useCan(PERMISSION.FOLLOW_UPS_READ);
   const canCreateEncounter = useCan(PERMISSION.CLINICAL_ENCOUNTERS_CREATE);
   const canCreateEvolution = useCan(PERMISSION.CLINICAL_EVOLUTIONS_CREATE);
   const { activeMembership } = useAuth();
@@ -237,6 +258,7 @@ export function ClinicalHistoryPage() {
         {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
         {canReadDocuments ? <DocumentsHistoryEntry patientId={patientId} /> : null}
         {canReadConsents ? <ConsentsHistoryEntry patientId={patientId} /> : null}
+        {canReadFollowUps ? <FollowUpsHistoryEntry patientId={patientId} /> : null}
         {canReadPrescriptions ? (
           <Card className="prescription-history-entry">
             <div>
@@ -314,6 +336,7 @@ export function ClinicalHistoryPage() {
         {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
         {canReadDocuments ? <DocumentsHistoryEntry patientId={patientId} /> : null}
         {canReadConsents ? <ConsentsHistoryEntry patientId={patientId} /> : null}
+        {canReadFollowUps ? <FollowUpsHistoryEntry patientId={patientId} /> : null}
         <Card>
           <EmptyState
             title="Este paciente todavía no tiene historia clínica."

@@ -62,6 +62,12 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
         icon: '▤',
         description: 'Historias clínicas longitudinales.',
       },
+      {
+        label: 'Seguimientos',
+        path: '/seguimientos',
+        icon: '◷',
+        description: 'Tareas clínicas y recordatorios internos.',
+      },
       { label: 'Vacunas', path: '/vacunas', icon: '＋', description: 'Esquemas preventivos.' },
       {
         label: 'Desparasitaciones',

@@ -1,13 +1,13 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A y 6F.2B
+## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A, 6F.2B y 6J
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
 autorización por permisos y el primer dominio veterinario de propietarios y
 pacientes. Agenda 5B añade reservas operativas y disponibilidad. Fases 6B.1 y
 6B.2 añaden la fundación persistente y las operaciones transaccionales del
-núcleo clínico; 6F.2A agrega Procedures/Surgery y 6F.2B agrega el backend de
-Anesthesia. Inventario, ventas y facturación siguen fuera de alcance.
+núcleo clínico; 6F.2A agrega Procedures/Surgery, 6F.2B agrega Anesthesia y 6J
+agrega FollowUps. Inventario, ventas y facturación siguen fuera de alcance.
 
 ### Fundación clínica 6B.1
 
@@ -46,6 +46,9 @@ Organization
 Organization
   ├── ClinicLocation[] ── AvailabilityRule[]
   └── Appointment[] ── Patient + Owner + Membership
+
+Organization
+  └── ClinicalFollowUp[] ── Patient + source Encounter? + assigned Membership?
 
 ClinicalEncounter
   └── Prescription[] ──< PrescriptionItem[]
@@ -149,6 +152,12 @@ organizationId, patientId)`, `(patientId, organizationId)` y Memberships
   cubren `version >= 1`, lifecycle terminal, `startedAt` obligatorio al
   finalizar, `endedAt >= startedAt` cuando ambos existen, observaciones no
   vacías y límites numéricos de monitorización. No hay cascadas destructivas.
+- ClinicalFollowUp tiene Organization y Patient obligatorios, Encounter fuente
+  opcional compuesto por `(id, organizationId, patientId)`, actor/assignee por
+  Membership compuesto por tenant y `ON DELETE RESTRICT`. `dueOn` es PostgreSQL
+  `DATE` civil; `reminderAt` es un único `TIMESTAMPTZ` nullable. Checks exigen
+  `version >= 1` y consistencia de snapshots/transiciones OPEN/COMPLETED/VOIDED.
+  No existe entidad `Reminder` ni una tabla placeholder de notificaciones.
 - Los servicios normalizan emails a minúsculas antes de escribir o buscar.
 
 ## Delete y archive behavior
@@ -220,6 +229,18 @@ consentimientos, documentos, inventario ni facturación. Las rutas y contratos s
 documentan en [`anesthesia-api.md`](anesthesia-api.md); la migración se aplicó
 solo a `easyvet_dev` y `easyvet_test`, incluida la alineación posterior de
 índices/defaults.
+
+## FollowUps 6J
+
+`ClinicalFollowUp` es un agregado independiente del Encounter con estados
+`OPEN → COMPLETED` o `OPEN/COMPLETED → VOIDED`; no se reabre ni se elimina.
+`expectedVersion` aplica compare-and-swap en update/complete/void. Completion
+congela Patient, Owner y Practitioner; si existe Encounter fuente, se usa su
+`ownerIdAtTime`, de lo contrario se resuelve el Owner actual del Patient. Void
+de un elemento completado conserva resultado y snapshots. `reminderDue` se
+calcula en lectura para OPEN cuando `reminderAt <= now`; no crea entidad, job ni
+notificación. La migración `20260922231809_clinical_follow_ups` se aplica solo
+a `easyvet_dev` y `easyvet_test`.
 
 ## Hospitalization 6G
 

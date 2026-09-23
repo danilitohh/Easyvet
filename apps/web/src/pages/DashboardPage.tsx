@@ -9,6 +9,7 @@ import { FormField } from '../components/ui/FormField';
 import { PageHeader } from '../components/ui/PageHeader';
 import { SearchInput } from '../components/ui/SearchInput';
 import { Select } from '../components/ui/Select';
+import { FollowUpDashboardWidget } from '../features/follow-ups/FollowUpDashboardWidget';
 import {
   demoAppointments,
   demoPulse,
@@ -48,7 +49,7 @@ const appointmentColumns: DataTableColumn<DemoAppointment>[] = [
   },
 ];
 
-// Dashboard stays deliberately local and demonstrative until a domain model exists.
+// Appointment and pulse demo cards remain isolated from the live Follow-up dashboard widget.
 export function DashboardPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
@@ -79,9 +80,11 @@ export function DashboardPage() {
       />
 
       <Alert tone="info">
-        <strong>Vista demo.</strong> Los datos de este dashboard son ficticios y no provienen de
-        PostgreSQL ni del backend.
+        <strong>Vista demo.</strong> Las citas y estadísticas de agenda son ficticias y no provienen
+        de PostgreSQL ni del backend.
       </Alert>
+
+      <FollowUpDashboardWidget />
 
       <section className="stats-grid" aria-label="Indicadores de demostración">
         {dashboardStats.map((stat) => (

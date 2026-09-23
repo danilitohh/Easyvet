@@ -165,6 +165,26 @@ const PublicSignaturePage = lazy(() =>
     default: module.PublicSignaturePage,
   })),
 );
+const FollowUpsPage = lazy(() =>
+  import('../features/follow-ups/FollowUpsPages').then((module) => ({
+    default: module.FollowUpsPage,
+  })),
+);
+const FollowUpDetailPage = lazy(() =>
+  import('../features/follow-ups/FollowUpsPages').then((module) => ({
+    default: module.FollowUpDetailPage,
+  })),
+);
+const FollowUpFormPage = lazy(() =>
+  import('../features/follow-ups/FollowUpsPages').then((module) => ({
+    default: module.FollowUpFormPage,
+  })),
+);
+const PatientFollowUpsPage = lazy(() =>
+  import('../features/follow-ups/FollowUpsPages').then((module) => ({
+    default: module.PatientFollowUpsPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -193,6 +213,46 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<Navigate replace to="/dashboard" />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route
+            path="seguimientos"
+            element={
+              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <FollowUpsPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="seguimientos/:followUpId"
+            element={
+              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <FollowUpDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="seguimientos/:followUpId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_UPDATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <FollowUpFormPage mode="edit" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/seguimientos/nuevo"
+            element={
+              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <FollowUpFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
           <Route path="health" element={<HealthPage />} />
           <Route
             path="perfil/profesional"
@@ -349,12 +409,23 @@ export function App() {
                   PERMISSION.DIAGNOSTICS_READ,
                   PERMISSION.DOCUMENTS_READ,
                   PERMISSION.CONSENTS_READ,
+                  PERMISSION.FOLLOW_UPS_READ,
                 ]}
               >
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <ClinicalHistoryPage />
                 </Suspense>
               </AnyPermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/seguimientos"
+            element={
+              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <PatientFollowUpsPage />
+                </Suspense>
+              </PermissionRoute>
             }
           />
           <Route

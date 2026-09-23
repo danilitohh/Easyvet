@@ -9,40 +9,41 @@ datasource db {
 
 // Organization is the tenant boundary for every future veterinary domain entity.
 model Organization {
-  id                     String                          @id @default(uuid()) @db.Uuid
-  name                   String
-  slug                   String                          @unique
-  status                 OrganizationStatus              @default(ACTIVE)
-  timezone               String                          @default("UTC")
-  locale                 String                          @default("es-CO")
-  currencyCode           String                          @default("COP") @map("currency_code")
-  createdAt              DateTime                        @default(now()) @map("created_at")
-  updatedAt              DateTime                        @updatedAt @map("updated_at")
-  clinicLocations        ClinicLocation[]
-  memberships            Membership[]
-  owners                 Owner[]
-  patients               Patient[]
-  appointments           Appointment[]
-  availabilityRules      AvailabilityRule[]
-  professionalProfiles   MembershipProfessionalProfile[]
-  clinicalRecords        ClinicalRecord[]
-  clinicalEncounters     ClinicalEncounter[]
-  clinicalEvolutions     ClinicalEvolution[]
-  vitalMeasurements      VitalMeasurement[]
-  clinicalAuditEvents    ClinicalAuditEvent[]
-  prescriptions          Prescription[]
-  clinicalProcedures     ClinicalProcedure[]
-  clinicalSurgeryDetails ClinicalSurgeryDetail[]
-  anesthesiaRecords      AnesthesiaRecord[]
-  anesthesiaObservations AnesthesiaObservation[]
-  vaccinations           Vaccination[]
-  dewormings             Deworming[]
-  hospitalizations       Hospitalization[]
-  hospitalizationEntries HospitalizationEntry[]
-  diagnosticOrders       DiagnosticOrder[]
-  clinicalDocuments      ClinicalDocument[]
-  consents               Consent[]
+  id                       String                          @id @default(uuid()) @db.Uuid
+  name                     String
+  slug                     String                          @unique
+  status                   OrganizationStatus              @default(ACTIVE)
+  timezone                 String                          @default("UTC")
+  locale                   String                          @default("es-CO")
+  currencyCode             String                          @default("COP") @map("currency_code")
+  createdAt                DateTime                        @default(now()) @map("created_at")
+  updatedAt                DateTime                        @updatedAt @map("updated_at")
+  clinicLocations          ClinicLocation[]
+  memberships              Membership[]
+  owners                   Owner[]
+  patients                 Patient[]
+  appointments             Appointment[]
+  availabilityRules        AvailabilityRule[]
+  professionalProfiles     MembershipProfessionalProfile[]
+  clinicalRecords          ClinicalRecord[]
+  clinicalEncounters       ClinicalEncounter[]
+  clinicalEvolutions       ClinicalEvolution[]
+  vitalMeasurements        VitalMeasurement[]
+  clinicalAuditEvents      ClinicalAuditEvent[]
+  prescriptions            Prescription[]
+  clinicalProcedures       ClinicalProcedure[]
+  clinicalSurgeryDetails   ClinicalSurgeryDetail[]
+  anesthesiaRecords        AnesthesiaRecord[]
+  anesthesiaObservations   AnesthesiaObservation[]
+  vaccinations             Vaccination[]
+  dewormings               Deworming[]
+  hospitalizations         Hospitalization[]
+  hospitalizationEntries   HospitalizationEntry[]
+  diagnosticOrders         DiagnosticOrder[]
+  clinicalDocuments        ClinicalDocument[]
+  consents                 Consent[]
   consentSignatureRequests ConsentSignatureRequest[]
+  clinicalFollowUps        ClinicalFollowUp[]
 
   @@map("organizations")
 }
@@ -141,14 +142,18 @@ model Membership {
   requestedDiagnosticOrders       DiagnosticOrder[]              @relation("DiagnosticOrderRequestedByMembership")
   resultedDiagnosticOrders        DiagnosticOrder[]              @relation("DiagnosticOrderResultedByMembership")
   voidedDiagnosticOrders          DiagnosticOrder[]              @relation("DiagnosticOrderVoidedByMembership")
-  createdClinicalDocuments        ClinicalDocument[]              @relation("ClinicalDocumentCreatedByMembership")
-  voidedClinicalDocuments         ClinicalDocument[]              @relation("ClinicalDocumentVoidedByMembership")
-  createdConsents                 Consent[]                       @relation("ConsentCreatedByMembership")
-  responsibleConsents             Consent[]                       @relation("ConsentResponsiblePractitionerMembership")
-  issuedConsents                  Consent[]                       @relation("ConsentIssuedByMembership")
-  voidedConsents                  Consent[]                       @relation("ConsentVoidedByMembership")
-  createdConsentSignatureRequests ConsentSignatureRequest[]        @relation("ConsentSignatureRequestCreatedByMembership")
-  revokedConsentSignatureRequests ConsentSignatureRequest[]        @relation("ConsentSignatureRequestRevokedByMembership")
+  createdClinicalDocuments        ClinicalDocument[]             @relation("ClinicalDocumentCreatedByMembership")
+  voidedClinicalDocuments         ClinicalDocument[]             @relation("ClinicalDocumentVoidedByMembership")
+  createdConsents                 Consent[]                      @relation("ConsentCreatedByMembership")
+  responsibleConsents             Consent[]                      @relation("ConsentResponsiblePractitionerMembership")
+  issuedConsents                  Consent[]                      @relation("ConsentIssuedByMembership")
+  voidedConsents                  Consent[]                      @relation("ConsentVoidedByMembership")
+  createdConsentSignatureRequests ConsentSignatureRequest[]      @relation("ConsentSignatureRequestCreatedByMembership")
+  revokedConsentSignatureRequests ConsentSignatureRequest[]      @relation("ConsentSignatureRequestRevokedByMembership")
+  createdClinicalFollowUps        ClinicalFollowUp[]             @relation("ClinicalFollowUpCreatedByMembership")
+  assignedClinicalFollowUps       ClinicalFollowUp[]             @relation("ClinicalFollowUpAssignedMembership")
+  completedClinicalFollowUps      ClinicalFollowUp[]             @relation("ClinicalFollowUpCompletedByMembership")
+  voidedClinicalFollowUps         ClinicalFollowUp[]             @relation("ClinicalFollowUpVoidedByMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -250,6 +255,7 @@ model Patient {
   diagnosticOrders   DiagnosticOrder[]
   clinicalDocuments  ClinicalDocument[]
   consents           Consent[]
+  clinicalFollowUps  ClinicalFollowUp[]
 
   @@unique([id, organizationId], map: "patients_id_organization_id_key")
   @@index([organizationId])
@@ -365,6 +371,7 @@ enum ClinicalAuditEntityType {
   DIAGNOSTIC_ORDER
   CLINICAL_DOCUMENT
   CONSENT
+  CLINICAL_FOLLOW_UP
 }
 
 enum ClinicalAuditAction {
@@ -398,6 +405,10 @@ enum ClinicalAuditAction {
   CONSENT_SIGNED
   CONSENT_VOIDED
   SIGNATURE_REQUEST_REISSUED
+  FOLLOW_UP_CREATED
+  FOLLOW_UP_UPDATED
+  FOLLOW_UP_COMPLETED
+  FOLLOW_UP_VOIDED
 }
 
 // A tenant-scoped professional profile is optional for every membership.
@@ -492,6 +503,7 @@ model ClinicalEncounter {
   diagnosticOrders                DiagnosticOrder[]
   clinicalDocuments               ClinicalDocument[]
   consents                        Consent[]
+  clinicalFollowUps               ClinicalFollowUp[]      @relation("ClinicalFollowUpSourceEncounter")
 
   @@unique([id, organizationId], map: "clinical_encounters_id_organization_id_key")
   @@unique([id, organizationId, clinicalRecordId], map: "clinical_encounters_id_org_record_key")
@@ -502,6 +514,57 @@ model ClinicalEncounter {
   @@index([organizationId, responsibleMembershipId, occurredAt])
   @@index([organizationId, status])
   @@map("clinical_encounters")
+}
+
+enum ClinicalFollowUpStatus {
+  OPEN
+  COMPLETED
+  VOIDED
+}
+
+// ClinicalFollowUp is a tenant-scoped operational task, not an appointment or a synthetic encounter.
+model ClinicalFollowUp {
+  id                              String                 @id @default(uuid()) @db.Uuid
+  organizationId                  String                 @map("organization_id") @db.Uuid
+  patientId                       String                 @map("patient_id") @db.Uuid
+  sourceClinicalEncounterId       String?                @map("source_clinical_encounter_id") @db.Uuid
+  status                          ClinicalFollowUpStatus @default(OPEN)
+  version                         Int                    @default(1)
+  title                           String                 @db.VarChar(200)
+  reason                          String?                @db.VarChar(2000)
+  dueOn                           DateTime               @map("due_on") @db.Date
+  reminderAt                      DateTime?              @map("reminder_at") @db.Timestamptz(3)
+  assignedMembershipId            String?                @map("assigned_membership_id") @db.Uuid
+  notes                           String?
+  createdByMembershipId           String                 @map("created_by_membership_id") @db.Uuid
+  completedAt                     DateTime?              @map("completed_at") @db.Timestamptz(3)
+  completedByMembershipId         String?                @map("completed_by_membership_id") @db.Uuid
+  outcome                         String?                @db.VarChar(4000)
+  completionNotes                 String?                @map("completion_notes")
+  patientNameSnapshot             String?                @map("patient_name_snapshot") @db.VarChar(200)
+  ownerDisplayNameSnapshot        String?                @map("owner_display_name_snapshot") @db.VarChar(320)
+  professionalDisplayNameSnapshot String?                @map("professional_display_name_snapshot") @db.VarChar(160)
+  professionalLicenseSnapshot     String?                @map("professional_license_snapshot") @db.VarChar(80)
+  voidedAt                        DateTime?              @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId            String?                @map("voided_by_membership_id") @db.Uuid
+  voidReason                      String?                @map("void_reason") @db.VarChar(2000)
+  createdAt                       DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                       DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                    Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient                         Patient                @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  sourceClinicalEncounter         ClinicalEncounter?     @relation("ClinicalFollowUpSourceEncounter", fields: [sourceClinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade)
+  assignedMembership              Membership?            @relation("ClinicalFollowUpAssignedMembership", fields: [assignedMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership             Membership             @relation("ClinicalFollowUpCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  completedByMembership           Membership?            @relation("ClinicalFollowUpCompletedByMembership", fields: [completedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership              Membership?            @relation("ClinicalFollowUpVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, organizationId], map: "clinical_follow_ups_id_org_key")
+  @@index([organizationId, status, dueOn, createdAt], map: "clinical_follow_ups_org_status_due_idx")
+  @@index([organizationId, patientId, dueOn, createdAt], map: "clinical_follow_ups_org_patient_due_idx")
+  @@index([organizationId, assignedMembershipId, status, dueOn], map: "clinical_follow_ups_org_assignee_idx")
+  @@index([organizationId, sourceClinicalEncounterId], map: "clinical_follow_ups_org_encounter_idx")
+  @@index([organizationId, status, reminderAt], map: "clinical_follow_ups_org_reminder_idx")
+  @@map("clinical_follow_ups")
 }
 
 enum HospitalizationStatus {
@@ -1160,32 +1223,32 @@ model DiagnosticOrder {
 
 // ClinicalDocument is an immutable stored artifact; only its ACTIVE/VOIDED state changes.
 model ClinicalDocument {
-  id                        String                     @id @default(uuid()) @db.Uuid
-  organizationId            String                     @map("organization_id") @db.Uuid
-  patientId                 String                     @map("patient_id") @db.Uuid
-  clinicalEncounterId       String?                    @map("clinical_encounter_id") @db.Uuid
-  origin                    ClinicalDocumentOrigin
-  status                    ClinicalDocumentStatus     @default(ACTIVE)
-  documentType              ClinicalDocumentType       @map("document_type")
-  title                     String                     @db.VarChar(300)
-  originalFileName          String?                    @map("original_file_name") @db.VarChar(255)
-  sourceType                ClinicalDocumentSourceType? @map("source_type")
-  sourceId                  String?                    @map("source_id") @db.Uuid
-  sourceVersion             Int?                       @map("source_version")
-  mimeType                  String                     @map("mime_type") @db.VarChar(100)
-  storageKey                String                     @unique @map("storage_key") @db.VarChar(500)
-  sizeBytes                 BigInt                     @map("size_bytes")
-  sha256                    String                     @db.Char(64)
-  createdByMembershipId     String                     @map("created_by_membership_id") @db.Uuid
-  voidedAt                  DateTime?                  @map("voided_at") @db.Timestamptz(3)
-  voidedByMembershipId      String?                    @map("voided_by_membership_id") @db.Uuid
-  voidReason                String?                    @map("void_reason") @db.VarChar(1000)
-  createdAt                 DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
-  organization              Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  patient                   Patient                    @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  clinicalEncounter         ClinicalEncounter?         @relation(fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade)
-  createdByMembership       Membership                 @relation("ClinicalDocumentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  voidedByMembership        Membership?                @relation("ClinicalDocumentVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  id                    String                      @id @default(uuid()) @db.Uuid
+  organizationId        String                      @map("organization_id") @db.Uuid
+  patientId             String                      @map("patient_id") @db.Uuid
+  clinicalEncounterId   String?                     @map("clinical_encounter_id") @db.Uuid
+  origin                ClinicalDocumentOrigin
+  status                ClinicalDocumentStatus      @default(ACTIVE)
+  documentType          ClinicalDocumentType        @map("document_type")
+  title                 String                      @db.VarChar(300)
+  originalFileName      String?                     @map("original_file_name") @db.VarChar(255)
+  sourceType            ClinicalDocumentSourceType? @map("source_type")
+  sourceId              String?                     @map("source_id") @db.Uuid
+  sourceVersion         Int?                        @map("source_version")
+  mimeType              String                      @map("mime_type") @db.VarChar(100)
+  storageKey            String                      @unique @map("storage_key") @db.VarChar(500)
+  sizeBytes             BigInt                      @map("size_bytes")
+  sha256                String                      @db.Char(64)
+  createdByMembershipId String                      @map("created_by_membership_id") @db.Uuid
+  voidedAt              DateTime?                   @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId  String?                     @map("voided_by_membership_id") @db.Uuid
+  voidReason            String?                     @map("void_reason") @db.VarChar(1000)
+  createdAt             DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization          Organization                @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient               Patient                     @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  clinicalEncounter     ClinicalEncounter?          @relation(fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership   Membership                  @relation("ClinicalDocumentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership    Membership?                 @relation("ClinicalDocumentVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([id, organizationId], map: "clinical_documents_id_organization_id_key")
   @@unique([organizationId, documentType, sourceType, sourceId, sourceVersion], map: "clinical_documents_generated_source_key")
@@ -1197,46 +1260,46 @@ model ClinicalDocument {
 
 // Consent freezes the clinical context at issue and retains evidence through later voiding.
 model Consent {
-  id                                    String         @id @default(uuid()) @db.Uuid
-  organizationId                        String         @map("organization_id") @db.Uuid
-  patientId                             String         @map("patient_id") @db.Uuid
-  clinicalEncounterId                   String         @map("clinical_encounter_id") @db.Uuid
-  clinicalProcedureId                   String?        @map("clinical_procedure_id") @db.Uuid
-  status                                ConsentStatus  @default(DRAFT)
-  version                               Int            @default(1)
-  title                                 String         @db.VarChar(300)
-  purposeText                           String?        @map("purpose_text") @db.VarChar(10000)
-  risksText                             String?        @map("risks_text") @db.VarChar(10000)
-  benefitsText                          String?        @map("benefits_text") @db.VarChar(10000)
-  alternativesText                      String?        @map("alternatives_text") @db.VarChar(10000)
-  estimatedCostText                     String?        @map("estimated_cost_text") @db.VarChar(2000)
-  declarationText                       String?        @map("declaration_text") @db.VarChar(10000)
-  responsiblePractitionerMembershipId   String?        @map("responsible_practitioner_membership_id") @db.Uuid
-  createdByMembershipId                 String         @map("created_by_membership_id") @db.Uuid
-  patientNameSnapshot                   String?        @map("patient_name_snapshot") @db.VarChar(200)
-  ownerDisplayNameSnapshot              String?        @map("owner_display_name_snapshot") @db.VarChar(300)
-  ownerDocumentTypeSnapshot             String?        @map("owner_document_type_snapshot") @db.VarChar(80)
-  ownerDocumentNumberSnapshot           String?        @map("owner_document_number_snapshot") @db.VarChar(160)
-  professionalDisplayNameSnapshot       String?        @map("professional_display_name_snapshot") @db.VarChar(200)
-  professionalLicenseSnapshot           String?        @map("professional_license_snapshot") @db.VarChar(160)
-  contentSha256                         String?        @map("content_sha256") @db.Char(64)
-  issuedAt                              DateTime?      @map("issued_at") @db.Timestamptz(3)
-  issuedByMembershipId                 String?        @map("issued_by_membership_id") @db.Uuid
-  signedAt                              DateTime?      @map("signed_at") @db.Timestamptz(3)
-  voidedAt                              DateTime?      @map("voided_at") @db.Timestamptz(3)
-  voidedByMembershipId                 String?        @map("voided_by_membership_id") @db.Uuid
-  voidReason                            String?        @map("void_reason") @db.VarChar(1000)
-  createdAt                             DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt                             DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
-  organization                          Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  patient                               Patient        @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  clinicalEncounter                     ClinicalEncounter @relation(fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade)
-  clinicalProcedure                     ClinicalProcedure? @relation(fields: [clinicalProcedureId, organizationId, patientId, clinicalEncounterId], references: [id, organizationId, patientId, clinicalEncounterId], onDelete: Restrict, onUpdate: Cascade)
-  responsiblePractitionerMembership     Membership?    @relation("ConsentResponsiblePractitionerMembership", fields: [responsiblePractitionerMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  createdByMembership                   Membership     @relation("ConsentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  issuedByMembership                    Membership?    @relation("ConsentIssuedByMembership", fields: [issuedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  voidedByMembership                    Membership?    @relation("ConsentVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  signatureRequests                     ConsentSignatureRequest[]
+  id                                  String                    @id @default(uuid()) @db.Uuid
+  organizationId                      String                    @map("organization_id") @db.Uuid
+  patientId                           String                    @map("patient_id") @db.Uuid
+  clinicalEncounterId                 String                    @map("clinical_encounter_id") @db.Uuid
+  clinicalProcedureId                 String?                   @map("clinical_procedure_id") @db.Uuid
+  status                              ConsentStatus             @default(DRAFT)
+  version                             Int                       @default(1)
+  title                               String                    @db.VarChar(300)
+  purposeText                         String?                   @map("purpose_text") @db.VarChar(10000)
+  risksText                           String?                   @map("risks_text") @db.VarChar(10000)
+  benefitsText                        String?                   @map("benefits_text") @db.VarChar(10000)
+  alternativesText                    String?                   @map("alternatives_text") @db.VarChar(10000)
+  estimatedCostText                   String?                   @map("estimated_cost_text") @db.VarChar(2000)
+  declarationText                     String?                   @map("declaration_text") @db.VarChar(10000)
+  responsiblePractitionerMembershipId String?                   @map("responsible_practitioner_membership_id") @db.Uuid
+  createdByMembershipId               String                    @map("created_by_membership_id") @db.Uuid
+  patientNameSnapshot                 String?                   @map("patient_name_snapshot") @db.VarChar(200)
+  ownerDisplayNameSnapshot            String?                   @map("owner_display_name_snapshot") @db.VarChar(300)
+  ownerDocumentTypeSnapshot           String?                   @map("owner_document_type_snapshot") @db.VarChar(80)
+  ownerDocumentNumberSnapshot         String?                   @map("owner_document_number_snapshot") @db.VarChar(160)
+  professionalDisplayNameSnapshot     String?                   @map("professional_display_name_snapshot") @db.VarChar(200)
+  professionalLicenseSnapshot         String?                   @map("professional_license_snapshot") @db.VarChar(160)
+  contentSha256                       String?                   @map("content_sha256") @db.Char(64)
+  issuedAt                            DateTime?                 @map("issued_at") @db.Timestamptz(3)
+  issuedByMembershipId                String?                   @map("issued_by_membership_id") @db.Uuid
+  signedAt                            DateTime?                 @map("signed_at") @db.Timestamptz(3)
+  voidedAt                            DateTime?                 @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId                String?                   @map("voided_by_membership_id") @db.Uuid
+  voidReason                          String?                   @map("void_reason") @db.VarChar(1000)
+  createdAt                           DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                           DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                        Organization              @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient                             Patient                   @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  clinicalEncounter                   ClinicalEncounter         @relation(fields: [clinicalEncounterId, organizationId, patientId], references: [id, organizationId, patientId], onDelete: Restrict, onUpdate: Cascade)
+  clinicalProcedure                   ClinicalProcedure?        @relation(fields: [clinicalProcedureId, organizationId, patientId, clinicalEncounterId], references: [id, organizationId, patientId, clinicalEncounterId], onDelete: Restrict, onUpdate: Cascade)
+  responsiblePractitionerMembership   Membership?               @relation("ConsentResponsiblePractitionerMembership", fields: [responsiblePractitionerMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership                 Membership                @relation("ConsentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  issuedByMembership                  Membership?               @relation("ConsentIssuedByMembership", fields: [issuedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership                  Membership?               @relation("ConsentVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  signatureRequests                   ConsentSignatureRequest[]
 
   @@unique([id, organizationId], map: "consents_id_organization_id_key")
   @@index([organizationId, patientId, createdAt(sort: Desc), id], map: "consents_org_patient_created_idx")
@@ -1247,31 +1310,31 @@ model Consent {
 
 // Signature requests retain only hashes of bearer secrets and append signing evidence.
 model ConsentSignatureRequest {
-  id                         String                            @id @default(uuid()) @db.Uuid
-  organizationId             String                            @map("organization_id") @db.Uuid
-  consentId                  String                            @map("consent_id") @db.Uuid
-  status                     ConsentSignatureRequestStatus     @default(PENDING)
-  tokenHash                  String                            @unique @map("token_hash") @db.Char(64)
-  otpHash                    String                            @map("otp_hash") @db.VarChar(255)
-  expiresAt                  DateTime                          @map("expires_at") @db.Timestamptz(3)
-  failedAttempts             Int                               @default(0) @map("failed_attempts")
-  maxAttempts                Int                               @default(5) @map("max_attempts")
-  createdByMembershipId      String                            @map("created_by_membership_id") @db.Uuid
-  revokedAt                  DateTime?                         @map("revoked_at") @db.Timestamptz(3)
-  revokedByMembershipId      String?                           @map("revoked_by_membership_id") @db.Uuid
-  signedAt                   DateTime?                         @map("signed_at") @db.Timestamptz(3)
-  signerName                 String?                           @map("signer_name") @db.VarChar(300)
-  signatureMethod            ConsentSignatureMethod?           @map("signature_method")
-  signatureStorageKey        String?                           @map("signature_storage_key") @db.VarChar(500)
-  signatureSha256            String?                           @map("signature_sha256") @db.Char(64)
-  ipAddress                  String?                           @map("ip_address") @db.VarChar(64)
-  userAgent                  String?                           @map("user_agent") @db.VarChar(500)
-  evidenceSha256             String?                           @map("evidence_sha256") @db.Char(64)
-  createdAt                  DateTime                          @default(now()) @map("created_at") @db.Timestamptz(3)
-  organization               Organization                      @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  consent                    Consent                           @relation(fields: [consentId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  createdByMembership        Membership                        @relation("ConsentSignatureRequestCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
-  revokedByMembership        Membership?                       @relation("ConsentSignatureRequestRevokedByMembership", fields: [revokedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  id                    String                        @id @default(uuid()) @db.Uuid
+  organizationId        String                        @map("organization_id") @db.Uuid
+  consentId             String                        @map("consent_id") @db.Uuid
+  status                ConsentSignatureRequestStatus @default(PENDING)
+  tokenHash             String                        @unique @map("token_hash") @db.Char(64)
+  otpHash               String                        @map("otp_hash") @db.VarChar(255)
+  expiresAt             DateTime                      @map("expires_at") @db.Timestamptz(3)
+  failedAttempts        Int                           @default(0) @map("failed_attempts")
+  maxAttempts           Int                           @default(5) @map("max_attempts")
+  createdByMembershipId String                        @map("created_by_membership_id") @db.Uuid
+  revokedAt             DateTime?                     @map("revoked_at") @db.Timestamptz(3)
+  revokedByMembershipId String?                       @map("revoked_by_membership_id") @db.Uuid
+  signedAt              DateTime?                     @map("signed_at") @db.Timestamptz(3)
+  signerName            String?                       @map("signer_name") @db.VarChar(300)
+  signatureMethod       ConsentSignatureMethod?       @map("signature_method")
+  signatureStorageKey   String?                       @map("signature_storage_key") @db.VarChar(500)
+  signatureSha256       String?                       @map("signature_sha256") @db.Char(64)
+  ipAddress             String?                       @map("ip_address") @db.VarChar(64)
+  userAgent             String?                       @map("user_agent") @db.VarChar(500)
+  evidenceSha256        String?                       @map("evidence_sha256") @db.Char(64)
+  createdAt             DateTime                      @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization          Organization                  @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  consent               Consent                       @relation(fields: [consentId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership   Membership                    @relation("ConsentSignatureRequestCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  revokedByMembership   Membership?                   @relation("ConsentSignatureRequestRevokedByMembership", fields: [revokedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([id, organizationId], map: "consent_signature_requests_id_organization_id_key")
   @@index([organizationId, consentId, createdAt(sort: Desc)])

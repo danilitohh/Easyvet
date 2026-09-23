@@ -83,4 +83,9 @@ export const PERMISSION = {
   CONSENTS_UPDATE_DRAFT: 'consents.updateDraft',
   CONSENTS_ISSUE: 'consents.issue',
   CONSENTS_VOID: 'consents.void',
+  FOLLOW_UPS_READ: 'followUps.read',
+  FOLLOW_UPS_CREATE: 'followUps.create',
+  FOLLOW_UPS_UPDATE: 'followUps.update',
+  FOLLOW_UPS_COMPLETE: 'followUps.complete',
+  FOLLOW_UPS_VOID: 'followUps.void',
 } as const satisfies Record<string, Permission>;

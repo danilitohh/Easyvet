@@ -99,6 +99,11 @@ export const PERMISSIONS = {
     CONSENTS_UPDATE_DRAFT: 'consents.updateDraft',
     CONSENTS_ISSUE: 'consents.issue',
     CONSENTS_VOID: 'consents.void',
+    FOLLOW_UPS_READ: 'followUps.read',
+    FOLLOW_UPS_CREATE: 'followUps.create',
+    FOLLOW_UPS_UPDATE: 'followUps.update',
+    FOLLOW_UPS_COMPLETE: 'followUps.complete',
+    FOLLOW_UPS_VOID: 'followUps.void',
   },
 } as const satisfies Record<string, Record<string, Permission>>;
 
@@ -272,6 +277,11 @@ export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission
     'consents.updateDraft',
     'consents.issue',
     'consents.void',
+    'followUps.read',
+    'followUps.create',
+    'followUps.update',
+    'followUps.complete',
+    'followUps.void',
   ],
   CLINICAL_ASSISTANT: [
     'clinicalRecords.read',
@@ -309,6 +319,9 @@ export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission
     'consents.read',
     'consents.create',
     'consents.updateDraft',
+    'followUps.read',
+    'followUps.create',
+    'followUps.update',
   ],
 };
 

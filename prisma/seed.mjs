@@ -408,6 +408,127 @@ const seedClinicalEncounters = [
   },
 ];
 
+// Calendar helpers keep demo due dates relative to the current date in the Norte organization.
+function organizationToday(timezone) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+// Seed civil dates use UTC arithmetic only as a transport for the PostgreSQL DATE column.
+function shiftCivilDate(value, days) {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date;
+}
+
+// Fictitious FollowUp fixtures cover both tenants and every primary dashboard due category.
+const todayBogota = organizationToday('America/Bogota');
+const followUpSeedNow = new Date();
+const seedClinicalFollowUps = [
+  {
+    id: '00000000-0000-4000-8000-000000002101',
+    organizationId: seedOrganizations[0].id,
+    patientId: seedPatients[0].id,
+    sourceClinicalEncounterId: seedClinicalEncounters[1].id,
+    status: 'OPEN',
+    version: 1,
+    title: 'Revisar evolución del tratamiento',
+    reason: 'Control clínico ficticio.',
+    dueOn: shiftCivilDate(todayBogota, -2),
+    reminderAt: null,
+    assignedMembershipId: seedUsers[0].membershipId,
+    notes: 'Dato de demostración.',
+    createdByMembershipId: seedUsers[2].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000002102',
+    organizationId: seedOrganizations[0].id,
+    patientId: seedPatients[0].id,
+    sourceClinicalEncounterId: seedClinicalEncounters[1].id,
+    status: 'OPEN',
+    version: 1,
+    title: 'Confirmar apetito y actividad',
+    reason: 'Llamada de control ficticia.',
+    dueOn: shiftCivilDate(todayBogota, 0),
+    reminderAt: null,
+    assignedMembershipId: null,
+    notes: null,
+    createdByMembershipId: seedUsers[2].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000002103',
+    organizationId: seedOrganizations[0].id,
+    patientId: seedPatients[0].id,
+    sourceClinicalEncounterId: seedClinicalEncounters[3].id,
+    status: 'OPEN',
+    version: 1,
+    title: 'Control preventivo próximo',
+    reason: 'Recordatorio interno ficticio.',
+    dueOn: shiftCivilDate(todayBogota, 4),
+    reminderAt: new Date(followUpSeedNow.getTime() - 5 * 60_000),
+    assignedMembershipId: seedUsers[0].membershipId,
+    notes: null,
+    createdByMembershipId: seedUsers[0].membershipId,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000002104',
+    organizationId: seedOrganizations[0].id,
+    patientId: seedPatients[0].id,
+    sourceClinicalEncounterId: seedClinicalEncounters[1].id,
+    status: 'COMPLETED',
+    version: 2,
+    title: 'Verificar tolerancia inicial',
+    reason: 'Control completado ficticio.',
+    dueOn: shiftCivilDate(todayBogota, -6),
+    reminderAt: null,
+    assignedMembershipId: seedUsers[0].membershipId,
+    notes: null,
+    createdByMembershipId: seedUsers[0].membershipId,
+    completedAt: new Date(followUpSeedNow.getTime() - 2 * 86_400_000),
+    completedByMembershipId: seedUsers[0].membershipId,
+    outcome: 'Paciente estable; continuar el plan indicado.',
+    completionNotes: 'Registro ficticio de demostración.',
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    professionalDisplayNameSnapshot: 'Dra. Camila Rojas',
+    professionalLicenseSnapshot: 'VET-DEMO-001',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000002105',
+    organizationId: seedOrganizations[1].id,
+    patientId: seedPatients[3].id,
+    sourceClinicalEncounterId: seedClinicalEncounters[2].id,
+    status: 'OPEN',
+    version: 1,
+    title: 'Seguimiento general Sur',
+    reason: 'Dato de aislamiento de tenant ficticio.',
+    dueOn: shiftCivilDate(todayBogota, 3),
+    reminderAt: null,
+    assignedMembershipId: null,
+    notes: null,
+    createdByMembershipId: '00000000-0000-4000-8000-000000000204',
+  },
+].map((record) => ({
+  completionNotes: null,
+  completedAt: null,
+  completedByMembershipId: null,
+  outcome: null,
+  patientNameSnapshot: null,
+  ownerDisplayNameSnapshot: null,
+  professionalDisplayNameSnapshot: null,
+  professionalLicenseSnapshot: null,
+  voidedAt: null,
+  voidedByMembershipId: null,
+  voidReason: null,
+  ...record,
+}));
+
 // Stable fictional episodes cover Norte lifecycle states and one Sur tenant record.
 const seedHospitalizations = [
   {
@@ -1807,6 +1928,16 @@ async function main() {
       });
     }
 
+    // Follow-up demo rows are idempotent, tenant-scoped and composed only of fictional clinical data.
+    for (const followUp of seedClinicalFollowUps) {
+      const { id: followUpId, ...followUpFields } = followUp;
+      await transaction.clinicalFollowUp.upsert({
+        where: { id: followUpId },
+        update: followUpFields,
+        create: { id: followUpId, ...followUpFields },
+      });
+    }
+
     // Seed procedure lifecycle timestamps as UTC instants and retain stable demo IDs.
     for (const procedure of seedClinicalProcedures) {
       const data = {
@@ -2019,7 +2150,7 @@ async function main() {
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 4 encounters, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 4 hospitalizations, 4 diagnostic orders, 2 Kardex entries, 40 audits.',
+    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 4 encounters, 5 follow-ups, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 4 hospitalizations, 4 diagnostic orders, 2 Kardex entries, 40 audits.',
   );
 }
 

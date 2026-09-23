@@ -17,12 +17,14 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
   const canReadMemberships = useCan(PERMISSION.MEMBERSHIPS_READ);
   const canUpdateOrganization = useCan(PERMISSION.ORGANIZATION_UPDATE);
   const canReadAvailability = useCan(PERMISSION.AVAILABILITY_READ);
+  const canReadFollowUps = useCan(PERMISSION.FOLLOW_UPS_READ);
   const visibleGroups = NAVIGATION_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
       if (item.path === '/usuarios') return canReadMemberships;
       if (item.path === '/configuracion') return canUpdateOrganization;
       if (item.path === '/agenda/disponibilidad') return canReadAvailability;
+      if (item.path === '/seguimientos') return canReadFollowUps;
       return true;
     }),
   })).filter((group) => group.items.length > 0);

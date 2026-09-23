@@ -197,6 +197,7 @@ export function ClinicalEncounterDetailPage() {
   const canCreateDeworming = useCan(PERMISSION.DEWORMINGS_CREATE);
   const canCreateProcedure = useCan(PERMISSION.PROCEDURES_CREATE);
   const canCreateAnesthesia = useCan(PERMISSION.ANESTHESIA_CREATE);
+  const canCreateFollowUp = useCan(PERMISSION.FOLLOW_UPS_CREATE);
   const canReadHospitalizations = useCan(PERMISSION.HOSPITALIZATIONS_READ);
   const canCreateHospitalization = useCan(PERMISSION.HOSPITALIZATIONS_CREATE);
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
@@ -354,6 +355,16 @@ export function ClinicalEncounterDetailPage() {
         description={`${formatDateTime(item.occurredAt, timezone)} · ${item.patient.name}`}
         action={
           <span className="page-header__actions">
+            {canCreateFollowUp &&
+            (item.status === 'DRAFT' || item.status === 'FINALIZED') &&
+            item.patient.status === 'ACTIVE' ? (
+              <Button
+                as={Link}
+                to={`/pacientes/${item.patientId}/seguimientos/nuevo?sourceClinicalEncounterId=${item.id}`}
+              >
+                Nuevo seguimiento
+              </Button>
+            ) : null}
             {canCreateProcedure && item.status !== 'VOIDED' && item.patient.status === 'ACTIVE' ? (
               <Button
                 as={Link}

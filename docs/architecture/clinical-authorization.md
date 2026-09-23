@@ -126,3 +126,13 @@ hasheado y OTP, no sesión, y solo devuelve datos mínimos con identificación d
 Owner enmascarada. Actor, tenant, Membership, perfil responsable, Patient activo,
 Encounter no anulado y Procedure elegible se vuelven a comprobar dentro de la
 transacción.
+
+## FollowUps 6J
+
+`PRACTITIONER` recibe `followUps.read/create/update/complete/void`.
+`CLINICAL_ASSISTANT` recibe únicamente `read/create/update`; no puede completar
+ni anular. Create/update validan asignaciones a membresías clínicas activas de la
+misma organización. Completion requiere actor Practitioner con perfil
+configurado, pero no exige que sea la persona asignada. Los guards de ruta
+mejoran la UX; el servicio revalida permisos efectivos, actor, Membership y
+tenant durante la transacción.

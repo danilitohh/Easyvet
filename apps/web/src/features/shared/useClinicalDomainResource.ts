@@ -5,6 +5,9 @@ import { proceduresApi } from '../procedures/proceduresApi';
 import { anesthesiaApi } from '../anesthesia/anesthesiaApi';
 import { hospitalizationsApi } from '../hospitalizations/hospitalizationsApi';
 import { diagnosticsApi } from '../diagnostics/diagnosticsApi';
+import { followUpsApi } from '../follow-ups/followUpsApi';
+import { clinicalApi } from '../clinical/clinicalApi';
+import type { ClinicalFollowUpListQuery } from '@veterinary-saas/contracts';
 
 export type ClinicalDomainLoadState<T> = {
   data: T | null;
@@ -212,6 +215,52 @@ export function useDiagnosticOrderResource(id: string | undefined, enabled: bool
     `diagnostic-order:${id ?? ''}`,
     enabled && Boolean(id),
     (signal) => diagnosticsApi.findById(id!, signal),
+  );
+}
+
+// Follow-up queue reads are tenant-keyed and abort as soon as the selected organization changes.
+export function useFollowUpListResource(
+  input: ClinicalFollowUpListQuery,
+  enabled: boolean,
+  patientId?: string,
+) {
+  return useClinicalDomainResource(
+    `follow-ups:${patientId ?? 'global'}:${JSON.stringify(input)}`,
+    enabled,
+    (signal) =>
+      patientId
+        ? followUpsApi.listByPatient(patientId, input, signal)
+        : followUpsApi.list(input, signal),
+  );
+}
+
+// Detail results never survive a tenant or route change in the shared clinical resource cache.
+export function useFollowUpResource(id: string | undefined, enabled: boolean) {
+  return useClinicalDomainResource(`follow-up:${id ?? ''}`, enabled && Boolean(id), (signal) =>
+    followUpsApi.findById(id!, signal),
+  );
+}
+
+// Dashboard counts fail locally to their widget and do not gate the rest of the dashboard.
+export function useFollowUpDashboardResource(enabled: boolean) {
+  return useClinicalDomainResource('follow-up-dashboard', enabled, (signal) =>
+    followUpsApi.dashboard(signal),
+  );
+}
+
+// Assignment options contain only safe clinical membership summaries, never email or contact data.
+export function useFollowUpMembersResource(enabled: boolean) {
+  return useClinicalDomainResource('follow-up-members', enabled, (signal) =>
+    clinicalApi.listClinicalMembers(signal),
+  );
+}
+
+// Source Encounter options are restricted in the UI to draft/finalized records for the same Patient.
+export function useFollowUpEncounterOptions(patientId: string | undefined, enabled: boolean) {
+  return useClinicalDomainResource(
+    `follow-up-encounters:${patientId ?? ''}`,
+    enabled && Boolean(patientId),
+    (signal) => clinicalApi.listEncounters(patientId!, { page: 1, pageSize: 100, signal }),
   );
 }
 

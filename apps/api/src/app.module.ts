@@ -25,6 +25,7 @@ import { HospitalizationsModule } from './hospitalizations/hospitalizations.modu
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ConsentsModule } from './consents/consents.module';
+import { FollowUpsModule } from './follow-ups/follow-ups.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { ConsentsModule } from './consents/consents.module';
     DiagnosticsModule,
     DocumentsModule,
     ConsentsModule,
+    FollowUpsModule,
   ],
   providers: [ApiExceptionFilter],
 })
