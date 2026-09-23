@@ -976,7 +976,7 @@ Fase 6I — Documents / Consents / Signatures: COMPLETADA
   `test:db`: 180/180 API pasaron. Build sin advertencia de importación mixta;
   permanecen advertencias no bloqueantes de anotaciones Zod/Rollup y chunk
   principal de 847.61 kB (242.91 kB gzip), sobre el umbral configurado de 500 kB.
-- `npm audit`: 5 entradas (3 high en `prisma` → `@prisma/config` →
+- `npm audit` en cierre Fase 6J: 5 entradas (3 high en `prisma` → `@prisma/config` →
   `deepmerge-ts`; 2 moderate en Vitest/`@vitest/mocker`). `prisma` y Vitest son
   dependencias dev directas; `deepmerge-ts` y `@vitest/mocker`, transitivas.
   `--omit=dev` conserva el camino Prisma porque `@prisma/client` declara el peer
@@ -985,7 +985,66 @@ Fase 6I — Documents / Consents / Signatures: COMPLETADA
   tooling/mockers. El audit no ofrece actualización patch/minor compatible: sus
   propuestas son un downgrade/breaking para Prisma y salto mayor para Vitest.
   No se aplicaron upgrades ni `npm audit fix --force`.
-- Sin bugs funcionales conocidos pendientes. Limitaciones POST-V1: email/SMS/
+- Sin bugs funcionales conocidos pendientes en Fase 6J. Limitaciones POST-V1: email/SMS/
   WhatsApp/push, recurrencia, automatización de siguiente seguimiento o cita,
-  campañas, calendario externo y preferencias de notificación. Fase 6J cerrada;
-  Grooming no iniciado.
+  campañas, calendario externo y preferencias de notificación. Fase 6J cerrada.
+
+## Fase 7 — Grooming / Peluquería
+
+- Se agregó el agregado operacional `GroomingVisit`, el lifecycle DRAFT →
+  IN_PROGRESS → COMPLETED/VOIDED, CAS, snapshots, restricciones tenant-safe,
+  `OperationalAuditEvent`, API y matriz de permisos. No hay DELETE ni cruces
+  automáticos con Agenda, Clinical, ventas o inventario.
+- Migración `20260923000000_grooming_module` aplicada únicamente a
+  `easyvet_dev` y `easyvet_test`; ambas verificadas al día. PostgreSQL local
+  healthy y Docker Engine 29.8.0 / Compose 5.5.1.
+- Seed idempotente con 4 visitas ficticias (Norte DRAFT/IN_PROGRESS/COMPLETED;
+  Sur DRAFT), Groomer y Recepción de demostración.
+- Arquitectura, API, frontend y revisión legacy documentadas en
+  `docs/architecture/grooming*.md` y
+  `docs/migration/grooming-final-review.md`.
+- QA manual ficticio exclusivamente en `easyvet_dev`: Groomer creó y editó un
+  borrador, inició atención, actualizó notas/incidentes operativos y completó;
+  el HTML introducido se mostró como texto literal. Reception creó y editó un
+  borrador incompleto y no vio acciones de inicio/cierre. Owner anuló dos
+  registros completados con motivo obligatorio, conservando su historial y sin
+  borrado físico.
+- Se creó una cita futura desde Agenda para Nala/Sede Norte, se vinculó desde
+  el selector Grooming compatible, y se verificó en el resumen de START. Tras
+  iniciar, completar y anular Grooming, Agenda conservó `SCHEDULED` (Programada).
+  La historia del Patient mostró Grooming en la sección operacional separada de
+  la historia clínica.
+- Tenant QA: una identidad Groomer ficticia y temporal con membresías Norte/Sur
+  cambió de tenant en la UI. La cola Sur solo mostró sus registros y un deep link
+  a Grooming Norte respondió 404. La identidad temporal se eliminó al terminar;
+  las visitas QA se conservaron.
+- Responsive QA: cola, formulario, detalle e historial verificados a 390 px;
+  no hubo overflow horizontal en 390, 768 ni 1280 px. Las confirmaciones de
+  inicio, finalización y anulación se operaron desde la UI.
+- START y edición activa requieren permisos efectivos (`grooming.perform`);
+  `grooming.complete` permite cerrar aunque el actor no sea el Groomer asignado.
+  Assignment se conserva como responsabilidad/snapshot, no como autorización.
+- Sin efectos comerciales o clínicos comprobados por pruebas de integración:
+  no se crearon ventas, facturas, cobros, movimientos de inventario, encounters,
+  evoluciones, diagnósticos ni cambios de peso. Grooming no cambia el estado de
+  Appointment. No quedan bugs funcionales conocidos pendientes.
+- Validaciones: `format:check`, `lint`, `typecheck`, `npm test`, `npm run test:db`,
+  `npm run test:all`, `npm run build`, `npm run prisma:generate` y
+  `npm run prisma:validate` pasan. `npm test`: API 26 passed / 168 DB-gated
+  skipped; web 329/329. `test:db`: 194/194. Build pasa con anotaciones Zod que
+  Rollup elimina y el warning no bloqueante del bundle principal de 852.19 kB
+  (243.60 kB gzip) sobre el umbral de 500 kB; chunk Grooming: 30.46 kB
+  (7.98 kB gzip).
+- `npm audit`: 5 vulnerabilidades (2 moderate, 3 high; 0 critical). Vitest y
+  Prisma CLI son directas de desarrollo; `@vitest/mocker`, `@prisma/config` y
+  `deepmerge-ts` son transitivas. `npm audit --omit=dev` conserva 3 high porque
+  `@prisma/client` declara Prisma como peer opcional; el advisory alto reside en
+  configuración/CLI de Prisma y no en los handlers ni consultas del API. El
+  advisory moderado de Vitest afecta al mocker/herramienta de pruebas. No se
+  identificó una ruta explotable en el runtime actual de Easyvet. El audit solo
+  propone cambios breaking; no se hicieron upgrades ni se ejecutó
+  `npm audit fix --force`.
+- Limitaciones POST-V1: ServiceCatalog, precios/paquetes, consumo de inventario,
+  venta/factura automática, fotos antes/después, consentimiento específico de
+  grooming, notificaciones, reserva online y recurrencia de citas. Fase 7
+  completada; Inventory no iniciado.

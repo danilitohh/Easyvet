@@ -185,6 +185,26 @@ const PatientFollowUpsPage = lazy(() =>
     default: module.PatientFollowUpsPage,
   })),
 );
+const GroomingQueuePage = lazy(() =>
+  import('../features/grooming/GroomingPages').then((module) => ({
+    default: module.GroomingQueuePage,
+  })),
+);
+const GroomingFormPage = lazy(() =>
+  import('../features/grooming/GroomingPages').then((module) => ({
+    default: module.GroomingFormPage,
+  })),
+);
+const GroomingVisitDetailPage = lazy(() =>
+  import('../features/grooming/GroomingPages').then((module) => ({
+    default: module.GroomingVisitDetailPage,
+  })),
+);
+const GroomingHistoryPage = lazy(() =>
+  import('../features/grooming/GroomingPages').then((module) => ({
+    default: module.GroomingHistoryPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -213,6 +233,46 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<Navigate replace to="/dashboard" />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route
+            path="peluqueria"
+            element={
+              <PermissionRoute permission={PERMISSION.GROOMING_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <GroomingQueuePage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="peluqueria/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.GROOMING_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <GroomingFormPage mode="create" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="peluqueria/:groomingVisitId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.GROOMING_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <GroomingFormPage mode="edit" />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="peluqueria/:groomingVisitId"
+            element={
+              <PermissionRoute permission={PERMISSION.GROOMING_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <GroomingVisitDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
           <Route
             path="seguimientos"
             element={
@@ -410,6 +470,7 @@ export function App() {
                   PERMISSION.DOCUMENTS_READ,
                   PERMISSION.CONSENTS_READ,
                   PERMISSION.FOLLOW_UPS_READ,
+                  PERMISSION.GROOMING_READ,
                 ]}
               >
                 <Suspense fallback={<ClinicalRouteFallback />}>
@@ -424,6 +485,16 @@ export function App() {
               <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <PatientFollowUpsPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="pacientes/:patientId/historia/peluqueria"
+            element={
+              <PermissionRoute permission={PERMISSION.GROOMING_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <GroomingHistoryPage />
                 </Suspense>
               </PermissionRoute>
             }
@@ -794,7 +865,8 @@ export function App() {
               route.path !== '/agenda' &&
               route.path !== '/agenda/disponibilidad' &&
               route.path !== '/propietarios' &&
-              route.path !== '/pacientes',
+              route.path !== '/pacientes' &&
+              route.path !== '/peluqueria',
           ).map((route) => (
             <Route
               key={route.path}

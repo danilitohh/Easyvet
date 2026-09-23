@@ -48,6 +48,22 @@ const seedUsers = [
     role: 'ASSISTANT',
     clinicalRole: 'CLINICAL_ASSISTANT',
   },
+  {
+    id: '00000000-0000-4000-8000-000000000104',
+    email: 'groomer.norte@demo.local',
+    organizationId: seedOrganizations[0].id,
+    membershipId: '00000000-0000-4000-8000-000000000205',
+    role: 'GROOMER',
+    clinicalRole: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000105',
+    email: 'reception.norte@demo.local',
+    organizationId: seedOrganizations[0].id,
+    membershipId: '00000000-0000-4000-8000-000000000206',
+    role: 'RECEPTION',
+    clinicalRole: null,
+  },
 ];
 
 const seedOwners = [
@@ -527,6 +543,103 @@ const seedClinicalFollowUps = [
   voidedByMembershipId: null,
   voidReason: null,
   ...record,
+}));
+
+// Grooming fixtures are operational examples and never create clinical or commercial records.
+const groomingSeedNow = new Date();
+const seedGroomingVisits = [
+  {
+    id: '00000000-0000-4000-8000-000000002201',
+    organizationId: seedOrganizations[0].id,
+    patientId: seedPatients[2].id,
+    ownerIdAtTime: seedOwners[1].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    appointmentId: null,
+    assignedGroomerMembershipId: null,
+    createdByMembershipId: seedUsers[4].membershipId,
+    status: 'DRAFT',
+    version: 1,
+    serviceSummary: 'Baño y cepillado',
+    coatCondition: 'Pelaje ligeramente enredado.',
+    temperamentNotes: 'Tranquila durante la recepción.',
+    preServiceNotes: 'Usar champú suave.',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000002202',
+    organizationId: seedOrganizations[0].id,
+    patientId: seedPatients[0].id,
+    ownerIdAtTime: seedOwners[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    appointmentId: seedAppointments[0].id,
+    assignedGroomerMembershipId: seedUsers[3].membershipId,
+    createdByMembershipId: seedUsers[4].membershipId,
+    startedByMembershipId: seedUsers[3].membershipId,
+    status: 'IN_PROGRESS',
+    version: 2,
+    serviceSummary: 'Baño medicado y corte higiénico',
+    coatCondition: 'Pelaje sano; cepillado previo realizado.',
+    skinObservations: 'Sin observaciones operativas.',
+    temperamentNotes: 'Se adapta bien al secador.',
+    preServiceNotes: 'Mantener descansos breves.',
+    patientNameSnapshot: 'Luna',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    groomerDisplayNameSnapshot: 'Peluquero/a',
+    startedAt: new Date(groomingSeedNow.getTime() - 35 * 60_000),
+  },
+  {
+    id: '00000000-0000-4000-8000-000000002203',
+    organizationId: seedOrganizations[0].id,
+    patientId: seedPatients[1].id,
+    ownerIdAtTime: seedOwners[0].id,
+    clinicLocationId: seedOrganizations[0].locationId,
+    appointmentId: null,
+    assignedGroomerMembershipId: seedUsers[3].membershipId,
+    createdByMembershipId: seedUsers[4].membershipId,
+    startedByMembershipId: seedUsers[3].membershipId,
+    completedByMembershipId: seedUsers[3].membershipId,
+    status: 'COMPLETED',
+    version: 3,
+    serviceSummary: 'Baño, deslanado y corte de uñas',
+    coatCondition: 'Subpelo abundante al ingreso.',
+    skinObservations: 'Sin hallazgos operativos.',
+    temperamentNotes: 'Colaboró durante el procedimiento.',
+    postServiceNotes: 'Secado y cepillado completados.',
+    patientNameSnapshot: 'Bruno',
+    ownerDisplayNameSnapshot: 'Camila Rojas',
+    groomerDisplayNameSnapshot: 'Peluquero/a',
+    startedAt: new Date(groomingSeedNow.getTime() - 3 * 60 * 60_000),
+    completedAt: new Date(groomingSeedNow.getTime() - 2 * 60 * 60_000),
+  },
+  {
+    id: '00000000-0000-4000-8000-000000002204',
+    organizationId: seedOrganizations[1].id,
+    patientId: seedPatients[3].id,
+    ownerIdAtTime: seedOwners[2].id,
+    clinicLocationId: seedOrganizations[1].locationId,
+    appointmentId: null,
+    assignedGroomerMembershipId: null,
+    createdByMembershipId: seedUsers[1].membershipId,
+    status: 'DRAFT',
+    version: 1,
+    serviceSummary: 'Cepillado y cuidado de uñas',
+  },
+].map((visit) => ({
+  skinObservations: null,
+  temperamentNotes: null,
+  preServiceNotes: null,
+  postServiceNotes: null,
+  incidentNotes: null,
+  patientNameSnapshot: null,
+  ownerDisplayNameSnapshot: null,
+  groomerDisplayNameSnapshot: null,
+  startedAt: null,
+  startedByMembershipId: null,
+  completedAt: null,
+  completedByMembershipId: null,
+  voidedAt: null,
+  voidedByMembershipId: null,
+  voidReason: null,
+  ...visit,
 }));
 
 // Stable fictional episodes cover Norte lifecycle states and one Sur tenant record.
@@ -1938,6 +2051,15 @@ async function main() {
       });
     }
 
+    // Grooming seed rows are stable, tenant-safe and preserve their operational-only boundaries.
+    for (const visit of seedGroomingVisits) {
+      await transaction.groomingVisit.upsert({
+        where: { id: visit.id },
+        update: visit,
+        create: visit,
+      });
+    }
+
     // Seed procedure lifecycle timestamps as UTC instants and retain stable demo IDs.
     for (const procedure of seedClinicalProcedures) {
       const data = {
@@ -2150,7 +2272,7 @@ async function main() {
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 3 users, 4 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 4 encounters, 5 follow-ups, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 4 hospitalizations, 4 diagnostic orders, 2 Kardex entries, 40 audits.',
+    'Development seed applied: 2 organizations, 2 locations, 5 users, 6 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 4 encounters, 5 follow-ups, 4 grooming visits, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 4 hospitalizations, 4 diagnostic orders, 2 Kardex entries, 40 audits.',
   );
 }
 

@@ -159,6 +159,7 @@ describeDatabase('fundamental multi-tenant model', () => {
       vitals,
       evolutions,
       diagnosticOrders,
+      groomingVisits,
       audits,
     ] = await Promise.all([
       prisma.organization.count({ where: { slug: { startsWith: 'veterinaria-demo-' } } }),
@@ -215,6 +216,9 @@ describeDatabase('fundamental multi-tenant model', () => {
       prisma.diagnosticOrder.count({
         where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
       }),
+      prisma.groomingVisit.count({
+        where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
+      }),
       prisma.clinicalAuditEvent.count({
         where: { organization: { slug: { startsWith: 'veterinaria-demo-' } } },
       }),
@@ -241,12 +245,13 @@ describeDatabase('fundamental multi-tenant model', () => {
       vitals,
       evolutions,
       diagnosticOrders,
+      groomingVisits,
       audits,
     }).toEqual({
       organizations: 2,
       locations: 2,
-      users: 3,
-      memberships: 4,
+      users: 5,
+      memberships: 6,
       owners: 4,
       patients: 6,
       profiles: 2,
@@ -263,6 +268,7 @@ describeDatabase('fundamental multi-tenant model', () => {
       vitals: 2,
       evolutions: 1,
       diagnosticOrders: 4,
+      groomingVisits: 4,
       audits: 40,
     });
   });

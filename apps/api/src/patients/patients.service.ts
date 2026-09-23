@@ -241,6 +241,16 @@ export class PatientsService {
           message: 'An active hospitalization prevents archiving this patient',
         });
       }
+      // In-progress Grooming uses the same Patient row lock, so archive and start cannot race.
+      const activeGroomingVisits = await tx.groomingVisit.count({
+        where: { organizationId, patientId, status: 'IN_PROGRESS' },
+      });
+      if (activeGroomingVisits > 0) {
+        throw new ConflictException({
+          code: 'ACTIVE_GROOMING_VISIT_EXISTS',
+          message: 'An in-progress grooming visit prevents archiving this patient',
+        });
+      }
       const futureAppointments = await tx.appointment.count({
         where: {
           organizationId,

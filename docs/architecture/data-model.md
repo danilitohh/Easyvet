@@ -1,13 +1,14 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A, 6F.2B y 6J
+## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A, 6F.2B, 6J y 7
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
 autorización por permisos y el primer dominio veterinario de propietarios y
 pacientes. Agenda 5B añade reservas operativas y disponibilidad. Fases 6B.1 y
 6B.2 añaden la fundación persistente y las operaciones transaccionales del
 núcleo clínico; 6F.2A agrega Procedures/Surgery, 6F.2B agrega Anesthesia y 6J
-agrega FollowUps. Inventario, ventas y facturación siguen fuera de alcance.
+agrega FollowUps; Fase 7 agrega Grooming operacional. Inventario, ventas y
+facturación siguen fuera de alcance.
 
 ### Fundación clínica 6B.1
 
@@ -275,3 +276,14 @@ artefactos no se hard-delete al anular un Patient, Encounter, Consent o document
 El API y las claves privadas se documentan en
 [`documents-api.md`](documents-api.md), [`documents.md`](documents.md) y
 [`consents-signatures.md`](consents-signatures.md).
+
+## Grooming / Peluquería 7
+
+`GroomingVisit` conserva el servicio operacional por tenant, Patient, Owner
+histórico y sede. Appointment es opcional y debe coincidir en tenant, Patient y
+sede; la base limita a una visita Grooming por Appointment. START congela
+snapshots de Patient/Owner/Groomer. El lifecycle DRAFT/IN_PROGRESS/COMPLETED/
+VOIDED usa CAS, restricciones SQL y auditoría operativa independiente del
+Clinical Core. No crea consulta, venta, cobro ni consumo de inventario. Véase
+[`grooming.md`](grooming.md) y
+[`grooming-final-review.md`](../migration/grooming-final-review.md).

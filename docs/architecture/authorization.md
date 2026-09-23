@@ -126,3 +126,15 @@ invitations, gestión de memberships ni custom roles. RLS puede evaluarse como
 defensa en profundidad cuando existan entidades clínicas. Toda entidad futura
 tenant-scoped debe consultar por `organizationId` junto con su identificador;
 `findUnique({ id })` aislado no es aceptable.
+
+## Grooming / Peluquería 7
+
+La matriz organizacional agrega `grooming.read`, `grooming.create`,
+`grooming.updateDraft`, `grooming.perform`, `grooming.complete` y
+`grooming.void`. OWNER y ADMIN tienen todos; GROOMER tiene todos salvo `void`;
+RECEPTION puede leer, crear y editar Draft; VETERINARIAN y CASHIER son solo
+lectura; ASSISTANT no recibe acceso por defecto. `grooming.perform` se evalúa
+como permiso efectivo para opciones y validación del Membership Groomer; ningún
+rol o `PLATFORM_ADMIN` omite el tenant activo. El endpoint devuelve únicamente
+id, nombre visible y rol operativo del Groomer. Ver
+[`grooming-api.md`](grooming-api.md).

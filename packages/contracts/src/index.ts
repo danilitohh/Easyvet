@@ -106,6 +106,12 @@ export const permissionSchema = z.enum([
   'followUps.update',
   'followUps.complete',
   'followUps.void',
+  'grooming.read',
+  'grooming.create',
+  'grooming.updateDraft',
+  'grooming.perform',
+  'grooming.complete',
+  'grooming.void',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -2082,3 +2088,139 @@ export type UpdateClinicalFollowUpRequest = z.infer<typeof updateClinicalFollowU
 export type CompleteClinicalFollowUpRequest = z.infer<typeof completeClinicalFollowUpRequestSchema>;
 export type VoidClinicalFollowUpRequest = z.infer<typeof voidClinicalFollowUpRequestSchema>;
 export type ClinicalFollowUpDashboard = z.infer<typeof clinicalFollowUpDashboardSchema>;
+
+// Grooming shares stable JSON contracts across the API and React application.
+export const groomingVisitStatusSchema = z.enum(['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'VOIDED']);
+const groomingVisitInstantSchema = z.string().datetime({ offset: true });
+const groomingVisitMemberSchema = z.object({
+  id: z.string().uuid(),
+  displayName: z.string(),
+  role: membershipRoleSchema,
+});
+export const groomingVisitSchema = z.object({
+  id: z.string().uuid(),
+  patientId: z.string().uuid(),
+  ownerIdAtTime: z.string().uuid(),
+  clinicLocationId: z.string().uuid(),
+  appointmentId: z.string().uuid().nullable(),
+  assignedGroomerMembershipId: z.string().uuid().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  startedByMembershipId: z.string().uuid().nullable(),
+  completedByMembershipId: z.string().uuid().nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  status: groomingVisitStatusSchema,
+  version: z.number().int().positive(),
+  serviceSummary: z.string().nullable(),
+  coatCondition: z.string().nullable(),
+  skinObservations: z.string().nullable(),
+  temperamentNotes: z.string().nullable(),
+  preServiceNotes: z.string().nullable(),
+  postServiceNotes: z.string().nullable(),
+  incidentNotes: z.string().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  ownerDisplayNameSnapshot: z.string().nullable(),
+  groomerDisplayNameSnapshot: z.string().nullable(),
+  startedAt: groomingVisitInstantSchema.nullable(),
+  completedAt: groomingVisitInstantSchema.nullable(),
+  voidedAt: groomingVisitInstantSchema.nullable(),
+  voidReason: z.string().nullable(),
+  createdAt: groomingVisitInstantSchema,
+  updatedAt: groomingVisitInstantSchema,
+  patient: z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    species: z.string(),
+    status: z.enum(['ACTIVE', 'ARCHIVED']),
+    owner: z.object({
+      id: z.string().uuid(),
+      firstName: z.string(),
+      lastName: z.string().nullable(),
+    }),
+  }),
+  ownerAtTime: z.object({ id: z.string().uuid(), displayName: z.string() }),
+  clinicLocation: z.object({ id: z.string().uuid(), name: z.string(), status: z.string() }),
+  appointment: z
+    .object({
+      id: z.string().uuid(),
+      status: z.string(),
+      startsAt: groomingVisitInstantSchema,
+      reason: z.string(),
+    })
+    .nullable(),
+  assignedGroomer: groomingVisitMemberSchema.nullable(),
+  createdBy: groomingVisitMemberSchema,
+  completedBy: groomingVisitMemberSchema.nullable(),
+  voidedBy: groomingVisitMemberSchema.nullable(),
+});
+export const groomingVisitListResponseSchema = z.object({
+  data: z.array(groomingVisitSchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
+});
+export const groomingGroomerOptionSchema = groomingVisitMemberSchema;
+export const createGroomingVisitRequestSchema = z
+  .object({
+    clinicLocationId: z.string().uuid(),
+    appointmentId: z.string().uuid().nullable().optional(),
+    assignedGroomerMembershipId: z.string().uuid().nullable().optional(),
+    serviceSummary: optionalText(1000),
+    coatCondition: optionalText(5000),
+    skinObservations: optionalText(5000),
+    temperamentNotes: optionalText(5000),
+    preServiceNotes: optionalText(5000),
+  })
+  .strict();
+export const updateGroomingVisitRequestSchema = createGroomingVisitRequestSchema
+  .partial()
+  .extend({
+    expectedVersion: z.number().int().positive(),
+    postServiceNotes: optionalText(5000),
+    incidentNotes: optionalText(5000),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).some((key) => key !== 'expectedVersion'), {
+    message: 'At least one editable field is required',
+  });
+export const startGroomingVisitRequestSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+export const completeGroomingVisitRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    postServiceNotes: optionalText(5000),
+    incidentNotes: optionalText(5000),
+  })
+  .strict();
+export const voidGroomingVisitRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(1000),
+  })
+  .strict();
+export const groomingVisitListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    status: groomingVisitStatusSchema.optional(),
+    patientId: z.string().uuid().optional(),
+    clinicLocationId: z.string().uuid().optional(),
+    assignedGroomerMembershipId: z.string().uuid().optional(),
+    appointmentId: z.string().uuid().optional(),
+    from: groomingVisitInstantSchema.optional(),
+    to: groomingVisitInstantSchema.optional(),
+  })
+  .strict();
+export type GroomingVisitStatus = z.infer<typeof groomingVisitStatusSchema>;
+export type GroomingVisit = z.infer<typeof groomingVisitSchema>;
+export type GroomingVisitListResponse = z.infer<typeof groomingVisitListResponseSchema>;
+export type GroomingGroomerOption = z.infer<typeof groomingGroomerOptionSchema>;
+export type CreateGroomingVisitRequest = z.infer<typeof createGroomingVisitRequestSchema>;
+export type UpdateGroomingVisitRequest = z.infer<typeof updateGroomingVisitRequestSchema>;
+export type StartGroomingVisitRequest = z.infer<typeof startGroomingVisitRequestSchema>;
+export type CompleteGroomingVisitRequest = z.infer<typeof completeGroomingVisitRequestSchema>;
+export type VoidGroomingVisitRequest = z.infer<typeof voidGroomingVisitRequestSchema>;
+export type GroomingVisitListQuery = z.infer<typeof groomingVisitListQuerySchema>;

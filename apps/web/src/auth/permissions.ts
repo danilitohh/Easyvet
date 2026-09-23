@@ -88,4 +88,10 @@ export const PERMISSION = {
   FOLLOW_UPS_UPDATE: 'followUps.update',
   FOLLOW_UPS_COMPLETE: 'followUps.complete',
   FOLLOW_UPS_VOID: 'followUps.void',
+  GROOMING_READ: 'grooming.read',
+  GROOMING_CREATE: 'grooming.create',
+  GROOMING_UPDATE_DRAFT: 'grooming.updateDraft',
+  GROOMING_PERFORM: 'grooming.perform',
+  GROOMING_COMPLETE: 'grooming.complete',
+  GROOMING_VOID: 'grooming.void',
 } as const satisfies Record<string, Permission>;

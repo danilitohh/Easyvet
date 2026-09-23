@@ -2,6 +2,44 @@ import { describe, expect, it } from '@jest/globals';
 import { hasPermissions, permissionsForRole } from './permissions';
 
 describe('clinical permission foundation', () => {
+  it('keeps grooming operational and grants only the documented role matrix', () => {
+    const owner = permissionsForRole('OWNER');
+    const receptionist = permissionsForRole('RECEPTION');
+    const groomer = permissionsForRole('GROOMER');
+    const veterinarian = permissionsForRole('VETERINARIAN', 'PRACTITIONER');
+    const cashier = permissionsForRole('CASHIER');
+    const assistant = permissionsForRole('ASSISTANT', 'CLINICAL_ASSISTANT');
+
+    expect(owner).toEqual(
+      expect.arrayContaining([
+        'grooming.read',
+        'grooming.create',
+        'grooming.updateDraft',
+        'grooming.perform',
+        'grooming.complete',
+        'grooming.void',
+      ]),
+    );
+    expect(receptionist).toEqual(
+      expect.arrayContaining(['grooming.read', 'grooming.create', 'grooming.updateDraft']),
+    );
+    expect(receptionist).not.toContain('grooming.perform');
+    expect(groomer).toEqual(
+      expect.arrayContaining([
+        'grooming.read',
+        'grooming.create',
+        'grooming.updateDraft',
+        'grooming.perform',
+        'grooming.complete',
+      ]),
+    );
+    expect(groomer).not.toContain('grooming.void');
+    expect(veterinarian).toContain('grooming.read');
+    expect(cashier).toContain('grooming.read');
+    expect(assistant).not.toContain('grooming.read');
+    expect(owner).not.toContain('clinicalRecords.read');
+  });
+
   it('keeps clinical access independent from the organizational role', () => {
     expect(permissionsForRole('OWNER', null)).not.toContain('clinicalRecords.read');
     expect(permissionsForRole('OWNER', 'PRACTITIONER')).toContain('clinicalRecords.read');

@@ -199,6 +199,26 @@ function FollowUpsHistoryEntry({ patientId }: { patientId: string }) {
   );
 }
 
+// Grooming is operational history and stays distinct from clinical records and consultations.
+function GroomingHistoryEntry({ patientId }: { patientId: string }) {
+  const canRead = useCan(PERMISSION.GROOMING_READ);
+  if (!canRead) return null;
+  return (
+    <Card className="prescription-history-entry clinical-domain-history-entry">
+      <div>
+        <p className="section-kicker">Servicio operativo</p>
+        <h2>Peluquería</h2>
+        <p className="clinical-muted">
+          Consulta baños, cortes y cuidado estético fuera de la historia clínica.
+        </p>
+      </div>
+      <Button as={Link} to={`/pacientes/${patientId}/historia/peluqueria`} variant="secondary">
+        Ver historial de peluquería
+      </Button>
+    </Card>
+  );
+}
+
 export function ClinicalHistoryPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const canReadRecord = useCan(PERMISSION.CLINICAL_RECORDS_READ);
@@ -259,6 +279,7 @@ export function ClinicalHistoryPage() {
         {canReadDocuments ? <DocumentsHistoryEntry patientId={patientId} /> : null}
         {canReadConsents ? <ConsentsHistoryEntry patientId={patientId} /> : null}
         {canReadFollowUps ? <FollowUpsHistoryEntry patientId={patientId} /> : null}
+        <GroomingHistoryEntry patientId={patientId} />
         {canReadPrescriptions ? (
           <Card className="prescription-history-entry">
             <div>
@@ -337,6 +358,7 @@ export function ClinicalHistoryPage() {
         {canReadDocuments ? <DocumentsHistoryEntry patientId={patientId} /> : null}
         {canReadConsents ? <ConsentsHistoryEntry patientId={patientId} /> : null}
         {canReadFollowUps ? <FollowUpsHistoryEntry patientId={patientId} /> : null}
+        <GroomingHistoryEntry patientId={patientId} />
         <Card>
           <EmptyState
             title="Este paciente todavía no tiene historia clínica."
@@ -443,6 +465,7 @@ export function ClinicalHistoryPage() {
       {canReadDiagnostics ? <DiagnosticHistoryEntry patientId={patientId} /> : null}
       {canReadDocuments ? <DocumentsHistoryEntry patientId={patientId} /> : null}
       {canReadConsents ? <ConsentsHistoryEntry patientId={patientId} /> : null}
+      <GroomingHistoryEntry patientId={patientId} />
       {!canReadEncounters ? (
         <Card>
           <EmptyState

@@ -44,6 +44,8 @@ model Organization {
   consents                 Consent[]
   consentSignatureRequests ConsentSignatureRequest[]
   clinicalFollowUps        ClinicalFollowUp[]
+  groomingVisits           GroomingVisit[]
+  operationalAuditEvents   OperationalAuditEvent[]
 
   @@map("organizations")
 }
@@ -62,6 +64,7 @@ model ClinicLocation {
   appointments       Appointment[]
   availabilityRules  AvailabilityRule[]
   clinicalEncounters ClinicalEncounter[]
+  groomingVisits     GroomingVisit[]
 
   @@unique([id, organizationId], map: "clinic_locations_id_organization_id_key")
   @@index([organizationId])
@@ -154,6 +157,12 @@ model Membership {
   assignedClinicalFollowUps       ClinicalFollowUp[]             @relation("ClinicalFollowUpAssignedMembership")
   completedClinicalFollowUps      ClinicalFollowUp[]             @relation("ClinicalFollowUpCompletedByMembership")
   voidedClinicalFollowUps         ClinicalFollowUp[]             @relation("ClinicalFollowUpVoidedByMembership")
+  createdGroomingVisits           GroomingVisit[]                @relation("GroomingVisitCreatedByMembership")
+  assignedGroomingVisits          GroomingVisit[]                @relation("GroomingVisitAssignedGroomerMembership")
+  startedGroomingVisits           GroomingVisit[]                @relation("GroomingVisitStartedByMembership")
+  completedGroomingVisits         GroomingVisit[]                @relation("GroomingVisitCompletedByMembership")
+  voidedGroomingVisits            GroomingVisit[]                @relation("GroomingVisitVoidedByMembership")
+  operationalAuditEvents          OperationalAuditEvent[]        @relation("OperationalAuditActorMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -205,6 +214,7 @@ model Owner {
   patients                     Patient[]
   appointments                 Appointment[]
   historicalClinicalEncounters ClinicalEncounter[] @relation("EncounterHistoricalOwner")
+  historicalGroomingVisits     GroomingVisit[]     @relation("GroomingVisitHistoricalOwner")
 
   // The composite key supports a tenant-safe Patient foreign key.
   @@unique([id, organizationId], map: "owners_id_organization_id_key")
@@ -256,6 +266,7 @@ model Patient {
   clinicalDocuments  ClinicalDocument[]
   consents           Consent[]
   clinicalFollowUps  ClinicalFollowUp[]
+  groomingVisits     GroomingVisit[]     @relation("GroomingVisitPatient")
 
   @@unique([id, organizationId], map: "patients_id_organization_id_key")
   @@index([organizationId])
@@ -265,6 +276,59 @@ model Patient {
   @@index([organizationId, microchipNumber])
   // Normalized names support search/order only; Patient.id remains the identity.
   @@map("patients")
+}
+
+// GroomingVisit is an operational service aggregate, separate from clinical history and billing.
+model GroomingVisit {
+  id                          String                  @id @default(uuid()) @db.Uuid
+  organizationId              String                  @map("organization_id") @db.Uuid
+  patientId                   String                  @map("patient_id") @db.Uuid
+  ownerIdAtTime               String                  @map("owner_id_at_time") @db.Uuid
+  clinicLocationId            String                  @map("clinic_location_id") @db.Uuid
+  appointmentId               String?                 @map("appointment_id") @db.Uuid
+  assignedGroomerMembershipId String?                 @map("assigned_groomer_membership_id") @db.Uuid
+  createdByMembershipId       String                  @map("created_by_membership_id") @db.Uuid
+  startedByMembershipId       String?                 @map("started_by_membership_id") @db.Uuid
+  completedByMembershipId     String?                 @map("completed_by_membership_id") @db.Uuid
+  voidedByMembershipId        String?                 @map("voided_by_membership_id") @db.Uuid
+  status                      GroomingVisitStatus     @default(DRAFT)
+  version                     Int                     @default(1)
+  serviceSummary              String?                 @map("service_summary") @db.VarChar(1000)
+  coatCondition               String?                 @map("coat_condition") @db.VarChar(5000)
+  skinObservations            String?                 @map("skin_observations") @db.VarChar(5000)
+  temperamentNotes            String?                 @map("temperament_notes") @db.VarChar(5000)
+  preServiceNotes             String?                 @map("pre_service_notes") @db.VarChar(5000)
+  postServiceNotes            String?                 @map("post_service_notes") @db.VarChar(5000)
+  incidentNotes               String?                 @map("incident_notes") @db.VarChar(5000)
+  patientNameSnapshot         String?                 @map("patient_name_snapshot") @db.VarChar(200)
+  ownerDisplayNameSnapshot    String?                 @map("owner_display_name_snapshot") @db.VarChar(200)
+  groomerDisplayNameSnapshot  String?                 @map("groomer_display_name_snapshot") @db.VarChar(200)
+  startedAt                   DateTime?               @map("started_at") @db.Timestamptz(3)
+  completedAt                 DateTime?               @map("completed_at") @db.Timestamptz(3)
+  voidedAt                    DateTime?               @map("voided_at") @db.Timestamptz(3)
+  voidReason                  String?                 @map("void_reason") @db.VarChar(1000)
+  createdAt                   DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                   DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient                     Patient                 @relation("GroomingVisitPatient", fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  ownerAtTime                 Owner                   @relation("GroomingVisitHistoricalOwner", fields: [ownerIdAtTime, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  clinicLocation              ClinicLocation          @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  appointment                 Appointment?            @relation(fields: [appointmentId, organizationId, patientId, clinicLocationId], references: [id, organizationId, patientId, clinicLocationId], onDelete: Restrict, onUpdate: Cascade)
+  assignedGroomerMembership   Membership?             @relation("GroomingVisitAssignedGroomerMembership", fields: [assignedGroomerMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership         Membership              @relation("GroomingVisitCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  startedByMembership         Membership?             @relation("GroomingVisitStartedByMembership", fields: [startedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  completedByMembership       Membership?             @relation("GroomingVisitCompletedByMembership", fields: [completedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership          Membership?             @relation("GroomingVisitVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  auditEvents                 OperationalAuditEvent[]
+
+  @@unique([id, organizationId], map: "grooming_visits_id_organization_id_key")
+  @@unique([appointmentId, organizationId], map: "grooming_visits_appointment_org_key")
+  @@unique([appointmentId, organizationId, patientId, clinicLocationId], map: "grooming_visits_appointment_patient_location_key")
+  @@index([organizationId, status, updatedAt(sort: Desc), id], map: "grooming_visits_org_status_updated_idx")
+  @@index([organizationId, patientId, createdAt(sort: Desc), id], map: "grooming_visits_org_patient_created_idx")
+  @@index([organizationId, clinicLocationId, status, updatedAt(sort: Desc)], map: "grooming_visits_org_location_status_idx")
+  @@index([organizationId, assignedGroomerMembershipId, status, updatedAt(sort: Desc)], map: "grooming_visits_org_groomer_status_idx")
+  @@map("grooming_visits")
 }
 
 enum OrganizationStatus {
@@ -319,6 +383,21 @@ enum PatientSex {
   MALE
   FEMALE
   UNKNOWN
+}
+
+enum GroomingVisitStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  VOIDED
+}
+
+enum OperationalAuditAction {
+  GROOMING_CREATED
+  GROOMING_UPDATED
+  GROOMING_STARTED
+  GROOMING_COMPLETED
+  GROOMING_VOIDED
 }
 
 // ClinicalRole is orthogonal to MembershipRole and grants only clinical capabilities.
@@ -1132,14 +1211,33 @@ model Appointment {
   createdByMembership     Membership         @relation("AppointmentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   cancelledByMembership   Membership?        @relation("AppointmentCancelledByMembership", fields: [cancelledByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   clinicalEncounter       ClinicalEncounter?
+  groomingVisit           GroomingVisit?
 
   @@unique([id, organizationId], map: "appointments_id_organization_id_key")
+  @@unique([id, organizationId, patientId, clinicLocationId], map: "appointments_id_org_patient_location_key")
   @@index([organizationId, startsAt])
   @@index([organizationId, status, startsAt])
   @@index([organizationId, patientId, startsAt])
   @@index([organizationId, assignedMembershipId, startsAt])
   @@index([organizationId, clinicLocationId, startsAt])
   @@map("appointments")
+}
+
+// Grooming audit events are operational and cannot be mixed into the clinical audit taxonomy.
+model OperationalAuditEvent {
+  id                String                 @id @default(uuid()) @db.Uuid
+  organizationId    String                 @map("organization_id") @db.Uuid
+  groomingVisitId   String                 @map("grooming_visit_id") @db.Uuid
+  actorMembershipId String                 @map("actor_membership_id") @db.Uuid
+  action            OperationalAuditAction
+  metadata          Json?
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  groomingVisit     GroomingVisit          @relation(fields: [groomingVisitId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  actorMembership   Membership             @relation("OperationalAuditActorMembership", fields: [actorMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId, groomingVisitId, createdAt], map: "operational_audit_events_org_grooming_created_idx")
+  @@map("operational_audit_events")
 }
 
 // AvailabilityRule stores a weekly civil-time window for one location or membership.

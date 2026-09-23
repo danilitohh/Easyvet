@@ -105,7 +105,24 @@ export const PERMISSIONS = {
     FOLLOW_UPS_COMPLETE: 'followUps.complete',
     FOLLOW_UPS_VOID: 'followUps.void',
   },
+  GROOMING: {
+    READ: 'grooming.read',
+    CREATE: 'grooming.create',
+    UPDATE_DRAFT: 'grooming.updateDraft',
+    PERFORM: 'grooming.perform',
+    COMPLETE: 'grooming.complete',
+    VOID: 'grooming.void',
+  },
 } as const satisfies Record<string, Record<string, Permission>>;
+
+const GROOMING_ADMIN_PERMISSIONS: readonly Permission[] = [
+  'grooming.read',
+  'grooming.create',
+  'grooming.updateDraft',
+  'grooming.perform',
+  'grooming.complete',
+  'grooming.void',
+];
 
 const OWNER_PATIENT_ADMIN_PERMISSIONS: readonly Permission[] = [
   'owners.read',
@@ -142,6 +159,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.MEMBERSHIPS.MANAGE,
     ...OWNER_PATIENT_ADMIN_PERMISSIONS,
     ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
+    ...GROOMING_ADMIN_PERMISSIONS,
   ],
   ADMIN: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -152,6 +170,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.MEMBERSHIPS.MANAGE,
     ...OWNER_PATIENT_ADMIN_PERMISSIONS,
     ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
+    ...GROOMING_ADMIN_PERMISSIONS,
   ],
   VETERINARIAN: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -170,6 +189,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'appointments.complete',
     'appointments.markNoShow',
     'availability.read',
+    'grooming.read',
   ],
   ASSISTANT: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -200,6 +220,9 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'appointments.checkIn',
     'appointments.markNoShow',
     'availability.read',
+    'grooming.read',
+    'grooming.create',
+    'grooming.updateDraft',
   ],
   GROOMER: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -207,6 +230,11 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.OWNERS.READ,
     PERMISSIONS.PATIENTS.READ,
     'appointments.read',
+    'grooming.read',
+    'grooming.create',
+    'grooming.updateDraft',
+    'grooming.perform',
+    'grooming.complete',
   ],
   CASHIER: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -214,6 +242,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.OWNERS.READ,
     PERMISSIONS.PATIENTS.READ,
     'appointments.read',
+    'grooming.read',
   ],
 };
 

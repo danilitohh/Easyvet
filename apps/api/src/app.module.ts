@@ -26,6 +26,7 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ConsentsModule } from './consents/consents.module';
 import { FollowUpsModule } from './follow-ups/follow-ups.module';
+import { GroomingModule } from './grooming/grooming.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { FollowUpsModule } from './follow-ups/follow-ups.module';
     DocumentsModule,
     ConsentsModule,
     FollowUpsModule,
+    GroomingModule,
   ],
   providers: [ApiExceptionFilter],
 })

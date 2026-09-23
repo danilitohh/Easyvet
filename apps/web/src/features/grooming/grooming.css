@@ -1,0 +1,285 @@
+.grooming-page {
+  min-width: 0;
+}
+
+.grooming-queue,
+.grooming-form-card,
+.grooming-detail-card,
+.grooming-history-card {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.grooming-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(8rem, 1fr)) auto;
+  align-items: end;
+  gap: 0.75rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.grooming-filter {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+  color: var(--color-ink-soft);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.grooming-visit-list,
+.grooming-history-list {
+  display: grid;
+  min-width: 0;
+}
+
+.grooming-visit-card,
+.grooming-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem 0.45rem;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+}
+
+.grooming-visit-card:last-child,
+.grooming-history-row:last-child {
+  border-bottom: 0;
+}
+
+.grooming-visit-card:hover,
+.grooming-visit-card:focus-visible,
+.grooming-history-row:hover,
+.grooming-history-row:focus-visible {
+  background: var(--color-surface-soft);
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.grooming-visit-card__main,
+.grooming-history-row__main {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.grooming-visit-card__main small,
+.grooming-history-row__main small {
+  color: var(--color-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.grooming-visit-card__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.grooming-visit-card__title-row strong,
+.grooming-history-row__main strong {
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.grooming-visit-card__arrow {
+  color: var(--color-brand);
+  font-size: 1.35rem;
+}
+
+.grooming-list-total {
+  margin: 0;
+  padding-top: 0.75rem;
+  color: var(--color-ink-muted);
+  font-size: 0.82rem;
+}
+
+.grooming-form {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+}
+
+.grooming-form__patient,
+.grooming-form__immutable {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+
+.grooming-form__patient span,
+.grooming-form__patient small,
+.grooming-form__immutable span {
+  color: var(--color-ink-muted);
+  font-size: 0.82rem;
+}
+
+.grooming-form__patient strong,
+.grooming-form__immutable strong {
+  color: var(--color-ink);
+}
+
+.grooming-form__section {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.grooming-form__section > .section-kicker {
+  margin: 0;
+}
+
+.grooming-form__grid,
+.grooming-modal-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.grooming-textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.grooming-form__actions,
+.grooming-detail-actions,
+.grooming-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.grooming-detail-card__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.grooming-detail-card__heading h2 {
+  margin: 0.2rem 0 0;
+}
+
+.grooming-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.grooming-detail-grid > div {
+  min-width: 0;
+}
+
+.grooming-detail-grid dt,
+.grooming-detail-note > span {
+  margin-bottom: 0.3rem;
+  color: var(--color-ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.grooming-detail-grid dd {
+  margin: 0;
+  color: var(--color-ink);
+  font-weight: 560;
+  overflow-wrap: anywhere;
+}
+
+.grooming-detail-grid a {
+  color: var(--color-brand-strong);
+}
+
+.grooming-detail-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.grooming-detail-note {
+  min-width: 0;
+  padding: 0.85rem;
+  background: var(--color-surface-soft);
+  border-radius: var(--radius-sm);
+}
+
+.grooming-detail-note p {
+  margin: 0.2rem 0 0;
+  color: var(--color-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.grooming-confirmation {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+
+.grooming-confirmation p {
+  margin: 0;
+}
+
+.grooming-modal-fields {
+  margin-bottom: 1rem;
+}
+
+.grooming-modal-actions {
+  margin-top: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .grooming-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .grooming-filter-grid,
+  .grooming-form__grid,
+  .grooming-modal-fields,
+  .grooming-detail-grid,
+  .grooming-detail-notes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .grooming-filter-grid > .button {
+    width: 100%;
+  }
+
+  .grooming-visit-card,
+  .grooming-history-row {
+    gap: 0.65rem;
+    padding: 0.95rem 0.2rem;
+  }
+
+  .grooming-detail-card__heading {
+    align-items: flex-start;
+  }
+
+  .grooming-form__actions > .button,
+  .grooming-modal-actions > .button {
+    flex: 1 1 100%;
+  }
+}
