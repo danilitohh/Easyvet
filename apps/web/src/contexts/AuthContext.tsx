@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { AuthMeResponse } from '@veterinary-saas/contracts';
 import { appConfig } from '../config/app';
 import { ApiError } from '../services/apiClient';
@@ -15,14 +16,26 @@ function stateFromResponse(response: AuthMeResponse): AuthState {
   };
 }
 
+const anonymousState: AuthState = { ...defaultContext, status: 'unauthenticated', user: null };
+
 // AuthProvider restores the server session and keeps token material out of browser storage.
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  const isAnonymousRoute = pathname === '/login' || pathname.startsWith('/firmar/');
   const [state, setState] = useState<AuthState>(() =>
-    appConfig.dataMode === 'mock' ? defaultContext : { ...defaultContext, status: 'loading' },
+    appConfig.dataMode === 'mock'
+      ? defaultContext
+      : isAnonymousRoute
+        ? anonymousState
+        : { ...defaultContext, status: 'loading' },
   );
 
   useEffect(() => {
     if (appConfig.dataMode === 'mock') return;
+    if (isAnonymousRoute) {
+      setState(anonymousState);
+      return;
+    }
     let cancelled = false;
     authApi
       .me()
@@ -39,11 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAnonymousRoute]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      ...state,
+      ...(isAnonymousRoute ? anonymousState : state),
       async login(input) {
         const response =
           appConfig.dataMode === 'mock'
@@ -74,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ ...defaultContext, status: 'unauthenticated', user: null });
       },
     }),
-    [state],
+    [isAnonymousRoute, state],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

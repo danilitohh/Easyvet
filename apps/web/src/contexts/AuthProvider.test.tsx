@@ -5,6 +5,7 @@ import { ApiError } from '../services/apiClient';
 import { authApi } from '../services/auth';
 import { AuthBoundary } from '../app/AuthBoundary';
 import { AuthProvider } from './AuthContext';
+import { useAuth } from './useAuth';
 
 vi.mock('../services/auth', () => ({
   authApi: {
@@ -61,6 +62,11 @@ function renderMustChangePassword() {
   );
 }
 
+function AnonymousSessionStatus() {
+  const { status, user } = useAuth();
+  return <p>{`${status}:${user ? 'present' : 'absent'}`}</p>;
+}
+
 describe('AuthProvider session restoration', () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -89,4 +95,20 @@ describe('AuthProvider session restoration', () => {
     expect(screen.queryByText('Restored dashboard')).not.toBeInTheDocument();
     expect(screen.queryByText('Choose organization')).not.toBeInTheDocument();
   });
+
+  it.each(['/login', '/firmar/invalid-token'])(
+    'does not restore or expose a session on the anonymous route %s',
+    async (path) => {
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <AuthProvider>
+            <AnonymousSessionStatus />
+          </AuthProvider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => expect(screen.getByText('unauthenticated:absent')).toBeInTheDocument());
+      expect(mockedAuthApi.me).not.toHaveBeenCalled();
+    },
+  );
 });

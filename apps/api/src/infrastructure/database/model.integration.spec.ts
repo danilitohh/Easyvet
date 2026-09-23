@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
@@ -131,7 +132,12 @@ describeDatabase('fundamental multi-tenant model', () => {
     if (!seedPath) {
       throw new Error('Could not locate prisma/seed.mjs');
     }
-    const environment = { ...process.env, DATABASE_URL: process.env.DATABASE_URL_TEST };
+    // Supply an ephemeral seed credential without recording it or relying on developer .env state.
+    const environment = {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL_TEST,
+      EASYVET_DEMO_PASSWORD: randomBytes(32).toString('base64url'),
+    };
 
     // Run the real seed twice against the isolated database, never the dev database.
     const repositoryRoot = resolve(seedPath, '..', '..');

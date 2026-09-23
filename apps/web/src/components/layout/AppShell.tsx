@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { getRouteMeta } from '../../data/navigation';
 import { appConfig } from '../../config/app';
@@ -27,7 +27,15 @@ export function AppShell() {
       <div className="app-main">
         <AppHeader route={route} onOpenMenu={() => setSidebarOpen(true)} />
         <main className="page-content">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="loading-state" role="status">
+                Cargando página…
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
         <footer className="app-footer">
           <span>{route.label}</span>

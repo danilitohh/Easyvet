@@ -2,7 +2,7 @@
   "name": "veterinary-saas",
   "version": "0.1.0",
   "private": true,
-  "description": "Technical foundation for a multi-tenant veterinary SaaS product.",
+  "description": "Multi-tenant veterinary clinic operations platform.",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -11,6 +11,7 @@
     "dev:web": "npm run dev --workspace @veterinary-saas/web",
     "dev:api": "npm run dev --workspace @veterinary-saas/api",
     "dev": "concurrently -k -n web,api -c blue,green \"npm run dev:web\" \"npm run dev:api\"",
+    "start:api:prod": "npm run start:prod --workspace @veterinary-saas/api",
     "build": "npm run build --workspace @veterinary-saas/config && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api && npm run build --workspace @veterinary-saas/web",
     "lint": "eslint .",
     "typecheck": "npm run build --workspace @veterinary-saas/config && npm run build --workspace @veterinary-saas/contracts && npm run typecheck --workspaces --if-present",

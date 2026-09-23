@@ -16,7 +16,8 @@ describe('App shell', () => {
     renderApp('/');
 
     expect(screen.getByRole('heading', { name: /una vista tranquila/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda');
+    expect(screen.getByRole('link', { name: 'Estado técnico' })).toHaveAttribute('href', '/health');
+    expect(screen.queryByRole('link', { name: 'Agenda' })).not.toBeInTheDocument();
   });
 
   it('renders an access boundary for a route without an active membership', () => {
@@ -24,7 +25,7 @@ describe('App shell', () => {
 
     expect(screen.getByRole('heading', { name: /no tienes permisos/i })).toBeInTheDocument();
     expect(screen.queryByText(/se implementará en una fase posterior/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Pacientes' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('link', { name: 'Pacientes' })).not.toBeInTheDocument();
   });
 
   it('protects appointment scheduling routes with the create permission', () => {
@@ -34,13 +35,16 @@ describe('App shell', () => {
     expect(screen.queryByRole('heading', { name: 'Nueva cita' })).not.toBeInTheDocument();
   });
 
-  it('navigates from the sidebar without hiding routes in the DOM', () => {
+  it('navigates from the sidebar to an available technical route', () => {
     renderApp('/dashboard');
 
-    fireEvent.click(screen.getByRole('link', { name: 'Agenda' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Estado técnico' }));
 
-    expect(screen.getByRole('heading', { name: /no tienes permisos/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('heading', { name: 'Service health' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Estado técnico' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   it('renders a shell-level not found page for unknown URLs', () => {
@@ -51,5 +55,13 @@ describe('App shell', () => {
       'href',
       '/dashboard',
     );
+  });
+
+  it('does not route obsolete module links to a fake coming-soon screen', () => {
+    renderApp('/vacunas');
+
+    expect(screen.getByRole('heading', { name: /no encontramos esa vista/i })).toBeInTheDocument();
+    expect(screen.queryByText(/próximamente/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Vacunas' })).not.toBeInTheDocument();
   });
 });

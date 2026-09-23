@@ -7,6 +7,12 @@ interface ErrorBody {
   message: string | string[];
 }
 
+// Error responses omit query values and redact the bearer token used by public signing routes.
+function responsePath(request: Request): string {
+  const path = request.originalUrl.split('?', 1)[0] || request.path;
+  return path.replace(/(^|\/public\/signatures\/)[^/]+(?=\/|$)/i, '$1[redacted]');
+}
+
 // Normalize public errors and keep stack traces inside Nest's logger only.
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
@@ -25,7 +31,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       message,
     };
 
-    response.status(status).json({ ...body, path: request.url });
+    response.status(status).json({ ...body, path: responsePath(request) });
   }
 
   private readCode(payload: unknown, status: number): string {

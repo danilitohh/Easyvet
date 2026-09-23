@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BrandMark } from '../brand/BrandMark';
 import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
 import { appConfig } from '../../config/app';
 import type { NavigationItem } from '../../data/navigation';
 import { useAuth } from '../../contexts/useAuth';
@@ -16,12 +14,21 @@ type AppHeaderProps = {
 
 // Header exposes the active route, mobile navigation and the explicit demo boundary.
 export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
-  const [demoNoticeOpen, setDemoNoticeOpen] = useState(false);
   const navigate = useNavigate();
   const { user, activeMembership, memberships = [], logout } = useAuth();
   const canReadClinical = useCan(PERMISSION.CLINICAL_RECORDS_READ);
+  const canReadSettings = useCan(PERMISSION.ORGANIZATION_SETTINGS_READ);
   const workspaceName = activeMembership?.organization.name ?? 'Sin organización activa';
   const userInitials = user?.email.slice(0, 2).toUpperCase() ?? 'EV';
+  const workspaceIdentity = (
+    <>
+      <span className="user-chip__avatar">{userInitials}</span>
+      <span className="user-chip__copy">
+        <strong>{workspaceName}</strong>
+        <small>{user?.email ?? 'Sesión activa'}</small>
+      </span>
+    </>
+  );
 
   async function handleLogout() {
     await logout();
@@ -49,9 +56,6 @@ export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
           <strong>{route.label}</strong>
         </div>
         <div className="app-header__actions">
-          <Button variant="ghost" type="button" onClick={() => setDemoNoticeOpen(true)}>
-            Datos demo
-          </Button>
           <Button variant="ghost" type="button" onClick={() => void handleLogout()}>
             Cerrar sesión
           </Button>
@@ -72,31 +76,21 @@ export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
               </span>
             </Link>
           ) : null}
-          <Link
-            className="user-chip"
-            to="/configuracion"
-            aria-label={`Abrir configuración de ${workspaceName}`}
-          >
-            <span className="user-chip__avatar">{userInitials}</span>
-            <span className="user-chip__copy">
-              <strong>{workspaceName}</strong>
-              <small>{user?.email ?? 'Vista previa'}</small>
-            </span>
-          </Link>
+          {canReadSettings ? (
+            <Link
+              className="user-chip"
+              to="/configuracion"
+              aria-label={`Abrir configuración de ${workspaceName}`}
+            >
+              {workspaceIdentity}
+            </Link>
+          ) : (
+            <div className="user-chip" aria-label={`Organización activa: ${workspaceName}`}>
+              {workspaceIdentity}
+            </div>
+          )}
         </div>
       </header>
-      <Modal
-        open={demoNoticeOpen}
-        onClose={() => setDemoNoticeOpen(false)}
-        title="Datos de demostración"
-        description="El dashboard conserva cifras ficticias para demostración."
-      >
-        <p className="modal-note">
-          Las cifras del dashboard son pequeñas muestras ficticias para validar jerarquía,
-          navegación y estados visuales. Los módulos operativos leen datos de la organización activa
-          desde el API.
-        </p>
-      </Modal>
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { BrandMark } from '../brand/BrandMark';
 import { NAVIGATION_GROUPS } from '../../data/navigation';
 import { appConfig } from '../../config/app';
@@ -12,8 +12,14 @@ type SidebarProps = {
   onToggleCollapse: () => void;
 };
 
+// Appointment routes belong to Agenda, while availability has its own navigation item.
+function isAppointmentRoute(pathname: string): boolean {
+  return pathname === '/agenda/nueva' || pathname.startsWith('/agenda/citas/');
+}
+
 // Sidebar translates the legacy app switcher into real route navigation.
 export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarProps) {
+  const { pathname } = useLocation();
   const canReadMembers = useCan(PERMISSION.MEMBERS_READ);
   const canReadSettings = useCan(PERMISSION.ORGANIZATION_SETTINGS_READ);
   const canReadOperationalReports = useCan(PERMISSION.REPORTS_OPERATIONAL);
@@ -32,13 +38,19 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
   const canReadSales = useCan(PERMISSION.SALES_READ);
   const canReadBilling = useCan(PERMISSION.BILLING_READ);
   const canReadCash = useCan(PERMISSION.CASH_READ);
+  const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
+  const canReadOwners = useCan(PERMISSION.OWNERS_READ);
+  const canReadPatients = useCan(PERMISSION.PATIENTS_READ);
   const visibleGroups = NAVIGATION_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
       if (item.path === '/usuarios') return canReadMembers;
       if (item.path === '/configuracion') return canReadSettings;
       if (item.path === '/informes') return canReadAnyReport;
+      if (item.path === '/agenda') return canReadAppointments;
       if (item.path === '/agenda/disponibilidad') return canReadAvailability;
+      if (item.path === '/propietarios') return canReadOwners;
+      if (item.path === '/pacientes') return canReadPatients;
       if (item.path === '/seguimientos') return canReadFollowUps;
       if (item.path === '/peluqueria') return canReadGrooming;
       if (item.path === '/inventario') return canReadInventory;
@@ -90,7 +102,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
               <p className="nav-group__label">{group.label}</p>
               {group.items.map((item) => (
                 <NavLink
-                  end={item.path !== '/propietarios' && item.path !== '/pacientes'}
+                  end={item.path === '/agenda' ? !isAppointmentRoute(pathname) : false}
                   key={item.path}
                   to={item.path}
                   title={collapsed ? item.label : undefined}

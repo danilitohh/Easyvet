@@ -1,26 +1,56 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
-import { MODULE_ROUTES } from '../data/navigation';
 import { DashboardPage } from '../pages/DashboardPage';
 import { HealthPage } from '../pages/HealthPage';
-import { ModulePage } from '../pages/ModulePage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { LoginPage } from '../pages/LoginPage';
 import { OrganizationSelectorPage } from '../pages/OrganizationSelectorPage';
 import { AccessDeniedPage } from '../pages/AccessDeniedPage';
 import { AuthBoundary } from './AuthBoundary';
+import { AppErrorBoundary } from './AppErrorBoundary';
 import { PERMISSION } from '../auth/permissions';
 import { AnyPermissionRoute, PermissionRoute } from '../features/shared/ResourceFeedback';
-import { OwnerListPage } from '../features/owners/OwnerListPage';
-import { OwnerDetailPage } from '../features/owners/OwnerDetailPage';
-import { OwnerFormPage } from '../features/owners/OwnerFormPage';
-import { PatientListPage } from '../features/patients/PatientListPage';
-import { PatientDetailPage } from '../features/patients/PatientDetailPage';
-import { PatientFormPage } from '../features/patients/PatientFormPage';
-import { AgendaPage } from '../features/agenda/AgendaPage';
-import { AppointmentFormPage } from '../features/agenda/AppointmentFormPage';
-import { AvailabilityPage } from '../features/agenda/AvailabilityPage';
+
+const OwnerListPage = lazy(() =>
+  import('../features/owners/OwnerListPage').then((module) => ({ default: module.OwnerListPage })),
+);
+const OwnerDetailPage = lazy(() =>
+  import('../features/owners/OwnerDetailPage').then((module) => ({
+    default: module.OwnerDetailPage,
+  })),
+);
+const OwnerFormPage = lazy(() =>
+  import('../features/owners/OwnerFormPage').then((module) => ({ default: module.OwnerFormPage })),
+);
+const PatientListPage = lazy(() =>
+  import('../features/patients/PatientListPage').then((module) => ({
+    default: module.PatientListPage,
+  })),
+);
+const PatientDetailPage = lazy(() =>
+  import('../features/patients/PatientDetailPage').then((module) => ({
+    default: module.PatientDetailPage,
+  })),
+);
+const PatientFormPage = lazy(() =>
+  import('../features/patients/PatientFormPage').then((module) => ({
+    default: module.PatientFormPage,
+  })),
+);
+const AgendaPage = lazy(() =>
+  import('../features/agenda/AgendaPage').then((module) => ({ default: module.AgendaPage })),
+);
+const AppointmentFormPage = lazy(() =>
+  import('../features/agenda/AppointmentFormPage').then((module) => ({
+    default: module.AppointmentFormPage,
+  })),
+);
+const AvailabilityPage = lazy(() =>
+  import('../features/agenda/AvailabilityPage').then((module) => ({
+    default: module.AvailabilityPage,
+  })),
+);
 
 const ClinicalHistoryPage = lazy(() =>
   import('../features/clinical/ClinicalHistoryPage').then((module) => ({
@@ -278,848 +308,828 @@ function ClinicalRouteFallback() {
 // Route declarations keep every product area addressable without hiding sections in the DOM.
 export function App() {
   return (
-    <Routes>
-      <Route
-        path="firmar/:token"
-        element={
-          <Suspense fallback={<ClinicalRouteFallback />}>
-            <PublicSignaturePage />
-          </Suspense>
-        }
-      />
-      <Route path="login" element={<LoginPage />} />
-      <Route element={<AuthBoundary />}>
+    <AppErrorBoundary>
+      <Routes>
         <Route
-          path="cambiar-contrasena"
+          path="firmar/:token"
           element={
             <Suspense fallback={<ClinicalRouteFallback />}>
-              <ChangePasswordPage />
+              <PublicSignaturePage />
             </Suspense>
           }
         />
-        <Route path="seleccionar-organizacion" element={<OrganizationSelectorPage />} />
-        <Route path="acceso-denegado" element={<AccessDeniedPage />} />
-        <Route element={<AppShell />}>
-          <Route index element={<Navigate replace to="/dashboard" />} />
-          <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route element={<AuthBoundary />}>
           <Route
-            path="usuarios"
-            element={
-              <PermissionRoute permission={PERMISSION.MEMBERS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <UsersListPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="usuarios/nuevo"
-            element={
-              <PermissionRoute permission={PERMISSION.MEMBERS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <MemberCreatePage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="usuarios/:membershipId"
-            element={
-              <PermissionRoute permission={PERMISSION.MEMBERS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <MemberDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="configuracion"
-            element={
-              <PermissionRoute permission={PERMISSION.ORGANIZATION_SETTINGS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <SettingsPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="informes"
-            element={
-              <AnyPermissionRoute
-                permissions={[
-                  PERMISSION.REPORTS_OPERATIONAL,
-                  PERMISSION.REPORTS_CLINICAL,
-                  PERMISSION.REPORTS_COMMERCIAL,
-                  PERMISSION.REPORTS_INVENTORY,
-                ]}
-              >
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ReportsPage />
-                </Suspense>
-              </AnyPermissionRoute>
-            }
-          />
-          <Route
-            path="inventario"
-            element={
-              <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <InventoryPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="inventario/nuevo"
-            element={
-              <PermissionRoute permission={PERMISSION.INVENTORY_ITEMS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <InventoryItemFormPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="inventario/:itemId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.INVENTORY_ITEMS_UPDATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <InventoryItemFormPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="inventario/:itemId"
-            element={
-              <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <InventoryItemDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="ventas"
-            element={
-              <PermissionRoute permission={PERMISSION.SALES_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <SalesListPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="ventas/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.SALES_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <SaleFormPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="ventas/:saleId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.SALES_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <SaleFormPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="ventas/:saleId"
-            element={
-              <PermissionRoute permission={PERMISSION.SALES_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <SaleDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="facturacion"
-            element={
-              <PermissionRoute permission={PERMISSION.BILLING_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <BillingPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="facturacion/:invoiceId"
-            element={
-              <PermissionRoute permission={PERMISSION.BILLING_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <InvoiceDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="caja"
-            element={
-              <PermissionRoute permission={PERMISSION.CASH_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <CashPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="peluqueria"
-            element={
-              <PermissionRoute permission={PERMISSION.GROOMING_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <GroomingQueuePage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="peluqueria/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.GROOMING_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <GroomingFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="peluqueria/:groomingVisitId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.GROOMING_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <GroomingFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="peluqueria/:groomingVisitId"
-            element={
-              <PermissionRoute permission={PERMISSION.GROOMING_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <GroomingVisitDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="seguimientos"
-            element={
-              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <FollowUpsPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="seguimientos/:followUpId"
-            element={
-              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <FollowUpDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="seguimientos/:followUpId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_UPDATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <FollowUpFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/seguimientos/nuevo"
-            element={
-              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <FollowUpFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route path="health" element={<HealthPage />} />
-          <Route
-            path="perfil/profesional"
-            element={
-              <PermissionRoute permission={PERMISSION.CLINICAL_RECORDS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ProfessionalProfilePage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="agenda"
-            element={
-              <PermissionRoute permission={PERMISSION.APPOINTMENTS_READ}>
-                <AgendaPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="agenda/citas/:appointmentId"
-            element={
-              <PermissionRoute permission={PERMISSION.APPOINTMENTS_READ}>
-                <AgendaPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="agenda/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.APPOINTMENTS_CREATE}>
-                <AppointmentFormPage mode="create" />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="agenda/citas/:appointmentId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.APPOINTMENTS_UPDATE}>
-                <AppointmentFormPage mode="edit" />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="agenda/citas/:appointmentId/reprogramar"
-            element={
-              <PermissionRoute permission={PERMISSION.APPOINTMENTS_UPDATE}>
-                <AppointmentFormPage mode="reschedule" />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="agenda/disponibilidad"
-            element={
-              <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
-                <AvailabilityPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="agenda/disponibilidad/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
-                <AvailabilityPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="agenda/disponibilidad/:ruleId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
-                <AvailabilityPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="propietarios"
-            element={
-              <PermissionRoute permission={PERMISSION.OWNERS_READ}>
-                <OwnerListPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="propietarios/nuevo"
-            element={
-              <PermissionRoute permission={PERMISSION.OWNERS_CREATE}>
-                <OwnerFormPage mode="create" />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="propietarios/:ownerId"
-            element={
-              <PermissionRoute permission={PERMISSION.OWNERS_READ}>
-                <OwnerDetailPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="propietarios/:ownerId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.OWNERS_UPDATE}>
-                <OwnerFormPage mode="edit" />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes"
-            element={
-              <PermissionRoute permission={PERMISSION.PATIENTS_READ}>
-                <PatientListPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/nuevo"
-            element={
-              <PermissionRoute permission={PERMISSION.PATIENTS_CREATE}>
-                <PatientFormPage mode="create" />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId"
-            element={
-              <PermissionRoute permission={PERMISSION.PATIENTS_READ}>
-                <PatientDetailPage />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.PATIENTS_UPDATE}>
-                <PatientFormPage mode="edit" />
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia"
-            element={
-              <AnyPermissionRoute
-                permissions={[
-                  PERMISSION.CLINICAL_RECORDS_READ,
-                  PERMISSION.CLINICAL_ENCOUNTERS_READ,
-                  PERMISSION.CLINICAL_EVOLUTIONS_READ,
-                  PERMISSION.PRESCRIPTIONS_READ,
-                  PERMISSION.VACCINATIONS_READ,
-                  PERMISSION.DEWORMINGS_READ,
-                  PERMISSION.PROCEDURES_READ,
-                  PERMISSION.ANESTHESIA_READ,
-                  PERMISSION.HOSPITALIZATIONS_READ,
-                  PERMISSION.DIAGNOSTICS_READ,
-                  PERMISSION.DOCUMENTS_READ,
-                  PERMISSION.CONSENTS_READ,
-                  PERMISSION.FOLLOW_UPS_READ,
-                  PERMISSION.GROOMING_READ,
-                ]}
-              >
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ClinicalHistoryPage />
-                </Suspense>
-              </AnyPermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/seguimientos"
-            element={
-              <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <PatientFollowUpsPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/peluqueria"
-            element={
-              <PermissionRoute permission={PERMISSION.GROOMING_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <GroomingHistoryPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/documentos"
-            element={
-              <PermissionRoute permission={PERMISSION.DOCUMENTS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <DocumentsPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/consentimientos"
-            element={
-              <PermissionRoute permission={PERMISSION.CONSENTS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ConsentsPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/consentimientos/:consentId"
-            element={
-              <PermissionRoute permission={PERMISSION.CONSENTS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ConsentDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/consentimientos/:consentId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.CONSENTS_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ConsentFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/consentimientos/nuevo"
-            element={
-              <PermissionRoute permission={PERMISSION.CONSENTS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ConsentFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/procedimientos"
-            element={
-              <AnyPermissionRoute
-                permissions={[PERMISSION.PROCEDURES_READ, PERMISSION.ANESTHESIA_READ]}
-              >
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ProceduresAnesthesiaListPage />
-                </Suspense>
-              </AnyPermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/hospitalizaciones"
-            element={
-              <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <HospitalizationListPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/diagnosticos"
-            element={
-              <PermissionRoute permission={PERMISSION.DIAGNOSTICS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <DiagnosticOrderListPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/diagnosticos/:diagnosticOrderId"
-            element={
-              <PermissionRoute permission={PERMISSION.DIAGNOSTICS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <DiagnosticOrderDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/diagnosticos/:diagnosticOrderId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.DIAGNOSTICS_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <DiagnosticOrderFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/diagnosticos/nuevo"
-            element={
-              <PermissionRoute permission={PERMISSION.DIAGNOSTICS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <DiagnosticOrderFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/hospitalizaciones/:hospitalizationId"
-            element={
-              <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <HospitalizationDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/hospitalizaciones/:hospitalizationId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_UPDATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <HospitalizationFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/hospitalizacion/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <HospitalizationFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/procedimientos/:procedureId"
-            element={
-              <PermissionRoute permission={PERMISSION.PROCEDURES_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ProcedureDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/procedimientos/nuevo"
-            element={
-              <PermissionRoute permission={PERMISSION.PROCEDURES_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ProcedureFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/procedimientos/:procedureId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.PROCEDURES_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ProcedureFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/anestesias/:anesthesiaRecordId"
-            element={
-              <PermissionRoute permission={PERMISSION.ANESTHESIA_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <AnesthesiaDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/anestesias/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.ANESTHESIA_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <AnesthesiaFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/anestesias/:anesthesiaRecordId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.ANESTHESIA_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <AnesthesiaFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/prescripciones"
-            element={
-              <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <PrescriptionListPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/preventivos"
+            path="cambiar-contrasena"
             element={
               <Suspense fallback={<ClinicalRouteFallback />}>
-                <PreventiveCarePage />
+                <ChangePasswordPage />
               </Suspense>
             }
           />
-          <Route
-            path="pacientes/:patientId/historia/preventivos/vacunas/:vaccinationId"
-            element={
-              <PermissionRoute permission={PERMISSION.VACCINATIONS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <VaccinationDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/vacunas/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.VACCINATIONS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <VaccinationFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/preventivos/vacunas/:vaccinationId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.VACCINATIONS_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <VaccinationFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId"
-            element={
-              <PermissionRoute permission={PERMISSION.DEWORMINGS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <DewormingDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/desparasitaciones/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.DEWORMINGS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <DewormingFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.DEWORMINGS_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <DewormingFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/prescripciones/:prescriptionId"
-            element={
-              <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <PrescriptionDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/prescripciones/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <PrescriptionFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/prescripciones/:prescriptionId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <PrescriptionFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ClinicalEncounterFormPage mode="create" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId"
-            element={
-              <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_READ}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ClinicalEncounterDetailPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/editar"
-            element={
-              <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ClinicalEncounterFormPage mode="edit" />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/evoluciones/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.CLINICAL_EVOLUTIONS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ClinicalEvolutionFormPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          <Route
-            path="pacientes/:patientId/historia/encuentros/:encounterId/evoluciones/nueva"
-            element={
-              <PermissionRoute permission={PERMISSION.CLINICAL_EVOLUTIONS_CREATE}>
-                <Suspense fallback={<ClinicalRouteFallback />}>
-                  <ClinicalEvolutionFormPage />
-                </Suspense>
-              </PermissionRoute>
-            }
-          />
-          {MODULE_ROUTES.filter(
-            (route) =>
-              route.path !== '/dashboard' &&
-              route.path !== '/agenda' &&
-              route.path !== '/agenda/disponibilidad' &&
-              route.path !== '/propietarios' &&
-              route.path !== '/pacientes' &&
-              route.path !== '/peluqueria' &&
-              route.path !== '/inventario' &&
-              route.path !== '/ventas' &&
-              route.path !== '/facturacion' &&
-              route.path !== '/caja' &&
-              route.path !== '/usuarios' &&
-              route.path !== '/configuracion' &&
-              route.path !== '/informes',
-          ).map((route) => (
+          <Route path="seleccionar-organizacion" element={<OrganizationSelectorPage />} />
+          <Route path="acceso-denegado" element={<AccessDeniedPage />} />
+          <Route element={<AppShell />}>
+            <Route index element={<Navigate replace to="/dashboard" />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route
-              key={route.path}
-              path={route.path.slice(1)}
-              element={<ModulePage route={route} />}
+              path="usuarios"
+              element={
+                <PermissionRoute permission={PERMISSION.MEMBERS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <UsersListPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
             />
-          ))}
-          <Route path="*" element={<NotFoundPage />} />
+            <Route
+              path="usuarios/nuevo"
+              element={
+                <PermissionRoute permission={PERMISSION.MEMBERS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <MemberCreatePage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="usuarios/:membershipId"
+              element={
+                <PermissionRoute permission={PERMISSION.MEMBERS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <MemberDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="configuracion"
+              element={
+                <PermissionRoute permission={PERMISSION.ORGANIZATION_SETTINGS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <SettingsPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="informes"
+              element={
+                <AnyPermissionRoute
+                  permissions={[
+                    PERMISSION.REPORTS_OPERATIONAL,
+                    PERMISSION.REPORTS_CLINICAL,
+                    PERMISSION.REPORTS_COMMERCIAL,
+                    PERMISSION.REPORTS_INVENTORY,
+                  ]}
+                >
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ReportsPage />
+                  </Suspense>
+                </AnyPermissionRoute>
+              }
+            />
+            <Route
+              path="inventario"
+              element={
+                <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <InventoryPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="inventario/nuevo"
+              element={
+                <PermissionRoute permission={PERMISSION.INVENTORY_ITEMS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <InventoryItemFormPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="inventario/:itemId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.INVENTORY_ITEMS_UPDATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <InventoryItemFormPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="inventario/:itemId"
+              element={
+                <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <InventoryItemDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="ventas"
+              element={
+                <PermissionRoute permission={PERMISSION.SALES_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <SalesListPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="ventas/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.SALES_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <SaleFormPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="ventas/:saleId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.SALES_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <SaleFormPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="ventas/:saleId"
+              element={
+                <PermissionRoute permission={PERMISSION.SALES_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <SaleDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="facturacion"
+              element={
+                <PermissionRoute permission={PERMISSION.BILLING_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <BillingPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="facturacion/:invoiceId"
+              element={
+                <PermissionRoute permission={PERMISSION.BILLING_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <InvoiceDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="caja"
+              element={
+                <PermissionRoute permission={PERMISSION.CASH_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <CashPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="peluqueria"
+              element={
+                <PermissionRoute permission={PERMISSION.GROOMING_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <GroomingQueuePage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="peluqueria/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.GROOMING_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <GroomingFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="peluqueria/:groomingVisitId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.GROOMING_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <GroomingFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="peluqueria/:groomingVisitId"
+              element={
+                <PermissionRoute permission={PERMISSION.GROOMING_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <GroomingVisitDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="seguimientos"
+              element={
+                <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <FollowUpsPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="seguimientos/:followUpId"
+              element={
+                <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <FollowUpDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="seguimientos/:followUpId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.FOLLOW_UPS_UPDATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <FollowUpFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/seguimientos/nuevo"
+              element={
+                <PermissionRoute permission={PERMISSION.FOLLOW_UPS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <FollowUpFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route path="health" element={<HealthPage />} />
+            <Route
+              path="perfil/profesional"
+              element={
+                <PermissionRoute permission={PERMISSION.CLINICAL_RECORDS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ProfessionalProfilePage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="agenda"
+              element={
+                <PermissionRoute permission={PERMISSION.APPOINTMENTS_READ}>
+                  <AgendaPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="agenda/citas/:appointmentId"
+              element={
+                <PermissionRoute permission={PERMISSION.APPOINTMENTS_READ}>
+                  <AgendaPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="agenda/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.APPOINTMENTS_CREATE}>
+                  <AppointmentFormPage mode="create" />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="agenda/citas/:appointmentId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.APPOINTMENTS_UPDATE}>
+                  <AppointmentFormPage mode="edit" />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="agenda/citas/:appointmentId/reprogramar"
+              element={
+                <PermissionRoute permission={PERMISSION.APPOINTMENTS_UPDATE}>
+                  <AppointmentFormPage mode="reschedule" />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="agenda/disponibilidad"
+              element={
+                <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
+                  <AvailabilityPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="agenda/disponibilidad/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
+                  <AvailabilityPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="agenda/disponibilidad/:ruleId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.AVAILABILITY_READ}>
+                  <AvailabilityPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="propietarios"
+              element={
+                <PermissionRoute permission={PERMISSION.OWNERS_READ}>
+                  <OwnerListPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="propietarios/nuevo"
+              element={
+                <PermissionRoute permission={PERMISSION.OWNERS_CREATE}>
+                  <OwnerFormPage mode="create" />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="propietarios/:ownerId"
+              element={
+                <PermissionRoute permission={PERMISSION.OWNERS_READ}>
+                  <OwnerDetailPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="propietarios/:ownerId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.OWNERS_UPDATE}>
+                  <OwnerFormPage mode="edit" />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes"
+              element={
+                <PermissionRoute permission={PERMISSION.PATIENTS_READ}>
+                  <PatientListPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/nuevo"
+              element={
+                <PermissionRoute permission={PERMISSION.PATIENTS_CREATE}>
+                  <PatientFormPage mode="create" />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId"
+              element={
+                <PermissionRoute permission={PERMISSION.PATIENTS_READ}>
+                  <PatientDetailPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.PATIENTS_UPDATE}>
+                  <PatientFormPage mode="edit" />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia"
+              element={
+                <AnyPermissionRoute
+                  permissions={[
+                    PERMISSION.CLINICAL_RECORDS_READ,
+                    PERMISSION.CLINICAL_ENCOUNTERS_READ,
+                    PERMISSION.CLINICAL_EVOLUTIONS_READ,
+                    PERMISSION.PRESCRIPTIONS_READ,
+                    PERMISSION.VACCINATIONS_READ,
+                    PERMISSION.DEWORMINGS_READ,
+                    PERMISSION.PROCEDURES_READ,
+                    PERMISSION.ANESTHESIA_READ,
+                    PERMISSION.HOSPITALIZATIONS_READ,
+                    PERMISSION.DIAGNOSTICS_READ,
+                    PERMISSION.DOCUMENTS_READ,
+                    PERMISSION.CONSENTS_READ,
+                    PERMISSION.FOLLOW_UPS_READ,
+                    PERMISSION.GROOMING_READ,
+                  ]}
+                >
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ClinicalHistoryPage />
+                  </Suspense>
+                </AnyPermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/seguimientos"
+              element={
+                <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PatientFollowUpsPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/peluqueria"
+              element={
+                <PermissionRoute permission={PERMISSION.GROOMING_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <GroomingHistoryPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/documentos"
+              element={
+                <PermissionRoute permission={PERMISSION.DOCUMENTS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <DocumentsPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/consentimientos"
+              element={
+                <PermissionRoute permission={PERMISSION.CONSENTS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ConsentsPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/consentimientos/:consentId"
+              element={
+                <PermissionRoute permission={PERMISSION.CONSENTS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ConsentDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/consentimientos/:consentId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.CONSENTS_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ConsentFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/consentimientos/nuevo"
+              element={
+                <PermissionRoute permission={PERMISSION.CONSENTS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ConsentFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/procedimientos"
+              element={
+                <AnyPermissionRoute
+                  permissions={[PERMISSION.PROCEDURES_READ, PERMISSION.ANESTHESIA_READ]}
+                >
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ProceduresAnesthesiaListPage />
+                  </Suspense>
+                </AnyPermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/hospitalizaciones"
+              element={
+                <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <HospitalizationListPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/diagnosticos"
+              element={
+                <PermissionRoute permission={PERMISSION.DIAGNOSTICS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <DiagnosticOrderListPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/diagnosticos/:diagnosticOrderId"
+              element={
+                <PermissionRoute permission={PERMISSION.DIAGNOSTICS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <DiagnosticOrderDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/diagnosticos/:diagnosticOrderId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.DIAGNOSTICS_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <DiagnosticOrderFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/diagnosticos/nuevo"
+              element={
+                <PermissionRoute permission={PERMISSION.DIAGNOSTICS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <DiagnosticOrderFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/hospitalizaciones/:hospitalizationId"
+              element={
+                <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <HospitalizationDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/hospitalizaciones/:hospitalizationId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_UPDATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <HospitalizationFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/hospitalizacion/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <HospitalizationFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/procedimientos/:procedureId"
+              element={
+                <PermissionRoute permission={PERMISSION.PROCEDURES_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ProcedureDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/procedimientos/nuevo"
+              element={
+                <PermissionRoute permission={PERMISSION.PROCEDURES_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ProcedureFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/procedimientos/:procedureId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.PROCEDURES_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ProcedureFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/anestesias/:anesthesiaRecordId"
+              element={
+                <PermissionRoute permission={PERMISSION.ANESTHESIA_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <AnesthesiaDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/anestesias/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.ANESTHESIA_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <AnesthesiaFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/anestesias/:anesthesiaRecordId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.ANESTHESIA_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <AnesthesiaFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/prescripciones"
+              element={
+                <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PrescriptionListPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/preventivos"
+              element={
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <PreventiveCarePage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/preventivos/vacunas/:vaccinationId"
+              element={
+                <PermissionRoute permission={PERMISSION.VACCINATIONS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <VaccinationDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/vacunas/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.VACCINATIONS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <VaccinationFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/preventivos/vacunas/:vaccinationId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.VACCINATIONS_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <VaccinationFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId"
+              element={
+                <PermissionRoute permission={PERMISSION.DEWORMINGS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <DewormingDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/desparasitaciones/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.DEWORMINGS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <DewormingFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.DEWORMINGS_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <DewormingFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/prescripciones/:prescriptionId"
+              element={
+                <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PrescriptionDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/prescripciones/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PrescriptionFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/prescripciones/:prescriptionId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PrescriptionFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ClinicalEncounterFormPage mode="create" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId"
+              element={
+                <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_READ}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ClinicalEncounterDetailPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/editar"
+              element={
+                <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ClinicalEncounterFormPage mode="edit" />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/evoluciones/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.CLINICAL_EVOLUTIONS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ClinicalEvolutionFormPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="pacientes/:patientId/historia/encuentros/:encounterId/evoluciones/nueva"
+              element={
+                <PermissionRoute permission={PERMISSION.CLINICAL_EVOLUTIONS_CREATE}>
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <ClinicalEvolutionFormPage />
+                  </Suspense>
+                </PermissionRoute>
+              }
+            />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </AppErrorBoundary>
   );
 }

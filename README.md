@@ -1,132 +1,93 @@
-# Veterinary SaaS
+# Easyvet V1
 
-Base técnica independiente para una futura plataforma veterinaria SaaS multi-tenant.
+Easyvet es una plataforma web multi-tenant para la operación de clínicas veterinarias. La V1 reúne agenda, expediente clínico, servicios veterinarios, inventario, operación comercial y administración en un monolito modular.
 
-Este repositorio no contiene migración de Lativet, datos reales, credenciales, integraciones ni módulos funcionales veterinarios. Lativet se mantiene únicamente como referencia documentada en `docs/migration/`.
+## Arquitectura
 
-## Stack
+- Web: React, Vite, TypeScript y React Router (`apps/web`).
+- API: NestJS, TypeScript y REST bajo `/api/v1` (`apps/api`).
+- Persistencia: PostgreSQL 16 y Prisma; el esquema se crea únicamente con migraciones versionadas.
+- Contratos compartidos: Zod y TypeScript (`packages/contracts`).
+- Almacenamiento de documentos: adaptadores local y S3-compatible.
 
-- Monorepo con npm workspaces.
-- Frontend: React, Vite, TypeScript strict y React Router.
-- Backend: Node.js, NestJS, TypeScript strict y API REST bajo `/api/v1`.
-- Persistencia: PostgreSQL local mediante Docker Compose y Prisma.
-- Contratos: paquete TypeScript compartido con Zod.
-- Calidad: ESLint, Prettier, Vitest/React Testing Library y Jest/Supertest.
+El límite de tenant es `Organization`. `User` es identidad global; `Membership` define acceso, rol y permisos en una organización. Consulte [la arquitectura V1](docs/architecture/v1-overview.md).
 
 ## Requisitos
 
-- Node.js 20.19 o superior.
-- npm 10 o superior.
-- Docker Desktop si se desea levantar PostgreSQL local.
+- Node.js 20.19 o posterior y npm 10 o posterior.
+- Docker Desktop con Docker Compose para PostgreSQL local.
 
-## Instalación
+## Instalación local
 
-```bash
+En PowerShell:
+
+```powershell
 npm install
-copy .env.example .env
-npm run prisma:generate
-npm run prisma:validate
+Copy-Item .env.example .env
 ```
 
-Los valores de `.env.example` son exclusivamente locales. No sustituyen secretos de producción.
+En macOS/Linux, use `cp .env.example .env` en lugar de `Copy-Item`. Revise `.env` y mantenga `DATABASE_URL` exclusivamente en `easyvet_dev`, y `DATABASE_URL_TEST` en `easyvet_test`. Reemplace el valor de ejemplo de `EASYVET_DEMO_PASSWORD` por una contraseña local única antes de sembrar. El seed no tiene una contraseña predeterminada y se niega a ejecutarse con `NODE_ENV=production`.
 
-## Desarrollo
+El modo `mock` es solo para desarrollo/pruebas aisladas; la configuración fuerza el modo API en builds de producción para evitar datos ficticios en la aplicación desplegada.
 
-Levantar PostgreSQL:
+Inicie PostgreSQL y prepare el esquema local:
 
 ```bash
 docker compose up -d
-```
-
-La migración inicial del dominio multi-tenant crea `Organization`,
-`ClinicLocation`, `User` y `Membership`. Aplicarla en el PostgreSQL local de
-desarrollo de forma explícita:
-
-```bash
+docker compose ps
+npm run prisma:generate
+npm run prisma:validate
 npm run db:migrate
 npm run db:seed
 ```
 
-El desarrollo local de Easyvet utiliza exclusivamente la base `easyvet_dev`.
-Las pruebas de integración utilizan la base aislada `easyvet_test` mediante
-`DATABASE_URL_TEST`. La base histórica `veterinary_saas` no forma parte del
-flujo normal de desarrollo, migraciones ni QA.
+El seed crea datos ficticios e idempotentes. No reutilice estos datos ni secretos locales en un entorno compartido o productivo. `npm run db:reset` es destructivo; no lo ejecute contra `easyvet_dev`.
 
-El seed es ficticio e idempotente. Sus usuarios usan una contraseña local demo
-(`EASYVET_DEMO_PASSWORD`, por defecto `EasyvetDemo!2026`); la base solo recibe
-hashes Argon2id. Nunca reutilizarla en producción.
+## Desarrollo y ejecución
 
-`npm run db:reset` es DESTRUCTIVO y queda reservado exclusivamente para
-desarrollo local.
-
-Iniciar aplicaciones por separado:
-
-```bash
-npm run dev:web
-npm run dev:api
-```
-
-O iniciar ambas:
+Inicie web y API juntas:
 
 ```bash
 npm run dev
 ```
 
-La web queda en `http://localhost:5173`; el API en `http://localhost:3000`.
+La web está en `http://localhost:5173`; la API, en `http://localhost:3000`. El endpoint de salud es `GET http://localhost:3000/api/v1/health`.
 
-## Comprobaciones
+Para probar el artefacto compilado de la API localmente:
 
 ```bash
+npm run build
+npm run start:api:prod
+```
+
+El comando inicia `apps/api/dist/src/main.js` usando las variables locales actuales; es un smoke de build/start, no un despliegue ni una configuración productiva completa. El frontend se genera en `apps/web/dist` durante el build.
+
+Detenga los servidores con `Ctrl+C`. Para detener PostgreSQL, use `docker compose stop`.
+
+## Validaciones
+
+```bash
+npm run format:check
 npm run lint
 npm run typecheck
-npm run test
+npm test
 npm run test:db
 npm run test:all
 npm run build
+npm run prisma:generate
+npm run prisma:validate
 ```
 
-`npm run test:db` ejecuta las pruebas de autenticación y modelo contra la base
-aislada `easyvet_test`; requiere PostgreSQL local y no debe apuntar a una base
-compartida. `npm run test:all` combina las pruebas normales con esa suite.
+`npm run test:db` utiliza la base local aislada `easyvet_test`; el script fija esa URL de pruebas. No cambie ese comando para apuntar a `easyvet_dev` ni a bases reales. `npm run test:all` ejecuta las suites normales y luego las pruebas con PostgreSQL.
 
-El endpoint técnico es `GET http://localhost:3000/api/v1/health` y responde un contrato `{ "status": "ok" }`.
+## Módulos V1
 
-## Estructura
+La aplicación cubre multi-tenancy, autenticación y permisos; propietarios y pacientes; agenda y disponibilidad; historia y operaciones clínicas (encuentros, evoluciones, prescripciones, cuidados preventivos, procedimientos, anestesia, hospitalización, diagnósticos y documentos/consentimientos); seguimientos; peluquería; inventario; ventas, facturación interna y caja; usuarios, configuración e informes. La matriz de rutas y alcance está en [readiness V1](docs/release/v1-readiness.md).
 
-```text
-apps/web       React + Vite
-apps/api       NestJS REST
-packages/contracts  contratos compartidos
-packages/config     esquemas de configuración compartida
-prisma          schema multi-tenant y migraciones versionadas
-docs/architecture decisiones técnicas de base
-docs/migration documentación de la auditoría legacy
-```
+## Límites conocidos
 
-Owners y Patients ya tienen modelo, API tenant-safe y pantallas funcionales
-desde Fases 4A/4B. Agenda, clínica, inventario, facturación, caja, SaaS,
-correo y calendarios siguen pendientes.
+V1 no incluye integraciones de email/SMS/push o calendarios, laboratorios externos, facturación electrónica/fiscal, pasarela de pagos, compras/proveedores, aplicación móvil nativa ni exportación avanzada de informes. El adaptador S3 está disponible pero no tuvo una integración remota live-test en este cierre. Consulte [limitaciones V1](docs/release/v1-known-limitations.md) y [QA de cierre](docs/qa/v1-closure.md).
 
-## Regla de migraciones
+## Seguridad de datos
 
-El API no crea ni altera el esquema durante el arranque. Todo cambio debe pasar por un archivo de migración Prisma aplicado explícitamente en el entorno correspondiente.
-
-## Fase actual
-
-La Fase 5C.2A deja disponible la Agenda clínica con lectura y programación
-(crear, editar, reprogramar y cancelar), además del
-modelo multi-tenant, sesiones, autenticación, autorización/aislamiento y los
-flujos funcionales de Owners/Patients según
-[MIGRATION_STATUS.md](MIGRATION_STATUS.md). Las operaciones de workflow de
-Agenda y el resto del dominio veterinario permanecen pendientes de sus fases
-respectivas.
-
-Para revisar el shell visual:
-
-```bash
-npm run dev:web
-```
-
-Abre `http://localhost:5173/login`. Las rutas de módulos muestran placeholders y
-los datos del dashboard siguen siendo ficticios; no existe todavía conexión a
-datos clínicos ni motor de permisos.
+Use exclusivamente bases locales dedicadas `easyvet_dev` y `easyvet_test` para desarrollo y pruebas. Nunca copie datos reales de propietarios, pacientes, historias clínicas o finanzas al seed o a QA. No incluya `.env`, contraseñas, tokens ni archivos de documentos en Git. El estado de seguridad y los avisos de dependencias están en [revisión de seguridad V1](docs/security/v1-security-review.md).

@@ -51,43 +51,11 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
         description: 'Personas responsables de pacientes.',
       },
       {
-        label: 'Consultas',
-        path: '/consultas',
-        icon: '✦',
-        description: 'Consultas y evolución clínica.',
-      },
-      {
-        label: 'Historias clínicas',
-        path: '/historias-clinicas',
-        icon: '▤',
-        description: 'Historias clínicas longitudinales.',
-      },
-      {
         label: 'Seguimientos',
         path: '/seguimientos',
         icon: '◷',
         description: 'Tareas clínicas y recordatorios internos.',
       },
-      { label: 'Vacunas', path: '/vacunas', icon: '＋', description: 'Esquemas preventivos.' },
-      {
-        label: 'Desparasitaciones',
-        path: '/desparasitaciones',
-        icon: '◌',
-        description: 'Controles antiparasitarios.',
-      },
-      {
-        label: 'Hospitalizaciones',
-        path: '/hospitalizaciones',
-        icon: '▣',
-        description: 'Hospitalización y ambulatorio.',
-      },
-      {
-        label: 'Cirugías',
-        path: '/cirugias',
-        icon: '◇',
-        description: 'Procedimientos quirúrgicos.',
-      },
-      { label: 'Exámenes', path: '/examenes', icon: '◫', description: 'Exámenes y resultados.' },
     ],
   },
   {

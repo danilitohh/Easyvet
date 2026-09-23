@@ -69,6 +69,7 @@ import { ReportsModule } from './reports/reports.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(cookieParser(), CsrfOriginMiddleware).forRoutes('*');
+    // Use path-to-regexp's named wildcard syntax so Nest avoids a legacy route conversion warning.
+    consumer.apply(cookieParser(), CsrfOriginMiddleware).forRoutes('{*path}');
   }
 }

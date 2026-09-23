@@ -1,8 +1,16 @@
 import argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
 
+if (process.env.NODE_ENV === 'production') {
+  throw new Error('Refusing to seed fictional Easyvet data in production.');
+}
+
+const demoPassword = process.env.EASYVET_DEMO_PASSWORD;
+if (!demoPassword) {
+  throw new Error('EASYVET_DEMO_PASSWORD must be set before running the local demo seed.');
+}
+
 const prisma = new PrismaClient();
-const demoPassword = process.env.EASYVET_DEMO_PASSWORD ?? 'EasyvetDemo!2026';
 
 const seedOrganizations = [
   {

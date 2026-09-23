@@ -1,4 +1,35 @@
-# Estado de migración
+# Estado final de migración — V1 (2026-09-23)
+
+Este es el estado vigente del producto. La tabla y las notas de fases históricas que siguen más abajo documentan snapshots anteriores; no representan funcionalidades pendientes de V1.
+
+| Área                                                                     | Estado actual                                                                             |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| SaaS, organizaciones, sedes y aislamiento multi-tenant                   | COMPLETADO                                                                                |
+| Autenticación, sesiones, membresías, autorización y cambio de contraseña | COMPLETADO                                                                                |
+| Owners / Patients                                                        | COMPLETADO                                                                                |
+| Agenda y disponibilidad                                                  | COMPLETADO                                                                                |
+| Clinical Core                                                            | COMPLETADO                                                                                |
+| Prescriptions y Preventive Care                                          | COMPLETADO                                                                                |
+| Procedures / Surgery / Anesthesia / Hospitalization / Diagnostics        | COMPLETADO                                                                                |
+| Documents / Consents / Signatures                                        | COMPLETADO                                                                                |
+| Follow-ups / Reminders internos                                          | COMPLETADO                                                                                |
+| Grooming                                                                 | COMPLETADO                                                                                |
+| Inventory                                                                | COMPLETADO                                                                                |
+| Sales / Billing interno / Cash                                           | COMPLETADO                                                                                |
+| Users / Settings / Reports                                               | COMPLETADO                                                                                |
+| PostgreSQL local                                                         | VERIFICADO LOCALMENTE; `easyvet_dev` y `easyvet_test` usan las 27 migraciones versionadas |
+| Easyvet V1 closure                                                       | COMPLETADO; consulte `docs/qa/v1-closure.md`                                              |
+| Servicios externos y capacidades excluidos de V1                         | NO INCLUIDOS; consulte `docs/release/v1-known-limitations.md`                             |
+
+Google Calendar, reservas públicas, entrega de notificaciones externas y otros elementos explícitamente diferidos son límites de alcance, no módulos V1 pendientes.
+
+## Snapshot histórico inicial (no usar como estado actual)
+
+La tabla original de fases se conserva como registro histórico para trazabilidad. Los estados como “EN PROGRESO” o “Pendiente” reflejaban el momento en que se escribió y fueron sustituidos por la matriz vigente anterior.
+
+<!-- Historical phase matrix begins here. -->
+
+### Estado de migración en checkpoints anteriores
 
 | Área                                    | Estado                                                                        |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
@@ -69,7 +100,11 @@
 | SaaS                                    | Pendiente                                                                     |
 | Multi-tenancy SaaS completo             | EN PROGRESO                                                                   |
 
-La base visual de Fase 2 no significa que una funcionalidad de negocio esté migrada.
+## Registro histórico de fases
+
+Las notas siguientes son reportes históricos de checkpoints y conservan el alcance y estado de su fecha; no modifican la matriz vigente de V1.
+
+La base visual de Fase 2 no significaba, en aquel checkpoint, que una funcionalidad de negocio estuviera migrada.
 
 Fase 6E.2 — backend de Preventive Care completada:
 

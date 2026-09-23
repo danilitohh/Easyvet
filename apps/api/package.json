@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
+    "start:prod": "node dist/src/main.js",
     "lint": "eslint src test nest-cli.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand"
