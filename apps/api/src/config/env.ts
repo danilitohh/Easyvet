@@ -6,6 +6,24 @@ export const environmentSchema = z
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     DATABASE_URL: z.string().url(),
     APP_ORIGIN: z.string().url(),
+    DEFAULT_CURRENCY_CODE: z
+      .string()
+      .trim()
+      .transform((value) => value.toUpperCase())
+      .pipe(z.string().regex(/^[A-Z]{3}$/))
+      .default('COP'),
+    DEFAULT_INVOICE_PREFIX: z
+      .string()
+      .trim()
+      .transform((value) => value.toUpperCase())
+      .pipe(
+        z
+          .string()
+          .min(1)
+          .max(16)
+          .regex(/^[A-Z0-9-]+$/),
+      )
+      .default('INV'),
     SESSION_COOKIE_NAME: z.string().trim().min(1).max(80).default('easyvet_session'),
     SESSION_TTL_HOURS: z.coerce
       .number()

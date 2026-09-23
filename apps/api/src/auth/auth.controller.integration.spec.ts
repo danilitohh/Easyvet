@@ -288,6 +288,9 @@ describeDatabase('real authentication and sessions', () => {
     await prisma.clinicLocation.deleteMany({
       where: { organizationId: { in: createdOrganizationIds } },
     });
+    await prisma.organizationCommercialSettings.deleteMany({
+      where: { organizationId: { in: createdOrganizationIds } },
+    });
     await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
     await prisma.organization.deleteMany({ where: { id: { in: createdOrganizationIds } } });
     await app?.close();
@@ -340,6 +343,16 @@ describeDatabase('real authentication and sessions', () => {
       'inventory.movements.create',
       'inventory.adjustments.create',
       'inventory.transfers.create',
+      'sales.read',
+      'sales.create',
+      'sales.updateDraft',
+      'sales.complete',
+      'sales.void',
+      'billing.read',
+      'cash.read',
+      'cash.open',
+      'cash.movements',
+      'cash.close',
     ]);
     expect(response.body.memberships).toHaveLength(1);
     expect(response.body).not.toHaveProperty('passwordHash');

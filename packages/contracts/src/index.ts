@@ -119,6 +119,16 @@ export const permissionSchema = z.enum([
   'inventory.movements.create',
   'inventory.adjustments.create',
   'inventory.transfers.create',
+  'sales.read',
+  'sales.create',
+  'sales.updateDraft',
+  'sales.complete',
+  'sales.void',
+  'billing.read',
+  'cash.read',
+  'cash.open',
+  'cash.movements',
+  'cash.close',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -2260,6 +2270,8 @@ export const inventoryMovementTypeSchema = z.enum([
   'ADJUSTMENT_OUT',
   'TRANSFER_IN',
   'TRANSFER_OUT',
+  'SALE_OUT',
+  'SALE_REVERSAL_IN',
 ]);
 
 const inventoryItemFields = {
@@ -2512,3 +2524,316 @@ export type InventoryStockListResponse = z.infer<typeof inventoryStockListRespon
 export type InventoryItemStockDetail = z.infer<typeof inventoryItemStockDetailSchema>;
 export type InventoryDashboardSummary = z.infer<typeof inventoryDashboardSummarySchema>;
 export type InventoryTransferResponse = z.infer<typeof inventoryTransferResponseSchema>;
+
+const saleStatusSchema = z.enum(['DRAFT', 'COMPLETED', 'VOIDED']);
+const saleItemTypeSchema = z.enum(['PRODUCT', 'SERVICE', 'OTHER']);
+const salePaymentMethodSchema = z.enum(['CASH', 'CARD', 'TRANSFER', 'OTHER']);
+const salePaymentStatusSchema = z.enum(['POSTED', 'VOIDED']);
+const invoiceStatusSchema = z.enum(['ISSUED', 'VOIDED']);
+const cashSessionStatusSchema = z.enum(['OPEN', 'CLOSED']);
+const cashMovementTypeSchema = z.enum([
+  'SALE_PAYMENT',
+  'SALE_VOID_REVERSAL',
+  'MANUAL_IN',
+  'MANUAL_OUT',
+]);
+const commercialMoneySchema = z.string().regex(/^(?:0|[1-9]\d{0,15})(?:\.\d{1,4})?$/);
+const signedCommercialMoneySchema = z.string().regex(/^-?(?:0|[1-9]\d{0,15})(?:\.\d{1,4})?$/);
+const commercialPositiveMoneySchema = commercialMoneySchema.refine((value) => /[1-9]/.test(value));
+const commercialQuantitySchema = z.string().regex(/^(?:0|[1-9]\d{0,13})(?:\.\d{1,6})?$/);
+const commercialPositiveQuantitySchema = commercialQuantitySchema.refine((value) =>
+  /[1-9]/.test(value),
+);
+const commercialInstantSchema = z.string().datetime({ offset: true });
+
+// Item contracts preserve exact quantities and monetary values as decimal strings across the API.
+export const saleItemSchema = z.object({
+  id: z.string().uuid(),
+  position: z.number().int().nonnegative(),
+  itemType: saleItemTypeSchema,
+  inventoryItemId: z.string().uuid().nullable(),
+  inventoryBatchId: z.string().uuid().nullable(),
+  description: z.string(),
+  quantity: commercialQuantitySchema,
+  unitPrice: commercialMoneySchema,
+  discountAmount: commercialMoneySchema,
+  inventoryItemNameSnapshot: z.string().nullable(),
+  skuSnapshot: z.string().nullable(),
+  baseUnitSnapshot: z.string().nullable(),
+});
+
+// Payment contracts expose only safe tender metadata; cash sessions are always resolved server-side.
+export const salePaymentSchema = z.object({
+  id: z.string().uuid(),
+  method: salePaymentMethodSchema,
+  status: salePaymentStatusSchema,
+  amount: commercialMoneySchema,
+  reference: z.string().nullable(),
+  cashSessionId: z.string().uuid().nullable(),
+  paidAt: commercialInstantSchema,
+  voidedAt: commercialInstantSchema.nullable(),
+});
+
+// Sale summaries include immutable display snapshots and a compact tender breakdown for lists.
+export const saleSummarySchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicLocationId: z.string().uuid(),
+  clinicLocationName: z.string(),
+  ownerId: z.string().uuid().nullable(),
+  patientId: z.string().uuid().nullable(),
+  status: saleStatusSchema,
+  version: z.number().int().positive(),
+  currencyCode: z.string().regex(/^[A-Z]{3}$/),
+  subtotal: commercialMoneySchema,
+  discountTotal: commercialMoneySchema,
+  grandTotal: commercialMoneySchema,
+  customerNameSnapshot: z.string().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  paymentSummary: z.array(
+    z.object({ method: salePaymentMethodSchema, amount: commercialMoneySchema }),
+  ),
+  createdAt: commercialInstantSchema,
+  completedAt: commercialInstantSchema.nullable(),
+  voidedAt: commercialInstantSchema.nullable(),
+});
+
+export const saleDetailSchema = saleSummarySchema.extend({
+  customerDocumentTypeSnapshot: z.string().nullable(),
+  customerDocumentNumberSnapshot: z.string().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  completedByMembershipId: z.string().uuid().nullable(),
+  voidedByMembershipId: z.string().uuid().nullable(),
+  voidReason: z.string().nullable(),
+  items: z.array(saleItemSchema),
+  payments: z.array(salePaymentSchema),
+  invoice: z
+    .object({ id: z.string().uuid(), documentNumber: z.string(), status: invoiceStatusSchema })
+    .nullable(),
+});
+
+export const saleListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    status: saleStatusSchema.optional(),
+    clinicLocationId: z.string().uuid().optional(),
+    ownerId: z.string().uuid().optional(),
+    patientId: z.string().uuid().optional(),
+    from: commercialInstantSchema.optional(),
+    to: commercialInstantSchema.optional(),
+  })
+  .strict();
+
+export const createSaleItemRequestSchema = z
+  .object({
+    itemType: saleItemTypeSchema,
+    inventoryItemId: z.string().uuid().nullable().optional(),
+    inventoryBatchId: z.string().uuid().nullable().optional(),
+    description: z.string().trim().max(500).optional(),
+    quantity: commercialPositiveQuantitySchema,
+    unitPrice: commercialMoneySchema,
+    discountAmount: commercialMoneySchema.optional().default('0'),
+  })
+  .strict();
+
+export const createSaleRequestSchema = z
+  .object({
+    clinicLocationId: z.string().uuid(),
+    ownerId: z.string().uuid().nullable().optional(),
+    patientId: z.string().uuid().nullable().optional(),
+    items: z.array(createSaleItemRequestSchema).max(100).optional().default([]),
+  })
+  .strict();
+
+export const updateSaleRequestSchema = createSaleRequestSchema.extend({
+  expectedVersion: z.number().int().positive(),
+});
+
+export const completeSaleRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    payments: z
+      .array(
+        z
+          .object({
+            method: salePaymentMethodSchema,
+            amount: commercialPositiveMoneySchema,
+            reference: z.string().trim().max(500).nullable().optional(),
+          })
+          .strict(),
+      )
+      .max(20),
+  })
+  .strict();
+
+export const voidSaleRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(1000),
+  })
+  .strict();
+
+// Invoices are read-only billing records whose lines are the corresponding completed SaleItems.
+export const invoiceSummarySchema = z.object({
+  id: z.string().uuid(),
+  saleId: z.string().uuid(),
+  clinicLocationId: z.string().uuid(),
+  clinicLocationName: z.string(),
+  documentNumber: z.string(),
+  status: invoiceStatusSchema,
+  currencyCode: z.string().regex(/^[A-Z]{3}$/),
+  customerNameSnapshot: z.string().nullable(),
+  patientNameSnapshot: z.string().nullable(),
+  subtotal: commercialMoneySchema,
+  discountTotal: commercialMoneySchema,
+  total: commercialMoneySchema,
+  issuedAt: commercialInstantSchema,
+});
+
+export const invoiceDetailSchema = invoiceSummarySchema.extend({
+  organizationName: z.string(),
+  customerDocumentTypeSnapshot: z.string().nullable(),
+  customerDocumentNumberSnapshot: z.string().nullable(),
+  voidedAt: commercialInstantSchema.nullable(),
+  voidReason: z.string().nullable(),
+  items: z.array(saleItemSchema),
+  payments: z.array(salePaymentSchema),
+});
+
+export const invoiceListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    status: invoiceStatusSchema.optional(),
+    clinicLocationId: z.string().uuid().optional(),
+    from: commercialInstantSchema.optional(),
+    to: commercialInstantSchema.optional(),
+    documentNumber: z.string().trim().min(1).max(64).optional(),
+  })
+  .strict();
+
+// Cash contracts expose a derived live expected amount; only a closed session stores a final snapshot.
+export const cashMovementSchema = z.object({
+  id: z.string().uuid(),
+  cashSessionId: z.string().uuid(),
+  saleId: z.string().uuid().nullable(),
+  movementType: cashMovementTypeSchema,
+  amountDelta: signedCommercialMoneySchema,
+  salePaymentId: z.string().uuid().nullable(),
+  occurredAt: commercialInstantSchema,
+  reason: z.string().nullable(),
+  reference: z.string().nullable(),
+  createdAt: commercialInstantSchema,
+});
+
+export const cashSessionSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  clinicLocationId: z.string().uuid(),
+  clinicLocationName: z.string(),
+  status: cashSessionStatusSchema,
+  version: z.number().int().positive(),
+  openingCashAmount: commercialMoneySchema,
+  openedAt: commercialInstantSchema,
+  openedByMembershipId: z.string().uuid(),
+  closedAt: commercialInstantSchema.nullable(),
+  closedByMembershipId: z.string().uuid().nullable(),
+  expectedCashAmount: commercialMoneySchema,
+  countedCashAmount: commercialMoneySchema.nullable(),
+  differenceAmount: signedCommercialMoneySchema.nullable(),
+  notes: z.string().nullable(),
+});
+
+export const cashSessionDetailSchema = cashSessionSchema.extend({
+  movements: z.array(cashMovementSchema),
+});
+export const cashSessionListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    clinicLocationId: z.string().uuid().optional(),
+    status: cashSessionStatusSchema.optional(),
+    from: commercialInstantSchema.optional(),
+    to: commercialInstantSchema.optional(),
+  })
+  .strict();
+
+export const openCashSessionRequestSchema = z
+  .object({
+    clinicLocationId: z.string().uuid(),
+    openingCashAmount: commercialMoneySchema,
+    notes: z.string().trim().max(2000).nullable().optional(),
+  })
+  .strict();
+export const createCashMovementRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    type: z.enum(['MANUAL_IN', 'MANUAL_OUT']),
+    amount: commercialPositiveMoneySchema,
+    reason: z.string().trim().min(1).max(1000),
+    reference: z.string().trim().max(500).nullable().optional(),
+    occurredAt: commercialInstantSchema,
+  })
+  .strict();
+export const closeCashSessionRequestSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    countedCashAmount: commercialMoneySchema,
+    notes: z.string().trim().max(2000).nullable().optional(),
+  })
+  .strict();
+
+export const commercialPageSchema = <T extends z.ZodType>(itemSchema: T) =>
+  z.object({
+    data: z.array(itemSchema),
+    pagination: z.object({
+      page: z.number().int().positive(),
+      pageSize: z.number().int().positive(),
+      total: z.number().int().nonnegative(),
+      totalPages: z.number().int().nonnegative(),
+    }),
+  });
+
+export const organizationCommercialSettingsSchema = z.object({
+  currencyCode: z.string().regex(/^[A-Z]{3}$/),
+  invoicePrefix: z.string(),
+  nextInvoiceNumber: z.number().int().positive(),
+});
+
+export type SaleStatus = z.infer<typeof saleStatusSchema>;
+export type SaleItemType = z.infer<typeof saleItemTypeSchema>;
+export type SalePaymentMethod = z.infer<typeof salePaymentMethodSchema>;
+export type SalePaymentStatus = z.infer<typeof salePaymentStatusSchema>;
+export type InvoiceStatus = z.infer<typeof invoiceStatusSchema>;
+export type CashSessionStatus = z.infer<typeof cashSessionStatusSchema>;
+export type CashMovementType = z.infer<typeof cashMovementTypeSchema>;
+export type SaleItem = z.infer<typeof saleItemSchema>;
+export type SalePayment = z.infer<typeof salePaymentSchema>;
+export type SaleSummary = z.infer<typeof saleSummarySchema>;
+export type SaleDetail = z.infer<typeof saleDetailSchema>;
+export type CommercialPage<T> = {
+  data: T[];
+  pagination: { page: number; pageSize: number; total: number; totalPages: number };
+};
+export type SaleListResponse = CommercialPage<SaleSummary>;
+export type SaleListQuery = z.infer<typeof saleListQuerySchema>;
+export type CreateSaleItemRequest = z.infer<typeof createSaleItemRequestSchema>;
+export type CreateSaleRequest = z.infer<typeof createSaleRequestSchema>;
+export type UpdateSaleRequest = z.infer<typeof updateSaleRequestSchema>;
+export type CompleteSaleRequest = z.infer<typeof completeSaleRequestSchema>;
+export type VoidSaleRequest = z.infer<typeof voidSaleRequestSchema>;
+export type InvoiceSummary = z.infer<typeof invoiceSummarySchema>;
+export type InvoiceDetail = z.infer<typeof invoiceDetailSchema>;
+export type InvoiceListQuery = z.infer<typeof invoiceListQuerySchema>;
+export type InvoiceListResponse = CommercialPage<InvoiceSummary>;
+export type CashMovement = z.infer<typeof cashMovementSchema>;
+export type CashSession = z.infer<typeof cashSessionSchema>;
+export type CashSessionDetail = z.infer<typeof cashSessionDetailSchema>;
+export type CashSessionListQuery = z.infer<typeof cashSessionListQuerySchema>;
+export type CashSessionListResponse = CommercialPage<CashSession>;
+export type CashMovementListResponse = CommercialPage<CashMovement>;
+export type OpenCashSessionRequest = z.infer<typeof openCashSessionRequestSchema>;
+export type CreateCashMovementRequest = z.infer<typeof createCashMovementRequestSchema>;
+export type CloseCashSessionRequest = z.infer<typeof closeCashSessionRequestSchema>;
+export type OrganizationCommercialSettings = z.infer<typeof organizationCommercialSettingsSchema>;

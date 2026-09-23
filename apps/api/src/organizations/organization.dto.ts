@@ -1,4 +1,5 @@
-import { IsOptional, IsString, Length, MaxLength, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
 
 // Strict body fields prevent clients from selecting or mutating tenant identity fields.
 export class UpdateOrganizationDto {
@@ -22,6 +23,8 @@ export class UpdateOrganizationDto {
 
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   @Length(3, 3)
+  @Matches(/^[A-Z]{3}$/)
   currencyCode?: string;
 }

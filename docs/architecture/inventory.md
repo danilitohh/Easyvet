@@ -1,8 +1,9 @@
 # Inventory / Inventario — Fase 8
 
-Inventory administra un catálogo operativo básico, lotes y movimientos manuales por
-Organization y ClinicLocation. No crea ventas, facturas, caja, órdenes de compra,
-proveedores ni consumo automático desde Prescription, Clinical o Grooming.
+Inventory administra un catálogo operativo básico, lotes y movimientos por
+Organization y ClinicLocation. Fase 9 añade consumo solo al completar una Sale y
+reversión solo al anularla; no crea órdenes de compra, proveedores ni consumo
+automático desde Prescription, Clinical o Grooming.
 
 ## Fuente de verdad
 
@@ -36,6 +37,22 @@ tenant-composite con `ON DELETE RESTRICT`, inmutabilidad del ledger y coherencia
 de lotes. Un trigger serializa escrituras en la fila Item, verifica sede activa,
 estado activo del artículo, modo de lotes y evita que el saldo del lote/sede
 quede negativo incluso ante una escritura SQL que omita el servicio.
+
+## Integración comercial Fase 9
+
+`InventoryMovement` agrega `saleId` y `saleItemId` nullable con FK compuesta de
+tenant y `ON DELETE RESTRICT`. `SALE_OUT` negativo se crea en la misma transacción
+que cobra y completa la venta; `SALE_REVERSAL_IN` positivo solo acompaña un void
+comercial. Ambos conservan referencia estructurada al `SaleItem`; no se modifica
+ni borra el movimiento original. Triggers de signo y evidencia diferida exigen
+consumo/reverso exactamente una vez al commit. El reverso puede conservar su sede
+histórica aunque luego quede inactiva, pero un artículo archivado no se reactiva
+ni recibe movimiento.
+
+Para completar o anular se toman locks deterministas de artículos, lotes y sede,
+y se valida la demanda agrupada antes de insertar salidas. La consulta de stock
+continúa siendo `SUM(quantityDelta)`; no hay decremento materializado ni cálculo
+optimista en UI. Véase [`commercial-transactions.md`](commercial-transactions.md).
 
 ## Escritura y concurrencia
 
@@ -94,6 +111,7 @@ Sin proveedores, compras, cuentas por pagar, factura de proveedor, venta/caja,
 precio promocional, costeo promedio/FIFO, barcode, seriales, reservas, workflow
 de conteo, conversión de unidades, mínimo por sede, sugerencias de compra,
 consumo clínico/grooming automático, cuarentena de lote ni warehouse externo.
+El acoplamiento explícito con Sale no agrega compras, devoluciones ni dispensación.
 No hay reactivación de Items archivados. Véanse [`inventory-api.md`](inventory-api.md),
 [`inventory-frontend.md`](inventory-frontend.md) y la revisión de migración
 [`inventory-final-review.md`](../migration/inventory-final-review.md).

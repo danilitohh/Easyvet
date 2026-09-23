@@ -20,6 +20,9 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
   const canReadFollowUps = useCan(PERMISSION.FOLLOW_UPS_READ);
   const canReadGrooming = useCan(PERMISSION.GROOMING_READ);
   const canReadInventory = useCan(PERMISSION.INVENTORY_READ);
+  const canReadSales = useCan(PERMISSION.SALES_READ);
+  const canReadBilling = useCan(PERMISSION.BILLING_READ);
+  const canReadCash = useCan(PERMISSION.CASH_READ);
   const visibleGroups = NAVIGATION_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
@@ -29,6 +32,9 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
       if (item.path === '/seguimientos') return canReadFollowUps;
       if (item.path === '/peluqueria') return canReadGrooming;
       if (item.path === '/inventario') return canReadInventory;
+      if (item.path === '/ventas') return canReadSales;
+      if (item.path === '/facturacion') return canReadBilling;
+      if (item.path === '/caja') return canReadCash;
       return true;
     }),
   })).filter((group) => group.items.length > 0);

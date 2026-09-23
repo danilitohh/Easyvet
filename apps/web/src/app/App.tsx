@@ -220,6 +220,32 @@ const InventoryItemFormPage = lazy(() =>
     default: module.InventoryItemFormPage,
   })),
 );
+const SalesListPage = lazy(() =>
+  import('../features/commercial/SalesListPage').then((module) => ({
+    default: module.SalesListPage,
+  })),
+);
+const SaleFormPage = lazy(() =>
+  import('../features/commercial/SaleFormPage').then((module) => ({
+    default: module.SaleFormPage,
+  })),
+);
+const SaleDetailPage = lazy(() =>
+  import('../features/commercial/SaleDetailPage').then((module) => ({
+    default: module.SaleDetailPage,
+  })),
+);
+const BillingPage = lazy(() =>
+  import('../features/commercial/BillingPage').then((module) => ({ default: module.BillingPage })),
+);
+const InvoiceDetailPage = lazy(() =>
+  import('../features/commercial/InvoiceDetailPage').then((module) => ({
+    default: module.InvoiceDetailPage,
+  })),
+);
+const CashPage = lazy(() =>
+  import('../features/commercial/CashPage').then((module) => ({ default: module.CashPage })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -284,6 +310,76 @@ export function App() {
               <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
                 <Suspense fallback={<ClinicalRouteFallback />}>
                   <InventoryItemDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="ventas"
+            element={
+              <PermissionRoute permission={PERMISSION.SALES_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <SalesListPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="ventas/nueva"
+            element={
+              <PermissionRoute permission={PERMISSION.SALES_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <SaleFormPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="ventas/:saleId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.SALES_UPDATE_DRAFT}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <SaleFormPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="ventas/:saleId"
+            element={
+              <PermissionRoute permission={PERMISSION.SALES_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <SaleDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="facturacion"
+            element={
+              <PermissionRoute permission={PERMISSION.BILLING_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <BillingPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="facturacion/:invoiceId"
+            element={
+              <PermissionRoute permission={PERMISSION.BILLING_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <InvoiceDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="caja"
+            element={
+              <PermissionRoute permission={PERMISSION.CASH_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <CashPage />
                 </Suspense>
               </PermissionRoute>
             }
@@ -922,7 +1018,10 @@ export function App() {
               route.path !== '/propietarios' &&
               route.path !== '/pacientes' &&
               route.path !== '/peluqueria' &&
-              route.path !== '/inventario',
+              route.path !== '/inventario' &&
+              route.path !== '/ventas' &&
+              route.path !== '/facturacion' &&
+              route.path !== '/caja',
           ).map((route) => (
             <Route
               key={route.path}

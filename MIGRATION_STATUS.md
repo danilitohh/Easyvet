@@ -60,10 +60,12 @@
 | Fase 6F                                 | COMPLETADA                                                                    |
 | Documents/Consents/Signatures           | COMPLETADO (Fase 6I)                                                          |
 | FollowUps / recordatorios internos      | EN PROGRESO (Fase 6J; backend, frontend y hardening en verificación)          |
-| Inventory integration                   | POSTERGADO                                                                    |
+| Inventory integration                   | COMPLETADO (consumo y reversión transaccionales, Fase 9)                      |
 | External preventive records             | POSTERGADO                                                                    |
-| Inventario                              | Pendiente                                                                     |
-| Facturación                             | Pendiente                                                                     |
+| Inventario                              | COMPLETADO (Fase 8; integración comercial Fase 9)                             |
+| Sales / Billing / Cash                  | COMPLETADO (Fase 9)                                                           |
+| Facturación                             | COMPLETADO (factura interna; fiscal/electrónica fuera de alcance)             |
+| Caja                                    | COMPLETADO (Fase 9)                                                           |
 | SaaS                                    | Pendiente                                                                     |
 | Multi-tenancy SaaS completo             | EN PROGRESO                                                                   |
 
@@ -1123,4 +1125,64 @@ test:db`, `npm run test:all`, `npm run build`, `npm run prisma:generate` y
   funcionales conocidos. Limitaciones POST-V1: proveedores, compras/cuentas por
   pagar, costeo FIFO/promedio, mínimos por sede, códigos de barra/seriales,
   sugerencias, reservas, conteos, cuarentena e integraciones de almacén.
-- Fase 8 Inventory completada. No se inició Sales, Billing ni Cash.
+- Fase 8 Inventory completada. Sales/Billing/Cash se implementa y cierra en Fase 9 a continuación.
+
+## Fase 9 — Sales / Billing / Cash
+
+- Se incorporaron ventas tenant-scoped con líneas de producto/servicio/otros,
+  snapshots comerciales, pagos mixtos, versión CAS, anulación lógica y auditoría.
+  El dinero conserva precisión `DECIMAL(20,4)`/strings decimales; cantidades
+  conservan `DECIMAL(20,6)`. No se almacenan datos de tarjeta.
+- Completar una venta actualiza el ledger de inventario y pagos en una transacción:
+  `SALE_OUT` negativo se registra exactamente una vez por línea inventariable,
+  y el void añade `SALE_REVERSAL_IN` positivo sin editar ni borrar historia.
+  Una insuficiencia de stock deja la operación intacta. El reverso conserva la
+  sede histórica incluso si después se inactiva.
+- Billing genera una Invoice interna inmutable con numeración secuencial por
+  Organization; no es factura electrónica, documento fiscal ni integración DIAN.
+  Caja mantiene sesiones por sede, apertura, ingresos/retiros manuales con motivo,
+  pagos cash vinculados, saldo ledger, cierre con conteo/diferencia y concurrencia
+  CAS. No hay reembolsos electrónicos ni conciliación de tarjeta.
+- Se añadieron settings comerciales de Organization e idempotencia de seed; el
+  seed aporta únicamente catálogo/stock ficticios, sin ventas QA precargadas. Se
+  actualizaron contratos, permisos por rol, API, rutas lazy `/ventas`,
+  `/facturacion` y `/caja`, sidebar y documentación de arquitectura, API,
+  transacciones y frontend. Las limitaciones y revisión final están en
+  `docs/migration/commercial-final-review.md`.
+- Migraciones `20260923110000_inventory_sale_movement_types`,
+  `20260923120000_commercial_sales_billing_cash` y
+  `20260923130000_commercial_trigger_corrections`; la última corrige la
+  ambigüedad PL/pgSQL de `lot_tracking` observada en pruebas. No se modificaron
+  migraciones previas ni se reseteó ninguna base.
+- Suites PostgreSQL en `easyvet_test`: comercial 8/8 (incluye finalización
+  simultánea, reemplazo de Draft vs Complete, void vs void y void vs cierre),
+  autenticación 46/46, inventario 13/13 y suite completa `test:db` 214/214.
+  `test:all` se repitió al cierre; los resultados finales se reflejan abajo.
+- QA manual ficticio únicamente en `easyvet_dev`: se abrió Caja Norte con
+  $100.000 COP; se comprobaron venta de producto con Patient Luna/Owner Camila,
+  consumidor final con pagos mixtos, venta Owner-only, servicio sin efecto de
+  stock, venta voided y reversión, insuficiencia de stock sin efectos parciales,
+  entradas/salidas manuales y cierre en $130.000 con diferencia cero. Quedaron
+  cinco ventas QA (2 COMPLETED, 3 VOIDED), cinco comprobantes consecutivos y
+  pagos/movimientos compensatorios; sin hard delete ni registros en seed.
+- Tenant switch Norte→Sur no expuso ventas ni caja Norte; deep link de venta
+  cross-tenant respondió 404 genérico. La membresía temporal usada para verificar
+  el cambio de tenant fue retirada al terminar, sin filas comerciales dependientes.
+  A 390 px no hubo overflow horizontal en ventas, formulario, facturación,
+  detalle de comprobante ni caja. No se afirma una verificación manual de
+  impresión física/media print ni de todos los anchos tablet.
+- No se observaron Appointment, ClinicalEncounter, Prescription, Grooming,
+  ClinicalDocument ni cambios en el peso de Luna atribuibles a ventas.
+- `npm audit` reportó 5 paquetes afectados (3 HIGH, 2 MODERATE) en 2 advisories;
+  los dos caminos son herramientas de desarrollo/configuración y no hay una
+  actualización patch/minor compatible que elimine todos los hallazgos. No se
+  actualizaron dependencias ni se ejecutó `npm audit fix --force`. Análisis y
+  límites de explotación constan en `docs/migration/commercial-final-review.md`.
+- `npm run build` terminó correctamente. Vite advierte que el chunk principal
+  minificado (868,63 kB; 247,08 kB gzip) excede 500 kB; los módulos comerciales
+  se entregan en chunks lazy separados. Se conserva como aviso de rendimiento,
+  no como fallo funcional.
+- Cierre final completado: formato, lint, typecheck, pruebas unitarias/API y web,
+  pruebas PostgreSQL, build, generación Prisma y validación del schema pasan.
+  No quedan bugs funcionales conocidos; restricciones funcionales restantes
+  corresponden a límites post-V1 documentados en la revisión final.

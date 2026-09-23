@@ -1815,6 +1815,8 @@ const seedClinicalAuditEvents = [
 async function main() {
   // Hash the local-only demo credential with Argon2id; plaintext never reaches PostgreSQL.
   const passwordHash = await argon2.hash(demoPassword, { type: argon2.argon2id });
+  const defaultCurrencyCode = process.env.DEFAULT_CURRENCY_CODE?.trim().toUpperCase() || 'COP';
+  const defaultInvoicePrefix = process.env.DEFAULT_INVOICE_PREFIX?.trim().toUpperCase() || 'INV';
 
   await prisma.$transaction(async (transaction) => {
     for (const organization of seedOrganizations) {
@@ -1825,7 +1827,7 @@ async function main() {
           status: 'ACTIVE',
           timezone: 'America/Bogota',
           locale: 'es-CO',
-          currencyCode: 'COP',
+          currencyCode: defaultCurrencyCode,
         },
         create: {
           id: organization.id,
@@ -1834,7 +1836,18 @@ async function main() {
           status: 'ACTIVE',
           timezone: 'America/Bogota',
           locale: 'es-CO',
-          currencyCode: 'COP',
+          currencyCode: defaultCurrencyCode,
+        },
+      });
+
+      // Commercial defaults are tenant-scoped and invoice sequence values survive repeated seeding.
+      await transaction.organizationCommercialSettings.upsert({
+        where: { organizationId: organization.id },
+        update: { currencyCode: defaultCurrencyCode, invoicePrefix: defaultInvoicePrefix },
+        create: {
+          organizationId: organization.id,
+          currencyCode: defaultCurrencyCode,
+          invoicePrefix: defaultInvoicePrefix,
         },
       });
 

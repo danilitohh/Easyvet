@@ -30,8 +30,10 @@ function toQuery(params: OwnerListParams): string {
 
 // Owners API is the only feature boundary allowed to know owner URLs and contracts.
 export const ownersApi = {
-  async list(params: OwnerListParams = {}): Promise<OwnersListResponse> {
-    return ownersListResponseSchema.parse(await apiClient(`/owners${toQuery(params)}`));
+  async list(params: OwnerListParams = {}, signal?: AbortSignal): Promise<OwnersListResponse> {
+    return ownersListResponseSchema.parse(
+      await apiClient(`/owners${toQuery(params)}`, signal ? { signal } : {}),
+    );
   },
   async findById(ownerId: string): Promise<OwnerResponse> {
     return ownerResponseSchema.parse(await apiClient(`/owners/${ownerId}`));

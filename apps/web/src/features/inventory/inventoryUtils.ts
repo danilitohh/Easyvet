@@ -14,6 +14,8 @@ export const INVENTORY_MOVEMENT_LABEL: Record<InventoryMovementType, string> = {
   ADJUSTMENT_OUT: 'Ajuste de disminución',
   TRANSFER_IN: 'Traslado recibido',
   TRANSFER_OUT: 'Traslado enviado',
+  SALE_OUT: 'Venta completada',
+  SALE_REVERSAL_IN: 'Reversión de venta',
 };
 
 // Quantity display stays string-only to avoid introducing floating-point rounding in the UI.

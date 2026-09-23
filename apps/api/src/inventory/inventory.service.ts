@@ -9,6 +9,7 @@ import {
   ClinicLocationStatus,
   InventoryItemStatus,
   InventoryMovementType,
+  SaleItemType,
   Prisma,
 } from '@prisma/client';
 import type {
@@ -73,6 +74,13 @@ type BalanceGroup = {
   inventoryItemId: string;
   clinicLocationId: string;
   stock: Prisma.Decimal;
+};
+type SaleStockLine = {
+  id: string;
+  itemType: SaleItemType;
+  inventoryItemId: string | null;
+  inventoryBatchId: string | null;
+  quantity: Prisma.Decimal;
 };
 
 const ZERO = new Prisma.Decimal(0);
@@ -784,6 +792,210 @@ export class InventoryService {
       return [toInventoryMovement(transferOut), toInventoryMovement(transferIn)];
     });
     return { transferGroupId, movements };
+  }
+
+  // Sale completion locks every item and lot deterministically, validates grouped demand, then writes SALE_OUT.
+  async consumeForSale(
+    tx: Transaction,
+    organizationId: string,
+    clinicLocationId: string,
+    saleId: string,
+    actorMembershipId: string,
+    lines: SaleStockLine[],
+    occurredAt: Date,
+  ): Promise<void> {
+    const products = lines.filter((line) => line.itemType === SaleItemType.PRODUCT);
+    if (products.length === 0) {
+      await this.lockActiveLocation(tx, organizationId, clinicLocationId);
+      return;
+    }
+
+    const itemIds = [
+      ...new Set(
+        products.map((line) => line.inventoryItemId).filter((id): id is string => id !== null),
+      ),
+    ].sort();
+    const items = new Map<string, ItemRecord>();
+    for (const itemId of itemIds) {
+      const item = await this.lockItem(tx, organizationId, itemId);
+      this.assertItemActive(item);
+      items.set(itemId, item);
+    }
+
+    for (const line of products) {
+      if (!line.inventoryItemId) {
+        throw new BadRequestException({
+          code: 'SALE_PRODUCT_REQUIRED',
+          message: 'Select an active inventory product for each product line',
+        });
+      }
+      const item = items.get(line.inventoryItemId);
+      if (!item) throw resourceNotFound();
+      if (item.lotTracking && !line.inventoryBatchId) {
+        throw new BadRequestException({
+          code: 'INVENTORY_BATCH_REQUIRED',
+          message: 'Select a lot for this product',
+        });
+      }
+      if (!item.lotTracking && line.inventoryBatchId) {
+        throw new BadRequestException({
+          code: 'INVENTORY_BATCH_NOT_ALLOWED',
+          message: 'This product does not track stock by lot',
+        });
+      }
+    }
+
+    const batchKeys = [
+      ...new Set(
+        products
+          .filter(
+            (line): line is SaleStockLine & { inventoryItemId: string; inventoryBatchId: string } =>
+              Boolean(line.inventoryItemId && line.inventoryBatchId),
+          )
+          .map((line) => `${line.inventoryItemId}:${line.inventoryBatchId}`),
+      ),
+    ].sort();
+    for (const key of batchKeys) {
+      const [itemId, batchId] = key.split(':') as [string, string];
+      await this.lockBatch(tx, organizationId, itemId, batchId);
+    }
+
+    await this.lockActiveLocation(tx, organizationId, clinicLocationId);
+
+    const demand = new Map<
+      string,
+      { itemId: string; batchId: string | null; quantity: Prisma.Decimal }
+    >();
+    for (const line of products) {
+      const itemId = line.inventoryItemId;
+      if (!itemId) continue;
+      const key = `${itemId}:${line.inventoryBatchId ?? ''}`;
+      const group = demand.get(key);
+      if (group) group.quantity = group.quantity.add(line.quantity);
+      else demand.set(key, { itemId, batchId: line.inventoryBatchId, quantity: line.quantity });
+    }
+    for (const group of [...demand.values()].sort((left, right) =>
+      `${left.itemId}:${left.batchId ?? ''}`.localeCompare(
+        `${right.itemId}:${right.batchId ?? ''}`,
+      ),
+    )) {
+      await this.assertAvailableStock(
+        tx,
+        organizationId,
+        group.itemId,
+        clinicLocationId,
+        group.batchId,
+        group.quantity,
+      );
+    }
+
+    for (const line of products) {
+      const itemId = line.inventoryItemId;
+      if (!itemId) continue;
+      const item = items.get(itemId);
+      if (!item) throw resourceNotFound();
+      await tx.saleItem.update({
+        where: { id: line.id },
+        data: {
+          description: item.name,
+          inventoryItemNameSnapshot: item.name,
+          skuSnapshot: item.sku,
+          baseUnitSnapshot: item.baseUnit,
+        },
+      });
+      await tx.inventoryMovement.create({
+        data: {
+          organizationId,
+          inventoryItemId: item.id,
+          clinicLocationId,
+          inventoryBatchId: line.inventoryBatchId,
+          movementType: InventoryMovementType.SALE_OUT,
+          quantityDelta: line.quantity.negated(),
+          occurredAt,
+          reason: 'Venta completada',
+          saleId,
+          saleItemId: line.id,
+          createdByMembershipId: actorMembershipId,
+        },
+      });
+    }
+  }
+
+  // Sale void appends compensating stock entries and permits historical reversal into an inactive location.
+  async reverseSaleForVoid(
+    tx: Transaction,
+    organizationId: string,
+    clinicLocationId: string,
+    saleId: string,
+    actorMembershipId: string,
+    lines: SaleStockLine[],
+    occurredAt: Date,
+  ): Promise<void> {
+    const products = lines.filter((line) => line.itemType === SaleItemType.PRODUCT);
+    if (products.length === 0) return;
+    const itemIds = [
+      ...new Set(
+        products.map((line) => line.inventoryItemId).filter((id): id is string => id !== null),
+      ),
+    ].sort();
+    const items = new Map<string, ItemRecord>();
+    for (const itemId of itemIds) {
+      const item = await this.lockItem(tx, organizationId, itemId);
+      if (item.status === InventoryItemStatus.ARCHIVED) {
+        throw inventoryConflict(
+          'SALE_INVENTORY_ITEM_ARCHIVED',
+          'This sale cannot be voided because one of its inventory items is archived',
+        );
+      }
+      items.set(itemId, item);
+    }
+    const batchKeys = [
+      ...new Set(
+        products
+          .filter(
+            (line): line is SaleStockLine & { inventoryItemId: string; inventoryBatchId: string } =>
+              Boolean(line.inventoryItemId && line.inventoryBatchId),
+          )
+          .map((line) => `${line.inventoryItemId}:${line.inventoryBatchId}`),
+      ),
+    ].sort();
+    for (const key of batchKeys) {
+      const [itemId, batchId] = key.split(':') as [string, string];
+      await this.lockBatch(tx, organizationId, itemId, batchId);
+    }
+    await this.lockExistingLocation(tx, organizationId, clinicLocationId);
+
+    for (const line of products) {
+      const itemId = line.inventoryItemId;
+      if (!itemId || !items.has(itemId)) throw resourceNotFound();
+      await tx.inventoryMovement.create({
+        data: {
+          organizationId,
+          inventoryItemId: itemId,
+          clinicLocationId,
+          inventoryBatchId: line.inventoryBatchId,
+          movementType: InventoryMovementType.SALE_REVERSAL_IN,
+          quantityDelta: line.quantity,
+          occurredAt,
+          reason: 'Anulación de venta',
+          saleId,
+          saleItemId: line.id,
+          createdByMembershipId: actorMembershipId,
+        },
+      });
+    }
+  }
+
+  // Historical reversals still lock and tenant-check the location but do not require it to remain active.
+  private async lockExistingLocation(
+    tx: Transaction,
+    organizationId: string,
+    locationId: string,
+  ): Promise<void> {
+    const locked = await tx.$queryRaw<Array<{ id: string }>>(
+      Prisma.sql`SELECT id FROM clinic_locations WHERE organization_id = ${organizationId}::uuid AND id = ${locationId}::uuid FOR UPDATE`,
+    );
+    if (locked.length === 0) throw resourceNotFound();
   }
 
   // Locks one organization's item row before any calculation that can change its balance.

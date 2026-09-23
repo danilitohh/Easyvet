@@ -148,3 +148,24 @@ CASHIER reciben solo `inventory.read`. Las rutas de ajuste y traslado requieren
 su permiso dedicado además del permiso de movimiento cuando corresponda.
 PLATFORM_ADMIN mantiene el requisito de tenant activo. Véase
 [`inventory-api.md`](inventory-api.md).
+
+## Sales / Billing / Cash 9
+
+Los permisos comerciales se resuelven por `MembershipRole` dentro del tenant
+activo. `sales.void` queda reservado a OWNER/ADMIN; Reception puede operar
+borradores y completar ventas, pero solo consulta facturas y caja. CASHIER puede
+operar ventas y caja, sin anular ventas. VETERINARIAN, ASSISTANT y GROOMER no
+reciben acceso comercial por defecto.
+
+| Rol           | Permisos comerciales                                                  |
+| ------------- | --------------------------------------------------------------------- |
+| OWNER / ADMIN | Todos los permisos Sales, Billing y Cash                              |
+| CASHIER       | Todos salvo `sales.void`                                              |
+| RECEPTION     | `sales.read/create/updateDraft/complete`, `billing.read`, `cash.read` |
+| VETERINARIAN  | Ninguno                                                               |
+| ASSISTANT     | Ninguno                                                               |
+| GROOMER       | Ninguno                                                               |
+
+Billing es lectura de facturas internas inmutables; no habilita facturación
+electrónica ni fiscal. Ningún rol, incluida la cuenta `PLATFORM_ADMIN`, puede
+omitir `TenantContext` ni acceder a registros comerciales de otra Organization.

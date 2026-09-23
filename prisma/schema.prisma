@@ -46,9 +46,17 @@ model Organization {
   clinicalFollowUps        ClinicalFollowUp[]
   groomingVisits           GroomingVisit[]
   inventoryItems           InventoryItem[]
-  inventoryBatches          InventoryBatch[]
-  inventoryMovements        InventoryMovement[]
+  inventoryBatches         InventoryBatch[]
+  inventoryMovements       InventoryMovement[]
   operationalAuditEvents   OperationalAuditEvent[]
+  commercialSettings       OrganizationCommercialSettings?
+  sales                    Sale[]
+  saleItems                SaleItem[]
+  salePayments             SalePayment[]
+  invoices                 Invoice[]
+  cashSessions             CashSession[]
+  cashMovements            CashMovement[]
+  commercialAuditEvents    CommercialAuditEvent[]
 
   @@map("organizations")
 }
@@ -69,6 +77,8 @@ model ClinicLocation {
   clinicalEncounters ClinicalEncounter[]
   groomingVisits     GroomingVisit[]
   inventoryMovements InventoryMovement[]
+  sales              Sale[]
+  cashSessions       CashSession[]
 
   @@unique([id, organizationId], map: "clinic_locations_id_organization_id_key")
   @@index([organizationId])
@@ -167,7 +177,17 @@ model Membership {
   completedGroomingVisits         GroomingVisit[]                @relation("GroomingVisitCompletedByMembership")
   voidedGroomingVisits            GroomingVisit[]                @relation("GroomingVisitVoidedByMembership")
   operationalAuditEvents          OperationalAuditEvent[]        @relation("OperationalAuditActorMembership")
-  createdInventoryMovements       InventoryMovement[]             @relation("InventoryMovementCreatedByMembership")
+  createdInventoryMovements       InventoryMovement[]            @relation("InventoryMovementCreatedByMembership")
+  createdSales                    Sale[]                         @relation("SaleCreatedByMembership")
+  completedSales                  Sale[]                         @relation("SaleCompletedByMembership")
+  voidedSales                     Sale[]                         @relation("SaleVoidedByMembership")
+  createdSalePayments             SalePayment[]                  @relation("SalePaymentCreatedByMembership")
+  voidedSalePayments              SalePayment[]                  @relation("SalePaymentVoidedByMembership")
+  voidedInvoices                  Invoice[]                      @relation("InvoiceVoidedByMembership")
+  openedCashSessions              CashSession[]                  @relation("CashSessionOpenedByMembership")
+  closedCashSessions              CashSession[]                  @relation("CashSessionClosedByMembership")
+  createdCashMovements            CashMovement[]                 @relation("CashMovementCreatedByMembership")
+  commercialAuditEvents           CommercialAuditEvent[]         @relation("CommercialAuditActorMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -220,6 +240,7 @@ model Owner {
   appointments                 Appointment[]
   historicalClinicalEncounters ClinicalEncounter[] @relation("EncounterHistoricalOwner")
   historicalGroomingVisits     GroomingVisit[]     @relation("GroomingVisitHistoricalOwner")
+  sales                        Sale[]
 
   // The composite key supports a tenant-safe Patient foreign key.
   @@unique([id, organizationId], map: "owners_id_organization_id_key")
@@ -272,6 +293,7 @@ model Patient {
   consents           Consent[]
   clinicalFollowUps  ClinicalFollowUp[]
   groomingVisits     GroomingVisit[]     @relation("GroomingVisitPatient")
+  sales              Sale[]
 
   @@unique([id, organizationId], map: "patients_id_organization_id_key")
   @@index([organizationId])
@@ -416,6 +438,8 @@ enum InventoryMovementType {
   ADJUSTMENT_OUT
   TRANSFER_IN
   TRANSFER_OUT
+  SALE_OUT
+  SALE_REVERSAL_IN
 }
 
 enum OperationalAuditAction {
@@ -1266,6 +1290,232 @@ model OperationalAuditEvent {
   @@map("operational_audit_events")
 }
 
+// Commercial settings isolate currency and invoice numbering from clinical tenant data.
+model OrganizationCommercialSettings {
+  organizationId    String       @id @map("organization_id") @db.Uuid
+  currencyCode      String       @map("currency_code") @db.VarChar(3)
+  invoicePrefix     String       @map("invoice_prefix") @db.VarChar(16)
+  nextInvoiceNumber Int          @default(1) @map("next_invoice_number")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("organization_commercial_settings")
+}
+
+// Sale is the commercial aggregate; completed rows retain immutable snapshots and lifecycle history.
+model Sale {
+  id                             String                 @id @default(uuid()) @db.Uuid
+  organizationId                 String                 @map("organization_id") @db.Uuid
+  clinicLocationId               String                 @map("clinic_location_id") @db.Uuid
+  ownerId                        String?                @map("owner_id") @db.Uuid
+  patientId                      String?                @map("patient_id") @db.Uuid
+  status                         SaleStatus             @default(DRAFT)
+  version                        Int                    @default(1)
+  currencyCode                   String                 @map("currency_code") @db.VarChar(3)
+  subtotal                       Decimal                @default(0) @db.Decimal(20, 4)
+  discountTotal                  Decimal                @default(0) @map("discount_total") @db.Decimal(20, 4)
+  grandTotal                     Decimal                @default(0) @map("grand_total") @db.Decimal(20, 4)
+  customerNameSnapshot           String?                @map("customer_name_snapshot") @db.VarChar(300)
+  customerDocumentTypeSnapshot   String?                @map("customer_document_type_snapshot") @db.VarChar(80)
+  customerDocumentNumberSnapshot String?                @map("customer_document_number_snapshot") @db.VarChar(120)
+  patientNameSnapshot            String?                @map("patient_name_snapshot") @db.VarChar(200)
+  createdByMembershipId          String                 @map("created_by_membership_id") @db.Uuid
+  completedAt                    DateTime?              @map("completed_at") @db.Timestamptz(3)
+  completedByMembershipId        String?                @map("completed_by_membership_id") @db.Uuid
+  voidedAt                       DateTime?              @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId           String?                @map("voided_by_membership_id") @db.Uuid
+  voidReason                     String?                @map("void_reason") @db.VarChar(1000)
+  createdAt                      DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                      DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization                   Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicLocation                 ClinicLocation         @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  owner                          Owner?                 @relation(fields: [ownerId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  patient                        Patient?               @relation(fields: [patientId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership            Membership             @relation("SaleCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  completedByMembership          Membership?            @relation("SaleCompletedByMembership", fields: [completedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership             Membership?            @relation("SaleVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  items                          SaleItem[]
+  payments                       SalePayment[]
+  invoice                        Invoice?
+  inventoryMovements             InventoryMovement[]
+  commercialAuditEvents          CommercialAuditEvent[]
+  cashMovements                  CashMovement[]
+
+  @@unique([id, organizationId], map: "sales_id_organization_id_key")
+  @@index([organizationId, status, createdAt(sort: Desc), id])
+  @@index([organizationId, clinicLocationId, status, createdAt(sort: Desc), id])
+  @@index([organizationId, ownerId, createdAt(sort: Desc)])
+  @@index([organizationId, patientId, createdAt(sort: Desc)])
+  @@map("sales")
+}
+
+// SaleItem is mutable only while its parent is DRAFT and is the frozen invoice line source afterward.
+model SaleItem {
+  id                        String              @id @default(uuid()) @db.Uuid
+  organizationId            String              @map("organization_id") @db.Uuid
+  saleId                    String              @map("sale_id") @db.Uuid
+  position                  Int
+  itemType                  SaleItemType        @map("item_type")
+  inventoryItemId           String?             @map("inventory_item_id") @db.Uuid
+  inventoryBatchId          String?             @map("inventory_batch_id") @db.Uuid
+  description               String              @db.VarChar(500)
+  quantity                  Decimal             @db.Decimal(20, 6)
+  unitPrice                 Decimal             @map("unit_price") @db.Decimal(20, 4)
+  discountAmount            Decimal             @default(0) @map("discount_amount") @db.Decimal(20, 4)
+  inventoryItemNameSnapshot String?             @map("inventory_item_name_snapshot") @db.VarChar(200)
+  skuSnapshot               String?             @map("sku_snapshot") @db.VarChar(100)
+  baseUnitSnapshot          String?             @map("base_unit_snapshot") @db.VarChar(40)
+  createdAt                 DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization              Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sale                      Sale                @relation(fields: [saleId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  inventoryItem             InventoryItem?      @relation(fields: [inventoryItemId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  inventoryBatch            InventoryBatch?     @relation(fields: [inventoryBatchId, inventoryItemId, organizationId], references: [id, inventoryItemId, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  inventoryMovements        InventoryMovement[]
+
+  @@unique([saleId, position], map: "sale_items_sale_id_position_key")
+  @@unique([id, saleId, organizationId, inventoryItemId], map: "sale_items_id_sale_org_item_key")
+  @@index([organizationId, saleId, position])
+  @@map("sale_items")
+}
+
+// SalePayment records posted tenders and retains void history without processor refunds.
+model SalePayment {
+  id                    String            @id @default(uuid()) @db.Uuid
+  organizationId        String            @map("organization_id") @db.Uuid
+  saleId                String            @map("sale_id") @db.Uuid
+  method                SalePaymentMethod
+  status                SalePaymentStatus @default(POSTED)
+  amount                Decimal           @db.Decimal(20, 4)
+  reference             String?           @db.VarChar(500)
+  cashSessionId         String?           @map("cash_session_id") @db.Uuid
+  paidAt                DateTime          @default(now()) @map("paid_at") @db.Timestamptz(3)
+  createdByMembershipId String            @map("created_by_membership_id") @db.Uuid
+  voidedAt              DateTime?         @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId  String?           @map("voided_by_membership_id") @db.Uuid
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization          Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sale                  Sale              @relation(fields: [saleId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  cashSession           CashSession?      @relation(fields: [cashSessionId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership   Membership        @relation("SalePaymentCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership    Membership?       @relation("SalePaymentVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  cashMovement          CashMovement?
+
+  @@unique([id, organizationId], map: "sale_payments_id_organization_id_key")
+  @@index([organizationId, saleId, status])
+  @@index([organizationId, cashSessionId, paidAt])
+  @@map("sale_payments")
+}
+
+// Invoice is an internal Easyvet billing snapshot, not a jurisdiction-specific fiscal invoice.
+model Invoice {
+  id                             String        @id @default(uuid()) @db.Uuid
+  organizationId                 String        @map("organization_id") @db.Uuid
+  saleId                         String        @map("sale_id") @db.Uuid
+  status                         InvoiceStatus @default(ISSUED)
+  documentNumber                 String        @map("document_number") @db.VarChar(64)
+  currencyCode                   String        @map("currency_code") @db.VarChar(3)
+  customerNameSnapshot           String?       @map("customer_name_snapshot") @db.VarChar(300)
+  customerDocumentTypeSnapshot   String?       @map("customer_document_type_snapshot") @db.VarChar(80)
+  customerDocumentNumberSnapshot String?       @map("customer_document_number_snapshot") @db.VarChar(120)
+  patientNameSnapshot            String?       @map("patient_name_snapshot") @db.VarChar(200)
+  subtotal                       Decimal       @db.Decimal(20, 4)
+  discountTotal                  Decimal       @map("discount_total") @db.Decimal(20, 4)
+  total                          Decimal       @db.Decimal(20, 4)
+  issuedAt                       DateTime      @default(now()) @map("issued_at") @db.Timestamptz(3)
+  voidedAt                       DateTime?     @map("voided_at") @db.Timestamptz(3)
+  voidedByMembershipId           String?       @map("voided_by_membership_id") @db.Uuid
+  voidReason                     String?       @map("void_reason") @db.VarChar(1000)
+  createdAt                      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization                   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sale                           Sale          @relation(fields: [saleId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  voidedByMembership             Membership?   @relation("InvoiceVoidedByMembership", fields: [voidedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([organizationId, documentNumber], map: "invoices_organization_id_document_number_key")
+  @@unique([saleId, organizationId], map: "invoices_sale_id_organization_id_key")
+  @@unique([id, organizationId], map: "invoices_id_organization_id_key")
+  @@index([organizationId, issuedAt(sort: Desc), id])
+  @@index([organizationId, status, issuedAt(sort: Desc)])
+  @@map("invoices")
+}
+
+// CashSession snapshots one location's drawer count; expected balance always comes from its append-only ledger.
+model CashSession {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  organizationId        String                 @map("organization_id") @db.Uuid
+  clinicLocationId      String                 @map("clinic_location_id") @db.Uuid
+  status                CashSessionStatus      @default(OPEN)
+  version               Int                    @default(1)
+  openingCashAmount     Decimal                @map("opening_cash_amount") @db.Decimal(20, 4)
+  openedAt              DateTime               @default(now()) @map("opened_at") @db.Timestamptz(3)
+  openedByMembershipId  String                 @map("opened_by_membership_id") @db.Uuid
+  closedAt              DateTime?              @map("closed_at") @db.Timestamptz(3)
+  closedByMembershipId  String?                @map("closed_by_membership_id") @db.Uuid
+  expectedCashAmount    Decimal?               @map("expected_cash_amount") @db.Decimal(20, 4)
+  countedCashAmount     Decimal?               @map("counted_cash_amount") @db.Decimal(20, 4)
+  differenceAmount      Decimal?               @map("difference_amount") @db.Decimal(20, 4)
+  notes                 String?                @db.VarChar(2000)
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  clinicLocation        ClinicLocation         @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  openedByMembership    Membership             @relation("CashSessionOpenedByMembership", fields: [openedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  closedByMembership    Membership?            @relation("CashSessionClosedByMembership", fields: [closedByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  payments              SalePayment[]
+  movements             CashMovement[]
+  commercialAuditEvents CommercialAuditEvent[]
+
+  @@unique([id, organizationId], map: "cash_sessions_id_organization_id_key")
+  @@index([organizationId, clinicLocationId, openedAt(sort: Desc)])
+  @@map("cash_sessions")
+}
+
+// CashMovement stores signed cash evidence; only sale payments link back to a SalePayment row.
+model CashMovement {
+  id                    String           @id @default(uuid()) @db.Uuid
+  organizationId        String           @map("organization_id") @db.Uuid
+  cashSessionId         String           @map("cash_session_id") @db.Uuid
+  movementType          CashMovementType @map("movement_type")
+  amountDelta           Decimal          @map("amount_delta") @db.Decimal(20, 4)
+  saleId                String?          @map("sale_id") @db.Uuid
+  salePaymentId         String?          @unique @map("sale_payment_id") @db.Uuid
+  occurredAt            DateTime         @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  reason                String?          @db.VarChar(1000)
+  reference             String?          @db.VarChar(500)
+  createdByMembershipId String           @map("created_by_membership_id") @db.Uuid
+  createdAt             DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  cashSession           CashSession      @relation(fields: [cashSessionId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  sale                  Sale?            @relation(fields: [saleId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  salePayment           SalePayment?     @relation(fields: [salePaymentId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership   Membership       @relation("CashMovementCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([id, organizationId], map: "cash_movements_id_organization_id_key")
+  @@unique([salePaymentId, organizationId], map: "cash_movements_sale_payment_org_key")
+  @@index([organizationId, cashSessionId, occurredAt(sort: Desc), id])
+  @@map("cash_movements")
+}
+
+// CommercialAuditEvent records lifecycle transitions without duplicating ledger or customer evidence.
+model CommercialAuditEvent {
+  id                String                @id @default(uuid()) @db.Uuid
+  organizationId    String                @map("organization_id") @db.Uuid
+  saleId            String?               @map("sale_id") @db.Uuid
+  cashSessionId     String?               @map("cash_session_id") @db.Uuid
+  actorMembershipId String                @map("actor_membership_id") @db.Uuid
+  action            CommercialAuditAction
+  metadata          Json?
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization      Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sale              Sale?                 @relation(fields: [saleId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  cashSession       CashSession?          @relation(fields: [cashSessionId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  actorMembership   Membership            @relation("CommercialAuditActorMembership", fields: [actorMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId, saleId, createdAt])
+  @@index([organizationId, cashSessionId, createdAt])
+  @@map("commercial_audit_events")
+}
+
 // InventoryItem stores catalog metadata only; available quantities are always derived from its ledger.
 model InventoryItem {
   id             String              @id @default(uuid()) @db.Uuid
@@ -1284,6 +1534,7 @@ model InventoryItem {
   organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   batches        InventoryBatch[]
   movements      InventoryMovement[]
+  saleItems      SaleItem[]
 
   @@unique([id, organizationId], map: "inventory_items_id_organization_id_key")
   @@unique([organizationId, sku], map: "inventory_items_organization_id_sku_key")
@@ -1304,6 +1555,7 @@ model InventoryBatch {
   organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   inventoryItem   InventoryItem       @relation(fields: [inventoryItemId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   movements       InventoryMovement[]
+  saleItems       SaleItem[]
 
   @@unique([id, inventoryItemId, organizationId], map: "inventory_batches_id_item_org_key")
   @@unique([organizationId, inventoryItemId, lotNumber], map: "inventory_batches_org_item_lot_key")
@@ -1326,16 +1578,21 @@ model InventoryMovement {
   unitCost              Decimal?              @map("unit_cost") @db.Decimal(20, 6)
   transferGroupId       String?               @map("transfer_group_id") @db.Uuid
   createdByMembershipId String                @map("created_by_membership_id") @db.Uuid
+  saleId                String?               @map("sale_id") @db.Uuid
+  saleItemId            String?               @map("sale_item_id") @db.Uuid
   createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
   organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   inventoryItem         InventoryItem         @relation(fields: [inventoryItemId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   clinicLocation        ClinicLocation        @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
   inventoryBatch        InventoryBatch?       @relation(fields: [inventoryBatchId, inventoryItemId, organizationId], references: [id, inventoryItemId, organizationId], onDelete: Restrict, onUpdate: Cascade)
   createdByMembership   Membership            @relation("InventoryMovementCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  sale                  Sale?                 @relation(fields: [saleId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  saleItem              SaleItem?             @relation(fields: [saleItemId, saleId, organizationId, inventoryItemId], references: [id, saleId, organizationId, inventoryItemId], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([organizationId, inventoryItemId, clinicLocationId, occurredAt(sort: Desc), createdAt(sort: Desc), id])
   @@index([organizationId, inventoryItemId, inventoryBatchId, clinicLocationId])
   @@index([organizationId, transferGroupId])
+  @@index([organizationId, saleId, saleItemId])
   @@map("inventory_movements")
 }
 
@@ -1360,6 +1617,57 @@ model AvailabilityRule {
   @@index([organizationId, clinicLocationId, dayOfWeek, isActive])
   @@index([organizationId, membershipId, dayOfWeek, isActive])
   @@map("availability_rules")
+}
+
+enum SaleStatus {
+  DRAFT
+  COMPLETED
+  VOIDED
+}
+
+enum SaleItemType {
+  PRODUCT
+  SERVICE
+  OTHER
+}
+
+enum SalePaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  OTHER
+}
+
+enum SalePaymentStatus {
+  POSTED
+  VOIDED
+}
+
+enum InvoiceStatus {
+  ISSUED
+  VOIDED
+}
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  SALE_PAYMENT
+  SALE_VOID_REVERSAL
+  MANUAL_IN
+  MANUAL_OUT
+}
+
+enum CommercialAuditAction {
+  SALE_CREATED
+  SALE_UPDATED
+  SALE_COMPLETED
+  SALE_VOIDED
+  CASH_SESSION_OPENED
+  CASH_MOVEMENT_CREATED
+  CASH_SESSION_CLOSED
 }
 
 enum AppointmentStatus {

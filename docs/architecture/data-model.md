@@ -1,14 +1,14 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A, 6F.2B, 6J y 7
+## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A, 6F.2B, 6J, 7, 8 y 9
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
 autorización por permisos y el primer dominio veterinario de propietarios y
 pacientes. Agenda 5B añade reservas operativas y disponibilidad. Fases 6B.1 y
 6B.2 añaden la fundación persistente y las operaciones transaccionales del
 núcleo clínico; 6F.2A agrega Procedures/Surgery, 6F.2B agrega Anesthesia y 6J
-agrega FollowUps; Fase 7 agrega Grooming operacional. Inventario, ventas y
-facturación siguen fuera de alcance.
+agrega FollowUps; Fase 7 agrega Grooming operacional; Fase 8 Inventory y Fase 9
+Sales/Billing/Cash completan la superficie comercial V1.
 
 ### Fundación clínica 6B.1
 
@@ -297,3 +297,33 @@ se deriva por Organization/Item/Location/Batch con `SUM(quantityDelta)` en
 traslados; checks y triggers PostgreSQL protegen signo, lot tracking, stock no
 negativo e inmutabilidad. `minimumStock` es común a todas las sedes y se evalúa
 por separado para cada una. Véase [`inventory.md`](inventory.md).
+
+## Sales / Billing / Cash 9
+
+```text
+Organization
+ ├── OrganizationCommercialSettings (1:1; moneda y secuencia Invoice)
+ ├── Sale (DRAFT → COMPLETED → VOIDED)
+ │    ├── SaleItem[] ── InventoryItem? + InventoryBatch?
+ │    ├── SalePayment[] ── CashSession? (solo CASH)
+ │    └── Invoice (1:1; snapshot comercial interno)
+ └── CashSession[] ── CashMovement[] (ledger append-only)
+
+SaleItem ── InventoryMovement[] (SALE_OUT / SALE_REVERSAL_IN)
+```
+
+`OrganizationCommercialSettings` controla moneda ISO 4217, prefijo y siguiente
+número interno. `Sale` conserva moneda, totales, cliente/paciente snapshot al
+completar, creador, actor, fechas, motivo y `version`. `SaleItem` conserva la
+posición, quantity `DECIMAL(20,6)`, dinero `DECIMAL(20,4)` y snapshot del artículo
+al completar. Patient deriva Owner; venta Owner-only y consumidor final son
+válidas.
+
+`SalePayment` persiste medio, importe, referencia y estado sin almacenar tarjeta;
+`cashSessionId` se determina en servidor para tender efectivo. `Invoice` preserva
+documento interno, totales y snapshots; no representa facturación electrónica
+fiscal. `CashSession` conserva base, cierre, conteo/diferencia/version; el saldo
+abierto se deriva de `CashMovement.amountDelta`. Links tenant-composite y
+`RESTRICT` evitan cruces y destrucción en cascada. Las transacciones, índices y
+triggers están en [`sales.md`](sales.md), [`billing.md`](billing.md),
+[`cash.md`](cash.md) y [`commercial-transactions.md`](commercial-transactions.md).

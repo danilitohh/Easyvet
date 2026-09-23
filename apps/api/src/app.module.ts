@@ -28,6 +28,7 @@ import { ConsentsModule } from './consents/consents.module';
 import { FollowUpsModule } from './follow-ups/follow-ups.module';
 import { GroomingModule } from './grooming/grooming.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { CommercialModule } from './commercial/commercial.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { InventoryModule } from './inventory/inventory.module';
     FollowUpsModule,
     GroomingModule,
     InventoryModule,
+    CommercialModule,
   ],
   providers: [ApiExceptionFilter],
 })

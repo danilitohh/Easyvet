@@ -17,6 +17,7 @@ export type PatientListParams = {
   status?: 'ACTIVE' | 'ARCHIVED' | 'ALL';
   sortBy?: 'createdAt' | 'name' | 'species';
   sortDirection?: 'asc' | 'desc';
+  signal?: AbortSignal;
 };
 
 function toQuery(params: PatientListParams): string {
@@ -31,7 +32,10 @@ function toQuery(params: PatientListParams): string {
 // Patients API keeps patient transport and response parsing separate from page components.
 export const patientsApi = {
   async list(params: PatientListParams = {}): Promise<PatientsListResponse> {
-    return patientsListResponseSchema.parse(await apiClient(`/patients${toQuery(params)}`));
+    const { signal, ...query } = params;
+    return patientsListResponseSchema.parse(
+      await apiClient(`/patients${toQuery(query)}`, signal ? { signal } : {}),
+    );
   },
   async findById(patientId: string): Promise<PatientResponse> {
     return patientResponseSchema.parse(await apiClient(`/patients/${patientId}`));

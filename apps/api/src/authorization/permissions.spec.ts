@@ -2,6 +2,47 @@ import { describe, expect, it } from '@jest/globals';
 import { hasPermissions, permissionsForRole } from './permissions';
 
 describe('clinical permission foundation', () => {
+  it('grants the commercial role matrix only to Owner, Admin, Cashier and Reception', () => {
+    const full = [
+      'sales.read',
+      'sales.create',
+      'sales.updateDraft',
+      'sales.complete',
+      'sales.void',
+      'billing.read',
+      'cash.read',
+      'cash.open',
+      'cash.movements',
+      'cash.close',
+    ];
+    for (const role of ['OWNER', 'ADMIN'] as const) {
+      expect(permissionsForRole(role)).toEqual(expect.arrayContaining(full));
+    }
+    const cashier = permissionsForRole('CASHIER');
+    expect(cashier).toEqual(
+      expect.arrayContaining(full.filter((permission) => permission !== 'sales.void')),
+    );
+    expect(cashier).not.toContain('sales.void');
+    expect(permissionsForRole('RECEPTION')).toEqual(
+      expect.arrayContaining([
+        'sales.read',
+        'sales.create',
+        'sales.updateDraft',
+        'sales.complete',
+        'billing.read',
+        'cash.read',
+      ]),
+    );
+    expect(permissionsForRole('RECEPTION')).not.toEqual(
+      expect.arrayContaining(['sales.void', 'cash.open', 'cash.movements', 'cash.close']),
+    );
+    expect(permissionsForRole('GROOMER')).not.toEqual(
+      expect.arrayContaining(['sales.read', 'billing.read', 'cash.read']),
+    );
+    expect(permissionsForRole('VETERINARIAN', 'PRACTITIONER')).not.toContain('sales.read');
+    expect(permissionsForRole('ASSISTANT', 'CLINICAL_ASSISTANT')).not.toContain('cash.read');
+  });
+
   it('grants inventory mutations only to tenant administrators and read access to operational roles', () => {
     const adminPermissions = permissionsForRole('OWNER');
     const adminRolePermissions = permissionsForRole('ADMIN');

@@ -122,6 +122,20 @@ export const PERMISSIONS = {
     ADJUSTMENTS_CREATE: 'inventory.adjustments.create',
     TRANSFERS_CREATE: 'inventory.transfers.create',
   },
+  SALES: {
+    READ: 'sales.read',
+    CREATE: 'sales.create',
+    UPDATE_DRAFT: 'sales.updateDraft',
+    COMPLETE: 'sales.complete',
+    VOID: 'sales.void',
+  },
+  BILLING: { READ: 'billing.read' },
+  CASH: {
+    READ: 'cash.read',
+    OPEN: 'cash.open',
+    MOVEMENTS: 'cash.movements',
+    CLOSE: 'cash.close',
+  },
 } as const satisfies Record<string, Record<string, Permission>>;
 
 const GROOMING_ADMIN_PERMISSIONS: readonly Permission[] = [
@@ -142,6 +156,38 @@ const INVENTORY_ADMIN_PERMISSIONS: readonly Permission[] = [
   'inventory.movements.create',
   'inventory.adjustments.create',
   'inventory.transfers.create',
+];
+
+// Tenant administrators retain full commercial oversight and correction privileges.
+const COMMERCIAL_ADMIN_PERMISSIONS: readonly Permission[] = [
+  'sales.read',
+  'sales.create',
+  'sales.updateDraft',
+  'sales.complete',
+  'sales.void',
+  'billing.read',
+  'cash.read',
+  'cash.open',
+  'cash.movements',
+  'cash.close',
+];
+
+// Reception can create and collect sales, but cannot open/reconcile cash or void completed sales.
+const COMMERCIAL_RECEPTION_PERMISSIONS: readonly Permission[] = [
+  'sales.read',
+  'sales.create',
+  'sales.updateDraft',
+  'sales.complete',
+  'billing.read',
+  'cash.read',
+];
+
+// Cashiers receive the operational collection and drawer-management permissions only.
+const COMMERCIAL_CASHIER_PERMISSIONS: readonly Permission[] = [
+  ...COMMERCIAL_RECEPTION_PERMISSIONS,
+  'cash.open',
+  'cash.movements',
+  'cash.close',
 ];
 
 const OWNER_PATIENT_ADMIN_PERMISSIONS: readonly Permission[] = [
@@ -181,6 +227,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
     ...GROOMING_ADMIN_PERMISSIONS,
     ...INVENTORY_ADMIN_PERMISSIONS,
+    ...COMMERCIAL_ADMIN_PERMISSIONS,
   ],
   ADMIN: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -193,6 +240,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
     ...GROOMING_ADMIN_PERMISSIONS,
     ...INVENTORY_ADMIN_PERMISSIONS,
+    ...COMMERCIAL_ADMIN_PERMISSIONS,
   ],
   VETERINARIAN: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -248,6 +296,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'grooming.create',
     'grooming.updateDraft',
     'inventory.read',
+    ...COMMERCIAL_RECEPTION_PERMISSIONS,
   ],
   GROOMER: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -270,6 +319,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'appointments.read',
     'grooming.read',
     'inventory.read',
+    ...COMMERCIAL_CASHIER_PERMISSIONS,
   ],
 };
 
