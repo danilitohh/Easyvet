@@ -5,13 +5,20 @@ import { useAuth } from '../contexts/useAuth';
 // AuthBoundary protects every application route while preserving the requested URL for future login UX.
 export function AuthBoundary() {
   const location = useLocation();
-  const { status, organizationSelectionRequired } = useAuth();
+  const { status, organizationSelectionRequired, user } = useAuth();
 
   if (status === 'loading') return <LoadingState label="Restaurando sesión…" />;
   if (status === 'unauthenticated') {
     return <Navigate replace to="/login" state={{ from: location.pathname }} />;
   }
-  if (organizationSelectionRequired && location.pathname !== '/seleccionar-organizacion') {
+  if (user?.mustChangePassword && location.pathname !== '/cambiar-contrasena') {
+    return <Navigate replace to="/cambiar-contrasena" />;
+  }
+  if (
+    organizationSelectionRequired &&
+    !user?.mustChangePassword &&
+    location.pathname !== '/seleccionar-organizacion'
+  ) {
     return <Navigate replace to="/seleccionar-organizacion" />;
   }
   return <Outlet />;

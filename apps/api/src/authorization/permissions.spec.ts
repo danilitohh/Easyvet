@@ -2,6 +2,37 @@ import { describe, expect, it } from '@jest/globals';
 import { hasPermissions, permissionsForRole } from './permissions';
 
 describe('clinical permission foundation', () => {
+  it('limits administration and report capabilities to the documented membership and clinical roles', () => {
+    const tenantAdmins = ['OWNER', 'ADMIN'] as const;
+    const adminPermissions = [
+      'members.read',
+      'members.create',
+      'members.update',
+      'members.suspend',
+      'organizationSettings.read',
+      'organizationSettings.update',
+      'reports.operational.read',
+      'reports.clinical.read',
+      'reports.commercial.read',
+      'reports.inventory.read',
+    ];
+    for (const role of tenantAdmins) {
+      expect(permissionsForRole(role)).toEqual(expect.arrayContaining(adminPermissions));
+    }
+
+    expect(permissionsForRole('RECEPTION')).toContain('reports.operational.read');
+    expect(permissionsForRole('RECEPTION')).not.toContain('reports.commercial.read');
+    expect(permissionsForRole('CASHIER')).toContain('reports.commercial.read');
+    expect(permissionsForRole('CASHIER')).not.toContain('reports.clinical.read');
+    expect(permissionsForRole('GROOMER')).toContain('reports.operational.read');
+    expect(permissionsForRole('RECEPTION', 'PRACTITIONER')).toContain('reports.clinical.read');
+    expect(permissionsForRole('RECEPTION', 'CLINICAL_ASSISTANT')).not.toContain(
+      'reports.clinical.read',
+    );
+    expect(permissionsForRole('VETERINARIAN')).not.toContain('reports.clinical.read');
+    expect(permissionsForRole('VETERINARIAN')).not.toContain('members.read');
+  });
+
   it('grants the commercial role matrix only to Owner, Admin, Cashier and Reception', () => {
     const full = [
       'sales.read',

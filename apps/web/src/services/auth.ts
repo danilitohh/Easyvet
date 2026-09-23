@@ -1,8 +1,10 @@
 import {
   authMeResponseSchema,
+  changePasswordRequestSchema,
   loginResponseSchema,
   logoutResponseSchema,
   type AuthMeResponse,
+  type ChangePasswordRequest,
   type LoginRequest,
   type LoginResponse,
   type SwitchOrganizationRequest,
@@ -23,6 +25,13 @@ export const authApi = {
     return authMeResponseSchema.parse(
       await apiClient('/auth/switch-organization', { method: 'POST', body: input }),
     );
+  },
+  async changePassword(input: ChangePasswordRequest): Promise<{ success: true }> {
+    const validated = changePasswordRequestSchema.parse(input);
+    return (await apiClient('/auth/change-password', {
+      method: 'POST',
+      body: validated,
+    })) as { success: true };
   },
   async logout() {
     return logoutResponseSchema.parse(

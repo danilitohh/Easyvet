@@ -169,10 +169,23 @@ export class CashSessionsService {
         if (locations[0].status !== ClinicLocationStatus.ACTIVE) {
           throw conflict('LOCATION_INACTIVE', 'Cash sessions require an active location');
         }
+        const commercialSettings = await tx.organizationCommercialSettings.findUnique({
+          where: { organizationId: tenant.organizationId },
+          select: { currencyCode: true },
+        });
+        const organization = commercialSettings
+          ? null
+          : await tx.organization.findUnique({
+              where: { id: tenant.organizationId },
+              select: { currencyCode: true },
+            });
+        const currencyCode = commercialSettings?.currencyCode ?? organization?.currencyCode;
+        if (!currencyCode) throw notFound();
         const session = await tx.cashSession.create({
           data: {
             organizationId: tenant.organizationId,
             clinicLocationId: input.clinicLocationId,
+            currencyCode,
             openingCashAmount: new Prisma.Decimal(input.openingCashAmount),
             openedByMembershipId: tenant.membershipId,
             notes: input.notes?.trim() || null,

@@ -63,9 +63,7 @@ const appointment = {
     id: '66666666-6666-4666-8666-666666666666',
     role: 'VETERINARIAN',
     user: {
-      id: '88888888-8888-4888-8888-888888888888',
       email: 'vet@easyvet.test',
-      status: 'ACTIVE',
     },
   },
 } satisfies AppointmentResponse;

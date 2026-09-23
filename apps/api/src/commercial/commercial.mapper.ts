@@ -184,6 +184,7 @@ export function toCashSession(
     clinicLocationId: session.clinicLocationId,
     clinicLocationName: session.clinicLocation.name,
     status: session.status,
+    currencyCode: session.currencyCode,
     version: session.version,
     openingCashAmount: session.openingCashAmount.toFixed(4),
     openedAt: session.openedAt.toISOString(),

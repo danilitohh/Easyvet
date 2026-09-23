@@ -23,10 +23,10 @@ const membership = {
   clinicalRole: null,
   status: 'ACTIVE',
   user: {
-    id: '88888888-8888-4888-8888-888888888888',
     email: 'vet@easyvet.test',
-    status: 'ACTIVE',
+    displayName: null,
   },
+  professionalProfileConfigured: false,
 } satisfies MembershipResponse;
 
 const patient = {
@@ -89,7 +89,7 @@ const appointment = {
   assignedMembership: {
     id: membership.id,
     role: membership.role,
-    user: membership.user,
+    user: { email: membership.user.email },
   },
 } satisfies AppointmentResponse;
 

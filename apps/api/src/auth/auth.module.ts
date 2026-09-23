@@ -22,6 +22,6 @@ import { SessionsService } from './sessions.service';
     SessionsService,
     { provide: APP_GUARD, useClass: SessionAuthGuard },
   ],
-  exports: [AuthService, SessionAuthGuard, SessionCookieService, SessionsService],
+  exports: [AuthService, PasswordService, SessionAuthGuard, SessionCookieService, SessionsService],
 })
 export class AuthModule {}

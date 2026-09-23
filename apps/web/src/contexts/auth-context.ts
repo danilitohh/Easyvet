@@ -3,6 +3,7 @@ import type {
   ActiveMembership,
   AuthMeResponse,
   AuthenticatedUser,
+  ChangePasswordRequest,
   LoginRequest,
 } from '@veterinary-saas/contracts';
 
@@ -18,6 +19,7 @@ export type AuthState = {
 export type AuthContextValue = AuthState & {
   login: (input: LoginRequest) => Promise<AuthMeResponse>;
   switchOrganization: (membershipId: string) => Promise<AuthMeResponse>;
+  changePassword: (input: ChangePasswordRequest) => Promise<AuthMeResponse>;
   logout: () => Promise<void>;
 };
 
@@ -25,6 +27,7 @@ const demoUser: AuthenticatedUser = {
   id: '00000000-0000-4000-8000-000000000001',
   email: 'demo@easyvet.local',
   platformRole: 'PLATFORM_ADMIN',
+  mustChangePassword: false,
 };
 
 // Default context keeps the visual shell usable in isolated component tests and mock mode.
@@ -41,6 +44,12 @@ export const defaultContext: AuthContextValue = {
     organizationSelectionRequired: false,
   }),
   switchOrganization: async () => ({
+    user: demoUser,
+    activeMembership: null,
+    memberships: [],
+    organizationSelectionRequired: false,
+  }),
+  changePassword: async () => ({
     user: demoUser,
     activeMembership: null,
     memberships: [],

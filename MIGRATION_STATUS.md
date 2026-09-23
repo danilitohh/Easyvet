@@ -1186,3 +1186,73 @@ test:db`, `npm run test:all`, `npm run build`, `npm run prisma:generate` y
   pruebas PostgreSQL, build, generación Prisma y validación del schema pasan.
   No quedan bugs funcionales conocidos; restricciones funcionales restantes
   corresponden a límites post-V1 documentados en la revisión final.
+
+## Users / Settings / Reports 10
+
+- Estado: **COMPLETADA**. El cambio obligatorio de contraseña se completó
+  manualmente en `easyvet_dev`; la contraseña no se registró ni se incluyó en
+  esta documentación.
+
+- `User` sigue siendo una identidad global; el acceso se concede/revoca por
+  `Membership` de la organización activa. El onboarding normaliza el correo,
+  genera contraseña temporal criptográfica para cuentas nuevas y obliga el
+  cambio en primer ingreso. Cuentas existentes conservan contraseña y rol de
+  plataforma; `OrganizationAuditEvent` guarda únicamente tenant, actor, entidad,
+  acción y metadatos mínimos.
+- La migración `20260923140000_admin_settings_reports` añade
+  `User.mustChangePassword`, auditoría administrativa append-only y moneda
+  snapshot en sesiones de caja existentes. Fue aplicada a `easyvet_dev` y
+  `easyvet_test`; no se crearon entidades de dominio ni se resetearon bases.
+- `/usuarios`, `/configuracion`, `/informes` y `/cambiar-contrasena` están
+  separados por ruta y lazy-loaded. Permisos se derivan del rol organizacional y
+  `ClinicalRole`; OWNER queda sujeto al invariante de un propietario activo,
+  serializado con lock de Organization. El cambio de contraseña revoca todas las
+  demás sesiones del User.
+- Configuración se divide en General, Sedes y Comercial. Inactivar sede bloquea
+  caja abierta, Grooming en curso y citas bloqueantes; los dominios que crean
+  operaciones sincronizan locks de sede. La moneda comercial y el prefijo solo
+  cambian defaults/documentos futuros y no renumeran ni recalculan historia.
+- Los informes operacional, clínico, comercial e inventario son agregados
+  tenant-scoped con rangos civiles de hasta 366 días en timezone de Organization.
+  Ningún endpoint devuelve filas clínicas/pacientes; valores de distintas
+  monedas se agrupan por separado.
+- La revisión acotada del legacy de usuarios, configuración e informes se guarda
+  en [`admin-reports-final-review.md`](docs/migration/admin-reports-final-review.md).
+  La UI extiende el diseño actual de Easyvet. QA ficticio en `easyvet_dev`
+  confirmó login con contraseña temporal, redirección obligatoria a
+  `/cambiar-contrasena` y posterior cambio manual de contraseña. Se editaron y
+  restauraron los settings generales, y se creó/editó/inactivó una sede temporal
+  segura.
+- Los cuatro informes se contrastaron contra agregaciones SQL independientes en
+  `easyvet_dev` para los datos existentes; las cifras de agenda, seguimientos,
+  clínica, peluquería, hospitalización, ventas, facturas, pagos e inventario
+  coincidieron. No se alteraron evidencias clínicas, ventas, caja, stock, citas
+  ni pesos de Patient. El tenant switch Norte→Sur mantuvo informes y permisos
+  aislados; se corrigió el uso de un endpoint de settings administrativo al
+  inicializar el reporte operacional del rol Practitioner.
+- Se verificó el rechazo de degradar y suspender al único OWNER activo. La
+  resolución simultánea de invariantes OWNER y los flujos de sesión se cubren
+  además con pruebas de integración. No se observaron bugs funcionales
+  pendientes durante el QA realizado.
+- `npm run test:all` pasó: web 370/370 y PostgreSQL 228/228. También pasaron
+  `format:check`, `lint`, `typecheck`, `build` y `prisma:validate`. Tras el QA,
+  una lectura limitada a `easyvet_dev` confirmó usuario `ACTIVE`, membership
+  `RECEPTION/ACTIVE`, `mustChangePassword=false` y hash presente. El modelo
+  persiste `passwordHash`, no texto plano. La única sesión encontrada está
+  vigente; no había sesiones adicionales que revocar. Al recargar el dashboard,
+  el AppShell siguió autenticado mediante la restauración de sesión de
+  `AuthProvider` (`GET /auth/me`). El acceso directo al puerto API desde el
+  navegador auxiliar fue bloqueado por el navegador, por lo que el status HTTP
+  del endpoint no se capturó por separado.
+- Los servidores de QA se detuvieron y los puertos locales quedaron libres.
+  `npm run prisma:generate` y `npm run prisma:validate` pasaron después del
+  cierre. Durante la detención, el watcher de API registró reinicios con
+  `Cannot find module .../apps/api/dist/main`; API y frontend respondían antes
+  de la detención. Se trata como inestabilidad del watcher local durante el
+  cierre, no como bug funcional confirmado; no se modificó código por ello.
+  `npm audit` reportó 5 hallazgos de desarrollo en dos dependencias transitivas,
+  sin actualización patch/minor compatible; no se modificaron dependencias. El
+  build mantiene el aviso del chunk principal (872,03 kB minificado; 247,76 kB
+  gzip), fuera del alcance de esta fase.
+- El cierre documental y la revisión de secretos se completaron para el commit
+  único `feat(admin): complete users settings and reports`; no se hizo push.

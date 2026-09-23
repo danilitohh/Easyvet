@@ -11,6 +11,7 @@ vi.mock('../services/auth', () => ({
     me: vi.fn(),
     login: vi.fn(),
     switchOrganization: vi.fn(),
+    changePassword: vi.fn(),
     logout: vi.fn(),
   },
 }));
@@ -21,6 +22,7 @@ const restoredSession = {
     id: '00000000-0000-4000-8000-000000000020',
     email: 'restored@example.com',
     platformRole: 'USER' as const,
+    mustChangePassword: false,
   },
   activeMembership: null,
   memberships: [],
@@ -34,6 +36,23 @@ function renderProtected() {
         <Routes>
           <Route element={<AuthBoundary />}>
             <Route path="/dashboard" element={<p>Restored dashboard</p>} />
+          </Route>
+          <Route path="/login" element={<p>Login screen</p>} />
+        </Routes>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+}
+
+function renderMustChangePassword() {
+  return render(
+    <MemoryRouter initialEntries={['/dashboard']}>
+      <AuthProvider>
+        <Routes>
+          <Route element={<AuthBoundary />}>
+            <Route path="/dashboard" element={<p>Restored dashboard</p>} />
+            <Route path="/cambiar-contrasena" element={<p>Change password screen</p>} />
+            <Route path="/seleccionar-organizacion" element={<p>Choose organization</p>} />
           </Route>
           <Route path="/login" element={<p>Login screen</p>} />
         </Routes>
@@ -57,5 +76,17 @@ describe('AuthProvider session restoration', () => {
     renderProtected();
     await waitFor(() => expect(screen.getByText('Login screen')).toBeInTheDocument());
     expect(screen.queryByText('Restored dashboard')).not.toBeInTheDocument();
+  });
+
+  it('forces a temporary-credential user to password change before organization selection or AppShell', async () => {
+    mockedAuthApi.me.mockResolvedValue({
+      ...restoredSession,
+      user: { ...restoredSession.user, mustChangePassword: true },
+      organizationSelectionRequired: true,
+    });
+    renderMustChangePassword();
+    await waitFor(() => expect(screen.getByText('Change password screen')).toBeInTheDocument());
+    expect(screen.queryByText('Restored dashboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Choose organization')).not.toBeInTheDocument();
   });
 });

@@ -46,7 +46,8 @@ export function AgendaFilters({
           role: membership.role,
           clinicalRole: null,
           status: 'ACTIVE',
-          user: membership.user,
+          user: { email: membership.user.email, displayName: null },
+          professionalProfileConfigured: false,
         });
       }
       return items;
@@ -111,10 +112,7 @@ export function AgendaFilters({
             <option value="ALL">Todos los profesionales</option>
             <option value="UNASSIGNED">Sin profesional asignado</option>
             {professionalOptions
-              .filter(
-                (membership) =>
-                  membership.status === 'ACTIVE' && membership.user.status === 'ACTIVE',
-              )
+              .filter((membership) => membership.status === 'ACTIVE')
               .map((membership) => (
                 <option value={membership.id} key={membership.id}>
                   {professionalLabel(membership)}

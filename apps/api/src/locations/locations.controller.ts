@@ -1,6 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
+  Patch,
+  Body,
   NotFoundException,
   Param,
   ParseUUIDPipe,
@@ -14,6 +17,7 @@ import type { TenantContext } from '../authorization/authorization.types';
 import { PermissionGuard } from '../authorization/permission.guard';
 import { TenantContextGuard } from '../authorization/tenant-context.guard';
 import { LocationsService } from './locations.service';
+import { CreateLocationDto, UpdateLocationDto } from './locations.dto';
 
 function resourceNotFound(): NotFoundException {
   return new NotFoundException({ code: 'RESOURCE_NOT_FOUND', message: 'Resource not found' });
@@ -62,5 +66,53 @@ export class LocationsController {
       locationId,
     );
     return toLocationResponse(location);
+  }
+
+  @Post()
+  @RequirePermissions(PERMISSIONS.LOCATIONS.CREATE)
+  async create(
+    @CurrentTenant() tenant: TenantContext,
+    @Body() body: CreateLocationDto,
+  ): Promise<LocationResponse> {
+    const location = await this.locations.create(tenant.organizationId, tenant.membershipId, body);
+    return toLocationResponse(location);
+  }
+
+  @Patch(':locationId')
+  @RequirePermissions(PERMISSIONS.LOCATIONS.UPDATE)
+  async update(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('locationId', new ParseUUIDPipe()) locationId: string,
+    @Body() body: UpdateLocationDto,
+  ): Promise<LocationResponse> {
+    const location = await this.locations.update(
+      tenant.organizationId,
+      locationId,
+      tenant.membershipId,
+      body,
+    );
+    return toLocationResponse(location);
+  }
+
+  @Post(':locationId/deactivate')
+  @RequirePermissions(PERMISSIONS.LOCATIONS.DEACTIVATE)
+  async deactivate(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('locationId', new ParseUUIDPipe()) locationId: string,
+  ): Promise<LocationResponse> {
+    return toLocationResponse(
+      await this.locations.deactivate(tenant.organizationId, locationId, tenant.membershipId),
+    );
+  }
+
+  @Post(':locationId/activate')
+  @RequirePermissions(PERMISSIONS.LOCATIONS.UPDATE)
+  async activate(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('locationId', new ParseUUIDPipe()) locationId: string,
+  ): Promise<LocationResponse> {
+    return toLocationResponse(
+      await this.locations.activate(tenant.organizationId, locationId, tenant.membershipId),
+    );
   }
 }

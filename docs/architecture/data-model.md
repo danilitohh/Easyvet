@@ -1,6 +1,6 @@
 # Modelo de datos fundamental
 
-## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A, 6F.2B, 6J, 7, 8 y 9
+## Alcance de Fases 3A, 3B, 3C, 4A, 5B, 6B.1, 6B.2, 6E.2, 6F.2A, 6F.2B, 6J, 7, 8, 9 y 10
 
 Estas fases definen el núcleo multi-tenant y sesiones de autenticación. Las
 autorización por permisos y el primer dominio veterinario de propietarios y
@@ -8,7 +8,9 @@ pacientes. Agenda 5B añade reservas operativas y disponibilidad. Fases 6B.1 y
 6B.2 añaden la fundación persistente y las operaciones transaccionales del
 núcleo clínico; 6F.2A agrega Procedures/Surgery, 6F.2B agrega Anesthesia y 6J
 agrega FollowUps; Fase 7 agrega Grooming operacional; Fase 8 Inventory y Fase 9
-Sales/Billing/Cash completan la superficie comercial V1.
+Sales/Billing/Cash completan la superficie comercial V1. Fase 10 agrega estado
+de cambio obligatorio de contraseña, auditoría administrativa y snapshots de
+moneda para cierres de caja.
 
 ### Fundación clínica 6B.1
 
@@ -65,10 +67,14 @@ ClinicalEncounter
   `currencyCode` son configuración mínima, no branding ni suscripción.
 - `ClinicLocation`: sede perteneciente a una organización. No es una frontera
   de seguridad independiente.
-- `User`: identidad global con email normalizado, hash de contraseña, estado y
-  rol de plataforma. No tiene `organizationId`.
+- `User`: identidad global con email normalizado, hash de contraseña, estado,
+  rol de plataforma y `mustChangePassword`. No tiene `organizationId`; el flag
+  se activa al crear una cuenta mediante onboarding.
 - `Membership`: vínculo explícito entre `User` y `Organization`. La combinación
-  `userId + organizationId` es única.
+  `userId + organizationId` es única. Roles y `ClinicalRole` son dimensiones
+  independientes; la gestión del tenant no suspende la identidad global.
+- `OrganizationAuditEvent`: evidencia append-only de cambios administrativos
+  con tenant, entidad, acción, Membership actor y metadata mínima sin secretos.
 - `Session`: sesión de navegador asociada a un usuario. Guarda `tokenHash`,
   expiración, revocación, `lastSeenAt` opcional y `activeMembershipId` opcional;
   nunca almacena el token en claro.
@@ -303,6 +309,7 @@ por separado para cada una. Véase [`inventory.md`](inventory.md).
 ```text
 Organization
  ├── OrganizationCommercialSettings (1:1; moneda y secuencia Invoice)
+ ├── OrganizationAuditEvent[] (append-only; actor Membership tenant-safe)
  ├── Sale (DRAFT → COMPLETED → VOIDED)
  │    ├── SaleItem[] ── InventoryItem? + InventoryBatch?
  │    ├── SalePayment[] ── CashSession? (solo CASH)
@@ -322,7 +329,8 @@ válidas.
 `SalePayment` persiste medio, importe, referencia y estado sin almacenar tarjeta;
 `cashSessionId` se determina en servidor para tender efectivo. `Invoice` preserva
 documento interno, totales y snapshots; no representa facturación electrónica
-fiscal. `CashSession` conserva base, cierre, conteo/diferencia/version; el saldo
+fiscal. `CashSession` conserva base, cierre, conteo/diferencia/version y
+`currencyCode` inmutable al abrir; el saldo
 abierto se deriva de `CashMovement.amountDelta`. Links tenant-composite y
 `RESTRICT` evitan cruces y destrucción en cascada. Las transacciones, índices y
 triggers están en [`sales.md`](sales.md), [`billing.md`](billing.md),

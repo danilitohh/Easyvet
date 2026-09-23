@@ -167,6 +167,7 @@ export class SessionsService {
       id: session.user.id,
       email: session.user.email,
       platformRole: session.user.platformRole,
+      mustChangePassword: session.user.mustChangePassword,
     };
   }
 

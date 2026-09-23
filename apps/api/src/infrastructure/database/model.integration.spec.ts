@@ -250,8 +250,8 @@ describeDatabase('fundamental multi-tenant model', () => {
     }).toEqual({
       organizations: 2,
       locations: 3,
-      users: 5,
-      memberships: 6,
+      users: 7,
+      memberships: 8,
       owners: 4,
       patients: 6,
       profiles: 2,

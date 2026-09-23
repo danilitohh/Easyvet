@@ -10,10 +10,29 @@ export const PERMISSIONS = {
   LOCATIONS: {
     READ: 'locations.read',
     MANAGE: 'locations.manage',
+    CREATE: 'locations.create',
+    UPDATE: 'locations.update',
+    DEACTIVATE: 'locations.deactivate',
   },
   MEMBERSHIPS: {
     READ: 'memberships.read',
     MANAGE: 'memberships.manage',
+  },
+  MEMBERS: {
+    READ: 'members.read',
+    CREATE: 'members.create',
+    UPDATE: 'members.update',
+    SUSPEND: 'members.suspend',
+  },
+  ORGANIZATION_SETTINGS: {
+    READ: 'organizationSettings.read',
+    UPDATE: 'organizationSettings.update',
+  },
+  REPORTS: {
+    OPERATIONAL: 'reports.operational.read',
+    CLINICAL: 'reports.clinical.read',
+    COMMERCIAL: 'reports.commercial.read',
+    INVENTORY: 'reports.inventory.read',
   },
   OWNERS: {
     READ: 'owners.read',
@@ -190,6 +209,22 @@ const COMMERCIAL_CASHIER_PERMISSIONS: readonly Permission[] = [
   'cash.close',
 ];
 
+const TENANT_ADMINISTRATION_PERMISSIONS: readonly Permission[] = [
+  'members.read',
+  'members.create',
+  'members.update',
+  'members.suspend',
+  'organizationSettings.read',
+  'organizationSettings.update',
+  'locations.create',
+  'locations.update',
+  'locations.deactivate',
+  'reports.operational.read',
+  'reports.clinical.read',
+  'reports.commercial.read',
+  'reports.inventory.read',
+];
+
 const OWNER_PATIENT_ADMIN_PERMISSIONS: readonly Permission[] = [
   'owners.read',
   'owners.create',
@@ -223,6 +258,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.LOCATIONS.MANAGE,
     PERMISSIONS.MEMBERSHIPS.READ,
     PERMISSIONS.MEMBERSHIPS.MANAGE,
+    ...TENANT_ADMINISTRATION_PERMISSIONS,
     ...OWNER_PATIENT_ADMIN_PERMISSIONS,
     ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
     ...GROOMING_ADMIN_PERMISSIONS,
@@ -236,6 +272,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.LOCATIONS.MANAGE,
     PERMISSIONS.MEMBERSHIPS.READ,
     PERMISSIONS.MEMBERSHIPS.MANAGE,
+    ...TENANT_ADMINISTRATION_PERMISSIONS,
     ...OWNER_PATIENT_ADMIN_PERMISSIONS,
     ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
     ...GROOMING_ADMIN_PERMISSIONS,
@@ -261,6 +298,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'availability.read',
     'grooming.read',
     'inventory.read',
+    'reports.operational.read',
   ],
   ASSISTANT: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -297,6 +335,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'grooming.updateDraft',
     'inventory.read',
     ...COMMERCIAL_RECEPTION_PERMISSIONS,
+    'reports.operational.read',
   ],
   GROOMER: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -310,6 +349,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'grooming.perform',
     'grooming.complete',
     'inventory.read',
+    'reports.operational.read',
   ],
   CASHIER: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -320,12 +360,15 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'grooming.read',
     'inventory.read',
     ...COMMERCIAL_CASHIER_PERMISSIONS,
+    'reports.commercial.read',
   ],
 };
 
 // Clinical permissions are derived only from the orthogonal ClinicalRole field.
 export const CLINICAL_ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission[]> = {
   PRACTITIONER: [
+    'reports.clinical.read',
+    'reports.operational.read',
     'clinicalRecords.read',
     'clinicalEncounters.read',
     'clinicalEncounters.create',

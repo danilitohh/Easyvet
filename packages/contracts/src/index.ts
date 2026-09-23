@@ -26,6 +26,19 @@ export const permissionSchema = z.enum([
   'locations.manage',
   'memberships.read',
   'memberships.manage',
+  'members.read',
+  'members.create',
+  'members.update',
+  'members.suspend',
+  'organizationSettings.read',
+  'organizationSettings.update',
+  'locations.create',
+  'locations.update',
+  'locations.deactivate',
+  'reports.operational.read',
+  'reports.clinical.read',
+  'reports.commercial.read',
+  'reports.inventory.read',
   'owners.read',
   'owners.create',
   'owners.update',
@@ -135,6 +148,7 @@ const authenticatedUserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
   platformRole: platformRoleSchema,
+  mustChangePassword: z.boolean(),
 });
 
 const activeMembershipSchema = z.object({
@@ -159,6 +173,11 @@ export const loginRequestSchema = z.object({
   password: z.string().min(1),
 });
 
+export const changePasswordRequestSchema = z.object({
+  currentPassword: z.string().min(1).max(1024),
+  newPassword: z.string().min(12).max(128),
+});
+
 export const loginResponseSchema = z.object({
   user: authenticatedUserSchema,
   activeMembership: activeMembershipSchema.nullable(),
@@ -177,6 +196,7 @@ export const logoutResponseSchema = z.object({
 });
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
+export type ChangePasswordRequest = z.infer<typeof changePasswordRequestSchema>;
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 export type AuthMeResponse = z.infer<typeof authMeResponseSchema>;
 export type SwitchOrganizationRequest = z.infer<typeof switchOrganizationRequestSchema>;
@@ -196,7 +216,16 @@ export const updateOrganizationRequestSchema = z.object({
   name: z.string().trim().min(1).max(160).optional(),
   timezone: z.string().trim().min(1).max(80).optional(),
   locale: z.string().trim().min(2).max(20).optional(),
-  currencyCode: z.string().trim().min(3).max(3).optional(),
+});
+
+export const commercialSettingsResponseSchema = z.object({
+  currencyCode: z.string().length(3),
+  invoicePrefix: z.string().min(1).max(16),
+});
+
+export const updateCommercialSettingsRequestSchema = z.object({
+  currencyCode: z.string().trim().length(3).optional(),
+  invoicePrefix: z.string().trim().min(1).max(16).optional(),
 });
 
 export const locationResponseSchema = z.object({
@@ -207,22 +236,162 @@ export const locationResponseSchema = z.object({
   city: z.string().nullable(),
 });
 
+export const createLocationRequestSchema = z
+  .object({
+    name: z.string().trim().min(1).max(160),
+    address: z.string().trim().max(300).optional(),
+    city: z.string().trim().max(160).optional(),
+  })
+  .strict();
+
+export const updateLocationRequestSchema = createLocationRequestSchema.partial();
+
 export const membershipResponseSchema = z.object({
   id: z.string().uuid(),
   user: z.object({
-    id: z.string().uuid(),
     email: z.string().email(),
-    status: z.enum(['ACTIVE', 'SUSPENDED']),
+    displayName: z.string().nullable(),
   }),
   role: membershipRoleSchema,
   clinicalRole: clinicalRoleSchema.nullable(),
   status: membershipStatusSchema,
+  professionalProfileConfigured: z.boolean(),
 });
+
+export const paginatedMembershipResponseSchema = z.object({
+  data: z.array(membershipResponseSchema),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+});
+
+export const createMemberResponseSchema = z.object({
+  membership: membershipResponseSchema,
+  accountAlreadyExisted: z.boolean(),
+  temporaryPassword: z.string().min(16).nullable(),
+});
+
+export const createStaffRequestSchema = z
+  .object({
+    email: z.string().trim().email().max(320),
+    membershipRole: membershipRoleSchema,
+    clinicalRole: clinicalRoleSchema.nullable().optional(),
+  })
+  .strict();
+
+export const updateMembershipRequestSchema = z
+  .object({
+    membershipRole: membershipRoleSchema.optional(),
+    clinicalRole: clinicalRoleSchema.nullable().optional(),
+  })
+  .strict();
+
+export type PaginatedMembershipResponse = z.infer<typeof paginatedMembershipResponseSchema>;
+export type CreateMemberResponse = z.infer<typeof createMemberResponseSchema>;
 
 export type OrganizationCurrentResponse = z.infer<typeof organizationCurrentResponseSchema>;
 export type UpdateOrganizationRequest = z.infer<typeof updateOrganizationRequestSchema>;
+export type CommercialSettingsResponse = z.infer<typeof commercialSettingsResponseSchema>;
+export type UpdateCommercialSettingsRequest = z.infer<typeof updateCommercialSettingsRequestSchema>;
 export type LocationResponse = z.infer<typeof locationResponseSchema>;
+export type CreateStaffRequest = z.infer<typeof createStaffRequestSchema>;
+export type UpdateMembershipRequest = z.infer<typeof updateMembershipRequestSchema>;
+export type CreateLocationRequest = z.infer<typeof createLocationRequestSchema>;
+export type UpdateLocationRequest = z.infer<typeof updateLocationRequestSchema>;
 export type MembershipResponse = z.infer<typeof membershipResponseSchema>;
+
+export const reportRangeResponseSchema = z.object({
+  from: z.string().date(),
+  to: z.string().date(),
+  timezone: z.string(),
+  clinicLocationId: z.string().uuid().nullable(),
+});
+
+export const operationalReportResponseSchema = z.object({
+  range: reportRangeResponseSchema,
+  appointments: z.object({
+    total: z.number().int(),
+    completed: z.number().int(),
+    cancelled: z.number().int(),
+    noShow: z.number().int(),
+  }),
+  followUps: z.object({
+    open: z.number().int(),
+    overdue: z.number().int(),
+    dueToday: z.number().int(),
+  }),
+  grooming: z.object({
+    draft: z.number().int(),
+    inProgress: z.number().int(),
+    completed: z.number().int(),
+  }),
+  hospitalization: z.object({
+    currentlyActive: z.number().int(),
+    admissions: z.number().int(),
+    discharges: z.number().int(),
+  }),
+});
+
+export const clinicalReportResponseSchema = z.object({
+  range: reportRangeResponseSchema,
+  finalized: z.object({
+    clinicalEncounters: z.number().int(),
+    prescriptions: z.number().int(),
+    vaccinations: z.number().int(),
+    dewormings: z.number().int(),
+    procedures: z.number().int(),
+    anesthesia: z.number().int(),
+    diagnosticOrdersResulted: z.number().int(),
+    hospitalizationDischarges: z.number().int(),
+    consentsSigned: z.number().int(),
+  }),
+});
+
+const commercialAmountSchema = z.string().regex(/^-?\d+(?:\.\d+)?$/);
+export const commercialReportResponseSchema = z.object({
+  range: reportRangeResponseSchema,
+  totalsByCurrency: z.array(
+    z.object({
+      currencyCode: z.string().length(3),
+      completedSales: z.number().int(),
+      voidedSales: z.number().int(),
+      revenue: commercialAmountSchema,
+      discounts: commercialAmountSchema,
+      averageTicket: commercialAmountSchema,
+      voidedValue: commercialAmountSchema,
+    }),
+  ),
+  paymentsByCurrency: z.array(
+    z.object({
+      currencyCode: z.string().length(3),
+      method: z.string(),
+      total: commercialAmountSchema,
+    }),
+  ),
+  invoices: z.object({ issued: z.number().int(), voided: z.number().int() }),
+  cashSessionsByCurrency: z.array(
+    z.object({
+      currencyCode: z.string().length(3),
+      closedSessions: z.number().int(),
+      difference: commercialAmountSchema,
+    }),
+  ),
+});
+
+export const inventoryReportResponseSchema = z.object({
+  range: reportRangeResponseSchema,
+  activeItems: z.number().int(),
+  archivedItems: z.number().int(),
+  lowStockItemLocations: z.number().int(),
+  expiredBatchesWithStock: z.number().int(),
+  expiringSoonBatchesWithStock: z.number().int(),
+  stockMovements: z.number().int(),
+});
+
+export type OperationalReportResponse = z.infer<typeof operationalReportResponseSchema>;
+export type ClinicalReportResponse = z.infer<typeof clinicalReportResponseSchema>;
+export type CommercialReportResponse = z.infer<typeof commercialReportResponseSchema>;
+export type InventoryReportResponse = z.infer<typeof inventoryReportResponseSchema>;
 
 // Professional profiles are tenant-scoped to the active membership; clients never submit
 // organization, user or membership identifiers for the self-service endpoint.
@@ -1661,9 +1830,7 @@ const membershipSummarySchema = z.object({
   id: z.string().uuid(),
   role: membershipRoleSchema,
   user: z.object({
-    id: z.string().uuid(),
     email: z.string().email(),
-    status: z.enum(['ACTIVE', 'SUSPENDED']),
   }),
 });
 
@@ -2733,6 +2900,7 @@ export const cashSessionSchema = z.object({
   clinicLocationId: z.string().uuid(),
   clinicLocationName: z.string(),
   status: cashSessionStatusSchema,
+  currencyCode: z.string().length(3),
   version: z.number().int().positive(),
   openingCashAmount: commercialMoneySchema,
   openedAt: commercialInstantSchema,

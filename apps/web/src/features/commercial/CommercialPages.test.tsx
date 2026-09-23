@@ -143,6 +143,7 @@ const session: CashSessionDetail = {
   clinicLocationId: locationId,
   clinicLocationName: 'Norte',
   status: 'OPEN',
+  currencyCode: 'COP',
   version: 2,
   openingCashAmount: '50',
   openedAt: '2035-01-01T10:00:00.000Z',

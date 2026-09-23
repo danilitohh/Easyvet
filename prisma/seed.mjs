@@ -64,6 +64,22 @@ const seedUsers = [
     role: 'RECEPTION',
     clinicalRole: null,
   },
+  {
+    id: '00000000-0000-4000-8000-000000000106',
+    email: 'admin.norte@demo.local',
+    organizationId: seedOrganizations[0].id,
+    membershipId: '00000000-0000-4000-8000-000000000207',
+    role: 'ADMIN',
+    clinicalRole: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000107',
+    email: 'cashier.norte@demo.local',
+    organizationId: seedOrganizations[0].id,
+    membershipId: '00000000-0000-4000-8000-000000000208',
+    role: 'CASHIER',
+    clinicalRole: null,
+  },
 ];
 
 const seedOwners = [

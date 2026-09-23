@@ -1,9 +1,16 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthenticatedRequest } from './auth.types';
 import { IS_PUBLIC_KEY } from '../authorization/public.decorator';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
+import { PASSWORD_CHANGE_ALLOWED_KEY } from '../authorization/password-change-allowed.decorator';
 
 // Authenticates the request only; tenant authorization and permissions belong to Fase 3C.
 @Injectable()
@@ -41,6 +48,16 @@ export class SessionAuthGuard implements CanActivate {
     }
 
     request.auth = authenticated;
+    const passwordChangeAllowed = this.reflector.getAllAndOverride<boolean>(
+      PASSWORD_CHANGE_ALLOWED_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (authenticated.user.mustChangePassword && !passwordChangeAllowed) {
+      throw new ForbiddenException({
+        code: 'PASSWORD_CHANGE_REQUIRED',
+        message: 'Change the temporary password before continuing',
+      });
+    }
     return true;
   }
 }

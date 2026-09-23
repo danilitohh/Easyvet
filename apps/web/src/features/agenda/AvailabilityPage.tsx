@@ -95,10 +95,7 @@ export function AvailabilityPage() {
     [references.data],
   );
   const activeMemberships = useMemo(
-    () =>
-      references.data?.memberships.filter(
-        (membership) => membership.status === 'ACTIVE' && membership.user.status === 'ACTIVE',
-      ) ?? [],
+    () => references.data?.memberships.filter((membership) => membership.status === 'ACTIVE') ?? [],
     [references.data],
   );
   const editingRule = ruleId ? availability.data?.find((rule) => rule.id === ruleId) : null;
@@ -399,7 +396,7 @@ type AvailabilityFormProps = {
     id: string;
     role: string;
     status: string;
-    user: { email: string; status: string };
+    user: { email: string; displayName: string | null };
   }>;
   saving: boolean;
   onChange: (field: keyof AvailabilityFormState, value: string | number) => void;

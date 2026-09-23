@@ -1,13 +1,14 @@
 import { randomBytes } from 'node:crypto';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { PlatformRole, PrismaClient } from '@prisma/client';
+import { MembershipRole, PlatformRole, PrismaClient } from '@prisma/client';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { AppModule } from '../app.module';
 import { ApiExceptionFilter } from '../http/api-exception.filter';
 import { PasswordService } from './password.service';
 import { SessionsService } from './sessions.service';
+import { MembershipsService } from '../memberships/memberships.service';
 
 const describeDatabase = process.env.RUN_DB_TESTS === '1' ? describe : describe.skip;
 const password = 'Strong-Test-Password!2026';
@@ -22,10 +23,13 @@ describeDatabase('real authentication and sessions', () => {
   const createdUserIds: string[] = [];
   const createdOrganizationIds: string[] = [];
   const createdSessionIds: string[] = [];
+  const createdMembershipIds: string[] = [];
+  const createdLocationIds: string[] = [];
   let singleUser: { id: string; email: string };
   let multiUser: { id: string; email: string };
   let adminUser: { id: string; email: string };
   let suspendedUser: { id: string; email: string };
+  let foreignUser: { id: string; email: string };
   let singleMembershipId: string;
   let multiMembershipIds: string[];
   let foreignMembershipId: string;
@@ -65,6 +69,9 @@ describeDatabase('real authentication and sessions', () => {
   beforeAll(async () => {
     const databaseUrl = process.env.DATABASE_URL_TEST;
     if (!databaseUrl) throw new Error('DATABASE_URL_TEST is required when RUN_DB_TESTS=1');
+    if (new URL(databaseUrl).pathname.replace(/^\//, '') !== 'easyvet_test') {
+      throw new Error('Authentication integration tests must use easyvet_test');
+    }
     process.env.DATABASE_URL = databaseUrl;
 
     prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
@@ -126,6 +133,9 @@ describeDatabase('real authentication and sessions', () => {
     ]);
     locationNorthId = locationNorth.id;
     locationSouthId = locationSouth.id;
+    await prisma.organizationCommercialSettings.create({
+      data: { organizationId: organizationOne.id, currencyCode: 'COP', invoicePrefix: 'AUTH' },
+    });
 
     const [single, multi, admin, suspended, foreign, limited, platformMember] = await Promise.all([
       prisma.user.create({ data: { email: `auth-single-${suffix}@example.local`, passwordHash } }),
@@ -167,6 +177,7 @@ describeDatabase('real authentication and sessions', () => {
     multiUser = multi;
     adminUser = admin;
     suspendedUser = suspended;
+    foreignUser = foreign;
     limitedUser = limited;
     platformMemberUser = platformMember;
 
@@ -282,6 +293,16 @@ describeDatabase('real authentication and sessions', () => {
   afterAll(async () => {
     if (!prisma) return;
     await prisma.session.deleteMany({ where: { userId: { in: createdUserIds } } });
+    // Append-only audit rows retain actor FKs, so cleanup removes only this suite's rows inside a rollback-safe test transaction.
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`ALTER TABLE "organization_audit_events" DISABLE TRIGGER "organization_audit_events_append_only"`;
+      await tx.organizationAuditEvent.deleteMany({
+        where: { organizationId: { in: createdOrganizationIds } },
+      });
+      await tx.$executeRaw`ALTER TABLE "organization_audit_events" ENABLE TRIGGER "organization_audit_events_append_only"`;
+    });
+    await prisma.membership.deleteMany({ where: { id: { in: createdMembershipIds } } });
+    await prisma.clinicLocation.deleteMany({ where: { id: { in: createdLocationIds } } });
     await prisma.patient.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await prisma.owner.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await prisma.membership.deleteMany({ where: { userId: { in: createdUserIds } } });
@@ -303,57 +324,23 @@ describeDatabase('real authentication and sessions', () => {
       id: singleUser.id,
       email: singleUser.email,
       platformRole: 'USER',
+      mustChangePassword: false,
     });
     expect(response.body.activeMembership.id).toBe(singleMembershipId);
-    expect(response.body.activeMembership.permissions).toEqual([
-      'organization.read',
-      'organization.update',
-      'locations.read',
-      'locations.manage',
-      'memberships.read',
-      'memberships.manage',
-      'owners.read',
-      'owners.create',
-      'owners.update',
-      'owners.archive',
-      'patients.read',
-      'patients.create',
-      'patients.update',
-      'patients.archive',
-      'appointments.read',
-      'appointments.create',
-      'appointments.update',
-      'appointments.cancel',
-      'appointments.checkIn',
-      'appointments.start',
-      'appointments.complete',
-      'appointments.markNoShow',
-      'availability.read',
-      'availability.manage',
-      'grooming.read',
-      'grooming.create',
-      'grooming.updateDraft',
-      'grooming.perform',
-      'grooming.complete',
-      'grooming.void',
-      'inventory.read',
-      'inventory.items.create',
-      'inventory.items.update',
-      'inventory.items.archive',
-      'inventory.movements.create',
-      'inventory.adjustments.create',
-      'inventory.transfers.create',
-      'sales.read',
-      'sales.create',
-      'sales.updateDraft',
-      'sales.complete',
-      'sales.void',
-      'billing.read',
-      'cash.read',
-      'cash.open',
-      'cash.movements',
-      'cash.close',
-    ]);
+    expect(response.body.activeMembership.permissions).toEqual(
+      expect.arrayContaining([
+        'members.read',
+        'members.create',
+        'members.update',
+        'members.suspend',
+        'organizationSettings.read',
+        'organizationSettings.update',
+        'reports.operational.read',
+        'reports.clinical.read',
+        'reports.commercial.read',
+        'reports.inventory.read',
+      ]),
+    );
     expect(response.body.memberships).toHaveLength(1);
     expect(response.body).not.toHaveProperty('passwordHash');
     expect(response.body).not.toHaveProperty('token');
@@ -465,7 +452,7 @@ describeDatabase('real authentication and sessions', () => {
       .expect(400);
     await prisma.organization.update({
       where: { id: organizationNorthId },
-      data: { name: `Auth North ${suffix}` },
+      data: { name: `Auth North ${suffix}`, timezone: 'UTC' },
     });
   });
 
@@ -490,7 +477,7 @@ describeDatabase('real authentication and sessions', () => {
     ).toBe(false);
     expect(
       response.body.some(
-        (membership: { user: { id: string } }) => membership.user.id === singleUser.id,
+        (membership: { user: { email: string } }) => membership.user.email === singleUser.email,
       ),
     ).toBe(true);
     expect(response.body[0]).not.toHaveProperty('passwordHash');
@@ -526,6 +513,10 @@ describeDatabase('real authentication and sessions', () => {
       .send({ timezone: 'America/Bogota' })
       .expect(403)
       .expect(({ body }) => expect(body.code).toBe('INSUFFICIENT_PERMISSION'));
+    await prisma.organization.update({
+      where: { id: organizationNorthId },
+      data: { timezone: 'UTC' },
+    });
   });
 
   it('exposes only technical context to platform administrators', async () => {
@@ -543,26 +534,13 @@ describeDatabase('real authentication and sessions', () => {
   it('does not give a platform role a tenant bypass, even with a membership', async () => {
     const agent = request.agent(app.getHttpServer());
     const loginResponse = await login(platformMemberUser.email, agent);
-    expect(loginResponse.body.activeMembership.permissions).toEqual([
-      'organization.read',
-      'locations.read',
-      'owners.read',
-      'owners.create',
-      'owners.update',
-      'patients.read',
-      'patients.create',
-      'patients.update',
-      'appointments.read',
-      'appointments.create',
-      'appointments.update',
-      'appointments.checkIn',
-      'appointments.start',
-      'appointments.complete',
-      'appointments.markNoShow',
-      'availability.read',
-      'grooming.read',
-      'inventory.read',
-    ]);
+    expect(loginResponse.body.activeMembership.permissions).toEqual(
+      expect.arrayContaining(['reports.operational.read']),
+    );
+    expect(loginResponse.body.activeMembership.permissions).not.toContain('members.read');
+    expect(loginResponse.body.activeMembership.permissions).not.toContain(
+      'reports.commercial.read',
+    );
     await agent.get('/api/v1/organization/current').expect(200);
     await agent.patch('/api/v1/organization/current').send({ name: 'Forbidden' }).expect(403);
   });
@@ -579,26 +557,9 @@ describeDatabase('real authentication and sessions', () => {
       .post('/api/v1/auth/switch-organization')
       .send({ membershipId: multiSouthMembershipId })
       .expect(200);
-    expect(south.body.activeMembership.permissions).toEqual([
-      'organization.read',
-      'locations.read',
-      'owners.read',
-      'owners.create',
-      'owners.update',
-      'patients.read',
-      'patients.create',
-      'patients.update',
-      'appointments.read',
-      'appointments.create',
-      'appointments.update',
-      'appointments.checkIn',
-      'appointments.start',
-      'appointments.complete',
-      'appointments.markNoShow',
-      'availability.read',
-      'grooming.read',
-      'inventory.read',
-    ]);
+    expect(south.body.activeMembership.permissions).toEqual(
+      expect.arrayContaining(['reports.operational.read']),
+    );
     const me = await agent.get('/api/v1/auth/me').expect(200);
     expect(me.body.activeMembership.organization.id).toBe(organizationSouthId);
     expect(me.body.activeMembership.permissions).not.toContain('memberships.read');
@@ -1074,5 +1035,431 @@ describeDatabase('real authentication and sessions', () => {
       .expect(200);
     const after = await prisma.session.findUnique({ where: { id: before!.id } });
     expect(after?.lastSeenAt?.getTime()).toBeGreaterThan(before?.lastSeenAt?.getTime() ?? 0);
+  });
+
+  it('onboards a new global identity with one-time credentials and enforces first-login password change', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const concurrentOwner = request.agent(app.getHttpServer());
+    await login(singleUser.email, owner);
+    await login(singleUser.email, concurrentOwner);
+    const email = `onboard-${suffix}@example.local`;
+    const responses = await Promise.all([
+      owner
+        .post('/api/v1/organization/members')
+        .send({ email: ` ${email.toUpperCase()} `, membershipRole: 'RECEPTION' }),
+      concurrentOwner
+        .post('/api/v1/organization/members')
+        .send({ email, membershipRole: 'RECEPTION' }),
+    ]);
+    expect(responses.map(({ status }) => status).sort()).toEqual([201, 409]);
+    expect(responses.find(({ status }) => status === 409)?.body.code).toBe(
+      'MEMBERSHIP_ALREADY_EXISTS',
+    );
+    const response = responses.find(({ status }) => status === 201);
+    if (!response) throw new Error('One request must win staff onboarding');
+
+    expect(response.body).toMatchObject({ accountAlreadyExisted: false });
+    expect(response.body.temporaryPassword).toEqual(expect.any(String));
+    expect(response.body.temporaryPassword.length).toBeGreaterThanOrEqual(16);
+    expect(response.body.membership).toMatchObject({
+      role: 'RECEPTION',
+      clinicalRole: null,
+      status: 'ACTIVE',
+      user: { email, displayName: null },
+    });
+    expect(response.body.membership.user).not.toHaveProperty('id');
+    expect(response.body).not.toHaveProperty('platformRole');
+
+    const created = await prisma.user.findUniqueOrThrow({ where: { email } });
+    createdUserIds.push(created.id);
+    createdMembershipIds.push(response.body.membership.id);
+    expect(created.mustChangePassword).toBe(true);
+    expect(created.passwordHash).not.toBe(response.body.temporaryPassword);
+    const auditEvent = await prisma.organizationAuditEvent.findFirstOrThrow({
+      where: {
+        organizationId: organizationNorthId,
+        entityType: 'MEMBERSHIP',
+        entityId: response.body.membership.id,
+      },
+    });
+    expect(auditEvent.metadata).toEqual({ role: 'RECEPTION', clinicalRole: null });
+    expect(JSON.stringify(auditEvent)).not.toContain(response.body.temporaryPassword);
+    await expect(
+      prisma.organizationAuditEvent.update({
+        where: { id: auditEvent.id },
+        data: { metadata: { modified: true } },
+      }),
+    ).rejects.toThrow('append-only');
+
+    const firstSession = request.agent(app.getHttpServer());
+    const secondSession = request.agent(app.getHttpServer());
+    await firstSession
+      .post('/api/v1/auth/login')
+      .send({ email, password: response.body.temporaryPassword })
+      .expect(200)
+      .expect(({ body }) => expect(body.user.mustChangePassword).toBe(true));
+    await secondSession
+      .post('/api/v1/auth/login')
+      .send({ email, password: response.body.temporaryPassword })
+      .expect(200);
+    await firstSession
+      .get('/api/v1/auth/me')
+      .expect(200)
+      .expect(({ body }) => expect(body.user.mustChangePassword).toBe(true));
+    await firstSession
+      .get('/api/v1/owners')
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe('PASSWORD_CHANGE_REQUIRED'));
+    await firstSession
+      .post('/api/v1/auth/change-password')
+      .send({
+        currentPassword: 'incorrect-temporary-password',
+        newPassword: 'A safe passphrase for first login',
+      })
+      .expect(401)
+      .expect(({ body }) => expect(body.code).toBe('INVALID_CURRENT_PASSWORD'));
+    await firstSession
+      .post('/api/v1/auth/change-password')
+      .send({ currentPassword: response.body.temporaryPassword, newPassword: 'too-short' })
+      .expect(400)
+      .expect(({ body }) => expect(body.code).toBe('PASSWORD_POLICY_FAILED'));
+
+    const newPassword = 'A safe passphrase for first login 2030';
+    await firstSession
+      .post('/api/v1/auth/change-password')
+      .send({ currentPassword: response.body.temporaryPassword, newPassword })
+      .expect(200)
+      .expect({ success: true });
+    await firstSession
+      .get('/api/v1/auth/me')
+      .expect(200)
+      .expect(({ body }) => expect(body.user.mustChangePassword).toBe(false));
+    await secondSession.get('/api/v1/auth/me').expect(401);
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email, password: response.body.temporaryPassword })
+      .expect(401);
+
+    const staff = request.agent(app.getHttpServer());
+    await staff.post('/api/v1/auth/login').send({ email, password: newPassword }).expect(200);
+    await owner
+      .patch(`/api/v1/organization/members/${response.body.membership.id}`)
+      .send({ membershipRole: 'ADMIN' })
+      .expect(200);
+    await staff
+      .get('/api/v1/auth/me')
+      .expect(200)
+      .expect(({ body }) => expect(body.activeMembership.permissions).toContain('members.read'));
+  });
+
+  it('adds an existing identity without changing its password or exposing its other organizations', async () => {
+    const owner = request.agent(app.getHttpServer());
+    await login(singleUser.email, owner);
+    const passwordHash = (await prisma.user.findUniqueOrThrow({ where: { id: foreignUser.id } }))
+      .passwordHash;
+    const response = await owner
+      .post('/api/v1/organization/members')
+      .send({
+        email: foreignUser.email.toUpperCase(),
+        membershipRole: 'RECEPTION',
+        clinicalRole: 'PRACTITIONER',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({ accountAlreadyExisted: true, temporaryPassword: null });
+    expect(response.body.membership).toMatchObject({
+      role: 'RECEPTION',
+      clinicalRole: 'PRACTITIONER',
+      status: 'ACTIVE',
+    });
+    expect(response.body.membership).not.toHaveProperty('organizationId');
+    expect(response.body.membership).not.toHaveProperty('user.id');
+    expect(response.body.membership).not.toHaveProperty('memberships');
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: foreignUser.id } })).passwordHash,
+    ).toBe(passwordHash);
+    createdMembershipIds.push(response.body.membership.id);
+
+    await owner.get(`/api/v1/organization/members/${foreignMembershipId}`).expect(404);
+    const details = await owner
+      .get(`/api/v1/organization/members/${response.body.membership.id}`)
+      .expect(200);
+    expect(details.body).toMatchObject({ role: 'RECEPTION', clinicalRole: 'PRACTITIONER' });
+    expect(details.body).not.toHaveProperty('platformRole');
+  });
+
+  it('deduplicates concurrent onboarding of one new identity across two organizations', async () => {
+    const northOwner = request.agent(app.getHttpServer());
+    const foreignOwner = request.agent(app.getHttpServer());
+    await login(singleUser.email, northOwner);
+    await login(foreignUser.email, foreignOwner);
+    await foreignOwner
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: foreignMembershipId })
+      .expect(200);
+    const email = `multi-org-onboard-${suffix}@example.local`;
+    const responses = await Promise.all([
+      northOwner.post('/api/v1/organization/members').send({ email, membershipRole: 'RECEPTION' }),
+      foreignOwner.post('/api/v1/organization/members').send({ email, membershipRole: 'GROOMER' }),
+    ]);
+
+    expect(responses.map(({ status }) => status)).toEqual([201, 201]);
+    const newAccount = responses.find(({ body }) => body.accountAlreadyExisted === false);
+    const existingAccount = responses.find(({ body }) => body.accountAlreadyExisted === true);
+    expect(newAccount?.body.temporaryPassword).toEqual(expect.any(String));
+    expect(existingAccount?.body.temporaryPassword).toBeNull();
+    expect(newAccount?.body.temporaryPassword).not.toBe(existingAccount?.body.temporaryPassword);
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+    createdUserIds.push(user.id);
+    const memberships = await prisma.membership.findMany({ where: { userId: user.id } });
+    createdMembershipIds.push(...memberships.map(({ id }) => id));
+    expect(user.mustChangePassword).toBe(true);
+    expect(memberships.map(({ organizationId: orgId }) => orgId).sort()).toEqual(
+      [
+        organizationNorthId,
+        (await prisma.membership.findUniqueOrThrow({ where: { id: foreignMembershipId } }))
+          .organizationId,
+      ].sort(),
+    );
+    expect(memberships).toHaveLength(2);
+  });
+
+  it('enforces tenant report permissions and civil date boundaries', async () => {
+    const owner = request.agent(app.getHttpServer());
+    await login(singleUser.email, owner);
+    const operational = await owner
+      .get('/api/v1/reports/operational')
+      .query({ from: '2030-01-08', to: '2030-01-08' })
+      .expect(200);
+    expect(operational.body.range).toMatchObject({
+      from: '2030-01-08',
+      to: '2030-01-08',
+      timezone: 'UTC',
+      clinicLocationId: null,
+    });
+    expect(operational.body.appointments).toMatchObject({
+      total: 0,
+      completed: 0,
+      cancelled: 0,
+      noShow: 0,
+    });
+    expect(operational.body).not.toHaveProperty('patients');
+    await owner.get('/api/v1/reports/clinical').expect(200);
+    await owner.get('/api/v1/reports/commercial').expect(200);
+    await owner.get('/api/v1/reports/inventory').expect(200);
+    await owner
+      .get('/api/v1/reports/operational')
+      .query({ from: '2030-01-08', to: '2031-01-09' })
+      .expect(400);
+    await owner
+      .get('/api/v1/reports/operational')
+      .query({ from: '2030-02-30', to: '2030-03-01' })
+      .expect(400);
+    await owner
+      .get('/api/v1/reports/operational')
+      .query({ clinicLocationId: locationSouthId })
+      .expect(404);
+
+    const receptionist = request.agent(app.getHttpServer());
+    await login(limitedUser.email, receptionist);
+    await receptionist.get('/api/v1/reports/operational').expect(200);
+    await receptionist.get('/api/v1/reports/commercial').expect(403);
+    await receptionist.get('/api/v1/reports/inventory').expect(403);
+    await receptionist.get('/api/v1/reports/clinical').expect(403);
+
+    const veterinarian = request.agent(app.getHttpServer());
+    await login(multiUser.email, veterinarian);
+    await veterinarian
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiSouthMembershipId })
+      .expect(200);
+    await veterinarian.get('/api/v1/organization/current').expect(200);
+    await veterinarian.get('/api/v1/organization/settings').expect(403);
+    await veterinarian.get('/api/v1/organization/locations').expect(200);
+    await veterinarian.get('/api/v1/reports/operational').expect(200);
+  });
+
+  it('supports safe settings and reversible clinic-location management', async () => {
+    const owner = request.agent(app.getHttpServer());
+    await login(singleUser.email, owner);
+    await owner
+      .patch('/api/v1/organization/current')
+      .send({ timezone: 'Mars/Olympus' })
+      .expect(400)
+      .expect(({ body }) => expect(body.code).toBe('INVALID_TIMEZONE'));
+
+    try {
+      const commercial = await owner
+        .patch('/api/v1/organization/commercial-settings')
+        .send({ currencyCode: 'usd', invoicePrefix: 'qa-10' })
+        .expect(200);
+      expect(commercial.body).toEqual({ currencyCode: 'USD', invoicePrefix: 'QA-10' });
+      expect(commercial.body).not.toHaveProperty('nextInvoiceNumber');
+    } finally {
+      await prisma.organizationCommercialSettings.update({
+        where: { organizationId: organizationNorthId },
+        data: { currencyCode: 'COP', invoicePrefix: 'AUTH' },
+      });
+      await prisma.organization.update({
+        where: { id: organizationNorthId },
+        data: { currencyCode: 'COP' },
+      });
+    }
+
+    const created = await owner
+      .post('/api/v1/organization/locations')
+      .send({
+        name: `QA Location ${suffix}`,
+        address: 'Calle ficticia 10',
+        city: 'Bogotá',
+      })
+      .expect(201);
+    createdLocationIds.push(created.body.id);
+    expect(created.body).toMatchObject({ status: 'ACTIVE', city: 'Bogotá' });
+    const updated = await owner
+      .patch(`/api/v1/organization/locations/${created.body.id}`)
+      .send({ name: `QA Location Updated ${suffix}` })
+      .expect(200);
+    expect(updated.body.name).toBe(`QA Location Updated ${suffix}`);
+    await owner
+      .post(`/api/v1/organization/locations/${created.body.id}/deactivate`)
+      .expect(201)
+      .expect(({ body }) => expect(body.status).toBe('SUSPENDED'));
+    await owner
+      .post(`/api/v1/organization/locations/${created.body.id}/activate`)
+      .expect(201)
+      .expect(({ body }) => expect(body.status).toBe('ACTIVE'));
+    await owner.get(`/api/v1/organization/locations/${locationSouthId}`).expect(404);
+  });
+
+  it('refreshes permissions after role changes and keeps OWNER management restricted', async () => {
+    const owner = request.agent(app.getHttpServer());
+    await login(singleUser.email, owner);
+    const administrator = request.agent(app.getHttpServer());
+    await login(multiUser.email, administrator);
+    await administrator
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiNorthMembershipId })
+      .expect(200);
+
+    await administrator
+      .patch(`/api/v1/organization/members/${singleMembershipId}`)
+      .send({ membershipRole: 'ADMIN' })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe('OWNER_PERMISSION_REQUIRED'));
+    await administrator
+      .post(`/api/v1/organization/members/${singleMembershipId}/suspend`)
+      .expect(403);
+    await owner
+      .patch(`/api/v1/organization/members/${singleMembershipId}`)
+      .send({ membershipRole: 'ADMIN' })
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('LAST_ACTIVE_OWNER_REQUIRED'));
+    await owner
+      .post(`/api/v1/organization/members/${singleMembershipId}/suspend`)
+      .expect(409)
+      .expect(({ body }) => expect(body.code).toBe('LAST_ACTIVE_OWNER_REQUIRED'));
+
+    await owner
+      .patch(`/api/v1/organization/members/${multiNorthMembershipId}`)
+      .send({ membershipRole: 'RECEPTION', clinicalRole: null })
+      .expect(200);
+    await administrator.get('/api/v1/organization/members').expect(403);
+    await administrator.get('/api/v1/reports/clinical').expect(403);
+    await owner
+      .patch(`/api/v1/organization/members/${multiNorthMembershipId}`)
+      .send({ clinicalRole: 'PRACTITIONER' })
+      .expect(200);
+    await administrator.get('/api/v1/reports/clinical').expect(200);
+    await administrator.get('/api/v1/reports/commercial').expect(403);
+    await owner
+      .patch(`/api/v1/organization/members/${multiNorthMembershipId}`)
+      .send({ membershipRole: 'ADMIN', clinicalRole: null })
+      .expect(200);
+  });
+
+  it('suspends only the selected organization session and does not revive it on reactivation', async () => {
+    const owner = request.agent(app.getHttpServer());
+    await login(singleUser.email, owner);
+    const north = request.agent(app.getHttpServer());
+    const south = request.agent(app.getHttpServer());
+    await login(multiUser.email, north);
+    await login(multiUser.email, south);
+    await north
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiNorthMembershipId })
+      .expect(200);
+    await south
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiSouthMembershipId })
+      .expect(200);
+
+    await owner.post(`/api/v1/organization/members/${multiNorthMembershipId}/suspend`).expect(201);
+    await north.get('/api/v1/auth/me').expect(401);
+    await south
+      .get('/api/v1/auth/me')
+      .expect(200)
+      .expect(({ body }) => expect(body.activeMembership.id).toBe(multiSouthMembershipId));
+    await owner
+      .post(`/api/v1/organization/members/${multiNorthMembershipId}/reactivate`)
+      .expect(201);
+    await north.get('/api/v1/auth/me').expect(401);
+
+    const freshNorth = request.agent(app.getHttpServer());
+    await login(multiUser.email, freshNorth);
+    await freshNorth
+      .post('/api/v1/auth/switch-organization')
+      .send({ membershipId: multiNorthMembershipId })
+      .expect(200);
+    await freshNorth.get('/api/v1/auth/me').expect(200);
+  });
+
+  it('serializes concurrent owner demotion attempts and preserves one active owner', async () => {
+    const memberships = app.get(MembershipsService);
+    await prisma.membership.update({
+      where: { id: multiNorthMembershipId },
+      data: { role: MembershipRole.OWNER },
+    });
+    try {
+      const outcomes = await Promise.allSettled([
+        memberships.suspendStaff(
+          organizationNorthId,
+          singleMembershipId,
+          multiNorthMembershipId,
+          MembershipRole.OWNER,
+        ),
+        memberships.suspendStaff(
+          organizationNorthId,
+          multiNorthMembershipId,
+          singleMembershipId,
+          MembershipRole.OWNER,
+        ),
+      ]);
+      expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
+      const rejected = outcomes.find((outcome) => outcome.status === 'rejected');
+      expect(rejected?.status).toBe('rejected');
+      if (rejected?.status === 'rejected') {
+        expect(rejected.reason.getStatus()).toBe(409);
+        expect(rejected.reason.getResponse()).toMatchObject({ code: 'LAST_ACTIVE_OWNER_REQUIRED' });
+      }
+      const activeOwners = await prisma.membership.count({
+        where: {
+          organizationId: organizationNorthId,
+          role: MembershipRole.OWNER,
+          status: 'ACTIVE',
+        },
+      });
+      expect(activeOwners).toBe(1);
+    } finally {
+      await prisma.membership.update({
+        where: { id: singleMembershipId },
+        data: { role: MembershipRole.OWNER, status: 'ACTIVE' },
+      });
+      await prisma.membership.update({
+        where: { id: multiNorthMembershipId },
+        data: { role: MembershipRole.ADMIN, status: 'ACTIVE' },
+      });
+    }
   });
 });

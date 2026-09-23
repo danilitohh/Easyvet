@@ -20,11 +20,21 @@ export class UpdateOrganizationDto {
   @MinLength(2)
   @MaxLength(20)
   locale?: string;
+}
 
+export class UpdateCommercialSettingsDto {
   @IsOptional()
   @IsString()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   @Length(3, 3)
   @Matches(/^[A-Z]{3}$/)
   currencyCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @MinLength(1)
+  @MaxLength(16)
+  @Matches(/^[A-Z0-9-]+$/)
+  invoicePrefix?: string;
 }

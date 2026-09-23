@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserStatus } from '@prisma/client';
 import { PrismaService } from '../infrastructure/database/prisma.service';
 import { UsersService } from '../users/users.service';
@@ -62,5 +62,53 @@ export class AuthService {
 
     const memberships = await this.sessions.getActiveMemberships(context.user.id);
     return this.sessions.toResponse(nextContext, memberships);
+  }
+
+  // Revalidates the credential under a row lock before changing it to avoid racing another update.
+  async changePassword(
+    context: AuthenticatedRequestContext,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    if (newPassword.length < 12 || newPassword.length > 128) {
+      throw new BadRequestException({
+        code: 'PASSWORD_POLICY_FAILED',
+        message: 'Password must contain between 12 and 128 characters',
+      });
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: context.user.id } });
+    if (!user || !(await this.passwords.verify(user.passwordHash, currentPassword))) {
+      throw new UnauthorizedException({
+        code: 'INVALID_CURRENT_PASSWORD',
+        message: 'Current password is incorrect',
+      });
+    }
+    const passwordHash = await this.passwords.hash(newPassword);
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${context.user.id}::uuid FOR UPDATE`;
+      const current = await tx.user.findUnique({ where: { id: context.user.id } });
+      if (
+        !current ||
+        current.passwordHash !== user.passwordHash ||
+        current.status !== UserStatus.ACTIVE
+      ) {
+        throw new UnauthorizedException({
+          code: 'INVALID_CURRENT_PASSWORD',
+          message: 'Current password is incorrect',
+        });
+      }
+      await tx.user.update({
+        where: { id: current.id },
+        data: { passwordHash, mustChangePassword: false },
+      });
+      await tx.session.updateMany({
+        where: { userId: current.id, id: { not: context.sessionId }, revokedAt: null },
+        data: { revokedAt: now, activeMembershipId: null },
+      });
+    });
+    return { success: true as const };
   }
 }

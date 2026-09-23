@@ -2,11 +2,16 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@ne
 import type { AuthMeResponse, LoginResponse, LogoutResponse } from '@veterinary-saas/contracts';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { LoginRequestDto, SwitchOrganizationRequestDto } from './auth.dto';
+import {
+  ChangePasswordRequestDto,
+  LoginRequestDto,
+  SwitchOrganizationRequestDto,
+} from './auth.dto';
 import { AuthenticatedRequest } from './auth.types';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
 import { Public } from '../authorization/public.decorator';
+import { PasswordChangeAllowed } from '../authorization/password-change-allowed.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -29,6 +34,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @PasswordChangeAllowed()
   async me(@Req() request: AuthenticatedRequest): Promise<AuthMeResponse> {
     return this.auth.me(request.auth!);
   }
@@ -43,6 +49,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @PasswordChangeAllowed()
   @HttpCode(HttpStatus.OK)
   async logout(
     @Req() request: Request,
@@ -51,5 +58,12 @@ export class AuthController {
     await this.sessions.revokeByToken(this.cookies.read(request));
     this.cookies.clear(response);
     return { success: true };
+  }
+
+  @Post('change-password')
+  @PasswordChangeAllowed()
+  @HttpCode(HttpStatus.OK)
+  changePassword(@Req() request: AuthenticatedRequest, @Body() body: ChangePasswordRequestDto) {
+    return this.auth.changePassword(request.auth!, body.currentPassword, body.newPassword);
   }
 }

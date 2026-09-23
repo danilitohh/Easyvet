@@ -246,6 +246,26 @@ const InvoiceDetailPage = lazy(() =>
 const CashPage = lazy(() =>
   import('../features/commercial/CashPage').then((module) => ({ default: module.CashPage })),
 );
+const ChangePasswordPage = lazy(() =>
+  import('../features/admin/ChangePasswordPage').then((module) => ({
+    default: module.ChangePasswordPage,
+  })),
+);
+const UsersListPage = lazy(() =>
+  import('../features/admin/UsersPages').then((module) => ({ default: module.UsersListPage })),
+);
+const MemberCreatePage = lazy(() =>
+  import('../features/admin/UsersPages').then((module) => ({ default: module.MemberCreatePage })),
+);
+const MemberDetailPage = lazy(() =>
+  import('../features/admin/UsersPages').then((module) => ({ default: module.MemberDetailPage })),
+);
+const SettingsPage = lazy(() =>
+  import('../features/admin/SettingsPage').then((module) => ({ default: module.SettingsPage })),
+);
+const ReportsPage = lazy(() =>
+  import('../features/admin/ReportsPage').then((module) => ({ default: module.ReportsPage })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -269,11 +289,76 @@ export function App() {
       />
       <Route path="login" element={<LoginPage />} />
       <Route element={<AuthBoundary />}>
+        <Route
+          path="cambiar-contrasena"
+          element={
+            <Suspense fallback={<ClinicalRouteFallback />}>
+              <ChangePasswordPage />
+            </Suspense>
+          }
+        />
         <Route path="seleccionar-organizacion" element={<OrganizationSelectorPage />} />
         <Route path="acceso-denegado" element={<AccessDeniedPage />} />
         <Route element={<AppShell />}>
           <Route index element={<Navigate replace to="/dashboard" />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route
+            path="usuarios"
+            element={
+              <PermissionRoute permission={PERMISSION.MEMBERS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <UsersListPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="usuarios/nuevo"
+            element={
+              <PermissionRoute permission={PERMISSION.MEMBERS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <MemberCreatePage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="usuarios/:membershipId"
+            element={
+              <PermissionRoute permission={PERMISSION.MEMBERS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <MemberDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="configuracion"
+            element={
+              <PermissionRoute permission={PERMISSION.ORGANIZATION_SETTINGS_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <SettingsPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="informes"
+            element={
+              <AnyPermissionRoute
+                permissions={[
+                  PERMISSION.REPORTS_OPERATIONAL,
+                  PERMISSION.REPORTS_CLINICAL,
+                  PERMISSION.REPORTS_COMMERCIAL,
+                  PERMISSION.REPORTS_INVENTORY,
+                ]}
+              >
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <ReportsPage />
+                </Suspense>
+              </AnyPermissionRoute>
+            }
+          />
           <Route
             path="inventario"
             element={
@@ -1021,7 +1106,10 @@ export function App() {
               route.path !== '/inventario' &&
               route.path !== '/ventas' &&
               route.path !== '/facturacion' &&
-              route.path !== '/caja',
+              route.path !== '/caja' &&
+              route.path !== '/usuarios' &&
+              route.path !== '/configuracion' &&
+              route.path !== '/informes',
           ).map((route) => (
             <Route
               key={route.path}

@@ -60,6 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState(stateFromResponse(response));
         return response;
       },
+      async changePassword(input) {
+        if (appConfig.dataMode !== 'mock') await authApi.changePassword(input);
+        const response =
+          appConfig.dataMode === 'mock'
+            ? await defaultContext.changePassword(input)
+            : await authApi.me();
+        setState(stateFromResponse(response));
+        return response;
+      },
       async logout() {
         if (appConfig.dataMode !== 'mock') await authApi.logout();
         setState({ ...defaultContext, status: 'unauthenticated', user: null });

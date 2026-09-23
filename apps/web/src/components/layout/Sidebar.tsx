@@ -14,8 +14,17 @@ type SidebarProps = {
 
 // Sidebar translates the legacy app switcher into real route navigation.
 export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarProps) {
-  const canReadMemberships = useCan(PERMISSION.MEMBERSHIPS_READ);
-  const canUpdateOrganization = useCan(PERMISSION.ORGANIZATION_UPDATE);
+  const canReadMembers = useCan(PERMISSION.MEMBERS_READ);
+  const canReadSettings = useCan(PERMISSION.ORGANIZATION_SETTINGS_READ);
+  const canReadOperationalReports = useCan(PERMISSION.REPORTS_OPERATIONAL);
+  const canReadClinicalReports = useCan(PERMISSION.REPORTS_CLINICAL);
+  const canReadCommercialReports = useCan(PERMISSION.REPORTS_COMMERCIAL);
+  const canReadInventoryReports = useCan(PERMISSION.REPORTS_INVENTORY);
+  const canReadAnyReport =
+    canReadOperationalReports ||
+    canReadClinicalReports ||
+    canReadCommercialReports ||
+    canReadInventoryReports;
   const canReadAvailability = useCan(PERMISSION.AVAILABILITY_READ);
   const canReadFollowUps = useCan(PERMISSION.FOLLOW_UPS_READ);
   const canReadGrooming = useCan(PERMISSION.GROOMING_READ);
@@ -26,8 +35,9 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
   const visibleGroups = NAVIGATION_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
-      if (item.path === '/usuarios') return canReadMemberships;
-      if (item.path === '/configuracion') return canUpdateOrganization;
+      if (item.path === '/usuarios') return canReadMembers;
+      if (item.path === '/configuracion') return canReadSettings;
+      if (item.path === '/informes') return canReadAnyReport;
       if (item.path === '/agenda/disponibilidad') return canReadAvailability;
       if (item.path === '/seguimientos') return canReadFollowUps;
       if (item.path === '/peluqueria') return canReadGrooming;

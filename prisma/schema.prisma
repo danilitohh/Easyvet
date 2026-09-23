@@ -50,6 +50,7 @@ model Organization {
   inventoryMovements       InventoryMovement[]
   operationalAuditEvents   OperationalAuditEvent[]
   commercialSettings       OrganizationCommercialSettings?
+  organizationAuditEvents  OrganizationAuditEvent[]
   sales                    Sale[]
   saleItems                SaleItem[]
   salePayments             SalePayment[]
@@ -87,15 +88,16 @@ model ClinicLocation {
 
 // User is a global platform identity; organization access is represented by Membership.
 model User {
-  id           String       @id @default(uuid()) @db.Uuid
-  email        String       @unique
-  passwordHash String       @map("password_hash")
-  status       UserStatus   @default(ACTIVE)
-  platformRole PlatformRole @default(USER) @map("platform_role")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
-  memberships  Membership[]
-  sessions     Session[]
+  id                 String       @id @default(uuid()) @db.Uuid
+  email              String       @unique
+  passwordHash       String       @map("password_hash")
+  status             UserStatus   @default(ACTIVE)
+  platformRole       PlatformRole @default(USER) @map("platform_role")
+  mustChangePassword Boolean      @default(false) @map("must_change_password")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  memberships        Membership[]
+  sessions           Session[]
 
   @@map("users")
 }
@@ -188,6 +190,7 @@ model Membership {
   closedCashSessions              CashSession[]                  @relation("CashSessionClosedByMembership")
   createdCashMovements            CashMovement[]                 @relation("CashMovementCreatedByMembership")
   commercialAuditEvents           CommercialAuditEvent[]         @relation("CommercialAuditActorMembership")
+  organizationAuditEvents         OrganizationAuditEvent[]       @relation("OrganizationAuditActorMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -1290,6 +1293,36 @@ model OperationalAuditEvent {
   @@map("operational_audit_events")
 }
 
+// OrganizationAuditEvent records tenant administration changes without storing credentials or full PII.
+model OrganizationAuditEvent {
+  id                String                  @id @default(uuid()) @db.Uuid
+  organizationId    String                  @map("organization_id") @db.Uuid
+  entityType        String                  @map("entity_type") @db.VarChar(80)
+  entityId          String                  @map("entity_id") @db.Uuid
+  actorMembershipId String                  @map("actor_membership_id") @db.Uuid
+  action            OrganizationAuditAction
+  metadata          Json?
+  createdAt         DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actorMembership   Membership              @relation("OrganizationAuditActorMembership", fields: [actorMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId, createdAt(sort: Desc)], map: "organization_audit_events_org_created_idx")
+  @@index([organizationId, entityType, entityId, createdAt(sort: Desc)], map: "organization_audit_events_entity_idx")
+  @@map("organization_audit_events")
+}
+
+enum OrganizationAuditAction {
+  MEMBERSHIP_CREATED
+  MEMBERSHIP_ROLE_UPDATED
+  MEMBERSHIP_SUSPENDED
+  MEMBERSHIP_REACTIVATED
+  ORGANIZATION_UPDATED
+  CLINIC_LOCATION_CREATED
+  CLINIC_LOCATION_UPDATED
+  CLINIC_LOCATION_DEACTIVATED
+  COMMERCIAL_SETTINGS_UPDATED
+}
+
 // Commercial settings isolate currency and invoice numbering from clinical tenant data.
 model OrganizationCommercialSettings {
   organizationId    String       @id @map("organization_id") @db.Uuid
@@ -1445,6 +1478,7 @@ model CashSession {
   organizationId        String                 @map("organization_id") @db.Uuid
   clinicLocationId      String                 @map("clinic_location_id") @db.Uuid
   status                CashSessionStatus      @default(OPEN)
+  currencyCode          String                 @map("currency_code") @db.VarChar(3)
   version               Int                    @default(1)
   openingCashAmount     Decimal                @map("opening_cash_amount") @db.Decimal(20, 4)
   openedAt              DateTime               @default(now()) @map("opened_at") @db.Timestamptz(3)

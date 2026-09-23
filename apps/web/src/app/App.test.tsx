@@ -16,7 +16,7 @@ describe('App shell', () => {
     renderApp('/');
 
     expect(screen.getByRole('heading', { name: /una vista tranquila/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /abrir agenda/i })).toHaveAttribute('href', '/agenda');
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute('href', '/agenda');
   });
 
   it('renders an access boundary for a route without an active membership', () => {

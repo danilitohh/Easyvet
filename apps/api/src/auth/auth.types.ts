@@ -5,6 +5,7 @@ export type AuthenticatedUser = {
   id: string;
   email: string;
   platformRole: 'USER' | 'PLATFORM_ADMIN';
+  mustChangePassword: boolean;
 };
 
 export type AuthenticatedMembership = {

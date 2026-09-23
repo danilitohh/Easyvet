@@ -169,10 +169,7 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
     [references.data],
   );
   const activeMemberships = useMemo(
-    () =>
-      references.data?.memberships.filter(
-        (membership) => membership.status === 'ACTIVE' && membership.user.status === 'ACTIVE',
-      ) ?? [],
+    () => references.data?.memberships.filter((membership) => membership.status === 'ACTIVE') ?? [],
     [references.data],
   );
   const patientOptions = useMemo(

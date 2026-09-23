@@ -71,9 +71,9 @@ matriz por `TenantContext.role`; el frontend solo usa los permisos para UX.
 | GROOMER       | `appointments.read`                                                                      |
 | CASHIER       | `appointments.read`                                                                      |
 
-OWNER y ADMIN comparten permisos ahora; OWNER queda reservado semánticamente
-para ownership, billing SaaS y operaciones irreversibles futuras. No se crean
-permisos clínicos, financieros ni roles personalizados.
+OWNER y ADMIN comparten la matriz administrativa amplia, con una diferencia de
+autoridad aplicada en el servicio: solo OWNER puede gestionar Memberships OWNER.
+ClinicalRole sigue siendo una dimensión separada.
 
 ## Platform Admin
 
@@ -87,13 +87,22 @@ membership; no existe bypass de tenant ni impersonation.
 
 ## APIs protegidas
 
-- `GET /api/v1/organization/current`: organization activa.
-- `PATCH /api/v1/organization/current`: solo `name`, `timezone`, `locale` y
-  `currencyCode`, con `organization.update`.
+- `GET /api/v1/organization/current`: organization activa para lectura general.
+- `GET /api/v1/organization/settings` y `PATCH /api/v1/organization/current`:
+  configuración general, protegida por `organizationSettings.read/update`.
+- `GET/PATCH /api/v1/organization/commercial-settings`: moneda y prefijo
+  comerciales; nunca expone `nextInvoiceNumber`.
 - `GET /api/v1/organization/locations` y `/:locationId`: lecturas filtradas por
   `TenantContext.organizationId`.
-- `GET /api/v1/organization/memberships` y `/:membershipId`: lista y detalle con
-  usuario mínimo (`id`, `email`, `status`), role y status.
+- `GET /api/v1/organization/memberships` y `/:membershipId`: compatibilidad de
+  lectura con proyección mínima, sin ID ni estado global de User.
+- `GET/POST /api/v1/organization/members`, detalle, `PATCH` y acciones
+  `suspend`/`reactivate`: administración paginada y tenant-scoped de Membership.
+- `POST /api/v1/auth/change-password`: cambio autenticado de credencial global.
+- `POST /api/v1/organization/locations` y cambios PATCH/deactivate/activate:
+  configuración de sedes con guards para operaciones abiertas.
+- `GET /api/v1/reports/{operational,clinical,commercial,inventory}`: agregados
+  acotados por tenant, rango civil y permiso por informe.
 - `GET/POST /api/v1/owners`, `GET/PATCH /api/v1/owners/:ownerId` y
   `POST /api/v1/owners/:ownerId/archive`: CRUD seguro, paginado, búsqueda y
   archive por tenant.
@@ -121,9 +130,10 @@ Existe una pantalla `AccessDenied` para errores `403`; no se confunde con `404`.
 
 ## Límites y futuro
 
-No se implementan RLS de PostgreSQL, audit log completo, impersonation,
-invitations, gestión de memberships ni custom roles. RLS puede evaluarse como
-defensa en profundidad cuando existan entidades clínicas. Toda entidad futura
+No se implementan RLS de PostgreSQL, impersonation, invitations ni custom roles.
+`OrganizationAuditEvent` cubre cambios administrativos mínimos, no constituye
+un audit log exhaustivo de lectura. RLS puede evaluarse como defensa en
+profundidad cuando existan entidades clínicas. Toda entidad futura
 tenant-scoped debe consultar por `organizationId` junto con su identificador;
 `findUnique({ id })` aislado no es aceptable.
 
@@ -169,3 +179,23 @@ reciben acceso comercial por defecto.
 Billing es lectura de facturas internas inmutables; no habilita facturación
 electrónica ni fiscal. Ningún rol, incluida la cuenta `PLATFORM_ADMIN`, puede
 omitir `TenantContext` ni acceder a registros comerciales de otra Organization.
+
+## Users / Settings / Reports 10
+
+OWNER y ADMIN tienen `members.read/create/update/suspend`,
+`organizationSettings.read/update`, permisos de gestión de sedes y los cuatro
+permisos de informes. Solo OWNER puede cambiar una Membership OWNER; ADMIN puede
+gestionar los demás roles. El invariante de al menos un OWNER activo se serializa
+con lock de Organization.
+
+| Fuente del permiso                | Permisos adicionales                                |
+| --------------------------------- | --------------------------------------------------- |
+| RECEPTION                         | `reports.operational.read`                          |
+| GROOMER                           | `reports.operational.read` (incluye peluquería)     |
+| CASHIER                           | `reports.commercial.read`                           |
+| `ClinicalRole.PRACTITIONER`       | `reports.clinical.read`, `reports.operational.read` |
+| `ClinicalRole.CLINICAL_ASSISTANT` | Ninguno por defecto                                 |
+
+Inventory report y settings no se conceden a roles operativos por defecto.
+VETERINARIAN solo obtiene reportes clínicos cuando además tiene
+`ClinicalRole.PRACTITIONER`. Los permisos clínicos no cambian `MembershipRole`.

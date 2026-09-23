@@ -29,4 +29,7 @@ prisma/*.db-journal
 .eslintcache
 *.tsbuildinfo
 reports/
+# The API's reports module is source code, not generated report output.
+!apps/api/src/reports/
+!apps/api/src/reports/**
 .playwright-cli/

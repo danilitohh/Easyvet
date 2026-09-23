@@ -123,18 +123,23 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
   {
     label: 'Gestión',
     items: [
-      { label: 'Informes', path: '/informes', icon: '▦', description: 'Indicadores y reportes.' },
+      {
+        label: 'Informes',
+        path: '/informes',
+        icon: '▦',
+        description: 'Indicadores agregados según tu rol.',
+      },
       {
         label: 'Usuarios',
         path: '/usuarios',
         icon: '♙',
-        description: 'Acceso del equipo, más adelante.',
+        description: 'Accesos y roles del personal de esta organización.',
       },
       {
         label: 'Configuración',
         path: '/configuracion',
         icon: '⚙',
-        description: 'Preferencias del producto.',
+        description: 'Datos de la organización, sedes y valores comerciales.',
       },
     ],
   },

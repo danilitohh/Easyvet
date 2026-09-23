@@ -1,167 +1,100 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert } from '../components/ui/Alert';
-import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { DataTable, type DataTableColumn } from '../components/ui/DataTable';
-import { FormField } from '../components/ui/FormField';
 import { PageHeader } from '../components/ui/PageHeader';
-import { SearchInput } from '../components/ui/SearchInput';
-import { Select } from '../components/ui/Select';
+import { useCan } from '../auth/useCan';
+import { PERMISSION } from '../auth/permissions';
+import { useAuth } from '../contexts/useAuth';
 import { FollowUpDashboardWidget } from '../features/follow-ups/FollowUpDashboardWidget';
-import {
-  demoAppointments,
-  demoPulse,
-  dashboardStats,
-  type DemoAppointment,
-} from '../mocks/dashboard';
+import type { OperationalReportResponse } from '@veterinary-saas/contracts';
 
-const appointmentColumns: DataTableColumn<DemoAppointment>[] = [
-  {
-    key: 'time',
-    header: 'Hora',
-    render: (row) => <strong className="table-time">{row.time}</strong>,
-  },
-  {
-    key: 'patient',
-    header: 'Paciente',
-    render: (row) => (
-      <span className="table-identity">
-        <strong>{row.patient}</strong>
-        <small>{row.owner}</small>
-      </span>
-    ),
-  },
-  { key: 'service', header: 'Servicio', render: (row) => row.service },
-  {
-    key: 'status',
-    header: 'Estado',
-    render: (row) => (
-      <Badge
-        tone={
-          row.status === 'Confirmada' ? 'success' : row.status === 'En curso' ? 'info' : 'warning'
-        }
-      >
-        {row.status}
-      </Badge>
-    ),
-  },
-];
-
-// Appointment and pulse demo cards remain isolated from the live Follow-up dashboard widget.
+// Dashboard summaries use tenant-scoped aggregates and never present fixture data as live activity.
 export function DashboardPage() {
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('all');
-  const filteredAppointments = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-    return demoAppointments.filter((appointment) => {
-      const matchesStatus = status === 'all' || appointment.status === status;
-      const matchesSearch =
-        !normalizedSearch ||
-        [appointment.patient, appointment.owner, appointment.service].some((value) =>
-          value.toLowerCase().includes(normalizedSearch),
-        );
-      return matchesStatus && matchesSearch;
-    });
-  }, [search, status]);
+  const { activeMembership } = useAuth();
+  const organizationId = activeMembership?.organization.id ?? '';
+  const canReadOperational = useCan(PERMISSION.REPORTS_OPERATIONAL);
+  const canReadFollowUps = useCan(PERMISSION.FOLLOW_UPS_READ);
+  const canReadPatients = useCan(PERMISSION.PATIENTS_READ);
+  const canReadInventory = useCan(PERMISSION.INVENTORY_READ);
+  const canReadReports = useCan(PERMISSION.REPORTS_OPERATIONAL);
+  const [summary, setSummary] = useState<OperationalReportResponse | null>(null);
+  const [summaryOrganizationId, setSummaryOrganizationId] = useState('');
+  const [summaryError, setSummaryError] = useState(false);
+
+  useEffect(() => {
+    if (!canReadOperational || !organizationId) return undefined;
+    const controller = new AbortController();
+    setSummary(null);
+    setSummaryError(false);
+    import('../features/admin/adminApi')
+      .then(({ adminApi }) => adminApi.operationalReport({}, controller.signal))
+      .then((result) => {
+        if (!controller.signal.aborted) setSummary(result);
+        if (!controller.signal.aborted) setSummaryOrganizationId(organizationId);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setSummaryError(true);
+          setSummaryOrganizationId(organizationId);
+        }
+      });
+    return () => controller.abort();
+  }, [canReadOperational, organizationId]);
+
+  const visibleSummary = summaryOrganizationId === organizationId ? summary : null;
+  const visibleSummaryError = summaryOrganizationId === organizationId && summaryError;
 
   return (
     <div className="page-stack dashboard-page">
       <PageHeader
         eyebrow="Panel principal"
         title="Una vista tranquila de la operación."
-        description="Prioriza la jornada, detecta pendientes y deja el detalle para cada módulo."
+        description="Prioriza pendientes y consulta indicadores agregados de la organización activa."
         action={
           <Button as={Link} to="/health" variant="secondary">
-            Revisar API
+            Estado de la API
           </Button>
         }
       />
 
-      <Alert tone="info">
-        <strong>Vista demo.</strong> Las citas y estadísticas de agenda son ficticias y no provienen
-        de PostgreSQL ni del backend.
-      </Alert>
+      {canReadFollowUps ? <FollowUpDashboardWidget /> : null}
 
-      <FollowUpDashboardWidget />
-
-      <section className="stats-grid" aria-label="Indicadores de demostración">
-        {dashboardStats.map((stat) => (
-          <Card className={`stat-card stat-card--${stat.tone}`} key={stat.label}>
-            <span className="stat-card__label">{stat.label}</span>
-            <strong>{stat.value}</strong>
-            <span className="stat-card__detail">{stat.detail}</span>
-          </Card>
-        ))}
-      </section>
-
-      <section className="dashboard-grid" aria-label="Resumen de operación">
-        <Card className="dashboard-card dashboard-card--appointments">
-          <div className="card-heading">
-            <div>
-              <p className="section-kicker">Agenda demo</p>
-              <h2>Citas de hoy</h2>
-            </div>
-            <Link className="text-link" to="/agenda">
-              Abrir agenda
-            </Link>
-          </div>
-          <div className="filter-row">
-            <FormField label="Buscar citas" htmlFor="dashboard-search">
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Paciente, propietario o servicio"
-              />
-            </FormField>
-            <FormField label="Estado" htmlFor="dashboard-status">
-              <Select
-                id="dashboard-status"
-                value={status}
-                onChange={(event) => setStatus(event.target.value)}
-              >
-                <option value="all">Todos</option>
-                <option value="Confirmada">Confirmadas</option>
-                <option value="En curso">En curso</option>
-                <option value="Pendiente">Pendientes</option>
-              </Select>
-            </FormField>
-          </div>
-          <DataTable
-            columns={appointmentColumns}
-            rows={filteredAppointments}
-            getRowKey={(row) => row.id}
-            emptyTitle="No hay citas para ese filtro"
-            emptyDescription="Prueba con otro término o estado."
-          />
-        </Card>
-
-        <Card className="dashboard-card dashboard-card--pulse">
-          <div className="card-heading">
-            <div>
-              <p className="section-kicker">Lectura rápida</p>
-              <h2>Pulso de la clínica</h2>
-            </div>
-            <Badge tone="info">Demo</Badge>
-          </div>
-          <div className="pulse-list">
-            {demoPulse.map((item) => (
-              <div className="pulse-item" key={item.label}>
-                <span
-                  className={`pulse-item__marker pulse-item__marker--${item.tone}`}
-                  aria-hidden="true"
-                />
-                <div>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                  <small>{item.detail}</small>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </section>
+      {canReadOperational ? (
+        <section className="stats-grid" aria-label="Resumen operacional de los últimos 30 días">
+          {visibleSummaryError ? (
+            <Alert tone="warning">No fue posible cargar el resumen operacional.</Alert>
+          ) : null}
+          {visibleSummary ? (
+            <>
+              <Card className="stat-card stat-card--info">
+                <span className="stat-card__label">Citas en los últimos 30 días</span>
+                <strong>{visibleSummary.appointments.total}</strong>
+                <span className="stat-card__detail">
+                  {visibleSummary.appointments.completed} completadas
+                </span>
+              </Card>
+              <Card className="stat-card stat-card--success">
+                <span className="stat-card__label">Seguimientos abiertos</span>
+                <strong>{visibleSummary.followUps.open}</strong>
+                <span className="stat-card__detail">
+                  {visibleSummary.followUps.overdue} vencidos
+                </span>
+              </Card>
+              <Card className="stat-card stat-card--warning">
+                <span className="stat-card__label">Servicios de peluquería completados</span>
+                <strong>{visibleSummary.grooming.completed}</strong>
+                <span className="stat-card__detail">En el periodo consultado</span>
+              </Card>
+            </>
+          ) : !visibleSummaryError ? (
+            <Card className="stat-card">
+              <span className="stat-card__label">Cargando resumen real…</span>
+            </Card>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="quick-section" aria-labelledby="quick-title">
         <div className="card-heading">
@@ -171,42 +104,48 @@ export function DashboardPage() {
           </div>
         </div>
         <div className="quick-grid">
-          <Link className="quick-card" to="/pacientes">
-            <span className="quick-card__icon" aria-hidden="true">
-              ●
-            </span>
-            <span>
-              <strong>Explorar pacientes</strong>
-              <small>La ruta está preparada para el futuro módulo clínico.</small>
-            </span>
-            <span className="quick-card__arrow" aria-hidden="true">
-              ↗
-            </span>
-          </Link>
-          <Link className="quick-card" to="/inventario">
-            <span className="quick-card__icon" aria-hidden="true">
-              ▥
-            </span>
-            <span>
-              <strong>Revisar inventario</strong>
-              <small>Catálogo, existencias, lotes y movimientos por sede.</small>
-            </span>
-            <span className="quick-card__arrow" aria-hidden="true">
-              ↗
-            </span>
-          </Link>
-          <Link className="quick-card" to="/informes">
-            <span className="quick-card__icon" aria-hidden="true">
-              ▦
-            </span>
-            <span>
-              <strong>Ver informes</strong>
-              <small>La analítica se definirá con datos de negocio reales.</small>
-            </span>
-            <span className="quick-card__arrow" aria-hidden="true">
-              ↗
-            </span>
-          </Link>
+          {canReadPatients ? (
+            <Link className="quick-card" to="/pacientes">
+              <span className="quick-card__icon" aria-hidden="true">
+                ●
+              </span>
+              <span>
+                <strong>Explorar pacientes</strong>
+                <small>Consulta pacientes de la organización activa.</small>
+              </span>
+              <span className="quick-card__arrow" aria-hidden="true">
+                ↗
+              </span>
+            </Link>
+          ) : null}
+          {canReadInventory ? (
+            <Link className="quick-card" to="/inventario">
+              <span className="quick-card__icon" aria-hidden="true">
+                ▥
+              </span>
+              <span>
+                <strong>Revisar inventario</strong>
+                <small>Catálogo, existencias, lotes y movimientos por sede.</small>
+              </span>
+              <span className="quick-card__arrow" aria-hidden="true">
+                ↗
+              </span>
+            </Link>
+          ) : null}
+          {canReadReports ? (
+            <Link className="quick-card" to="/informes">
+              <span className="quick-card__icon" aria-hidden="true">
+                ▦
+              </span>
+              <span>
+                <strong>Ver informes</strong>
+                <small>Indicadores filtrados por permiso y periodo.</small>
+              </span>
+              <span className="quick-card__arrow" aria-hidden="true">
+                ↗
+              </span>
+            </Link>
+          ) : null}
         </div>
       </section>
     </div>

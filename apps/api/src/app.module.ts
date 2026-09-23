@@ -29,6 +29,7 @@ import { FollowUpsModule } from './follow-ups/follow-ups.module';
 import { GroomingModule } from './grooming/grooming.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { CommercialModule } from './commercial/commercial.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { CommercialModule } from './commercial/commercial.module';
     GroomingModule,
     InventoryModule,
     CommercialModule,
+    ReportsModule,
   ],
   providers: [ApiExceptionFilter],
 })

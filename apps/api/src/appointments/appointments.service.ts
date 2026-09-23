@@ -69,7 +69,7 @@ const appointmentSelect = {
       id: true,
       role: true,
       status: true,
-      user: { select: { id: true, email: true, status: true } },
+      user: { select: { email: true } },
     },
   },
 } satisfies Prisma.AppointmentSelect;
@@ -200,6 +200,7 @@ export class AppointmentsService {
     const reason = assertReason(input.reason);
     try {
       const created = await this.prisma.$transaction(async (tx) => {
+        await this.lockActiveLocation(tx, tenant.organizationId, input.clinicLocationId);
         await this.validateReferences(tx, tenant.organizationId, input, tenant.membershipId);
         const organization = await this.requireOrganization(tx, tenant.organizationId);
         await this.validateAvailability(tx, organization.timezone, tenant.organizationId, {
@@ -311,6 +312,7 @@ export class AppointmentsService {
     ensureInterval(startsAt, endsAt);
     try {
       await this.prisma.$transaction(async (tx) => {
+        await this.lockActiveLocation(tx, tenant.organizationId, current.clinicLocationId);
         await this.validateExistingReferences(tx, tenant.organizationId, current);
         const organization = await this.requireOrganization(tx, tenant.organizationId);
         await this.validateAvailability(tx, organization.timezone, tenant.organizationId, {
@@ -402,9 +404,14 @@ export class AppointmentsService {
     }
     // Compare-and-set prevents two operators from applying the same transition
     // after both observed the same previous status.
-    const result = await this.prisma.appointment.updateMany({
-      where: { id: appointmentId, organizationId, status: current.status },
-      data: { status: target },
+    const result = await this.prisma.$transaction(async (tx) => {
+      if (target === AppointmentStatus.WAITING_ROOM || target === AppointmentStatus.IN_PROGRESS) {
+        await this.lockActiveLocation(tx, organizationId, current.clinicLocationId);
+      }
+      return tx.appointment.updateMany({
+        where: { id: appointmentId, organizationId, status: current.status },
+        data: { status: target },
+      });
     });
     if (result.count !== 1) {
       throw conflict(
@@ -638,6 +645,18 @@ export class AppointmentsService {
       select: { id: true },
     });
     if (!location) throw notFound();
+  }
+
+  // Shared row locking prevents a create, reschedule or check-in from racing location deactivation.
+  private async lockActiveLocation(
+    database: DomainDatabase,
+    organizationId: string,
+    locationId: string,
+  ) {
+    await database.$queryRaw(
+      Prisma.sql`SELECT id FROM clinic_locations WHERE id = ${locationId}::uuid AND organization_id = ${organizationId}::uuid FOR SHARE`,
+    );
+    await this.requireActiveLocation(database, organizationId, locationId);
   }
 
   private async requireActiveMembership(
