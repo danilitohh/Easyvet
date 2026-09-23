@@ -138,3 +138,13 @@ como permiso efectivo para opciones y validación del Membership Groomer; ningú
 rol o `PLATFORM_ADMIN` omite el tenant activo. El endpoint devuelve únicamente
 id, nombre visible y rol operativo del Groomer. Ver
 [`grooming-api.md`](grooming-api.md).
+
+## Inventory 8
+
+OWNER y ADMIN reciben `inventory.read`, `inventory.items.create/update/archive`,
+`inventory.movements.create`, `inventory.adjustments.create` y
+`inventory.transfers.create`. VETERINARIAN, ASSISTANT, RECEPTION, GROOMER y
+CASHIER reciben solo `inventory.read`. Las rutas de ajuste y traslado requieren
+su permiso dedicado además del permiso de movimiento cuando corresponda.
+PLATFORM_ADMIN mantiene el requisito de tenant activo. Véase
+[`inventory-api.md`](inventory-api.md).

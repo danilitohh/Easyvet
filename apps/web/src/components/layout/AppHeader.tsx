@@ -18,7 +18,7 @@ type AppHeaderProps = {
 export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
   const [demoNoticeOpen, setDemoNoticeOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, activeMembership, logout } = useAuth();
+  const { user, activeMembership, memberships = [], logout } = useAuth();
   const canReadClinical = useCan(PERMISSION.CLINICAL_RECORDS_READ);
   const workspaceName = activeMembership?.organization.name ?? 'Sin organización activa';
   const userInitials = user?.email.slice(0, 2).toUpperCase() ?? 'EV';
@@ -55,6 +55,15 @@ export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
           <Button variant="ghost" type="button" onClick={() => void handleLogout()}>
             Cerrar sesión
           </Button>
+          {memberships.length > 1 ? (
+            <Link
+              className="button button--ghost tenant-switch-button"
+              to="/seleccionar-organizacion"
+              aria-label={`Cambiar organización desde ${workspaceName}`}
+            >
+              Cambiar clínica
+            </Link>
+          ) : null}
           {canReadClinical ? (
             <Link className="user-chip" to="/perfil/profesional">
               <span className="user-chip__copy">

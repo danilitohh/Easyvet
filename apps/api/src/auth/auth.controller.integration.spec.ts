@@ -333,6 +333,13 @@ describeDatabase('real authentication and sessions', () => {
       'grooming.perform',
       'grooming.complete',
       'grooming.void',
+      'inventory.read',
+      'inventory.items.create',
+      'inventory.items.update',
+      'inventory.items.archive',
+      'inventory.movements.create',
+      'inventory.adjustments.create',
+      'inventory.transfers.create',
     ]);
     expect(response.body.memberships).toHaveLength(1);
     expect(response.body).not.toHaveProperty('passwordHash');
@@ -541,6 +548,7 @@ describeDatabase('real authentication and sessions', () => {
       'appointments.markNoShow',
       'availability.read',
       'grooming.read',
+      'inventory.read',
     ]);
     await agent.get('/api/v1/organization/current').expect(200);
     await agent.patch('/api/v1/organization/current').send({ name: 'Forbidden' }).expect(403);
@@ -576,6 +584,7 @@ describeDatabase('real authentication and sessions', () => {
       'appointments.markNoShow',
       'availability.read',
       'grooming.read',
+      'inventory.read',
     ]);
     const me = await agent.get('/api/v1/auth/me').expect(200);
     expect(me.body.activeMembership.organization.id).toBe(organizationSouthId);

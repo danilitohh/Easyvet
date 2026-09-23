@@ -1062,6 +1062,7 @@ select.input {
 .health-card > .loading-state {
   margin-top: var(--space-6);
 }
+/* Keep long operational dialogs reachable on short mobile viewports. */
 .modal-layer {
   position: fixed;
   inset: 0;
@@ -1069,6 +1070,8 @@ select.input {
   display: grid;
   place-items: center;
   padding: var(--space-5);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 .modal-backdrop {
   position: absolute;
@@ -1080,7 +1083,8 @@ select.input {
 .modal {
   position: relative;
   width: min(520px, 100%);
-  overflow: hidden;
+  max-height: calc(100dvh - var(--space-5) - var(--space-5));
+  overflow-y: auto;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   background: var(--color-surface);

@@ -189,7 +189,7 @@ export function DashboardPage() {
             </span>
             <span>
               <strong>Revisar inventario</strong>
-              <small>El módulo permanece como placeholder visual.</small>
+              <small>Catálogo, existencias, lotes y movimientos por sede.</small>
             </span>
             <span className="quick-card__arrow" aria-hidden="true">
               ↗

@@ -1858,6 +1858,26 @@ async function main() {
       });
     }
 
+    // A second Norte location supports realistic transfer demos without creating commercial records.
+    await transaction.clinicLocation.upsert({
+      where: { id: '00000000-0000-4000-8000-000000000013' },
+      update: {
+        organizationId: seedOrganizations[0].id,
+        name: 'Sede Centro Norte',
+        status: 'ACTIVE',
+        address: 'Dirección demo local',
+        city: seedOrganizations[0].city,
+      },
+      create: {
+        id: '00000000-0000-4000-8000-000000000013',
+        organizationId: seedOrganizations[0].id,
+        name: 'Sede Centro Norte',
+        status: 'ACTIVE',
+        address: 'Dirección demo local',
+        city: seedOrganizations[0].city,
+      },
+    });
+
     for (const user of seedUsers) {
       await transaction.user.upsert({
         where: { email: user.email },
@@ -2269,10 +2289,224 @@ async function main() {
         create: { id: auditId, ...auditFields },
       });
     }
+
+    // Inventory fixtures are fictional, SKU-stable, and never linked to sales or clinical records.
+    const [north, south] = seedOrganizations;
+    const northOwner = seedUsers[0];
+    const southOwner = seedUsers[1];
+    const secondaryNorthLocationId = '00000000-0000-4000-8000-000000000013';
+    const inventoryItems = [
+      {
+        id: '00000000-0000-4000-8000-000000001501',
+        organizationId: north.id,
+        name: 'Vacuna múltiple demo',
+        sku: 'DEMO-MED-001',
+        itemType: 'MEDICATION',
+        baseUnit: 'dosis',
+        lotTracking: true,
+        minimumStock: '3.000000',
+        description: 'Artículo ficticio para pruebas de inventario.',
+        notes: null,
+        status: 'ACTIVE',
+      },
+      {
+        id: '00000000-0000-4000-8000-000000001502',
+        organizationId: north.id,
+        name: 'Alimento premium demo',
+        sku: 'DEMO-RET-001',
+        itemType: 'RETAIL',
+        baseUnit: 'bolsa',
+        lotTracking: false,
+        minimumStock: '2.000000',
+        description: 'Artículo ficticio para pruebas de inventario.',
+        notes: null,
+        status: 'ACTIVE',
+      },
+      {
+        id: '00000000-0000-4000-8000-000000001503',
+        organizationId: north.id,
+        name: 'Gasa estéril demo',
+        sku: 'DEMO-SUP-001',
+        itemType: 'SUPPLY',
+        baseUnit: 'paquete',
+        lotTracking: false,
+        minimumStock: '3.000000',
+        description: 'Artículo ficticio para pruebas de inventario.',
+        notes: null,
+        status: 'ACTIVE',
+      },
+      {
+        id: '00000000-0000-4000-8000-000000001504',
+        organizationId: south.id,
+        name: 'Suero fisiológico demo Sur',
+        sku: 'DEMO-SOUTH-001',
+        itemType: 'SUPPLY',
+        baseUnit: 'frasco',
+        lotTracking: false,
+        minimumStock: '4.000000',
+        description: 'Artículo ficticio independiente para pruebas de tenant.',
+        notes: null,
+        status: 'ACTIVE',
+      },
+    ];
+    for (const item of inventoryItems) {
+      await transaction.inventoryItem.upsert({
+        where: { organizationId_sku: { organizationId: item.organizationId, sku: item.sku } },
+        update: {
+          name: item.name,
+          itemType: item.itemType,
+          baseUnit: item.baseUnit,
+          lotTracking: item.lotTracking,
+          minimumStock: item.minimumStock,
+          description: item.description,
+          notes: item.notes,
+          status: item.status,
+        },
+        create: item,
+      });
+    }
+
+    const seedTodayParts = new Intl.DateTimeFormat('en', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const seedTodayFields = Object.fromEntries(
+      seedTodayParts.map((part) => [part.type, part.value]),
+    );
+    const seedToday = `${seedTodayFields.year}-${seedTodayFields.month}-${seedTodayFields.day}`;
+    const expiringDate = new Date(`${seedToday}T00:00:00.000Z`);
+    expiringDate.setUTCDate(expiringDate.getUTCDate() + 14);
+    const expirySoon = expiringDate.toISOString().slice(0, 10);
+    const expiredBatchId = '00000000-0000-4000-8000-000000001511';
+    const soonBatchId = '00000000-0000-4000-8000-000000001512';
+    const medicationId = inventoryItems[0].id;
+    const batchFixtures = [
+      {
+        id: expiredBatchId,
+        organizationId: north.id,
+        inventoryItemId: medicationId,
+        lotNumber: 'DEMO-EXP-2020',
+        expiryOn: new Date('2020-01-01T00:00:00.000Z'),
+        notes: 'Lote ficticio vencido para demostración.',
+      },
+      {
+        id: soonBatchId,
+        organizationId: north.id,
+        inventoryItemId: medicationId,
+        lotNumber: 'DEMO-SOON-001',
+        expiryOn: new Date(`${expirySoon}T00:00:00.000Z`),
+        notes: 'Lote ficticio próximo a vencer.',
+      },
+    ];
+    for (const batch of batchFixtures) {
+      await transaction.inventoryBatch.upsert({
+        where: {
+          organizationId_inventoryItemId_lotNumber: {
+            organizationId: batch.organizationId,
+            inventoryItemId: batch.inventoryItemId,
+            lotNumber: batch.lotNumber,
+          },
+        },
+        update: { expiryOn: batch.expiryOn, notes: batch.notes },
+        create: batch,
+      });
+    }
+    const inventorySeedNow = new Date();
+    await transaction.inventoryMovement.createMany({
+      skipDuplicates: true,
+      data: [
+        {
+          id: '00000000-0000-4000-8000-000000001521',
+          organizationId: north.id,
+          inventoryItemId: medicationId,
+          clinicLocationId: north.locationId,
+          inventoryBatchId: expiredBatchId,
+          movementType: 'RECEIPT',
+          quantityDelta: '1.000000',
+          occurredAt: inventorySeedNow,
+          reason: 'Entrada ficticia de seed',
+          createdByMembershipId: northOwner.membershipId,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000001522',
+          organizationId: north.id,
+          inventoryItemId: medicationId,
+          clinicLocationId: secondaryNorthLocationId,
+          inventoryBatchId: soonBatchId,
+          movementType: 'RECEIPT',
+          quantityDelta: '2.000000',
+          occurredAt: inventorySeedNow,
+          reason: 'Entrada ficticia de seed',
+          createdByMembershipId: northOwner.membershipId,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000001523',
+          organizationId: north.id,
+          inventoryItemId: inventoryItems[1].id,
+          clinicLocationId: north.locationId,
+          inventoryBatchId: null,
+          movementType: 'RECEIPT',
+          quantityDelta: '4.000000',
+          occurredAt: inventorySeedNow,
+          reason: 'Entrada ficticia de seed',
+          createdByMembershipId: northOwner.membershipId,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000001524',
+          organizationId: north.id,
+          inventoryItemId: inventoryItems[1].id,
+          clinicLocationId: secondaryNorthLocationId,
+          inventoryBatchId: null,
+          movementType: 'RECEIPT',
+          quantityDelta: '2.000000',
+          occurredAt: inventorySeedNow,
+          reason: 'Entrada ficticia de seed',
+          createdByMembershipId: northOwner.membershipId,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000001525',
+          organizationId: north.id,
+          inventoryItemId: inventoryItems[2].id,
+          clinicLocationId: north.locationId,
+          inventoryBatchId: null,
+          movementType: 'RECEIPT',
+          quantityDelta: '6.000000',
+          occurredAt: inventorySeedNow,
+          reason: 'Entrada ficticia de seed',
+          createdByMembershipId: northOwner.membershipId,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000001526',
+          organizationId: north.id,
+          inventoryItemId: inventoryItems[2].id,
+          clinicLocationId: secondaryNorthLocationId,
+          inventoryBatchId: null,
+          movementType: 'RECEIPT',
+          quantityDelta: '1.000000',
+          occurredAt: inventorySeedNow,
+          reason: 'Entrada ficticia de seed',
+          createdByMembershipId: northOwner.membershipId,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000001527',
+          organizationId: south.id,
+          inventoryItemId: inventoryItems[3].id,
+          clinicLocationId: south.locationId,
+          inventoryBatchId: null,
+          movementType: 'RECEIPT',
+          quantityDelta: '12.000000',
+          occurredAt: inventorySeedNow,
+          reason: 'Entrada ficticia de seed',
+          createdByMembershipId: southOwner.membershipId,
+        },
+      ],
+    });
   });
 
   console.log(
-    'Development seed applied: 2 organizations, 2 locations, 5 users, 6 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 4 encounters, 5 follow-ups, 4 grooming visits, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 4 hospitalizations, 4 diagnostic orders, 2 Kardex entries, 40 audits.',
+    'Development seed applied: 2 organizations, 3 locations, 5 users, 6 memberships, 4 owners, 6 patients, 3 availability rules, 6 appointments, 2 profiles, 2 records, 4 encounters, 5 follow-ups, 4 grooming visits, 5 procedures, 2 surgery details, 3 anesthesia records, 3 anesthesia observations, 3 prescriptions, 3 items, 2 vaccinations, 3 dewormings, 2 vitals, 1 evolution, 4 hospitalizations, 4 diagnostic orders, 4 inventory items, 2 inventory batches, 7 inventory movements, 2 Kardex entries, 40 audits.',
   );
 }
 

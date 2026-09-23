@@ -205,6 +205,21 @@ const GroomingHistoryPage = lazy(() =>
     default: module.GroomingHistoryPage,
   })),
 );
+const InventoryPage = lazy(() =>
+  import('../features/inventory/InventoryPage').then((module) => ({
+    default: module.InventoryPage,
+  })),
+);
+const InventoryItemDetailPage = lazy(() =>
+  import('../features/inventory/InventoryItemDetailPage').then((module) => ({
+    default: module.InventoryItemDetailPage,
+  })),
+);
+const InventoryItemFormPage = lazy(() =>
+  import('../features/inventory/InventoryItemFormPage').then((module) => ({
+    default: module.InventoryItemFormPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -233,6 +248,46 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<Navigate replace to="/dashboard" />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route
+            path="inventario"
+            element={
+              <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <InventoryPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="inventario/nuevo"
+            element={
+              <PermissionRoute permission={PERMISSION.INVENTORY_ITEMS_CREATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <InventoryItemFormPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="inventario/:itemId/editar"
+            element={
+              <PermissionRoute permission={PERMISSION.INVENTORY_ITEMS_UPDATE}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <InventoryItemFormPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="inventario/:itemId"
+            element={
+              <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
+                <Suspense fallback={<ClinicalRouteFallback />}>
+                  <InventoryItemDetailPage />
+                </Suspense>
+              </PermissionRoute>
+            }
+          />
           <Route
             path="peluqueria"
             element={
@@ -866,7 +921,8 @@ export function App() {
               route.path !== '/agenda/disponibilidad' &&
               route.path !== '/propietarios' &&
               route.path !== '/pacientes' &&
-              route.path !== '/peluqueria',
+              route.path !== '/peluqueria' &&
+              route.path !== '/inventario',
           ).map((route) => (
             <Route
               key={route.path}

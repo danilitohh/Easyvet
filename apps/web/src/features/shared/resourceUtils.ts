@@ -21,6 +21,36 @@ export function errorMessage(error: unknown, fallback = 'No fue posible completa
   if (error.code === 'CURRENT_WEIGHT_MANAGED_BY_CLINICAL_RECORD') {
     return 'El peso actual se actualiza desde la historia clínica.';
   }
+  if (error.code === 'INVENTORY_SKU_EXISTS') {
+    return 'Ya existe un artículo con ese SKU en esta veterinaria.';
+  }
+  if (error.code === 'INVENTORY_ITEM_ARCHIVED') {
+    return 'El artículo está archivado y no admite nuevos movimientos.';
+  }
+  if (error.code === 'INVENTORY_ITEM_HAS_STOCK') {
+    return 'Reduce las existencias a cero en todas las sedes antes de archivar el artículo.';
+  }
+  if (error.code === 'INVENTORY_BATCH_REQUIRED') {
+    return 'Selecciona un lote para registrar el movimiento de este artículo.';
+  }
+  if (error.code === 'INVENTORY_BATCH_NOT_ALLOWED') {
+    return 'Este artículo no usa lotes; quita la selección de lote.';
+  }
+  if (error.code === 'INVENTORY_BATCH_NOT_FOUND') {
+    return 'El lote seleccionado ya no está disponible. Actualiza el artículo.';
+  }
+  if (error.code === 'INVALID_INVENTORY_QUANTITY') {
+    return 'Ingresa una cantidad positiva con hasta seis decimales.';
+  }
+  if (error.code === 'INSUFFICIENT_STOCK') {
+    return 'El stock disponible cambió. Actualiza el inventario e intenta nuevamente.';
+  }
+  if (error.code === 'INVALID_INVENTORY_LOCATION') {
+    return 'La sede ya no está activa para nuevos movimientos.';
+  }
+  if (error.code === 'INVALID_INVENTORY_TRANSFER') {
+    return 'Selecciona dos sedes activas y distintas para el traslado.';
+  }
   if (error.code === 'CLINICAL_ENCOUNTER_STALE') {
     return 'Esta consulta fue modificada desde otra sesión. Recarga la versión actual.';
   }

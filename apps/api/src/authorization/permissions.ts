@@ -113,6 +113,15 @@ export const PERMISSIONS = {
     COMPLETE: 'grooming.complete',
     VOID: 'grooming.void',
   },
+  INVENTORY: {
+    READ: 'inventory.read',
+    ITEMS_CREATE: 'inventory.items.create',
+    ITEMS_UPDATE: 'inventory.items.update',
+    ITEMS_ARCHIVE: 'inventory.items.archive',
+    MOVEMENTS_CREATE: 'inventory.movements.create',
+    ADJUSTMENTS_CREATE: 'inventory.adjustments.create',
+    TRANSFERS_CREATE: 'inventory.transfers.create',
+  },
 } as const satisfies Record<string, Record<string, Permission>>;
 
 const GROOMING_ADMIN_PERMISSIONS: readonly Permission[] = [
@@ -122,6 +131,17 @@ const GROOMING_ADMIN_PERMISSIONS: readonly Permission[] = [
   'grooming.perform',
   'grooming.complete',
   'grooming.void',
+];
+
+// Manual inventory mutations stay with tenant administrators; operational roles are read-only.
+const INVENTORY_ADMIN_PERMISSIONS: readonly Permission[] = [
+  'inventory.read',
+  'inventory.items.create',
+  'inventory.items.update',
+  'inventory.items.archive',
+  'inventory.movements.create',
+  'inventory.adjustments.create',
+  'inventory.transfers.create',
 ];
 
 const OWNER_PATIENT_ADMIN_PERMISSIONS: readonly Permission[] = [
@@ -160,6 +180,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     ...OWNER_PATIENT_ADMIN_PERMISSIONS,
     ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
     ...GROOMING_ADMIN_PERMISSIONS,
+    ...INVENTORY_ADMIN_PERMISSIONS,
   ],
   ADMIN: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -171,6 +192,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     ...OWNER_PATIENT_ADMIN_PERMISSIONS,
     ...APPOINTMENT_OWNER_ADMIN_PERMISSIONS,
     ...GROOMING_ADMIN_PERMISSIONS,
+    ...INVENTORY_ADMIN_PERMISSIONS,
   ],
   VETERINARIAN: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -190,6 +212,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'appointments.markNoShow',
     'availability.read',
     'grooming.read',
+    'inventory.read',
   ],
   ASSISTANT: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -203,6 +226,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'appointments.update',
     'appointments.checkIn',
     'availability.read',
+    'inventory.read',
   ],
   RECEPTION: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -223,6 +247,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'grooming.read',
     'grooming.create',
     'grooming.updateDraft',
+    'inventory.read',
   ],
   GROOMER: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -235,6 +260,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     'grooming.updateDraft',
     'grooming.perform',
     'grooming.complete',
+    'inventory.read',
   ],
   CASHIER: [
     PERMISSIONS.ORGANIZATION.READ,
@@ -243,6 +269,7 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly Permission[]> = {
     PERMISSIONS.PATIENTS.READ,
     'appointments.read',
     'grooming.read',
+    'inventory.read',
   ],
 };
 

@@ -94,4 +94,11 @@ export const PERMISSION = {
   GROOMING_PERFORM: 'grooming.perform',
   GROOMING_COMPLETE: 'grooming.complete',
   GROOMING_VOID: 'grooming.void',
+  INVENTORY_READ: 'inventory.read',
+  INVENTORY_ITEMS_CREATE: 'inventory.items.create',
+  INVENTORY_ITEMS_UPDATE: 'inventory.items.update',
+  INVENTORY_ITEMS_ARCHIVE: 'inventory.items.archive',
+  INVENTORY_MOVEMENTS_CREATE: 'inventory.movements.create',
+  INVENTORY_ADJUSTMENTS_CREATE: 'inventory.adjustments.create',
+  INVENTORY_TRANSFERS_CREATE: 'inventory.transfers.create',
 } as const satisfies Record<string, Permission>;

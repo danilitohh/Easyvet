@@ -112,6 +112,13 @@ export const permissionSchema = z.enum([
   'grooming.perform',
   'grooming.complete',
   'grooming.void',
+  'inventory.read',
+  'inventory.items.create',
+  'inventory.items.update',
+  'inventory.items.archive',
+  'inventory.movements.create',
+  'inventory.adjustments.create',
+  'inventory.transfers.create',
 ]);
 
 const authenticatedUserSchema = z.object({
@@ -2224,3 +2231,284 @@ export type StartGroomingVisitRequest = z.infer<typeof startGroomingVisitRequest
 export type CompleteGroomingVisitRequest = z.infer<typeof completeGroomingVisitRequestSchema>;
 export type VoidGroomingVisitRequest = z.infer<typeof voidGroomingVisitRequestSchema>;
 export type GroomingVisitListQuery = z.infer<typeof groomingVisitListQuerySchema>;
+
+// Inventory contracts keep all fixed-point quantities as decimal strings across the API boundary.
+const inventoryDecimalSchema = z
+  .string()
+  .regex(/^(?:0|[1-9]\d{0,13})(?:\.\d{1,6})?$/, 'Use up to six decimal places');
+const positiveInventoryDecimalSchema = inventoryDecimalSchema.refine(
+  (value) => /[1-9]/.test(value),
+  'Quantity must be greater than zero',
+);
+const inventoryInstantSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/);
+export const inventoryCivilDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return Number.isFinite(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+  }, 'Use a valid YYYY-MM-DD date');
+
+export const inventoryItemTypeSchema = z.enum(['MEDICATION', 'SUPPLY', 'RETAIL', 'OTHER']);
+export const inventoryItemStatusSchema = z.enum(['ACTIVE', 'ARCHIVED']);
+export const inventoryMovementTypeSchema = z.enum([
+  'RECEIPT',
+  'ISSUE',
+  'ADJUSTMENT_IN',
+  'ADJUSTMENT_OUT',
+  'TRANSFER_IN',
+  'TRANSFER_OUT',
+]);
+
+const inventoryItemFields = {
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  name: z.string(),
+  sku: z.string().nullable(),
+  itemType: inventoryItemTypeSchema,
+  baseUnit: z.string(),
+  lotTracking: z.boolean(),
+  minimumStock: inventoryDecimalSchema.nullable(),
+  description: z.string().nullable(),
+  notes: z.string().nullable(),
+  status: inventoryItemStatusSchema,
+  createdAt: inventoryInstantSchema,
+  updatedAt: inventoryInstantSchema,
+};
+export const inventoryItemSchema = z.object(inventoryItemFields);
+export const inventoryItemListResponseSchema = z.object({
+  data: z.array(inventoryItemSchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
+});
+export const inventoryItemListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    itemType: inventoryItemTypeSchema.optional(),
+    status: z.enum(['ACTIVE', 'ARCHIVED', 'ALL']).default('ACTIVE'),
+    search: z.string().trim().max(100).optional(),
+  })
+  .strict();
+export const createInventoryItemRequestSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    sku: z.string().trim().max(100).nullable().optional(),
+    itemType: inventoryItemTypeSchema,
+    baseUnit: z.string().trim().min(1).max(40),
+    lotTracking: z.boolean().default(false),
+    minimumStock: inventoryDecimalSchema.nullable().optional(),
+    description: z.string().trim().max(2000).nullable().optional(),
+    notes: z.string().trim().max(5000).nullable().optional(),
+  })
+  .strict();
+export const updateInventoryItemRequestSchema = createInventoryItemRequestSchema
+  .partial()
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, 'At least one field is required');
+
+export const inventoryBatchSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  inventoryItemId: z.string().uuid(),
+  lotNumber: z.string(),
+  expiryOn: inventoryCivilDateSchema.nullable(),
+  notes: z.string().nullable(),
+  createdAt: inventoryInstantSchema,
+});
+export const inventoryBatchSummarySchema = inventoryBatchSchema.extend({
+  totalStock: inventoryDecimalSchema,
+  locations: z.array(
+    z.object({
+      clinicLocationId: z.string().uuid(),
+      locationName: z.string(),
+      locationStatus: z.string(),
+      stock: inventoryDecimalSchema,
+    }),
+  ),
+  expiryStatus: z.enum(['EXPIRED', 'EXPIRING_SOON', 'OK', 'NO_EXPIRY']),
+});
+export const inventoryBatchListResponseSchema = z.object({
+  data: z.array(inventoryBatchSchema),
+});
+
+export const inventoryMovementSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  inventoryItemId: z.string().uuid(),
+  clinicLocationId: z.string().uuid(),
+  inventoryBatchId: z.string().uuid().nullable(),
+  movementType: inventoryMovementTypeSchema,
+  quantityDelta: z.string().regex(/^-?(?:0|[1-9]\d{0,13})(?:\.\d{1,6})?$/),
+  occurredAt: inventoryInstantSchema,
+  reason: z.string(),
+  reference: z.string().nullable(),
+  unitCost: inventoryDecimalSchema.nullable(),
+  transferGroupId: z.string().uuid().nullable(),
+  createdByMembershipId: z.string().uuid(),
+  createdAt: inventoryInstantSchema,
+  inventoryItemName: z.string(),
+  clinicLocationName: z.string(),
+  batchLotNumber: z.string().nullable(),
+  actorDisplayName: z.string(),
+});
+export const inventoryMovementListResponseSchema = z.object({
+  data: z.array(inventoryMovementSchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
+});
+export const inventoryMovementListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    inventoryItemId: z.string().uuid().optional(),
+    clinicLocationId: z.string().uuid().optional(),
+    inventoryBatchId: z.string().uuid().optional(),
+    movementType: inventoryMovementTypeSchema.optional(),
+    from: inventoryInstantSchema.optional(),
+    to: inventoryInstantSchema.optional(),
+  })
+  .strict();
+
+const inventoryBatchInputSchema = z
+  .object({
+    lotNumber: z.string().trim().min(1).max(120),
+    expiryOn: inventoryCivilDateSchema.nullable().optional(),
+    notes: z.string().trim().max(2000).nullable().optional(),
+  })
+  .strict();
+export const createInventoryMovementRequestSchema = z
+  .object({
+    inventoryItemId: z.string().uuid(),
+    clinicLocationId: z.string().uuid(),
+    movementType: z.enum(['RECEIPT', 'ISSUE', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT']),
+    quantity: positiveInventoryDecimalSchema,
+    inventoryBatchId: z.string().uuid().nullable().optional(),
+    newBatch: inventoryBatchInputSchema.optional(),
+    occurredAt: inventoryInstantSchema,
+    reason: z.string().trim().max(2000).nullable().optional(),
+    reference: z.string().trim().max(500).nullable().optional(),
+    unitCost: inventoryDecimalSchema.nullable().optional(),
+  })
+  .strict()
+  .refine((value) => !(value.inventoryBatchId && value.newBatch), {
+    message: 'Choose an existing batch or provide a new batch, not both',
+  })
+  .refine((value) => value.movementType === 'RECEIPT' || !value.newBatch, {
+    message: 'A batch can only be created with a receipt',
+  })
+  .refine((value) => value.movementType === 'RECEIPT' || Boolean(value.reason?.trim()), {
+    message: 'Reason is required for issues and adjustments',
+  });
+
+export const createInventoryTransferRequestSchema = z
+  .object({
+    inventoryItemId: z.string().uuid(),
+    inventoryBatchId: z.string().uuid().nullable().optional(),
+    fromClinicLocationId: z.string().uuid(),
+    toClinicLocationId: z.string().uuid(),
+    quantity: positiveInventoryDecimalSchema,
+    occurredAt: inventoryInstantSchema,
+    reason: z.string().trim().max(2000).nullable().optional(),
+  })
+  .strict()
+  .refine((value) => value.fromClinicLocationId !== value.toClinicLocationId, {
+    message: 'Source and destination locations must differ',
+  });
+
+export const inventoryStockQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    clinicLocationId: z.string().uuid().optional(),
+    itemType: inventoryItemTypeSchema.optional(),
+    lowStock: z
+      .union([z.boolean(), z.enum(['true', 'false']).transform((value) => value === 'true')])
+      .optional(),
+    includeArchived: z
+      .union([z.boolean(), z.enum(['true', 'false']).transform((value) => value === 'true')])
+      .default(false),
+  })
+  .strict();
+export const inventoryStockSummarySchema = z.object({
+  item: inventoryItemSchema,
+  stock: inventoryDecimalSchema,
+  lowStock: z.boolean(),
+  lowStockLocations: z.number().int().nonnegative(),
+  clinicLocationId: z.string().uuid().nullable(),
+});
+// Item summaries add derived stock without changing the catalog's metadata-only base contract.
+export const inventoryItemSummarySchema = inventoryStockSummarySchema;
+export const inventoryStockListResponseSchema = z.object({
+  data: z.array(inventoryStockSummarySchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
+});
+export const inventoryItemStockDetailSchema = z.object({
+  inventoryItemId: z.string().uuid(),
+  totalStock: inventoryDecimalSchema,
+  locations: z.array(
+    z.object({
+      clinicLocationId: z.string().uuid(),
+      locationName: z.string(),
+      locationStatus: z.string(),
+      stock: inventoryDecimalSchema,
+      lowStock: z.boolean(),
+    }),
+  ),
+  batches: z.array(inventoryBatchSummarySchema),
+});
+// Detail responses combine immutable catalog data with ledger-derived balances and recent history.
+export const inventoryItemDetailSchema = inventoryItemSchema.extend({
+  stock: inventoryItemStockDetailSchema,
+  recentMovements: z.array(inventoryMovementSchema),
+});
+export const inventoryDashboardSummarySchema = z.object({
+  activeItems: z.number().int().nonnegative(),
+  lowStockItemLocations: z.number().int().nonnegative(),
+  expiredBatches: z.number().int().nonnegative(),
+  expiringSoonBatches: z.number().int().nonnegative(),
+});
+export const inventoryTransferResponseSchema = z.object({
+  transferGroupId: z.string().uuid(),
+  movements: z.array(inventoryMovementSchema).length(2),
+});
+
+export type InventoryItemType = z.infer<typeof inventoryItemTypeSchema>;
+export type InventoryItemStatus = z.infer<typeof inventoryItemStatusSchema>;
+export type InventoryMovementType = z.infer<typeof inventoryMovementTypeSchema>;
+export type InventoryItem = z.infer<typeof inventoryItemSchema>;
+export type InventoryItemSummary = z.infer<typeof inventoryItemSummarySchema>;
+export type InventoryItemDetail = z.infer<typeof inventoryItemDetailSchema>;
+export type InventoryItemListResponse = z.infer<typeof inventoryItemListResponseSchema>;
+export type InventoryItemListQuery = z.infer<typeof inventoryItemListQuerySchema>;
+export type CreateInventoryItemRequest = z.infer<typeof createInventoryItemRequestSchema>;
+export type UpdateInventoryItemRequest = z.infer<typeof updateInventoryItemRequestSchema>;
+export type InventoryBatch = z.infer<typeof inventoryBatchSchema>;
+export type InventoryBatchListResponse = z.infer<typeof inventoryBatchListResponseSchema>;
+export type InventoryBatchSummary = z.infer<typeof inventoryBatchSummarySchema>;
+export type InventoryMovement = z.infer<typeof inventoryMovementSchema>;
+export type InventoryMovementListResponse = z.infer<typeof inventoryMovementListResponseSchema>;
+export type InventoryMovementListQuery = z.infer<typeof inventoryMovementListQuerySchema>;
+export type CreateInventoryMovementRequest = z.infer<typeof createInventoryMovementRequestSchema>;
+export type CreateInventoryTransferRequest = z.infer<typeof createInventoryTransferRequestSchema>;
+export type InventoryStockQuery = z.infer<typeof inventoryStockQuerySchema>;
+export type InventoryStockSummary = z.infer<typeof inventoryStockSummarySchema>;
+export type InventoryStockListResponse = z.infer<typeof inventoryStockListResponseSchema>;
+export type InventoryItemStockDetail = z.infer<typeof inventoryItemStockDetailSchema>;
+export type InventoryDashboardSummary = z.infer<typeof inventoryDashboardSummarySchema>;
+export type InventoryTransferResponse = z.infer<typeof inventoryTransferResponseSchema>;

@@ -45,6 +45,9 @@ model Organization {
   consentSignatureRequests ConsentSignatureRequest[]
   clinicalFollowUps        ClinicalFollowUp[]
   groomingVisits           GroomingVisit[]
+  inventoryItems           InventoryItem[]
+  inventoryBatches          InventoryBatch[]
+  inventoryMovements        InventoryMovement[]
   operationalAuditEvents   OperationalAuditEvent[]
 
   @@map("organizations")
@@ -65,6 +68,7 @@ model ClinicLocation {
   availabilityRules  AvailabilityRule[]
   clinicalEncounters ClinicalEncounter[]
   groomingVisits     GroomingVisit[]
+  inventoryMovements InventoryMovement[]
 
   @@unique([id, organizationId], map: "clinic_locations_id_organization_id_key")
   @@index([organizationId])
@@ -163,6 +167,7 @@ model Membership {
   completedGroomingVisits         GroomingVisit[]                @relation("GroomingVisitCompletedByMembership")
   voidedGroomingVisits            GroomingVisit[]                @relation("GroomingVisitVoidedByMembership")
   operationalAuditEvents          OperationalAuditEvent[]        @relation("OperationalAuditActorMembership")
+  createdInventoryMovements       InventoryMovement[]             @relation("InventoryMovementCreatedByMembership")
 
   @@unique([userId, organizationId])
   @@unique([id, organizationId], map: "memberships_id_organization_id_key")
@@ -390,6 +395,27 @@ enum GroomingVisitStatus {
   IN_PROGRESS
   COMPLETED
   VOIDED
+}
+
+enum InventoryItemType {
+  MEDICATION
+  SUPPLY
+  RETAIL
+  OTHER
+}
+
+enum InventoryItemStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum InventoryMovementType {
+  RECEIPT
+  ISSUE
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  TRANSFER_IN
+  TRANSFER_OUT
 }
 
 enum OperationalAuditAction {
@@ -1238,6 +1264,79 @@ model OperationalAuditEvent {
 
   @@index([organizationId, groomingVisitId, createdAt], map: "operational_audit_events_org_grooming_created_idx")
   @@map("operational_audit_events")
+}
+
+// InventoryItem stores catalog metadata only; available quantities are always derived from its ledger.
+model InventoryItem {
+  id             String              @id @default(uuid()) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  name           String              @db.VarChar(200)
+  sku            String?             @db.VarChar(100)
+  itemType       InventoryItemType   @map("item_type")
+  baseUnit       String              @map("base_unit") @db.VarChar(40)
+  lotTracking    Boolean             @default(false) @map("lot_tracking")
+  minimumStock   Decimal?            @map("minimum_stock") @db.Decimal(20, 6)
+  description    String?             @db.VarChar(2000)
+  notes          String?             @db.VarChar(5000)
+  status         InventoryItemStatus @default(ACTIVE)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  batches        InventoryBatch[]
+  movements      InventoryMovement[]
+
+  @@unique([id, organizationId], map: "inventory_items_id_organization_id_key")
+  @@unique([organizationId, sku], map: "inventory_items_organization_id_sku_key")
+  @@index([organizationId, status, name])
+  @@index([organizationId, itemType, status])
+  @@map("inventory_items")
+}
+
+// InventoryBatch preserves immutable lot identity and civil expiry without a timezone conversion.
+model InventoryBatch {
+  id              String              @id @default(uuid()) @db.Uuid
+  organizationId  String              @map("organization_id") @db.Uuid
+  inventoryItemId String              @map("inventory_item_id") @db.Uuid
+  lotNumber       String              @map("lot_number") @db.VarChar(120)
+  expiryOn        DateTime?           @map("expiry_on") @db.Date
+  notes           String?             @db.VarChar(2000)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  inventoryItem   InventoryItem       @relation(fields: [inventoryItemId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  movements       InventoryMovement[]
+
+  @@unique([id, inventoryItemId, organizationId], map: "inventory_batches_id_item_org_key")
+  @@unique([organizationId, inventoryItemId, lotNumber], map: "inventory_batches_org_item_lot_key")
+  @@index([organizationId, inventoryItemId, expiryOn])
+  @@map("inventory_batches")
+}
+
+// InventoryMovement is the append-only source of truth for every stock change.
+model InventoryMovement {
+  id                    String                @id @default(uuid()) @db.Uuid
+  organizationId        String                @map("organization_id") @db.Uuid
+  inventoryItemId       String                @map("inventory_item_id") @db.Uuid
+  clinicLocationId      String                @map("clinic_location_id") @db.Uuid
+  inventoryBatchId      String?               @map("inventory_batch_id") @db.Uuid
+  movementType          InventoryMovementType @map("movement_type")
+  quantityDelta         Decimal               @map("quantity_delta") @db.Decimal(20, 6)
+  occurredAt            DateTime              @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  reason                String                @db.VarChar(2000)
+  reference             String?               @db.VarChar(500)
+  unitCost              Decimal?              @map("unit_cost") @db.Decimal(20, 6)
+  transferGroupId       String?               @map("transfer_group_id") @db.Uuid
+  createdByMembershipId String                @map("created_by_membership_id") @db.Uuid
+  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  inventoryItem         InventoryItem         @relation(fields: [inventoryItemId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  clinicLocation        ClinicLocation        @relation(fields: [clinicLocationId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  inventoryBatch        InventoryBatch?       @relation(fields: [inventoryBatchId, inventoryItemId, organizationId], references: [id, inventoryItemId, organizationId], onDelete: Restrict, onUpdate: Cascade)
+  createdByMembership   Membership            @relation("InventoryMovementCreatedByMembership", fields: [createdByMembershipId, organizationId], references: [id, organizationId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId, inventoryItemId, clinicLocationId, occurredAt(sort: Desc), createdAt(sort: Desc), id])
+  @@index([organizationId, inventoryItemId, inventoryBatchId, clinicLocationId])
+  @@index([organizationId, transferGroupId])
+  @@map("inventory_movements")
 }
 
 // AvailabilityRule stores a weekly civil-time window for one location or membership.

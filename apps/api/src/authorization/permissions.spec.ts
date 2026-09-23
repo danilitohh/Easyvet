@@ -2,6 +2,37 @@ import { describe, expect, it } from '@jest/globals';
 import { hasPermissions, permissionsForRole } from './permissions';
 
 describe('clinical permission foundation', () => {
+  it('grants inventory mutations only to tenant administrators and read access to operational roles', () => {
+    const adminPermissions = permissionsForRole('OWNER');
+    const adminRolePermissions = permissionsForRole('ADMIN');
+    const operationalRoles = [
+      permissionsForRole('VETERINARIAN', 'PRACTITIONER'),
+      permissionsForRole('ASSISTANT', 'CLINICAL_ASSISTANT'),
+      permissionsForRole('RECEPTION'),
+      permissionsForRole('GROOMER'),
+      permissionsForRole('CASHIER'),
+    ];
+    const inventoryMutations = [
+      'inventory.items.create',
+      'inventory.items.update',
+      'inventory.items.archive',
+      'inventory.movements.create',
+      'inventory.adjustments.create',
+      'inventory.transfers.create',
+    ];
+
+    expect(adminPermissions).toEqual(
+      expect.arrayContaining(['inventory.read', ...inventoryMutations]),
+    );
+    expect(adminRolePermissions).toEqual(
+      expect.arrayContaining(['inventory.read', ...inventoryMutations]),
+    );
+    for (const permissions of operationalRoles) {
+      expect(permissions).toContain('inventory.read');
+      for (const mutation of inventoryMutations) expect(permissions).not.toContain(mutation);
+    }
+  });
+
   it('keeps grooming operational and grants only the documented role matrix', () => {
     const owner = permissionsForRole('OWNER');
     const receptionist = permissionsForRole('RECEPTION');

@@ -19,6 +19,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
   const canReadAvailability = useCan(PERMISSION.AVAILABILITY_READ);
   const canReadFollowUps = useCan(PERMISSION.FOLLOW_UPS_READ);
   const canReadGrooming = useCan(PERMISSION.GROOMING_READ);
+  const canReadInventory = useCan(PERMISSION.INVENTORY_READ);
   const visibleGroups = NAVIGATION_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
@@ -27,6 +28,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
       if (item.path === '/agenda/disponibilidad') return canReadAvailability;
       if (item.path === '/seguimientos') return canReadFollowUps;
       if (item.path === '/peluqueria') return canReadGrooming;
+      if (item.path === '/inventario') return canReadInventory;
       return true;
     }),
   })).filter((group) => group.items.length > 0);

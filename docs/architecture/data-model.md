@@ -287,3 +287,13 @@ VOIDED usa CAS, restricciones SQL y auditoría operativa independiente del
 Clinical Core. No crea consulta, venta, cobro ni consumo de inventario. Véase
 [`grooming.md`](grooming.md) y
 [`grooming-final-review.md`](../migration/grooming-final-review.md).
+
+## Inventory 8
+
+`InventoryItem` contiene solo catálogo; `InventoryBatch` representa una fecha
+civil y un lote estable; `InventoryMovement` es el ledger append-only. El stock
+se deriva por Organization/Item/Location/Batch con `SUM(quantityDelta)` en
+`DECIMAL(20,6)`, sin saldo editable. Locks de Item serializan salidas/ajustes y
+traslados; checks y triggers PostgreSQL protegen signo, lot tracking, stock no
+negativo e inmutabilidad. `minimumStock` es común a todas las sedes y se evalúa
+por separado para cada una. Véase [`inventory.md`](inventory.md).

@@ -249,7 +249,7 @@ describeDatabase('fundamental multi-tenant model', () => {
       audits,
     }).toEqual({
       organizations: 2,
-      locations: 2,
+      locations: 3,
       users: 5,
       memberships: 6,
       owners: 4,

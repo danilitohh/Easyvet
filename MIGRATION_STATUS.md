@@ -1048,3 +1048,79 @@ Fase 6I — Documents / Consents / Signatures: COMPLETADA
   venta/factura automática, fotos antes/después, consentimiento específico de
   grooming, notificaciones, reserva online y recurrencia de citas. Fase 7
   completada; Inventory no iniciado.
+
+## Fase 8 — Inventory / Inventario
+
+- Legacy review del commit `05fea495cb13208b27bf470b3570987fd501a81e` completado
+  en modo lectura. Lativet concentra producto, stock y parte del consumo comercial
+  en un modelo mutable, permite editar/eliminar movimientos y asocia vencimiento
+  principalmente al producto; Easyvet conserva catálogo, lotes y ledger separados,
+  y reserva futuras relaciones de compras/ventas para sus propios dominios.
+- Se agregaron `InventoryItem`, `InventoryBatch` e `InventoryMovement`, con FKs
+  tenant-safe, `RESTRICT`, unicidad SKU/lote por organización, checks de signo,
+  cantidades `Decimal(20,6)`, costos no negativos y protección PostgreSQL para
+  ledger append-only, stock no negativo, lotes requeridos y pares de transferencia.
+  Stock actual se calcula siempre desde `SUM(quantityDelta)`; no hay balance mutable.
+- La migración `20260923010000_inventory_module` se aplicó únicamente a
+  `easyvet_dev` y `easyvet_test`. `easyvet_dev` reporta 23 migraciones aplicadas y
+  esquema al día; `test:db`/`test:all` ejercitan `easyvet_test`. No se tocaron bases
+  productivas ni se creó una migración adicional.
+- El API ofrece catálogo, detalle, edición/archivo, resumen/stock derivado,
+  lotes, movimientos y transferencias bajo `/api/v1/inventory/*`. Los contratos
+  compartidos serializan decimales como strings. Salidas/ajustes negativos se
+  validan dentro de una transacción con bloqueo del artículo; transferencia crea
+  ambos movimientos con UUID común en una sola transacción. `occurredAt` es
+  instante con zona y `expiryOn` se mantiene como DATE civil.
+- Se agregaron permisos `inventory.*`: Owner/Admin gestionan el módulo; roles
+  operativos conservan lectura y la cuenta de plataforma no evita el aislamiento
+  tenant. El mínimo se evalúa por ubicación, con el mismo umbral por artículo;
+  vencido/próximo a vencer se deriva usando fecha local de la organización. No hay
+  notificaciones ni consumo automático clínico/comercial.
+- La ruta `/inventario` ahora es lazy-loaded e incluye filtros por sede/tipo/stock/
+  estado, métricas, cards móviles, detalle por ubicación/lote, ledger de solo lectura,
+  formularios y diálogos de recepción, salida, ajuste y traslado. Las acciones se
+  filtran por permiso; el cambio de tenant reinicia filtros/recursos y aborta
+  solicitudes obsoletas. Conflicto `INSUFFICIENT_STOCK` refresca el stock sin reintento.
+- Seed idempotente y ficticio: Norte tiene medicamentos lotificados, venta al detal
+  y suministros en dos sedes; incluye mínimo bajo, lote vencido y próximo a vencer.
+  Sur tiene catálogo/stock independientes. QA manual se hizo solo en `easyvet_dev`:
+  alta de suministro, recepción `+10.125`, salida `−3.125`, conflicto de stock
+  insuficiente, ajustes `+2.5/−1.5`, traslado de 3 entre sedes y recepción lotificada
+  vencida `+2.5` con vencimiento civil `15/01/2025`. Se archivó un artículo ficticio
+  de stock cero; permanece histórico, sin hard delete.
+- Tenant QA Norte→Sur desde Inventario comprobó que la sede seleccionada se limpia,
+  Sur solo muestra su propio artículo y un deep link al artículo Norte devuelve 404.
+  El modal largo de recepción pudo recorrerse/confirmarse a 390 px tras corregir el
+  scroll interno. Lista y detalle no desbordan horizontalmente a 390, 768 y 1280 px;
+  los detalles móviles presentan cards para lotes y movimientos.
+- Docker Engine 29.8.0 / Compose 5.5.1; `easyvet-postgres-1` permanece `healthy`.
+  El `DATABASE_URL` local se verificó como `localhost/easyvet_dev` sin mostrar
+  credenciales; health respondió 200. Ningún dato real se ingresó.
+- QA automatizado cubre aislamiento, permisos, SKU, decimales, lotes/fecha civil,
+  entradas/salidas/ajustes, transferencias, archivo, DB append-only, concurrencia
+  ISSUE/ISSUE y traslado/ISSUE, filtros/stock, formularios, ledger seguro, acciones
+  UI, permisos y aborto de consultas al cambiar tenant. La carrera permite cualquiera
+  de los dos órdenes serializados válidos y exige que solo una operación consuma stock.
+- Validaciones finales: `format:check`, `lint`, `typecheck`, `npm test`, `npm run
+test:db`, `npm run test:all`, `npm run build`, `npm run prisma:generate` y
+  `npm run prisma:validate` pasan. Suite unitaria: API 27/27 y web 353/353;
+  `test:db`: 205/205. Build pasa; advertencias no bloqueantes de anotaciones Zod/
+  Rollup y chunk principal 860.55 kB (245.52 kB gzip), sobre el umbral de 500 kB;
+  el chunk Inventory es 3.53 kB (1.56 kB gzip).
+- `npm audit`: 5 vulnerabilidades (2 moderate y 3 high; 0 critical). `vitest@3.2.7`
+  y `prisma@6.19.3` son dependencias directas de desarrollo; `@vitest/mocker`,
+  `@prisma/config` y `deepmerge-ts` son transitivas. El camino Prisma aparece también
+  en `npm audit --omit=dev` por el peer opcional de Prisma Client, pero el riesgo
+  reside en la configuración/CLI de desarrollo, no en una ruta encontrada en los
+  handlers del runtime. Las únicas propuestas automáticas son cambios breaking
+  (Vitest 5 y downgrade forzado de Prisma); no se cambió ninguna dependencia ni se
+  usó `npm audit fix --force`.
+- Bugs encontrados y corregidos durante QA: casteos UUID para consultas SQL raw;
+  conservar el diálogo de salida al recibir 409 mientras se refresca el mismo recurso;
+  scroll de diálogos largos en viewport corto; tolerancia del header cuando un preview
+  no entrega la lista de membresías. Se corrigió además una expectativa de test de
+  carrera que asumía que el traslado siempre obtenía primero el lock. No quedan bugs
+  funcionales conocidos. Limitaciones POST-V1: proveedores, compras/cuentas por
+  pagar, costeo FIFO/promedio, mínimos por sede, códigos de barra/seriales,
+  sugerencias, reservas, conteos, cuarentena e integraciones de almacén.
+- Fase 8 Inventory completada. No se inició Sales, Billing ni Cash.
