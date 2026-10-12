@@ -13,7 +13,7 @@
       "framework": "nestjs",
       "entrypoint": "src/main.ts",
       "installCommand": "npm ci",
-      "buildCommand": "npm run prisma:generate && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api"
+      "buildCommand": "npx --no-install prisma generate --schema ../../prisma/schema.prisma && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api"
     }
   },
   "rewrites": [
