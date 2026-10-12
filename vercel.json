@@ -6,7 +6,13 @@
       "framework": "vite",
       "installCommand": "npm ci",
       "buildCommand": "npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/web",
-      "outputDirectory": "apps/web/dist"
+      "outputDirectory": "apps/web/dist",
+      "rewrites": [
+        {
+          "source": "/(.*)",
+          "destination": "/index.html"
+        }
+      ]
     },
     "api": {
       "root": "apps/api",
@@ -18,11 +24,11 @@
   },
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/api/(.*)",
       "destination": { "service": "api" }
     },
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "destination": { "service": "app" }
     }
   ]
