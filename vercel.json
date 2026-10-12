@@ -1,3 +1,29 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "framework": "vite",
+      "installCommand": "npm ci",
+      "buildCommand": "npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/web",
+      "outputDirectory": "apps/web/dist"
+    },
+    "api": {
+      "root": "apps/api",
+      "framework": "nestjs",
+      "entrypoint": "src/main.ts",
+      "installCommand": "npm ci",
+      "buildCommand": "npm run prisma:generate && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": { "service": "api" }
+    },
+    {
+      "source": "/:path*",
+      "destination": { "service": "app" }
+    }
+  ]
 }

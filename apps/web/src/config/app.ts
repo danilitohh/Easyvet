@@ -3,7 +3,10 @@ import { z } from 'zod';
 const webConfigSchema = z.object({
   name: z.string().trim().min(1).max(120),
   shortName: z.string().trim().min(1).max(40),
-  apiBaseUrl: z.string().url(),
+  apiBaseUrl: z.union([
+    z.string().url(),
+    z.string().regex(/^\/(?!\/).+$/, 'API base paths must start with a single slash'),
+  ]),
   dataMode: z.enum(['api', 'mock']),
 });
 
@@ -20,7 +23,9 @@ export function resolveDataMode(
 export const appConfig = webConfigSchema.parse({
   name: import.meta.env.VITE_APP_NAME || 'Easyvet',
   shortName: import.meta.env.VITE_APP_SHORT_NAME || import.meta.env.VITE_APP_NAME || 'Easyvet',
-  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
+  apiBaseUrl:
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.PROD ? '/api/v1' : 'http://localhost:3000/api/v1'),
   dataMode: resolveDataMode(import.meta.env.VITE_DATA_MODE, import.meta.env.PROD),
 });
 

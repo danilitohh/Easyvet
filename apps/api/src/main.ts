@@ -11,7 +11,8 @@ export async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService<Environment, true>);
   const origin = config.get('APP_ORIGIN', { infer: true });
-  const port = config.get('API_PORT', { infer: true });
+  const configuredPort = config.get('API_PORT', { infer: true });
+  const port = process.env.PORT ? Number(process.env.PORT) : configuredPort;
 
   app.setGlobalPrefix('api/v1');
   app.enableCors({ origin, credentials: true });
