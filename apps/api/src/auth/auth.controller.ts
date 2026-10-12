@@ -7,7 +7,7 @@ import {
   LoginRequestDto,
   SwitchOrganizationRequestDto,
 } from './auth.dto';
-import { AuthenticatedRequest } from './auth.types';
+import type { AuthenticatedRequest } from './auth.types';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
 import { Public } from '../authorization/public.decorator';
