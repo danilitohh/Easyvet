@@ -53,6 +53,44 @@ const workflowItems: Array<[string, string, string]> = [
   ['Reportes', 'Decisiones con contexto', '/icons-3d/pulse.png'],
 ];
 
+const pricingPlans: Array<{
+  name: string;
+  eyebrow: string;
+  price: string;
+  priceNote: string;
+  description: string;
+  features: string[];
+  badge?: string;
+  featured?: boolean;
+}> = [
+  {
+    name: 'Esencial',
+    eyebrow: 'Para comenzar',
+    price: 'Gratis',
+    priceNote: 'sin tarjeta',
+    description: 'Una base clara para empezar a ordenar el día a día de tu clínica.',
+    features: ['Agenda organizada', 'Registro de pacientes', 'Acceso a la plataforma'],
+  },
+  {
+    name: 'Crecimiento',
+    eyebrow: 'Para equipos en expansión',
+    price: 'Precio por definir',
+    priceNote: 'COP / mes',
+    description: 'Más contexto para que tu equipo trabaje coordinado y gane tiempo.',
+    features: ['Historias clínicas completas', 'Inventario conectado', 'Reportes de operación'],
+    badge: 'Más elegido',
+    featured: true,
+  },
+  {
+    name: 'Clínica Pro',
+    eyebrow: 'Para una operación completa',
+    price: 'Precio por definir',
+    priceNote: 'COP / mes',
+    description: 'Todo el ritmo de tu clínica conectado en una experiencia de mayor alcance.',
+    features: ['Operación integral', 'Facturación y seguimiento', 'Soporte para tu equipo'],
+  },
+];
+
 export function LandingPage() {
   useEffect(() => {
     const previousTitle = document.title;
@@ -77,6 +115,7 @@ export function LandingPage() {
           className="landing-nav"
           items={[
             { href: '#producto', label: 'Producto' },
+            { href: '#precios', label: 'Planes' },
             { href: '#flujo', label: 'Cómo funciona' },
             { href: '#contacto', label: 'Contacto' },
           ]}
@@ -227,6 +266,45 @@ export function LandingPage() {
               <p>{feature.description}</p>
               <span className="landing-feature-card__arrow" aria-hidden="true"><EasyvetIcon name="arrow-up-right" size={17} /></span>
             </SpotlightCard>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-pricing" id="precios" aria-labelledby="pricing-title">
+        <AnimatedContent className="landing-section__intro">
+          <p className="landing-eyebrow"><ShimmerText>Planes para cada etapa</ShimmerText></p>
+          <h2 id="pricing-title">Empieza con lo esencial. Crece a tu ritmo.</h2>
+          <p>Elige la forma de trabajo que mejor acompaña a tu clínica. Todos los valores estarán expresados en COP.</p>
+        </AnimatedContent>
+        <div className="landing-pricing__note" role="note">
+          <span className="landing-pricing__note-icon" aria-hidden="true"><EasyvetIcon name="sparkle" size={15} /></span>
+          <span>El plan anual tendrá un descuento especial. Los precios de los planes de pago se publicarán próximamente.</span>
+        </div>
+        <div className="landing-pricing-grid">
+          {pricingPlans.map((plan) => (
+            <article className={`landing-pricing-card${plan.featured ? ' landing-pricing-card--featured' : ''}`} key={plan.name}>
+              {plan.badge && <span className="landing-pricing-card__badge">{plan.badge}</span>}
+              <div className="landing-pricing-card__heading">
+                <p>{plan.eyebrow}</p>
+                <h3>{plan.name}</h3>
+              </div>
+              <div className="landing-pricing-card__price">
+                <strong>{plan.price}</strong>
+                <span>{plan.priceNote}</span>
+              </div>
+              <p className="landing-pricing-card__description">{plan.description}</p>
+              <ul className="landing-pricing-card__features">
+                {plan.features.map((feature) => (
+                  <li key={feature}>
+                    <span aria-hidden="true"><EasyvetIcon name="check" size={14} /></span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <div className="landing-pricing-card__footer">
+                <span>{plan.featured ? 'Descuento anual disponible' : 'Sin permanencia'}</span>
+              </div>
+            </article>
           ))}
         </div>
       </section>
