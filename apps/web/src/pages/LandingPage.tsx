@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Chip } from '@heroui/react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../components/brand/BrandMark';
+import { EasyvetIcon, type EasyvetIconName } from '../components/icons/EasyvetIcon';
 import { LiquidGlassCard } from '../components/kokonutui/LiquidGlassCard';
 import { ParticleLink } from '../components/kokonutui/ParticleLink';
 import { ShimmerText } from '../components/kokonutui/ShimmerText';
@@ -11,32 +12,45 @@ import { SpotlightCard } from '../components/reactbits/SpotlightCard';
 import { SpecularButton } from '../components/reactbits/SpecularButton';
 import '../styles/landing.css';
 
-const features = [
+const features: Array<{
+  number: string;
+  icon: EasyvetIconName;
+  title: string;
+  description: string;
+}> = [
   {
     number: '01',
-    icon: '◷',
+    icon: 'calendar',
     title: 'Agenda que respira',
     description: 'Organiza consultas, procedimientos y peluquería en una vista clara para todo el equipo.',
   },
   {
     number: '02',
-    icon: '✦',
+    icon: 'clipboard-heart',
     title: 'Historias clínicas completas',
     description: 'Ten la evolución de cada paciente a la mano, desde la consulta hasta el seguimiento.',
   },
   {
     number: '03',
-    icon: '⌁',
+    icon: 'bar-chart',
     title: 'Una operación conectada',
     description: 'Une pacientes, inventario, ventas y facturación en el mismo ritmo de trabajo.',
   },
 ];
 
-const workflowItems = [
-  ['Agenda', 'Todo el día en una sola vista'],
-  ['Pacientes', 'Información clínica siempre disponible'],
-  ['Inventario', 'Existencias bajo control'],
-  ['Reportes', 'Decisiones con contexto'],
+const signalItems: Array<[string, EasyvetIconName]> = [
+  ['Agenda', 'calendar'],
+  ['Pacientes', 'paw'],
+  ['Historias clínicas', 'clipboard-heart'],
+  ['Inventario', 'package'],
+  ['Facturación', 'receipt'],
+];
+
+const workflowItems: Array<[string, string, EasyvetIconName]> = [
+  ['Agenda', 'Todo el día en una sola vista', 'calendar'],
+  ['Pacientes', 'Información clínica siempre disponible', 'paw'],
+  ['Inventario', 'Existencias bajo control', 'package'],
+  ['Reportes', 'Decisiones con contexto', 'bar-chart'],
 ];
 
 export function LandingPage() {
@@ -75,7 +89,7 @@ export function LandingPage() {
           </Link>
           <SpecularButton>
             <Link className="landing-button landing-button--primary landing-button--small" to="/login">
-              Entrar a Easyvet <span aria-hidden="true">↗</span>
+              Entrar a Easyvet <EasyvetIcon name="arrow-up-right" size={15} />
             </Link>
           </SpecularButton>
         </div>
@@ -98,16 +112,16 @@ export function LandingPage() {
           <div className="landing-hero__actions">
             <SpecularButton>
               <ParticleLink className="landing-button landing-button--primary" to="/login">
-                Conocer la plataforma <span aria-hidden="true">↗</span>
+                Conocer la plataforma <EasyvetIcon name="arrow-up-right" size={16} />
               </ParticleLink>
             </SpecularButton>
             <a className="landing-button landing-button--quiet" href="#producto">
-              Ver cómo funciona <span aria-hidden="true">↓</span>
+              Ver cómo funciona <EasyvetIcon name="arrow-down" size={16} />
             </a>
           </div>
           <div className="landing-proof" aria-label="Beneficios de Easyvet">
-            <span><i aria-hidden="true">✓</i> Pensado para equipos veterinarios</span>
-            <span><i aria-hidden="true">✓</i> Información organizada</span>
+            <span><i aria-hidden="true"><EasyvetIcon name="check" size={13} /></i> Pensado para equipos veterinarios</span>
+            <span><i aria-hidden="true"><EasyvetIcon name="check" size={13} /></i> Información organizada</span>
           </div>
         </AnimatedContent>
 
@@ -130,7 +144,7 @@ export function LandingPage() {
                   <strong>Buenos días, Amelia</strong>
                 </div>
                 <Chip className="landing-preview-status" color="success" size="sm" variant="soft">
-                  <i aria-hidden="true" /> Clínica activa
+                  <EasyvetIcon name="activity" size={12} /> Clínica activa
                 </Chip>
               </div>
               <div className="landing-preview-stats">
@@ -154,7 +168,7 @@ export function LandingPage() {
                 <div className="landing-preview-schedule">
                   <div className="landing-preview-card-heading">
                     <strong>Agenda de hoy</strong>
-                    <span>Ver agenda <b aria-hidden="true">↗</b></span>
+                    <span>Ver agenda <EasyvetIcon name="arrow-up-right" size={12} /></span>
                   </div>
                   <div className="landing-appointment">
                     <time>09:00</time>
@@ -193,11 +207,9 @@ export function LandingPage() {
       <section className="landing-signal" aria-label="Áreas de trabajo">
         <p>Todo lo importante de tu clínica, conectado.</p>
         <div className="landing-signal__items">
-          <span><b aria-hidden="true">◷</b> Agenda</span>
-          <span><b aria-hidden="true">✦</b> Pacientes</span>
-          <span><b aria-hidden="true">⌁</b> Historias clínicas</span>
-          <span><b aria-hidden="true">▥</b> Inventario</span>
-          <span><b aria-hidden="true">▣</b> Facturación</span>
+          {signalItems.map(([label, icon]) => (
+            <span key={label}><b aria-hidden="true"><EasyvetIcon name={icon} size={15} /></b> {label}</span>
+          ))}
         </div>
       </section>
 
@@ -211,12 +223,12 @@ export function LandingPage() {
           {features.map((feature) => (
             <SpotlightCard className="landing-feature-card" key={feature.number}>
               <div className="landing-feature-card__topline">
-                <span className="landing-feature-card__icon" aria-hidden="true">{feature.icon}</span>
+                <span className="landing-feature-card__icon" aria-hidden="true"><EasyvetIcon name={feature.icon} size={19} /></span>
                 <span>{feature.number}</span>
               </div>
               <h3>{feature.title}</h3>
               <p>{feature.description}</p>
-              <span className="landing-feature-card__arrow" aria-hidden="true">↗</span>
+              <span className="landing-feature-card__arrow" aria-hidden="true"><EasyvetIcon name="arrow-up-right" size={17} /></span>
             </SpotlightCard>
           ))}
         </div>
@@ -231,7 +243,7 @@ export function LandingPage() {
             paciente y no en perseguir información.
           </p>
           <Link className="landing-text-link" to="/login">
-            Entrar a la plataforma <span aria-hidden="true">→</span>
+            Entrar a la plataforma <EasyvetIcon name="arrow-up-right" size={16} />
           </Link>
         </AnimatedContent>
         <AnimatedContent className="landing-workflow-card" delay={120}>
@@ -241,14 +253,14 @@ export function LandingPage() {
                 <span className="landing-preview-kicker">Tu clínica en contexto</span>
                 <strong>Una vista para cada decisión</strong>
               </div>
-              <span className="landing-workflow-card__spark" aria-hidden="true">✦</span>
+              <span className="landing-workflow-card__spark" aria-hidden="true"><EasyvetIcon name="sparkle" size={18} /></span>
             </div>
             <div className="landing-workflow-list">
-              {workflowItems.map(([title, description], index) => (
+              {workflowItems.map(([title, description, icon]) => (
                 <div className="landing-workflow-item" key={title}>
-                  <span className="landing-workflow-item__number">0{index + 1}</span>
+                  <span className="landing-workflow-item__number" aria-hidden="true"><EasyvetIcon name={icon} size={16} /></span>
                   <div><strong>{title}</strong><small>{description}</small></div>
-                  <span className="landing-workflow-item__arrow" aria-hidden="true">↗</span>
+                  <span className="landing-workflow-item__arrow" aria-hidden="true"><EasyvetIcon name="arrow-up-right" size={15} /></span>
                 </div>
               ))}
             </div>
@@ -263,7 +275,7 @@ export function LandingPage() {
         </div>
         <SpecularButton>
           <Link className="landing-button landing-button--light" to="/login">
-            Entrar a Easyvet <span aria-hidden="true">↗</span>
+            Entrar a Easyvet <EasyvetIcon name="arrow-up-right" size={16} />
           </Link>
         </SpecularButton>
       </section>
