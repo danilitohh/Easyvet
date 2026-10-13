@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/manrope": "^5.3.0",
     "@fullcalendar/react": "^7.1.0",
     "@veterinary-saas/contracts": "0.1.0",
     "react": "^19.1.1",
