@@ -638,9 +638,12 @@
 
 .landing-signal__items b img {
   display: block;
+  align-self: center;
+  justify-self: center;
   width: 24px;
   height: 24px;
   object-fit: contain;
+  transform: translate(1px, 2px);
 }
 
 .landing-section {
@@ -744,9 +747,12 @@
 
 .landing-feature-card__icon img {
   display: block;
+  align-self: center;
+  justify-self: center;
   width: 40px;
   height: 40px;
   object-fit: contain;
+  transform: translate(1px, 2px);
 }
 
 .landing-feature-card h3 {
@@ -874,9 +880,12 @@
 
 .landing-workflow-item__number img {
   display: block;
+  align-self: center;
+  justify-self: center;
   width: 30px;
   height: 30px;
   object-fit: contain;
+  transform: translate(1px, 2px);
 }
 
 .landing-workflow-item div {
