@@ -20,6 +20,7 @@ export function Dock({ items, ariaLabel = 'Atajos de navegación', className = '
     <nav className={['rb-dock', className].filter(Boolean).join(' ')} aria-label={ariaLabel}>
       {items.map((item) => (
         <Link
+          aria-current={item.active ? 'page' : undefined}
           className="rb-dock__item"
           data-active={item.active ? 'true' : undefined}
           to={item.href}

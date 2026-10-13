@@ -558,6 +558,9 @@ select:focus-visible {
 }
 
 .button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   min-height: 40px;
   align-items: center;
@@ -576,6 +579,31 @@ select:focus-visible {
     border-color 160ms ease,
     color 160ms ease,
     box-shadow 160ms ease;
+}
+.button::after {
+  position: absolute;
+  inset: -80% -20%;
+  z-index: 0;
+  background: linear-gradient(
+    112deg,
+    transparent 36%,
+    rgb(255 255 255 / 28%) 49%,
+    transparent 62%
+  );
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-48%);
+  transition: opacity 180ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.button > * {
+  position: relative;
+  z-index: 1;
+}
+.button:hover:not(:disabled)::after,
+.button:focus-visible::after {
+  opacity: 1;
+  transform: translateX(48%);
 }
 .button:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -639,6 +667,12 @@ select:focus-visible {
   border-radius: var(--radius-md);
   background: rgb(255 255 255 / 92%);
   box-shadow: var(--shadow-sm);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.card:hover {
+  border-color: rgb(1 34 158 / 18%);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 .stats-grid {
   display: grid;
@@ -2068,7 +2102,7 @@ select.input {
   }
 }
 
-/* Domain screens share a compact data workspace while preserving the shell's teal visual language. */
+/* Domain screens share a compact data workspace while preserving the shell's blue visual language. */
 .resource-card {
   padding: var(--space-5);
 }
