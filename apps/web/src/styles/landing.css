@@ -284,34 +284,6 @@
   background: rgb(7 53 217 / 13%);
 }
 
-.landing-3d-icons {
-  position: absolute;
-  top: -72px;
-  right: -92px;
-  z-index: 2;
-  width: clamp(280px, 31vw, 390px);
-  pointer-events: none;
-  filter: drop-shadow(0 24px 28px rgb(1 34 158 / 14%));
-  animation: landing-icon-float 7s ease-in-out infinite;
-}
-
-.landing-3d-icons img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-@keyframes landing-icon-float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(1deg);
-  }
-
-  50% {
-    transform: translate3d(-8px, 10px, 0) rotate(-1deg);
-  }
-}
-
 .landing-dashboard-preview {
   position: relative;
   z-index: 1;
@@ -664,8 +636,11 @@
   box-shadow: 0 8px 16px rgb(33 44 96 / 13%);
 }
 
-.landing-signal__items b svg {
+.landing-signal__items b img {
   display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .landing-section {
@@ -767,8 +742,11 @@
   transform: translateY(-2px) rotate(-2deg);
 }
 
-.landing-feature-card__icon svg {
+.landing-feature-card__icon img {
   display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .landing-feature-card h3 {
@@ -894,6 +872,13 @@
   box-shadow: inset 0 1px rgb(255 255 255 / 90%);
 }
 
+.landing-workflow-item__number img {
+  display: block;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
 .landing-workflow-item div {
   display: grid;
   gap: 2px;
@@ -1015,12 +1000,6 @@
   .landing-hero__visual {
     min-height: 0;
     padding: 20px 0;
-  }
-
-  .landing-3d-icons {
-    top: -46px;
-    right: -48px;
-    width: 290px;
   }
 
   .landing-dashboard-preview {
@@ -1149,9 +1128,7 @@
 @media (prefers-reduced-motion: reduce) {
   .landing-button,
   .landing-feature-card,
-  .landing-text-link,
-  .landing-3d-icons {
+  .landing-text-link {
     transition: none;
-    animation: none;
   }
 }

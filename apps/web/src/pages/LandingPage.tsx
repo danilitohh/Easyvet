@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Chip } from '@heroui/react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../components/brand/BrandMark';
-import { EasyvetIcon, type EasyvetIconName } from '../components/icons/EasyvetIcon';
+import { EasyvetIcon } from '../components/icons/EasyvetIcon';
 import { LiquidGlassCard } from '../components/kokonutui/LiquidGlassCard';
 import { ParticleLink } from '../components/kokonutui/ParticleLink';
 import { ShimmerText } from '../components/kokonutui/ShimmerText';
@@ -14,43 +14,43 @@ import '../styles/landing.css';
 
 const features: Array<{
   number: string;
-  icon: EasyvetIconName;
+  icon: string;
   title: string;
   description: string;
 }> = [
   {
     number: '01',
-    icon: 'calendar-heart',
+    icon: '/icons-3d/calendar.png',
     title: 'Agenda que respira',
     description: 'Organiza consultas, procedimientos y peluquería en una vista clara para todo el equipo.',
   },
   {
     number: '02',
-    icon: 'clipboard-heart',
+    icon: '/icons-3d/clipboard.png',
     title: 'Historias clínicas completas',
     description: 'Ten la evolución de cada paciente a la mano, desde la consulta hasta el seguimiento.',
   },
   {
     number: '03',
-    icon: 'heart-pulse',
+    icon: '/icons-3d/pulse.png',
     title: 'Una operación conectada',
     description: 'Une pacientes, inventario, ventas y facturación en el mismo ritmo de trabajo.',
   },
 ];
 
-const signalItems: Array<[string, EasyvetIconName]> = [
-  ['Agenda', 'calendar-heart'],
-  ['Pacientes', 'paw'],
-  ['Historias clínicas', 'clipboard-heart'],
-  ['Inventario', 'package'],
-  ['Facturación', 'receipt'],
+const signalItems: Array<[string, string]> = [
+  ['Agenda', '/icons-3d/calendar.png'],
+  ['Pacientes', '/icons-3d/paw.png'],
+  ['Historias clínicas', '/icons-3d/clipboard.png'],
+  ['Inventario', '/icons-3d/package.png'],
+  ['Facturación', '/icons-3d/invoice.png'],
 ];
 
-const workflowItems: Array<[string, string, EasyvetIconName]> = [
-  ['Agenda', 'Todo el día en una sola vista', 'calendar-heart'],
-  ['Pacientes', 'Información clínica siempre disponible', 'paw'],
-  ['Inventario', 'Existencias bajo control', 'package'],
-  ['Reportes', 'Decisiones con contexto', 'heart-pulse'],
+const workflowItems: Array<[string, string, string]> = [
+  ['Agenda', 'Todo el día en una sola vista', '/icons-3d/calendar.png'],
+  ['Pacientes', 'Información clínica siempre disponible', '/icons-3d/paw.png'],
+  ['Inventario', 'Existencias bajo control', '/icons-3d/package.png'],
+  ['Reportes', 'Decisiones con contexto', '/icons-3d/pulse.png'],
 ];
 
 export function LandingPage() {
@@ -128,9 +128,6 @@ export function LandingPage() {
         <AnimatedContent className="landing-hero__visual" delay={120} aria-label="Vista previa del dashboard de Easyvet">
           <div className="landing-visual-orb landing-visual-orb--one" aria-hidden="true" />
           <div className="landing-visual-orb landing-visual-orb--two" aria-hidden="true" />
-          <div className="landing-3d-icons" aria-hidden="true">
-            <img src="/easyvet-3d-icon-set.png" alt="" width="1254" height="1254" />
-          </div>
           <div className="landing-dashboard-preview">
             <div className="landing-dashboard-preview__topbar">
               <div className="landing-preview-brand">
@@ -211,7 +208,7 @@ export function LandingPage() {
         <p>Todo lo importante de tu clínica, conectado.</p>
         <div className="landing-signal__items">
           {signalItems.map(([label, icon]) => (
-            <span key={label}><b aria-hidden="true"><EasyvetIcon name={icon} size={15} /></b> {label}</span>
+            <span key={label}><b aria-hidden="true"><img src={icon} alt="" width="24" height="24" /></b> {label}</span>
           ))}
         </div>
       </section>
@@ -226,7 +223,7 @@ export function LandingPage() {
           {features.map((feature) => (
             <SpotlightCard className="landing-feature-card" key={feature.number}>
               <div className="landing-feature-card__topline">
-                <span className="landing-feature-card__icon" aria-hidden="true"><EasyvetIcon name={feature.icon} size={19} /></span>
+                <span className="landing-feature-card__icon" aria-hidden="true"><img src={feature.icon} alt="" width="40" height="40" /></span>
                 <span>{feature.number}</span>
               </div>
               <h3>{feature.title}</h3>
@@ -261,7 +258,7 @@ export function LandingPage() {
             <div className="landing-workflow-list">
               {workflowItems.map(([title, description, icon]) => (
                 <div className="landing-workflow-item" key={title}>
-                  <span className="landing-workflow-item__number" aria-hidden="true"><EasyvetIcon name={icon} size={16} /></span>
+                  <span className="landing-workflow-item__number" aria-hidden="true"><img src={icon} alt="" width="30" height="30" /></span>
                   <div><strong>{title}</strong><small>{description}</small></div>
                   <span className="landing-workflow-item__arrow" aria-hidden="true"><EasyvetIcon name="arrow-up-right" size={15} /></span>
                 </div>
