@@ -1,13 +1,13 @@
 .landing-page {
-  --landing-ink: #18363a;
-  --landing-muted: #657b7b;
-  --landing-line: #dce9e5;
-  --landing-soft: #e9f4f0;
+  --landing-ink: var(--color-ink);
+  --landing-muted: var(--color-ink-muted);
+  --landing-line: var(--color-line);
+  --landing-soft: var(--color-brand-soft);
   min-height: 100dvh;
   overflow: hidden;
   background:
-    radial-gradient(circle at 78% 14%, rgb(175 221 207 / 26%), transparent 28rem),
-    linear-gradient(180deg, #fbfefd 0%, #f4f8f7 64%, #edf6f2 100%);
+    radial-gradient(circle at 78% 14%, rgb(181 190 204 / 38%), transparent 28rem),
+    linear-gradient(180deg, #ffffff 0%, var(--color-canvas) 64%, #eef2ff 100%);
   color: var(--landing-ink);
 }
 
@@ -118,7 +118,7 @@
 
 .landing-button--primary {
   background: var(--color-brand);
-  box-shadow: 0 14px 28px rgb(15 118 110 / 19%);
+  box-shadow: 0 14px 28px rgb(1 34 158 / 19%);
   color: #fff;
 }
 
@@ -138,7 +138,7 @@
 
 .landing-button--light {
   background: #fff;
-  box-shadow: 0 16px 30px rgb(16 71 65 / 14%);
+  box-shadow: 0 16px 30px rgb(33 44 96 / 14%);
   color: var(--color-brand-strong);
 }
 
@@ -174,7 +174,7 @@
   height: 7px;
   border-radius: 50%;
   background: var(--color-brand);
-  box-shadow: 0 0 0 5px rgb(15 118 110 / 10%);
+  box-shadow: 0 0 0 5px rgb(1 34 158 / 10%);
 }
 
 .landing-hero h1 {
@@ -248,7 +248,7 @@
   right: -45px;
   width: 210px;
   height: 210px;
-  background: rgb(172 221 206 / 44%);
+  background: rgb(181 190 204 / 52%);
 }
 
 .landing-visual-orb--two {
@@ -256,7 +256,7 @@
   left: -28px;
   width: 125px;
   height: 125px;
-  background: rgb(194 224 239 / 48%);
+  background: rgb(7 53 217 / 13%);
 }
 
 .landing-dashboard-preview {
@@ -266,7 +266,7 @@
   border: 1px solid rgb(255 255 255 / 82%);
   border-radius: 24px;
   background: rgb(255 255 255 / 88%);
-  box-shadow: 0 34px 80px rgb(20 75 69 / 19%), 0 8px 18px rgb(20 75 69 / 7%);
+  box-shadow: 0 34px 80px rgb(33 44 96 / 19%), 0 8px 18px rgb(33 44 96 / 7%);
   transform: rotate(1.5deg);
 }
 
@@ -314,13 +314,13 @@
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: #d6e9e5;
+  background: var(--color-line-strong);
   color: var(--color-brand-strong);
 }
 
 .landing-dashboard-preview__body {
   padding: 28px;
-  background: linear-gradient(135deg, #fbfefd 0%, #f1f8f6 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f7f8fa 100%);
 }
 
 .landing-preview-heading,
@@ -338,7 +338,7 @@
 }
 
 .landing-preview-kicker {
-  color: #84a09d;
+  color: var(--landing-muted);
   font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -366,7 +366,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #43a375;
+  background: var(--color-success);
 }
 
 .landing-preview-stats {
@@ -387,13 +387,13 @@
 }
 
 .landing-preview-stat--accent {
-  border-color: #b9e1d5;
-  background: #e5f5ef;
+  border-color: #c4cff5;
+  background: var(--color-brand-soft);
 }
 
 .landing-preview-stat span,
 .landing-preview-stat small {
-  color: #77918e;
+  color: var(--landing-muted);
   font-size: 0.55rem;
 }
 
@@ -441,8 +441,8 @@
 .landing-preview-alert {
   padding: 4px 6px;
   border-radius: 6px;
-  background: #fff4da;
-  color: #a16a16 !important;
+  background: var(--color-amber-soft);
+  color: var(--color-amber) !important;
 }
 
 .landing-appointment {
@@ -451,12 +451,12 @@
   align-items: center;
   gap: 8px;
   padding: 9px 0;
-  border-top: 1px solid #edf3f1;
+  border-top: 1px solid var(--landing-line);
 }
 
 .landing-appointment time,
 .landing-appointment em {
-  color: #87a09d;
+  color: var(--landing-muted);
   font-size: 0.51rem;
   font-style: normal;
 }
@@ -464,19 +464,19 @@
 .landing-appointment em {
   padding: 4px 5px;
   border-radius: 5px;
-  background: #e7f4ec;
-  color: #33805d;
+  background: var(--color-success-soft);
+  color: var(--color-success);
   font-weight: 800;
 }
 
 .landing-appointment__pending {
-  background: #fff4dc !important;
-  color: #a16a16 !important;
+  background: var(--color-amber-soft) !important;
+  color: var(--color-amber) !important;
 }
 
 .landing-appointment__confirmed {
-  background: #e6eefb !important;
-  color: #4676af !important;
+  background: var(--color-blue-soft) !important;
+  color: var(--color-blue) !important;
 }
 
 .landing-appointment__avatar {
@@ -489,9 +489,9 @@
   font-weight: 850;
 }
 
-.landing-appointment__avatar--blue { background: #dcecf4; color: #447991; }
-.landing-appointment__avatar--gold { background: #f7edd3; color: #a87725; }
-.landing-appointment__avatar--rose { background: #f6e2e5; color: #a26470; }
+.landing-appointment__avatar--blue { background: var(--color-blue-soft); color: var(--color-blue); }
+.landing-appointment__avatar--gold { background: var(--color-amber-soft); color: var(--color-amber); }
+.landing-appointment__avatar--rose { background: var(--color-rose-soft); color: var(--color-rose); }
 
 .landing-appointment div {
   display: grid;
@@ -508,7 +508,7 @@
 
 .landing-appointment small {
   overflow: hidden;
-  color: #8da19f;
+  color: var(--landing-muted);
   font-size: 0.49rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -519,7 +519,7 @@
   grid-template-columns: minmax(0, 1fr) 22px;
   gap: 5px 8px;
   padding: 10px 0;
-  border-top: 1px solid #edf3f1;
+  border-top: 1px solid var(--landing-line);
 }
 
 .landing-stock-item span,
@@ -529,7 +529,7 @@
 
 .landing-stock-item span {
   overflow: hidden;
-  color: #6f8987;
+  color: var(--landing-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -543,18 +543,18 @@
   height: 5px;
   overflow: hidden;
   border-radius: 99px;
-  background: #edf2f0;
+  background: #e9ecf1;
 }
 
 .landing-stock-bar span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #d69b49;
+  background: var(--color-amber);
 }
 
-.landing-stock-bar span.landing-stock-bar__good { background: #69b595; }
-.landing-stock-bar span.landing-stock-bar__warn { background: #df7d76; }
+.landing-stock-bar span.landing-stock-bar__good { background: var(--color-success); }
+.landing-stock-bar span.landing-stock-bar__warn { background: var(--color-rose); }
 
 .landing-signal {
   display: flex;
@@ -569,7 +569,7 @@
 
 .landing-signal p {
   margin: 0;
-  color: #8aa09d;
+  color: var(--landing-muted);
   font-size: 0.7rem;
   font-weight: 700;
 }
@@ -585,7 +585,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #78918e;
+  color: var(--landing-muted);
   font-size: 0.68rem;
   font-weight: 700;
 }
@@ -654,7 +654,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #9db2af;
+  color: var(--landing-muted);
   font-size: 0.66rem;
   font-weight: 800;
 }
@@ -725,10 +725,10 @@
 
 .landing-workflow-card {
   padding: 30px;
-  border: 1px solid #cfe4de;
+  border: 1px solid #c4cff5;
   border-radius: 22px;
-  background: linear-gradient(140deg, #e5f4ef 0%, #f5fbf8 100%);
-  box-shadow: 0 22px 50px rgb(37 113 102 / 11%);
+  background: linear-gradient(140deg, #e8edff 0%, #f7f8fa 100%);
+  box-shadow: 0 22px 50px rgb(33 44 96 / 11%);
 }
 
 .landing-workflow-card__heading {
@@ -751,7 +751,7 @@
   border-radius: 13px;
   background: #fff;
   color: var(--color-brand);
-  box-shadow: 0 8px 16px rgb(15 118 110 / 10%);
+  box-shadow: 0 8px 16px rgb(33 44 96 / 10%);
 }
 
 .landing-workflow-list {
@@ -766,13 +766,13 @@
   align-items: center;
   gap: 12px;
   padding: 15px 13px;
-  border: 1px solid rgb(207 228 222 / 70%);
+  border: 1px solid rgb(181 190 204 / 62%);
   border-radius: 13px;
   background: rgb(255 255 255 / 72%);
 }
 
 .landing-workflow-item__number {
-  color: #8eb2aa;
+  color: var(--color-brand-strong);
   font-size: 0.65rem;
   font-weight: 850;
 }
@@ -787,7 +787,7 @@
 }
 
 .landing-workflow-item small {
-  color: #79928e;
+  color: var(--landing-muted);
   font-size: 0.65rem;
 }
 
@@ -804,12 +804,12 @@
   margin-top: 36px;
   padding: 52px 60px;
   border-radius: 25px;
-  background: linear-gradient(120deg, #1c5e59 0%, #287d73 100%);
-  box-shadow: 0 28px 50px rgb(17 90 81 / 19%);
+  background: linear-gradient(120deg, #01229e 0%, #0735d9 100%);
+  box-shadow: 0 28px 50px rgb(1 34 158 / 19%);
 }
 
 .landing-cta .landing-eyebrow {
-  color: #b9dfd6;
+  color: #d7defd;
 }
 
 .landing-cta h2 {
@@ -823,7 +823,7 @@
   align-items: center;
   gap: 30px;
   padding: 48px 0 34px;
-  color: #8aa09d;
+  color: var(--landing-muted);
   font-size: 0.68rem;
 }
 
