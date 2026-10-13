@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../components/brand/BrandMark';
+import { AnimatedContent } from '../components/reactbits/AnimatedContent';
+import { PillNav } from '../components/reactbits/PillNav';
+import { SpotlightCard } from '../components/reactbits/SpotlightCard';
+import { SpecularButton } from '../components/reactbits/SpecularButton';
 import '../styles/landing.css';
 
 const features = [
@@ -51,24 +55,30 @@ export function LandingPage() {
           </span>
         </a>
 
-        <nav className="landing-nav" aria-label="Navegación pública">
-          <a href="#producto">Producto</a>
-          <a href="#flujo">Cómo funciona</a>
-          <a href="#contacto">Contacto</a>
-        </nav>
+        <PillNav
+          className="landing-nav"
+          items={[
+            { href: '#producto', label: 'Producto' },
+            { href: '#flujo', label: 'Cómo funciona' },
+            { href: '#contacto', label: 'Contacto' },
+          ]}
+          ariaLabel="Navegación pública"
+        />
 
         <div className="landing-header__actions">
           <Link className="landing-login-link" to="/login">
             Ingresar
           </Link>
-          <Link className="landing-button landing-button--primary landing-button--small" to="/login">
-            Entrar a Easyvet <span aria-hidden="true">↗</span>
-          </Link>
+          <SpecularButton>
+            <Link className="landing-button landing-button--primary landing-button--small" to="/login">
+              Entrar a Easyvet <span aria-hidden="true">↗</span>
+            </Link>
+          </SpecularButton>
         </div>
       </header>
 
       <section className="landing-hero" id="inicio" aria-labelledby="landing-title">
-        <div className="landing-hero__copy">
+        <AnimatedContent className="landing-hero__copy">
           <p className="landing-eyebrow">
             <span className="landing-eyebrow__dot" aria-hidden="true" />
             Operación veterinaria, en calma
@@ -82,9 +92,11 @@ export function LandingPage() {
             para que tu equipo trabaje con claridad desde la primera consulta.
           </p>
           <div className="landing-hero__actions">
-            <Link className="landing-button landing-button--primary" to="/login">
-              Conocer la plataforma <span aria-hidden="true">↗</span>
-            </Link>
+            <SpecularButton>
+              <Link className="landing-button landing-button--primary" to="/login">
+                Conocer la plataforma <span aria-hidden="true">↗</span>
+              </Link>
+            </SpecularButton>
             <a className="landing-button landing-button--quiet" href="#producto">
               Ver cómo funciona <span aria-hidden="true">↓</span>
             </a>
@@ -93,9 +105,9 @@ export function LandingPage() {
             <span><i aria-hidden="true">✓</i> Pensado para equipos veterinarios</span>
             <span><i aria-hidden="true">✓</i> Información organizada</span>
           </div>
-        </div>
+        </AnimatedContent>
 
-        <div className="landing-hero__visual" aria-label="Vista previa del dashboard de Easyvet">
+        <AnimatedContent className="landing-hero__visual" delay={120} aria-label="Vista previa del dashboard de Easyvet">
           <div className="landing-visual-orb landing-visual-orb--one" aria-hidden="true" />
           <div className="landing-visual-orb landing-visual-orb--two" aria-hidden="true" />
           <div className="landing-dashboard-preview">
@@ -169,7 +181,7 @@ export function LandingPage() {
               </div>
             </div>
           </div>
-        </div>
+        </AnimatedContent>
       </section>
 
       <section className="landing-signal" aria-label="Áreas de trabajo">
@@ -184,14 +196,14 @@ export function LandingPage() {
       </section>
 
       <section className="landing-section landing-section--features" id="producto" aria-labelledby="features-title">
-        <div className="landing-section__intro">
+        <AnimatedContent className="landing-section__intro">
           <p className="landing-eyebrow">Una operación más ligera</p>
           <h2 id="features-title">La claridad también es parte del cuidado.</h2>
           <p>Una herramienta serena para las decisiones que hacen avanzar tu clínica todos los días.</p>
-        </div>
+        </AnimatedContent>
         <div className="landing-feature-grid">
           {features.map((feature) => (
-            <article className="landing-feature-card" key={feature.number}>
+            <SpotlightCard className="landing-feature-card" key={feature.number}>
               <div className="landing-feature-card__topline">
                 <span className="landing-feature-card__icon" aria-hidden="true">{feature.icon}</span>
                 <span>{feature.number}</span>
@@ -199,13 +211,13 @@ export function LandingPage() {
               <h3>{feature.title}</h3>
               <p>{feature.description}</p>
               <span className="landing-feature-card__arrow" aria-hidden="true">↗</span>
-            </article>
+            </SpotlightCard>
           ))}
         </div>
       </section>
 
       <section className="landing-workflow" id="flujo" aria-labelledby="workflow-title">
-        <div className="landing-workflow__copy">
+        <AnimatedContent className="landing-workflow__copy">
           <p className="landing-eyebrow">Un solo ritmo de trabajo</p>
           <h2 id="workflow-title">De la primera cita al seguimiento.</h2>
           <p>
@@ -215,8 +227,8 @@ export function LandingPage() {
           <Link className="landing-text-link" to="/login">
             Entrar a la plataforma <span aria-hidden="true">→</span>
           </Link>
-        </div>
-        <div className="landing-workflow-card">
+        </AnimatedContent>
+        <AnimatedContent className="landing-workflow-card" delay={120}>
           <div className="landing-workflow-card__heading">
             <div>
               <span className="landing-preview-kicker">Tu clínica en contexto</span>
@@ -233,7 +245,7 @@ export function LandingPage() {
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedContent>
       </section>
 
       <section className="landing-cta" id="contacto" aria-labelledby="cta-title">
@@ -241,9 +253,11 @@ export function LandingPage() {
           <p className="landing-eyebrow">El siguiente paso empieza aquí</p>
           <h2 id="cta-title">Haz que tu clínica se sienta más fácil.</h2>
         </div>
-        <Link className="landing-button landing-button--light" to="/login">
-          Entrar a Easyvet <span aria-hidden="true">↗</span>
-        </Link>
+        <SpecularButton>
+          <Link className="landing-button landing-button--light" to="/login">
+            Entrar a Easyvet <span aria-hidden="true">↗</span>
+          </Link>
+        </SpecularButton>
       </section>
 
       <footer className="landing-footer">

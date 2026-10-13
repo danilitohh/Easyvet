@@ -10,6 +10,7 @@ import '@fontsource/manrope/latin-600.css';
 import '@fontsource/manrope/latin-700.css';
 import '@fontsource/manrope/latin-800.css';
 import './styles/index.css';
+import './components/reactbits/reactbits.css';
 
 // The entry point wires the router and global styles only; feature modules arrive later.
 document.title = appConfig.name;

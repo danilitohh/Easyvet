@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { getRouteMeta } from '../../data/navigation';
 import { appConfig } from '../../config/app';
 import { AppHeader } from './AppHeader';
+import { AppDock } from './AppDock';
 import { Sidebar } from './Sidebar';
 
 // AppShell owns layout state while child pages stay focused on their route content.
@@ -41,6 +42,7 @@ export function AppShell() {
           <span>{route.label}</span>
           <span>{appConfig.shortName} · Plataforma veterinaria</span>
         </footer>
+        <AppDock />
       </div>
     </div>
   );

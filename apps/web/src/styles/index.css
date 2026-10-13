@@ -247,7 +247,15 @@ select:focus-visible {
 }
 .app-main {
   min-width: 0;
-  padding: var(--space-5) clamp(20px, 3vw, 48px) var(--space-8);
+  padding: var(--space-5) clamp(20px, 3vw, 48px) 104px;
+}
+
+.app-dock {
+  position: fixed;
+  bottom: 20px;
+  left: calc(var(--sidebar-width) + (100vw - var(--sidebar-width)) / 2);
+  z-index: 45;
+  transform: translateX(-50%);
 }
 .sidebar {
   position: sticky;
@@ -1179,6 +1187,9 @@ select.input {
   .app-shell {
     grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
   }
+  .app-dock {
+    left: calc(var(--sidebar-collapsed-width) + (100vw - var(--sidebar-collapsed-width)) / 2);
+  }
   .sidebar {
     width: var(--sidebar-collapsed-width);
   }
@@ -1213,7 +1224,11 @@ select.input {
     display: block;
   }
   .app-main {
-    padding: var(--space-3) var(--space-4) var(--space-6);
+    padding: var(--space-3) var(--space-4) 88px;
+  }
+  .app-dock {
+    bottom: 12px;
+    left: 50%;
   }
   .sidebar {
     position: fixed;

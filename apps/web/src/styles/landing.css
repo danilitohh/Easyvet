@@ -63,9 +63,14 @@
 .landing-nav {
   display: flex;
   align-items: center;
-  gap: clamp(20px, 3vw, 42px);
   margin-left: auto;
   margin-right: clamp(8px, 2vw, 28px);
+}
+
+.landing-nav.rb-pill-nav {
+  gap: 2px;
+  margin-right: clamp(8px, 2vw, 28px);
+  padding: 4px;
 }
 
 .landing-nav a,
@@ -856,7 +861,7 @@
   }
 
   .landing-nav {
-    gap: 20px;
+    gap: 2px;
   }
 
   .landing-workflow {
