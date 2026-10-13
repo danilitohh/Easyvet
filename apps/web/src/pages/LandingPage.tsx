@@ -87,11 +87,6 @@ export function LandingPage() {
           <Link className="landing-login-link" to="/login">
             Ingresar
           </Link>
-          <SpecularButton>
-            <Link className="landing-button landing-button--primary landing-button--small" to="/login">
-              Entrar a Easyvet <EasyvetIcon name="arrow-up-right" size={15} />
-            </Link>
-          </SpecularButton>
         </div>
       </header>
 
@@ -111,11 +106,11 @@ export function LandingPage() {
           </p>
           <div className="landing-hero__actions">
             <SpecularButton>
-              <ParticleLink className="landing-button landing-button--primary" to="/login">
+              <ParticleLink className="landing-button landing-button--primary" to="#producto">
                 Conocer la plataforma <EasyvetIcon name="arrow-up-right" size={16} />
               </ParticleLink>
             </SpecularButton>
-            <a className="landing-button landing-button--quiet" href="#producto">
+            <a className="landing-button landing-button--quiet" href="#flujo">
               Ver cómo funciona <EasyvetIcon name="arrow-down" size={16} />
             </a>
           </div>
@@ -244,9 +239,6 @@ export function LandingPage() {
             Cada área de tu clínica habla con las demás. Así el equipo puede concentrarse en el
             paciente y no en perseguir información.
           </p>
-          <Link className="landing-text-link" to="/login">
-            Entrar a la plataforma <EasyvetIcon name="arrow-up-right" size={16} />
-          </Link>
         </AnimatedContent>
         <AnimatedContent className="landing-workflow-card" delay={120}>
           <LiquidGlassCard className="landing-workflow-card__surface">

@@ -112,8 +112,7 @@
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
-.landing-button svg,
-.landing-text-link svg {
+.landing-button svg {
   flex: 0 0 auto;
 }
 
@@ -138,13 +137,6 @@
 
 .landing-button:hover {
   transform: translateY(-2px);
-}
-
-.landing-button--small {
-  min-height: 40px;
-  padding: 10px 14px;
-  border-radius: 11px;
-  font-size: 0.72rem;
 }
 
 .landing-button--primary {
@@ -820,21 +812,6 @@
   margin-top: 22px;
 }
 
-.landing-text-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 28px;
-  color: var(--color-brand-strong);
-  font-size: 0.8rem;
-  font-weight: 850;
-  text-decoration: none;
-}
-
-.landing-text-link:hover {
-  gap: 14px;
-}
-
 .landing-workflow-card {
   padding: 0;
 }
@@ -1083,11 +1060,6 @@
     margin-left: auto;
   }
 
-  .landing-button--small {
-    min-height: 38px;
-    padding-inline: 11px;
-  }
-
   .landing-hero h1 {
     font-size: clamp(2.8rem, 14vw, 4.2rem);
   }
@@ -1156,8 +1128,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .landing-button,
-  .landing-feature-card,
-  .landing-text-link {
+  .landing-feature-card {
     transition: none;
   }
 }
