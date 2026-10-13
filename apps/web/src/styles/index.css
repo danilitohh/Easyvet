@@ -1,3 +1,12 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@heroui/styles/base';
+@import '@heroui/styles/themes/shared/theme.css';
+@import '@heroui/styles/themes/default/variables.css';
+@import '@heroui/styles/components/button.css';
+@import '@heroui/styles/components/chip.css';
+@import '@heroui/styles/utilities';
+@import '@heroui/styles/variants';
 @import './tokens.css';
 
 /* Base reset and accessible focus treatment for the entire frontend shell. */

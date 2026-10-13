@@ -729,11 +729,12 @@
 }
 
 .landing-workflow-card {
+  padding: 0;
+}
+
+.landing-workflow-card__surface {
   padding: 30px;
-  border: 1px solid #c4cff5;
   border-radius: 22px;
-  background: linear-gradient(140deg, #e8edff 0%, #f7f8fa 100%);
-  box-shadow: 0 22px 50px rgb(33 44 96 / 11%);
 }
 
 .landing-workflow-card__heading {

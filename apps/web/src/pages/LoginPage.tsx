@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
+import { Button as HeroButton } from '@heroui/react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { FormField } from '../components/ui/FormField';
 import { TextInput } from '../components/ui/TextInput';
@@ -71,9 +71,16 @@ export function LoginPage() {
               {error}
             </p>
           ) : null}
-          <Button fullWidth type="submit" disabled={submitting}>
+          <HeroButton
+            className="button--full login-submit"
+            fullWidth
+            isDisabled={submitting}
+            isPending={submitting}
+            size="lg"
+            type="submit"
+          >
             {submitting ? 'Ingresando…' : 'Ingresar'}
-          </Button>
+          </HeroButton>
         </form>
       </Card>
     </main>

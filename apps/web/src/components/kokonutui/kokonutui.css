@@ -1,0 +1,126 @@
+.kk-liquid-glass {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgb(196 207 245 / 82%);
+  background:
+    linear-gradient(140deg, rgb(255 255 255 / 72%), rgb(232 237 255 / 70%)),
+    radial-gradient(circle at 100% 0%, rgb(255 255 255 / 65%), transparent 45%);
+  box-shadow:
+    inset 1px 1px 0 rgb(255 255 255 / 80%),
+    0 22px 50px rgb(33 44 96 / 11%);
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+.kk-liquid-glass::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 25%, rgb(255 255 255 / 40%) 48%, transparent 67%);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-65%);
+  transition: opacity 220ms ease, transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kk-liquid-glass:hover::after,
+.kk-liquid-glass:focus-within::after {
+  opacity: 1;
+  transform: translateX(65%);
+}
+
+.kk-particle-link {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+}
+
+.kk-particle-link__content {
+  position: relative;
+  z-index: 2;
+}
+
+.kk-particle-link__particles {
+  position: absolute;
+  inset: 50% 0 auto;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.kk-particle-link__particle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--particle-size);
+  height: var(--particle-size);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 88%);
+  box-shadow: 0 0 10px rgb(255 255 255 / 65%);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.2);
+}
+
+.kk-particle-link:hover .kk-particle-link__particle,
+.kk-particle-link:focus-visible .kk-particle-link__particle {
+  animation: kk-particle-burst 720ms cubic-bezier(0.22, 1, 0.36, 1) var(--particle-delay) both;
+}
+
+.kk-shimmer-text {
+  display: inline-block;
+  color: transparent;
+  background:
+    linear-gradient(
+      110deg,
+      var(--color-brand-strong) 0%,
+      var(--color-brand-strong) 35%,
+      rgb(255 255 255 / 92%) 48%,
+      var(--color-brand-strong) 62%,
+      var(--color-brand-strong) 100%
+    );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: kk-shimmer 5.5s ease-in-out infinite;
+}
+
+@keyframes kk-particle-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+
+  24% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--particle-x)), calc(-50% + var(--particle-y))) scale(1);
+  }
+}
+
+@keyframes kk-shimmer {
+  0%,
+  45% {
+    background-position: 120% 0;
+  }
+
+  70%,
+  100% {
+    background-position: -80% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kk-liquid-glass::after,
+  .kk-particle-link__particle,
+  .kk-shimmer-text {
+    animation: none;
+    transition: none;
+  }
+
+  .kk-particle-link__particle {
+    display: none;
+  }
+}

@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
+import { Chip } from '@heroui/react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../components/brand/BrandMark';
+import { LiquidGlassCard } from '../components/kokonutui/LiquidGlassCard';
+import { ParticleLink } from '../components/kokonutui/ParticleLink';
+import { ShimmerText } from '../components/kokonutui/ShimmerText';
 import { AnimatedContent } from '../components/reactbits/AnimatedContent';
 import { PillNav } from '../components/reactbits/PillNav';
 import { SpotlightCard } from '../components/reactbits/SpotlightCard';
@@ -81,7 +85,7 @@ export function LandingPage() {
         <AnimatedContent className="landing-hero__copy">
           <p className="landing-eyebrow">
             <span className="landing-eyebrow__dot" aria-hidden="true" />
-            Operación veterinaria, en calma
+            <ShimmerText>Operación veterinaria, en calma</ShimmerText>
           </p>
           <h1 id="landing-title">
             Más tiempo para cuidar.
@@ -93,9 +97,9 @@ export function LandingPage() {
           </p>
           <div className="landing-hero__actions">
             <SpecularButton>
-              <Link className="landing-button landing-button--primary" to="/login">
+              <ParticleLink className="landing-button landing-button--primary" to="/login">
                 Conocer la plataforma <span aria-hidden="true">↗</span>
-              </Link>
+              </ParticleLink>
             </SpecularButton>
             <a className="landing-button landing-button--quiet" href="#producto">
               Ver cómo funciona <span aria-hidden="true">↓</span>
@@ -125,7 +129,9 @@ export function LandingPage() {
                   <span className="landing-preview-kicker">Panel principal</span>
                   <strong>Buenos días, Amelia</strong>
                 </div>
-                <span className="landing-preview-status"><i aria-hidden="true" /> Clínica activa</span>
+                <Chip className="landing-preview-status" color="success" size="sm" variant="soft">
+                  <i aria-hidden="true" /> Clínica activa
+                </Chip>
               </div>
               <div className="landing-preview-stats">
                 <div className="landing-preview-stat landing-preview-stat--accent">
@@ -197,7 +203,7 @@ export function LandingPage() {
 
       <section className="landing-section landing-section--features" id="producto" aria-labelledby="features-title">
         <AnimatedContent className="landing-section__intro">
-          <p className="landing-eyebrow">Una operación más ligera</p>
+          <p className="landing-eyebrow"><ShimmerText>Una operación más ligera</ShimmerText></p>
           <h2 id="features-title">La claridad también es parte del cuidado.</h2>
           <p>Una herramienta serena para las decisiones que hacen avanzar tu clínica todos los días.</p>
         </AnimatedContent>
@@ -229,22 +235,24 @@ export function LandingPage() {
           </Link>
         </AnimatedContent>
         <AnimatedContent className="landing-workflow-card" delay={120}>
-          <div className="landing-workflow-card__heading">
-            <div>
-              <span className="landing-preview-kicker">Tu clínica en contexto</span>
-              <strong>Una vista para cada decisión</strong>
-            </div>
-            <span className="landing-workflow-card__spark" aria-hidden="true">✦</span>
-          </div>
-          <div className="landing-workflow-list">
-            {workflowItems.map(([title, description], index) => (
-              <div className="landing-workflow-item" key={title}>
-                <span className="landing-workflow-item__number">0{index + 1}</span>
-                <div><strong>{title}</strong><small>{description}</small></div>
-                <span className="landing-workflow-item__arrow" aria-hidden="true">↗</span>
+          <LiquidGlassCard className="landing-workflow-card__surface">
+            <div className="landing-workflow-card__heading">
+              <div>
+                <span className="landing-preview-kicker">Tu clínica en contexto</span>
+                <strong>Una vista para cada decisión</strong>
               </div>
-            ))}
-          </div>
+              <span className="landing-workflow-card__spark" aria-hidden="true">✦</span>
+            </div>
+            <div className="landing-workflow-list">
+              {workflowItems.map(([title, description], index) => (
+                <div className="landing-workflow-item" key={title}>
+                  <span className="landing-workflow-item__number">0{index + 1}</span>
+                  <div><strong>{title}</strong><small>{description}</small></div>
+                  <span className="landing-workflow-item__arrow" aria-hidden="true">↗</span>
+                </div>
+              ))}
+            </div>
+          </LiquidGlassCard>
         </AnimatedContent>
       </section>
 

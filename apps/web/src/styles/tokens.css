@@ -38,4 +38,20 @@
   --space-10: 40px;
   --space-12: 48px;
   --font-ui: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* HeroUI semantic tokens mapped to Easyvet's established visual system. */
+  --background: var(--color-canvas);
+  --foreground: var(--color-ink);
+  --surface: var(--color-surface);
+  --surface-secondary: var(--color-surface-soft);
+  --surface-tertiary: #edf1ff;
+  --accent: var(--color-brand);
+  --accent-hover: var(--color-brand-strong);
+  --accent-foreground: #ffffff;
+  --default: var(--color-surface-soft);
+  --default-hover: var(--color-brand-soft);
+  --default-foreground: var(--color-ink);
+  --muted: var(--color-ink-muted);
+  --border: var(--color-line);
+  --focus: var(--color-brand-strong);
 }
