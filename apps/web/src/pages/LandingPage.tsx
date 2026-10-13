@@ -131,7 +131,9 @@ export function LandingPage() {
           <div className="landing-dashboard-preview">
             <div className="landing-dashboard-preview__topbar">
               <div className="landing-preview-brand">
-                <span className="landing-preview-brand__mark" aria-hidden="true">E</span>
+                <span className="landing-preview-brand__mark" aria-hidden="true">
+                  <img src="/brand/easyvet-mark.png" alt="" width="1030" height="820" />
+                </span>
                 <strong>Easyvet</strong>
               </div>
               <span className="landing-preview-date">Hoy, 12 de octubre</span>

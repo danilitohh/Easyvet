@@ -328,6 +328,17 @@
 .landing-preview-brand__mark {
   width: 24px;
   height: 24px;
+  overflow: hidden;
+  border: 1px solid rgb(1 34 158 / 10%);
+  background: #fff;
+  box-shadow: 0 4px 8px rgb(33 44 96 / 8%);
+}
+
+.landing-preview-brand__mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .landing-preview-date {
