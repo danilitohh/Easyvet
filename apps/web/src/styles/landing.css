@@ -108,12 +108,21 @@
   line-height: 1;
   text-align: center;
   text-decoration: none;
+  white-space: nowrap;
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
 .landing-button svg,
 .landing-text-link svg {
   flex: 0 0 auto;
+}
+
+.landing-button .kk-particle-link__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
 }
 
 .easyvet-icon {
