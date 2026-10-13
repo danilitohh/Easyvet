@@ -1,10 +1,11 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
 import { DashboardPage } from '../pages/DashboardPage';
 import { HealthPage } from '../pages/HealthPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { LoginPage } from '../pages/LoginPage';
+import { LandingPage } from '../pages/LandingPage';
 import { OrganizationSelectorPage } from '../pages/OrganizationSelectorPage';
 import { AccessDeniedPage } from '../pages/AccessDeniedPage';
 import { AuthBoundary } from './AuthBoundary';
@@ -310,6 +311,7 @@ export function App() {
   return (
     <AppErrorBoundary>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route
           path="firmar/:token"
           element={
@@ -331,7 +333,6 @@ export function App() {
           <Route path="seleccionar-organizacion" element={<OrganizationSelectorPage />} />
           <Route path="acceso-denegado" element={<AccessDeniedPage />} />
           <Route element={<AppShell />}>
-            <Route index element={<Navigate replace to="/dashboard" />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route
               path="usuarios"

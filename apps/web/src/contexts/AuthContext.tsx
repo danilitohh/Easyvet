@@ -21,7 +21,8 @@ const anonymousState: AuthState = { ...defaultContext, status: 'unauthenticated'
 // AuthProvider restores the server session and keeps token material out of browser storage.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  const isAnonymousRoute = pathname === '/login' || pathname.startsWith('/firmar/');
+  const isAnonymousRoute =
+    pathname === '/' || pathname === '/login' || pathname.startsWith('/firmar/');
   const [state, setState] = useState<AuthState>(() =>
     appConfig.dataMode === 'mock'
       ? defaultContext

@@ -12,12 +12,14 @@ function renderApp(initialEntry: string) {
 }
 
 describe('App shell', () => {
-  it('redirects the root route to the dashboard', () => {
+  it('renders the public landing page at the root route', () => {
     renderApp('/');
 
-    expect(screen.getByRole('heading', { name: /una vista tranquila/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Estado técnico' })).toHaveAttribute('href', '/health');
-    expect(screen.queryByRole('link', { name: 'Agenda' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /más tiempo para cuidar/i })).toBeInTheDocument();
+    const loginLinks = screen.getAllByRole('link', { name: /entrar a easyvet/i });
+    expect(loginLinks.length).toBeGreaterThan(0);
+    loginLinks.forEach((link) => expect(link).toHaveAttribute('href', '/login'));
+    expect(screen.queryByRole('link', { name: 'Estado técnico' })).not.toBeInTheDocument();
   });
 
   it('renders an access boundary for a route without an active membership', () => {

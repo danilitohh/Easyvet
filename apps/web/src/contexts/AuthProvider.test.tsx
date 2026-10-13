@@ -96,7 +96,7 @@ describe('AuthProvider session restoration', () => {
     expect(screen.queryByText('Choose organization')).not.toBeInTheDocument();
   });
 
-  it.each(['/login', '/firmar/invalid-token'])(
+  it.each(['/', '/login', '/firmar/invalid-token'])(
     'does not restore or expose a session on the anonymous route %s',
     async (path) => {
       render(
