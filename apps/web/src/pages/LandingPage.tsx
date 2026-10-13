@@ -20,7 +20,7 @@ const features: Array<{
 }> = [
   {
     number: '01',
-    icon: 'calendar',
+    icon: 'calendar-heart',
     title: 'Agenda que respira',
     description: 'Organiza consultas, procedimientos y peluquería en una vista clara para todo el equipo.',
   },
@@ -32,14 +32,14 @@ const features: Array<{
   },
   {
     number: '03',
-    icon: 'bar-chart',
+    icon: 'heart-pulse',
     title: 'Una operación conectada',
     description: 'Une pacientes, inventario, ventas y facturación en el mismo ritmo de trabajo.',
   },
 ];
 
 const signalItems: Array<[string, EasyvetIconName]> = [
-  ['Agenda', 'calendar'],
+  ['Agenda', 'calendar-heart'],
   ['Pacientes', 'paw'],
   ['Historias clínicas', 'clipboard-heart'],
   ['Inventario', 'package'],
@@ -47,10 +47,10 @@ const signalItems: Array<[string, EasyvetIconName]> = [
 ];
 
 const workflowItems: Array<[string, string, EasyvetIconName]> = [
-  ['Agenda', 'Todo el día en una sola vista', 'calendar'],
+  ['Agenda', 'Todo el día en una sola vista', 'calendar-heart'],
   ['Pacientes', 'Información clínica siempre disponible', 'paw'],
   ['Inventario', 'Existencias bajo control', 'package'],
-  ['Reportes', 'Decisiones con contexto', 'bar-chart'],
+  ['Reportes', 'Decisiones con contexto', 'heart-pulse'],
 ];
 
 export function LandingPage() {
