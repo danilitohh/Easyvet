@@ -128,6 +128,9 @@ export function LandingPage() {
         <AnimatedContent className="landing-hero__visual" delay={120} aria-label="Vista previa del dashboard de Easyvet">
           <div className="landing-visual-orb landing-visual-orb--one" aria-hidden="true" />
           <div className="landing-visual-orb landing-visual-orb--two" aria-hidden="true" />
+          <div className="landing-3d-icons" aria-hidden="true">
+            <img src="/easyvet-3d-icon-set.png" alt="" width="1254" height="1254" />
+          </div>
           <div className="landing-dashboard-preview">
             <div className="landing-dashboard-preview__topbar">
               <div className="landing-preview-brand">
