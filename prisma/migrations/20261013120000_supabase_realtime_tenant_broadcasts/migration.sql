@@ -74,9 +74,7 @@ BEGIN
       tenant_table.table_name
     );
     EXECUTE pg_catalog.format(
-      'CREATE TRIGGER easyvet_realtime_organization_change\n'
-      'AFTER INSERT OR UPDATE OR DELETE ON %I.%I\n'
-      'FOR EACH ROW EXECUTE FUNCTION public.easyvet_broadcast_organization_change()',
+      'CREATE TRIGGER easyvet_realtime_organization_change AFTER INSERT OR UPDATE OR DELETE ON %I.%I FOR EACH ROW EXECUTE FUNCTION public.easyvet_broadcast_organization_change()',
       tenant_table.table_schema,
       tenant_table.table_name
     );
