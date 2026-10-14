@@ -10,6 +10,7 @@ import type {
 import { appConfig } from '../../config/app';
 import { agendaApi } from '../agenda/agendaApi';
 import { useActiveOrganizationId } from '../shared/hooks';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 import { groomingApi } from './groomingApi';
 
 type ResourceState<T> = { data: T | null; loading: boolean; error: unknown; reload: () => void };
@@ -22,6 +23,7 @@ function useGroomingResource<T>(
   loader: (signal: AbortSignal) => Promise<T>,
 ): ResourceState<T> {
   const organizationId = useActiveOrganizationId();
+  const realtimeRevision = useRealtimeRevision();
   const [revision, setRevision] = useState(0);
   const resourceKey = `${organizationId ?? 'none'}:${key}`;
   const [result, setResult] = useState<KeyedResult<T>>({
@@ -60,7 +62,7 @@ function useGroomingResource<T>(
     return () => controller.abort();
     // Callers bind each resource to tenant and route data; revision is the explicit refresh trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, resourceKey, revision]);
+  }, [enabled, resourceKey, revision, realtimeRevision]);
 
   const reload = useCallback(() => setRevision((current) => current + 1), []);
   if (result.key !== resourceKey) return { data: null, loading: enabled, error: null, reload };

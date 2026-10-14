@@ -4,6 +4,7 @@ import type { ConsentDetail } from '@veterinary-saas/contracts';
 import { useCan } from '../../auth/useCan';
 import { PERMISSION } from '../../auth/permissions';
 import { useAuth } from '../../contexts/useAuth';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -116,6 +117,7 @@ export function ConsentDetailPage() {
   const [voidReason, setVoidReason] = useState('');
   const [voidError, setVoidError] = useState<unknown>(null);
   const [reloadVersion, setReloadVersion] = useState(0);
+  const realtimeRevision = useRealtimeRevision();
 
   const reload = useCallback(() => setReloadVersion((version) => version + 1), []);
 
@@ -149,7 +151,7 @@ export function ConsentDetailPage() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [consentId, organizationId, reloadVersion]);
+  }, [consentId, organizationId, reloadVersion, realtimeRevision]);
 
   async function issue(reissue = false) {
     if (!consent) return;

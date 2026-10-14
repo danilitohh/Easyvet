@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/useAuth';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 
 type CommercialResource<T> = {
   data: T | null;
@@ -15,6 +16,7 @@ export function useCommercialResource<T>(
 ): CommercialResource<T> {
   const { activeMembership } = useAuth();
   const organizationId = activeMembership?.organization.id ?? '';
+  const realtimeRevision = useRealtimeRevision();
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<Omit<CommercialResource<T>, 'reload'>>({
     data: null,
@@ -37,7 +39,7 @@ export function useCommercialResource<T>(
         if (!controller.signal.aborted) setState({ data: null, error, loading: false });
       });
     return () => controller.abort();
-  }, [enabled, loader, organizationId, revision]);
+  }, [enabled, loader, organizationId, revision, realtimeRevision]);
 
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   return { ...state, reload };

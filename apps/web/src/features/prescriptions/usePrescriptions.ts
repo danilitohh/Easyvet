@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PrescriptionDetail, PrescriptionListResponse } from '@veterinary-saas/contracts';
 import { appConfig } from '../../config/app';
 import { useActiveOrganizationId } from '../shared/hooks';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 import { prescriptionsApi } from './prescriptionsApi';
 
 type ResourceState<T> = {
@@ -26,6 +27,7 @@ function usePrescriptionResource<T>(
   dependencies: readonly unknown[],
   mockValue: T,
 ): ResourceState<T> {
+  const realtimeRevision = useRealtimeRevision();
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<Omit<ResourceState<T>, 'reload'>>({
     data: null,
@@ -54,7 +56,7 @@ function usePrescriptionResource<T>(
     return () => controller.abort();
     // Tenant and route dependencies are supplied by each prescription resource.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, revision, ...dependencies]);
+  }, [enabled, revision, realtimeRevision, ...dependencies]);
 
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   return useMemo(() => ({ ...state, reload }), [reload, state]);

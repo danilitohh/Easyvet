@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appConfig } from '../../config/app';
 import { useActiveOrganizationId } from '../shared/hooks';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 
 type ResourceResult<T> = {
   key: string;
@@ -16,6 +17,7 @@ export function useInventoryResource<T>(
   loader: (signal: AbortSignal) => Promise<T>,
 ) {
   const organizationId = useActiveOrganizationId();
+  const realtimeRevision = useRealtimeRevision();
   const resourceKey = `${organizationId ?? 'none'}:${key}`;
   const [revision, setRevision] = useState(0);
   const [result, setResult] = useState<ResourceResult<T>>({
@@ -59,7 +61,7 @@ export function useInventoryResource<T>(
     return () => controller.abort();
     // resourceKey/revision are the explicit fetch identity; callers bind loader to the same query.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, resourceKey, revision]);
+  }, [enabled, resourceKey, revision, realtimeRevision]);
 
   const reload = useCallback(() => setRevision((current) => current + 1), []);
   if (result.key !== resourceKey) return { data: null, loading: enabled, error: null, reload };

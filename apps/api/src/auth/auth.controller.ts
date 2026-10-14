@@ -20,6 +20,7 @@ import {
 import type { AuthenticatedRequest } from './auth.types';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
+import { RealtimeTokenService } from './realtime-token.service';
 import { Public } from '../authorization/public.decorator';
 import { PasswordChangeAllowed } from '../authorization/password-change-allowed.decorator';
 
@@ -30,6 +31,7 @@ export class AuthController {
     private readonly accounts: AccountLifecycleService,
     private readonly cookies: SessionCookieService,
     private readonly sessions: SessionsService,
+    private readonly realtimeTokens: RealtimeTokenService,
   ) {}
 
   @Post('login')
@@ -83,6 +85,11 @@ export class AuthController {
   @PasswordChangeAllowed()
   async me(@Req() request: AuthenticatedRequest): Promise<AuthMeResponse> {
     return this.auth.me(request.auth!);
+  }
+
+  @Get('realtime-token')
+  realtimeToken(@Req() request: AuthenticatedRequest) {
+    return this.realtimeTokens.issue(request.auth!);
   }
 
   @Post('switch-organization')

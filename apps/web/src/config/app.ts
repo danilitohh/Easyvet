@@ -8,6 +8,8 @@ const webConfigSchema = z.object({
     z.string().regex(/^\/(?!\/).+$/, 'API base paths must start with a single slash'),
   ]),
   dataMode: z.enum(['api', 'mock']),
+  supabaseUrl: z.string().url().optional(),
+  supabasePublishableKey: z.string().trim().min(1).optional(),
 });
 
 // Keep isolated mock fixtures available in development but never render them in production builds.
@@ -27,6 +29,12 @@ export const appConfig = webConfigSchema.parse({
     import.meta.env.VITE_API_URL ||
     (import.meta.env.PROD ? '/api/v1' : 'http://localhost:3000/api/v1'),
   dataMode: resolveDataMode(import.meta.env.VITE_DATA_MODE, import.meta.env.PROD),
+  supabaseUrl:
+    import.meta.env.NEXT_PUBLIC_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || undefined,
+  supabasePublishableKey:
+    import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    undefined,
 });
 
 export type WebConfig = typeof appConfig;

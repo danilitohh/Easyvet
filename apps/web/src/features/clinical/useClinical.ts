@@ -12,6 +12,7 @@ import type {
   ClinicalMemberListResponse,
 } from '@veterinary-saas/contracts';
 import { clinicalApi } from './clinicalApi';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 
 type LoadState<T> = { data: T | null; loading: boolean; error: unknown; reload: () => void };
 
@@ -25,6 +26,7 @@ function useClinicalResource<T>(
   dependencies: readonly unknown[],
   mockValue: T,
 ): LoadState<T> {
+  const realtimeRevision = useRealtimeRevision();
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<Omit<LoadState<T>, 'reload'>>({
     data: null,
@@ -52,7 +54,7 @@ function useClinicalResource<T>(
     return () => controller.abort();
     // Each clinical resource supplies its tenant and query dependencies explicitly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, revision, ...dependencies]);
+  }, [enabled, revision, realtimeRevision, ...dependencies]);
 
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   return useMemo(() => ({ ...state, reload }), [reload, state]);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { appConfig } from '../../config/app';
 import { useAuth } from '../../contexts/useAuth';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 
 export type ResourceState<T> = {
   data: T | null;
@@ -25,6 +26,7 @@ export function useTenantResource<T>({
 }: TenantResourceOptions<T>): ResourceState<T> {
   const { activeMembership } = useAuth();
   const organizationId = activeMembership?.organization.id ?? 'mock-organization';
+  const realtimeRevision = useRealtimeRevision();
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<Omit<ResourceState<T>, 'reload'>>({
     data: null,
@@ -64,7 +66,7 @@ export function useTenantResource<T>({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [organizationId, loader, enabled, debounceMs, mockValue, revision]);
+  }, [organizationId, loader, enabled, debounceMs, mockValue, revision, realtimeRevision]);
 
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   return useMemo(() => ({ ...state, reload }), [reload, state]);

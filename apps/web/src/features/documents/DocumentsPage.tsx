@@ -4,6 +4,7 @@ import type { ClinicalDocumentMetadata } from '@veterinary-saas/contracts';
 import { useCan } from '../../auth/useCan';
 import { PERMISSION } from '../../auth/permissions';
 import { useAuth } from '../../contexts/useAuth';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -90,6 +91,7 @@ export function DocumentsPage() {
   const canRead = useCan(PERMISSION.DOCUMENTS_READ);
   const canUpload = useCan(PERMISSION.DOCUMENTS_UPLOAD);
   const canVoid = useCan(PERMISSION.DOCUMENTS_VOID);
+  const realtimeRevision = useRealtimeRevision();
   const [items, setItems] = useState<ClinicalDocumentMetadata[]>([]);
   const [itemsOrganizationId, setItemsOrganizationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,7 +133,7 @@ export function DocumentsPage() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [activeMembership?.organization?.id, canRead, patientId, reloadVersion]);
+  }, [activeMembership?.organization?.id, canRead, patientId, reloadVersion, realtimeRevision]);
 
   useEffect(() => {
     setTitle('');

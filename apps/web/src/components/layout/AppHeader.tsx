@@ -6,6 +6,7 @@ import type { NavigationItem } from '../../data/navigation';
 import { useAuth } from '../../contexts/useAuth';
 import { useCan } from '../../auth/useCan';
 import { PERMISSION } from '../../auth/permissions';
+import { useRealtimeConnectionStatus } from '../../contexts/useRealtime';
 
 type AppHeaderProps = {
   route: NavigationItem;
@@ -16,6 +17,7 @@ type AppHeaderProps = {
 export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
   const navigate = useNavigate();
   const { user, activeMembership, memberships = [], logout } = useAuth();
+  const realtimeStatus = useRealtimeConnectionStatus();
   const canReadClinical = useCan(PERMISSION.CLINICAL_RECORDS_READ);
   const canReadSettings = useCan(PERMISSION.ORGANIZATION_SETTINGS_READ);
   const workspaceName = activeMembership?.organization.name ?? 'Sin organización activa';
@@ -56,6 +58,22 @@ export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
           <strong>{route.label}</strong>
         </div>
         <div className="app-header__actions">
+          {appConfig.dataMode === 'api' ? (
+            <span
+              className={`realtime-status realtime-status--${realtimeStatus}`}
+              role="status"
+              aria-live="polite"
+            >
+              <span className="realtime-status__dot" aria-hidden="true" />
+              {realtimeStatus === 'connected'
+                ? 'En vivo'
+                : realtimeStatus === 'connecting'
+                  ? 'Conectando'
+                  : realtimeStatus === 'error'
+                    ? 'Sin conexión en vivo'
+                    : 'Tiempo real inactivo'}
+            </span>
+          ) : null}
           <Button variant="ghost" type="button" onClick={() => void handleLogout()}>
             Cerrar sesión
           </Button>

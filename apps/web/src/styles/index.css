@@ -475,6 +475,36 @@ select:focus-visible {
   gap: var(--space-5);
   padding: var(--space-2) 0 var(--space-6);
 }
+
+.realtime-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.realtime-status__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.realtime-status--connected {
+  color: var(--color-success, #18794e);
+}
+
+.realtime-status--connecting {
+  color: var(--color-warning-text, #a35d00);
+}
+
+.realtime-status--error {
+  color: var(--color-danger, #b42318);
+}
 .breadcrumb {
   display: flex;
   min-width: 0;

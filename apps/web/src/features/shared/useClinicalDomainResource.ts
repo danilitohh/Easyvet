@@ -8,6 +8,7 @@ import { diagnosticsApi } from '../diagnostics/diagnosticsApi';
 import { followUpsApi } from '../follow-ups/followUpsApi';
 import { clinicalApi } from '../clinical/clinicalApi';
 import type { ClinicalFollowUpListQuery } from '@veterinary-saas/contracts';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 
 export type ClinicalDomainLoadState<T> = {
   data: T | null;
@@ -24,6 +25,7 @@ function useClinicalDomainResource<T>(
   loader: (signal: AbortSignal) => Promise<T>,
 ): ClinicalDomainLoadState<T> {
   const organizationId = useActiveOrganizationId();
+  const realtimeRevision = useRealtimeRevision();
   const [revision, setRevision] = useState(0);
   const [result, setResult] = useState<ResourceResult<T>>({
     key: '',
@@ -62,7 +64,7 @@ function useClinicalDomainResource<T>(
     return () => controller.abort();
     // Callers key loaders by tenant and route data; revision is the explicit reload trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, resourceKey, revision]);
+  }, [enabled, resourceKey, revision, realtimeRevision]);
 
   const reload = useCallback(() => setRevision((current) => current + 1), []);
   if (result.key !== resourceKey) return { data: null, loading: enabled, error: null, reload };

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { appConfig } from '../../config/app';
 import { useActiveOrganizationId } from '../shared/hooks';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 
 export type PreventiveResourceState<T> = {
   data: T | null;
@@ -21,6 +22,7 @@ export function usePreventiveResource<T>(
   mockValue: T,
 ): PreventiveResourceState<T> {
   const organizationId = useActiveOrganizationId();
+  const realtimeRevision = useRealtimeRevision();
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<Omit<PreventiveResourceState<T>, 'reload'>>({
     data: null,
@@ -49,7 +51,7 @@ export function usePreventiveResource<T>(
     return () => controller.abort();
     // Tenant and route dependencies are intentionally supplied by each domain hook.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, organizationId, revision, ...dependencies]);
+  }, [enabled, organizationId, revision, realtimeRevision, ...dependencies]);
 
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   return useMemo(() => ({ ...state, reload }), [reload, state]);

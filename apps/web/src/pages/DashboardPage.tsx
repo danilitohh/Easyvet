@@ -9,11 +9,13 @@ import { PERMISSION } from '../auth/permissions';
 import { useAuth } from '../contexts/useAuth';
 import { FollowUpDashboardWidget } from '../features/follow-ups/FollowUpDashboardWidget';
 import type { OperationalReportResponse } from '@veterinary-saas/contracts';
+import { useRealtimeRevision } from '../contexts/useRealtime';
 
 // Dashboard summaries use tenant-scoped aggregates and never present fixture data as live activity.
 export function DashboardPage() {
   const { activeMembership } = useAuth();
   const organizationId = activeMembership?.organization.id ?? '';
+  const realtimeRevision = useRealtimeRevision();
   const canReadOperational = useCan(PERMISSION.REPORTS_OPERATIONAL);
   const canReadFollowUps = useCan(PERMISSION.FOLLOW_UPS_READ);
   const canReadPatients = useCan(PERMISSION.PATIENTS_READ);
@@ -41,7 +43,7 @@ export function DashboardPage() {
         }
       });
     return () => controller.abort();
-  }, [canReadOperational, organizationId]);
+  }, [canReadOperational, organizationId, realtimeRevision]);
 
   const visibleSummary = summaryOrganizationId === organizationId ? summary : null;
   const visibleSummaryError = summaryOrganizationId === organizationId && summaryError;

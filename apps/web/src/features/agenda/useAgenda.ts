@@ -16,6 +16,7 @@ import type {
 import { agendaApi, type AgendaListParams, type AgendaPatientParams } from './agendaApi';
 import type { AgendaFilters, AgendaView } from './agendaUtils';
 import { fallbackRangeForView } from './agendaUtils';
+import { useRealtimeRevision } from '../../contexts/useRealtime';
 
 const EMPTY_APPOINTMENTS: AppointmentListResponse = { data: [] };
 const EMPTY_PATIENTS: PatientsListResponse = {
@@ -50,6 +51,7 @@ function useAbortableResource<T>(
   dependencies: readonly unknown[],
   mockValue: T | null,
 ): LoadState<T> {
+  const realtimeRevision = useRealtimeRevision();
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<Omit<LoadState<T>, 'reload'>>({
     data: null,
@@ -77,7 +79,7 @@ function useAbortableResource<T>(
     return () => controller.abort();
     // The dependency list is intentionally supplied by each tenant-aware caller.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, revision, ...dependencies]);
+  }, [enabled, revision, realtimeRevision, ...dependencies]);
 
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   return useMemo(() => ({ ...state, reload }), [reload, state]);
