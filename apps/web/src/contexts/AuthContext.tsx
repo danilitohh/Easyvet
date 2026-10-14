@@ -22,7 +22,13 @@ const anonymousState: AuthState = { ...defaultContext, status: 'unauthenticated'
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const isAnonymousRoute =
-    pathname === '/' || pathname === '/login' || pathname.startsWith('/firmar/');
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/registro' ||
+    pathname === '/verificar-correo' ||
+    pathname === '/recuperar-contrasena' ||
+    pathname === '/restablecer-contrasena' ||
+    pathname.startsWith('/firmar/');
   const [state, setState] = useState<AuthState>(() =>
     appConfig.dataMode === 'mock'
       ? defaultContext

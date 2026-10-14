@@ -30,6 +30,12 @@ En macOS/Linux, use `cp .env.example .env` en lugar de `Copy-Item`. Revise `.env
 
 El modo `mock` es solo para desarrollo/pruebas aisladas; la configuración fuerza el modo API en builds de producción para evitar datos ficticios en la aplicación desplegada.
 
+El alta de clínicas y la recuperación de contraseña envían enlaces por correo.
+En Vercel configura `RESEND_API_KEY` y `RESEND_FROM_EMAIL` para el entorno de
+Production, con un remitente verificado en Resend, y establece `APP_ORIGIN` en
+la URL pública de Easyvet. La migración de base de datos se aplica durante los
+builds de producción de la API; no se ejecuta para Preview.
+
 Inicie PostgreSQL y prepare el esquema local:
 
 ```bash
@@ -86,7 +92,7 @@ La aplicación cubre multi-tenancy, autenticación y permisos; propietarios y pa
 
 ## Límites conocidos
 
-V1 no incluye integraciones de email/SMS/push o calendarios, laboratorios externos, facturación electrónica/fiscal, pasarela de pagos, compras/proveedores, aplicación móvil nativa ni exportación avanzada de informes. El adaptador S3 está disponible pero no tuvo una integración remota live-test en este cierre. Consulte [limitaciones V1](docs/release/v1-known-limitations.md) y [QA de cierre](docs/qa/v1-closure.md).
+Fuera de los correos transaccionales para activación de cuenta y recuperación de contraseña, V1 no incluye integraciones de email/SMS/push o calendarios, laboratorios externos, facturación electrónica/fiscal, pasarela de pagos, compras/proveedores, aplicación móvil nativa ni exportación avanzada de informes. El adaptador S3 está disponible pero no tuvo una integración remota live-test en este cierre. Consulte [limitaciones V1](docs/release/v1-known-limitations.md) y [QA de cierre](docs/qa/v1-closure.md).
 
 ## Seguridad de datos
 

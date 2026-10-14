@@ -22,8 +22,10 @@ inserción única tolerante a carreras para evitar duplicar el User; con dos
 organizaciones concurrentes solo una solicitud puede devolver la contraseña
 temporal de la identidad ganadora.
 
-No hay invitaciones por email, recuperación por correo ni restablecimiento
-administrativo de contraseña en V1.
+No hay invitaciones por email ni restablecimiento administrativo de contraseña.
+El registro público y la recuperación de la cuenta global se documentan en
+[autenticación y sesiones](authentication.md); no permiten invitar miembros a
+una clínica existente.
 
 ## Contraseña inicial y sesiones
 

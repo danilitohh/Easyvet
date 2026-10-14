@@ -23,6 +23,13 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
     const validPassword = user ? await this.passwords.verify(user.passwordHash, password) : false;
 
+    if (user?.status === UserStatus.PENDING_VERIFICATION && validPassword) {
+      throw new UnauthorizedException({
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Confirm your email before signing in',
+      });
+    }
+
     if (!user || user.status !== UserStatus.ACTIVE || !validPassword) {
       throw new UnauthorizedException('Invalid credentials');
     }

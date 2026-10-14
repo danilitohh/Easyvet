@@ -6,6 +6,8 @@ export const environmentSchema = z
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     DATABASE_URL: z.string().url(),
     APP_ORIGIN: z.string().url(),
+    RESEND_API_KEY: z.string().trim().min(1).optional(),
+    RESEND_FROM_EMAIL: z.string().trim().min(3).optional(),
     DEFAULT_CURRENCY_CODE: z
       .string()
       .trim()

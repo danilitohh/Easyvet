@@ -173,6 +173,32 @@ export const loginRequestSchema = z.object({
   password: z.string().min(1),
 });
 
+export const registrationRequestSchema = z
+  .object({
+    displayName: z.string().trim().min(2).max(160),
+    clinicName: z.string().trim().min(2).max(160),
+    email: z.string().trim().email().max(320),
+    password: z.string().min(12).max(128),
+  })
+  .strict();
+
+export const emailActionRequestSchema = z.object({
+  email: z.string().trim().email().max(320),
+});
+
+export const passwordResetRequestSchema = emailActionRequestSchema;
+
+export const passwordResetConfirmSchema = z
+  .object({
+    token: z.string().min(1).max(4096),
+    newPassword: z.string().min(12).max(128),
+  })
+  .strict();
+
+export const emailVerificationSchema = z.object({ token: z.string().min(1).max(4096) }).strict();
+
+export const publicActionResponseSchema = z.object({ success: z.literal(true) });
+
 export const changePasswordRequestSchema = z.object({
   currentPassword: z.string().min(1).max(1024),
   newPassword: z.string().min(12).max(128),
@@ -196,6 +222,12 @@ export const logoutResponseSchema = z.object({
 });
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
+export type RegistrationRequest = z.infer<typeof registrationRequestSchema>;
+export type EmailActionRequest = z.infer<typeof emailActionRequestSchema>;
+export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
+export type PasswordResetConfirm = z.infer<typeof passwordResetConfirmSchema>;
+export type EmailVerificationRequest = z.infer<typeof emailVerificationSchema>;
+export type PublicActionResponse = z.infer<typeof publicActionResponseSchema>;
 export type ChangePasswordRequest = z.infer<typeof changePasswordRequestSchema>;
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 export type AuthMeResponse = z.infer<typeof authMeResponseSchema>;

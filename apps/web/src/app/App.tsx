@@ -5,6 +5,10 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { HealthPage } from '../pages/HealthPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { LoginPage } from '../pages/LoginPage';
+import { RegistrationPage } from '../pages/RegistrationPage';
+import { VerifyEmailPage } from '../pages/VerifyEmailPage';
+import { PasswordResetRequestPage } from '../pages/PasswordResetRequestPage';
+import { PasswordResetPage } from '../pages/PasswordResetPage';
 import { LandingPage } from '../pages/LandingPage';
 import { OrganizationSelectorPage } from '../pages/OrganizationSelectorPage';
 import { AccessDeniedPage } from '../pages/AccessDeniedPage';
@@ -321,6 +325,10 @@ export function App() {
           }
         />
         <Route path="login" element={<LoginPage />} />
+        <Route path="registro" element={<RegistrationPage />} />
+        <Route path="verificar-correo" element={<VerifyEmailPage />} />
+        <Route path="recuperar-contrasena" element={<PasswordResetRequestPage />} />
+        <Route path="restablecer-contrasena" element={<PasswordResetPage />} />
         <Route element={<AuthBoundary />}>
           <Route
             path="cambiar-contrasena"

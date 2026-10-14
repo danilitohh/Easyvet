@@ -17,8 +17,9 @@ Prisma administra cambios mediante migraciones versionadas explícitas.
   `AnesthesiaRecord`/`AnesthesiaObservation` en 6F.2B,
   `DiagnosticOrder` en 6H y `ClinicalDocument`/`Consent`/`ConsentSignatureRequest`
   en 6I.
-- La autenticación usa sesiones HttpOnly. Storage clínico local/S3-compatible y
-  módulos clínicos por fase están implementados; entrega de correo/SMS y canales
+- La autenticación usa sesiones HttpOnly y entrega de correo para activación y
+  recuperación de cuentas. Storage clínico local/S3-compatible y módulos
+  clínicos por fase están implementados; correo operativo/SMS y otros canales
   externos siguen pendientes.
 - El API no modifica el esquema al iniciar.
 - Toda configuración productiva debe llegar por variables/secret manager; los defaults son exclusivamente locales.

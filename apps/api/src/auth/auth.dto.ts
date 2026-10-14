@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class LoginRequestDto {
   @IsEmail()
@@ -7,6 +7,47 @@ export class LoginRequestDto {
   @IsString()
   @IsNotEmpty()
   password!: string;
+}
+
+export class RegistrationRequestDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  displayName!: string;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  clinicName!: string;
+
+  @IsEmail()
+  @MaxLength(320)
+  email!: string;
+
+  @IsString()
+  @MinLength(12)
+  @MaxLength(128)
+  password!: string;
+}
+
+export class EmailRequestDto {
+  @IsEmail()
+  @MaxLength(320)
+  email!: string;
+}
+
+export class TokenRequestDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(4096)
+  token!: string;
+}
+
+export class PasswordResetRequestDto extends TokenRequestDto {
+  @IsString()
+  @MinLength(12)
+  @MaxLength(128)
+  newPassword!: string;
 }
 
 export class SwitchOrganizationRequestDto {

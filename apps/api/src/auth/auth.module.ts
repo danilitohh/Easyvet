@@ -5,6 +5,9 @@ import { PrismaModule } from '../infrastructure/database/prisma.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AccountLifecycleService } from './account-lifecycle.service';
+import { AccountEmailService } from './account-email.service';
+import { AuthActionTokenService } from './auth-action-token.service';
 import { PasswordService } from './password.service';
 import { SessionAuthGuard } from './session-auth.guard';
 import { SessionCookieService } from './session-cookie.service';
@@ -16,6 +19,9 @@ import { SessionsService } from './sessions.service';
   controllers: [AuthController],
   providers: [
     AuthService,
+    AccountLifecycleService,
+    AccountEmailService,
+    AuthActionTokenService,
     PasswordService,
     SessionAuthGuard,
     SessionCookieService,

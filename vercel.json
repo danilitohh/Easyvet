@@ -19,7 +19,7 @@
       "framework": "nestjs",
       "entrypoint": "src/main.ts",
       "installCommand": "npm ci",
-      "buildCommand": "npx --no-install prisma generate --schema ../../prisma/schema.prisma && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api"
+      "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then npx --no-install prisma migrate deploy --schema ../../prisma/schema.prisma; fi && npx --no-install prisma generate --schema ../../prisma/schema.prisma && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api"
     }
   },
   "rewrites": [

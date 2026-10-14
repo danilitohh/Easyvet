@@ -1,7 +1,8 @@
 # Autenticación y sesiones (Fase 3B)
 
-Fase 3B implementa autenticación real para la API y el shell web. El dominio de
-permisos, invitaciones, recuperación de contraseña y MFA queda fuera de alcance.
+La autenticación incluye alta pública de clínicas, activación por correo,
+recuperación de contraseña y sesiones para la API y el shell web. Invitaciones a
+miembros y MFA quedan fuera de alcance.
 
 ## Passwords
 
@@ -27,6 +28,16 @@ permisos en el guard; eso corresponde a Fase 3C.
 
 ## Endpoints
 
+- `POST /api/v1/auth/register`: crea una identidad pendiente, organización,
+  sede principal y membresía OWNER dentro de una transacción; envía activación.
+- `POST /api/v1/auth/verify-email`: activa la identidad con un token que vence
+  en 24 horas; repetir una activación completada no cambia el estado.
+- `POST /api/v1/auth/verification/resend`: reenvía activación sin revelar si el
+  correo está registrado.
+- `POST /api/v1/auth/password-reset/request`: solicita recuperación con una
+  respuesta uniforme para no enumerar cuentas.
+- `POST /api/v1/auth/password-reset/confirm`: actualiza la contraseña con un
+  token de un solo uso que vence en 15 minutos y revoca las sesiones existentes.
 - `POST /api/v1/auth/login`: verifica credenciales y selecciona automáticamente
   la única membresía activa. Varias membresías requieren selección explícita.
 - `GET /api/v1/auth/me`: restaura la sesión actual.
@@ -47,9 +58,17 @@ para la siguiente iteración de seguridad operacional.
 
 ## Frontend
 
-`AuthProvider` restaura `/auth/me`, protege las rutas del shell, muestra `/login`
-y `/seleccionar-organizacion`, y expone logout desde el encabezado. El modo mock
-se conserva para las pruebas del shell visual.
+`AuthProvider` restaura `/auth/me`, protege las rutas del shell y deja públicas
+las pantallas de login, registro, activación y recuperación. El modo mock se
+conserva para las pruebas del shell visual.
+
+## Correo de cuenta
+
+Configurar `RESEND_API_KEY` y `RESEND_FROM_EMAIL` en el entorno de producción.
+El remitente debe estar verificado en Resend. Los enlaces usan `APP_ORIGIN`.
+En desarrollo, si no hay proveedor configurado, los enlaces de acción se
+escriben en el log de la API. El registro requiere confirmar el correo; las
+contraseñas deben tener entre 12 y 128 caracteres.
 
 ## Seed local
 

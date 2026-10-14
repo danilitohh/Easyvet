@@ -376,6 +376,7 @@ enum ClinicLocationStatus {
 enum UserStatus {
   ACTIVE
   SUSPENDED
+  PENDING_VERIFICATION
 }
 
 enum PlatformRole {
