@@ -69,5 +69,11 @@ export type Environment = z.infer<typeof environmentSchema>;
 
 // Parse environment variables once at the Nest configuration boundary.
 export function validateEnvironment(raw: Record<string, unknown>): Environment {
-  return environmentSchema.parse(raw);
+  const databaseUrl = raw.DATABASE_URL ?? raw.POSTGRES_PRISMA_URL;
+  if (typeof databaseUrl === 'string') {
+    // Prisma's generated client reads DATABASE_URL directly at runtime.
+    process.env.DATABASE_URL ??= databaseUrl;
+  }
+
+  return environmentSchema.parse({ ...raw, DATABASE_URL: databaseUrl });
 }
