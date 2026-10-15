@@ -323,6 +323,27 @@ export const platformActivityEventSchema = z.object({
 });
 export const platformActivityResponseSchema = z.object({
   data: z.array(platformActivityEventSchema),
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
+  pageCount: z.number().int().nonnegative(),
+});
+export const platformActivityQuerySchema = z.object({
+  search: z.string().trim().max(160).optional(),
+  action: z
+    .enum([
+      'ALL',
+      'ORGANIZATION_STATUS_CHANGED',
+      'PLATFORM_ADMIN_BOOTSTRAPPED',
+      'ORGANIZATION_SUBSCRIPTION_CHANGED',
+      'PLATFORM_ADMIN_ACCOUNT_CREATED',
+      'PLATFORM_ADMIN_ACCOUNT_STATUS_CHANGED',
+    ])
+    .optional(),
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+  page: z.number().int().positive().optional(),
+  pageSize: z.union([z.literal(10), z.literal(20), z.literal(50)]).optional(),
 });
 export const platformAdminAccountStatusSchema = z.enum([
   'ACTIVE',
@@ -421,6 +442,7 @@ export type UpdatePlatformOrganizationStatus = z.infer<
   typeof updatePlatformOrganizationStatusSchema
 >;
 export type PlatformActivityResponse = z.infer<typeof platformActivityResponseSchema>;
+export type PlatformActivityQuery = z.infer<typeof platformActivityQuerySchema>;
 export type PlatformAdminAccount = z.infer<typeof platformAdminAccountSchema>;
 export type PlatformAdminAccountsResponse = z.infer<typeof platformAdminAccountsResponseSchema>;
 export type CreatePlatformAdminAccount = z.infer<typeof createPlatformAdminAccountSchema>;

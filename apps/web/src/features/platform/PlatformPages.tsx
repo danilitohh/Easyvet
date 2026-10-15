@@ -8,6 +8,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { TextInput } from '../../components/ui/TextInput';
 import type {
   PlatformAdminAccount,
+  PlatformActivityQuery,
   PlatformOrganization,
   PlatformSubscriptionEntry,
   PlatformSubscriptionPlan,
@@ -531,21 +532,36 @@ export function PlatformOrganizationDetailPage() {
 }
 
 export function PlatformActivityPage() {
-  const [events, setEvents] = useState<Awaited<ReturnType<typeof platformApi.activity>>['data']>(
-    [],
+  const [result, setResult] = useState<Awaited<ReturnType<typeof platformApi.activity>> | null>(
+    null,
   );
+  const [search, setSearch] = useState('');
+  const [action, setAction] = useState<NonNullable<PlatformActivityQuery['action']>>('ALL');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<10 | 20 | 50>(20);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
+    setLoading(true);
+    setError(false);
     platformApi
-      .activity(controller.signal)
-      .then((result) => setEvents(result.data))
+      .activity({ search, action, from, to, page, pageSize }, controller.signal)
+      .then(setResult)
       .catch(() => {
         if (!controller.signal.aborted) setError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [search, action, from, to, page, pageSize]);
+
+  const events = result?.data ?? [];
+  const pageCount = Math.max(1, result?.pageCount ?? 0);
 
   return (
     <div className="platform-page">
@@ -556,6 +572,70 @@ export function PlatformActivityPage() {
       />
       {error ? <Alert tone="error">No fue posible cargar la auditoría.</Alert> : null}
       <Card className="platform-panel">
+        <div className="platform-activity-filters" aria-label="Filtros de auditoría">
+          <FormField label="Buscar por correo o clínica" htmlFor="activity-search">
+            <TextInput
+              id="activity-search"
+              type="search"
+              maxLength={160}
+              placeholder="Correo o nombre de clínica"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+            />
+          </FormField>
+          <FormField label="Tipo de acción" htmlFor="activity-action">
+            <select
+              className="input"
+              id="activity-action"
+              value={action}
+              onChange={(event) => {
+                setAction(event.target.value as NonNullable<PlatformActivityQuery['action']>);
+                setPage(1);
+              }}
+            >
+              <option value="ALL">Todas las acciones</option>
+              <option value="ORGANIZATION_STATUS_CHANGED">Estado de clínica</option>
+              <option value="PLATFORM_ADMIN_BOOTSTRAPPED">Super admin inicial</option>
+              <option value="ORGANIZATION_SUBSCRIPTION_CHANGED">Suscripción</option>
+              <option value="PLATFORM_ADMIN_ACCOUNT_CREATED">Cuenta super admin creada</option>
+              <option value="PLATFORM_ADMIN_ACCOUNT_STATUS_CHANGED">
+                Estado de cuenta super admin
+              </option>
+            </select>
+          </FormField>
+          <FormField label="Desde" htmlFor="activity-from">
+            <TextInput
+              id="activity-from"
+              type="date"
+              value={from}
+              max={to || undefined}
+              onChange={(event) => {
+                setFrom(event.target.value);
+                setPage(1);
+              }}
+            />
+          </FormField>
+          <FormField label="Hasta" htmlFor="activity-to">
+            <TextInput
+              id="activity-to"
+              type="date"
+              value={to}
+              min={from || undefined}
+              onChange={(event) => {
+                setTo(event.target.value);
+                setPage(1);
+              }}
+            />
+          </FormField>
+        </div>
+        <div className="platform-activity-summary" aria-live="polite">
+          {loading
+            ? 'Cargando actividad…'
+            : `${result?.total ?? 0} ${result?.total === 1 ? 'resultado' : 'resultados'}`}
+        </div>
         {events.length ? (
           <div className="platform-activity-list">
             {events.map((event) => {
@@ -585,9 +665,51 @@ export function PlatformActivityPage() {
           </div>
         ) : (
           <p className="platform-empty">
-            {error ? 'Auditoría no disponible.' : 'Aún no hay cambios administrativos registrados.'}
+            {loading
+              ? 'Buscando actividad…'
+              : error
+                ? 'Auditoría no disponible.'
+                : 'No hay actividad que coincida con estos filtros.'}
           </p>
         )}
+        <div className="platform-activity-pagination" aria-label="Paginación de auditoría">
+          <FormField label="Resultados por página" htmlFor="activity-page-size">
+            <select
+              className="input"
+              id="activity-page-size"
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value) as 10 | 20 | 50);
+                setPage(1);
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </FormField>
+          <div className="platform-activity-pagination__controls">
+            <Button
+              variant="secondary"
+              type="button"
+              disabled={loading || page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              Anterior
+            </Button>
+            <span aria-live="polite">
+              Página {page} de {pageCount}
+            </span>
+            <Button
+              variant="secondary"
+              type="button"
+              disabled={loading || page >= pageCount}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       </Card>
     </div>
   );

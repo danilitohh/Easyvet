@@ -16,6 +16,7 @@ import { PlatformAdminGuard } from '../authorization/platform-admin.guard';
 import {
   AssignPlatformSubscriptionDto,
   CreatePlatformAdminAccountDto,
+  PlatformActivityQueryDto,
   PlatformOrganizationsQueryDto,
   PlatformSubscriptionsQueryDto,
   UpdatePlatformAdminAccountStatusDto,
@@ -84,8 +85,8 @@ export class PlatformController {
   }
 
   @Get('activity')
-  activity() {
-    return this.platform.activity();
+  activity(@Query() query: PlatformActivityQueryDto) {
+    return this.platform.activity(query);
   }
 
   @Get('subscription-plans')

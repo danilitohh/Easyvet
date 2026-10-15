@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   PlatformAccountsPage,
+  PlatformActivityPage,
   PlatformOrganizationDetailPage,
   PlatformSubscriptionsPage,
 } from './PlatformPages';
@@ -11,6 +12,7 @@ import { platformApi } from './platformApi';
 vi.mock('./platformApi', () => ({
   platformApi: {
     platformAccounts: vi.fn(),
+    activity: vi.fn(),
     createPlatformAccount: vi.fn(),
     updatePlatformAccountStatus: vi.fn(),
     organizationDetail: vi.fn(),
@@ -22,6 +24,67 @@ vi.mock('./platformApi', () => ({
 
 const organizationId = 'c2d02a42-e03a-4f78-99e9-78186c2a7851';
 const adminAccountId = '28623093-3b5b-4a6a-a624-6b5c9b043f4d';
+const activityEvent = {
+  id: '4a86a228-d9f5-4672-a566-47ad8d5355f5',
+  action: 'ORGANIZATION_STATUS_CHANGED' as const,
+  organizationName: 'Clínica Central',
+  actorEmail: 'admin@easyvet.co',
+  metadata: { from: 'ACTIVE', to: 'SUSPENDED', reason: 'Revisión de soporte' },
+  createdAt: '2026-10-15T14:00:00.000Z',
+};
+
+describe('PlatformActivityPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(platformApi.activity).mockResolvedValue({
+      data: [activityEvent],
+      total: 21,
+      page: 1,
+      pageSize: 20,
+      pageCount: 2,
+    });
+  });
+
+  it('sends filter and pagination state to the server and advances pages', async () => {
+    render(<PlatformActivityPage />);
+
+    expect(await screen.findByText('Clínica Central · ACTIVE → SUSPENDED')).toBeInTheDocument();
+    expect(platformApi.activity).toHaveBeenCalledWith(
+      { search: '', action: 'ALL', from: '', to: '', page: 1, pageSize: 20 },
+      expect.anything(),
+    );
+    fireEvent.change(screen.getByLabelText('Buscar por correo o clínica'), {
+      target: { value: 'central' },
+    });
+    fireEvent.change(screen.getByLabelText('Tipo de acción'), {
+      target: { value: 'ORGANIZATION_STATUS_CHANGED' },
+    });
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-10-01' } });
+    fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2026-10-15' } });
+
+    await waitFor(() =>
+      expect(platformApi.activity).toHaveBeenLastCalledWith(
+        {
+          search: 'central',
+          action: 'ORGANIZATION_STATUS_CHANGED',
+          from: '2026-10-01',
+          to: '2026-10-15',
+          page: 1,
+          pageSize: 20,
+        },
+        expect.anything(),
+      ),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await waitFor(() =>
+      expect(platformApi.activity).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 2 }),
+        expect.anything(),
+      ),
+    );
+  });
+});
 
 describe('PlatformOrganizationDetailPage', () => {
   beforeEach(() => {

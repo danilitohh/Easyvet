@@ -1,5 +1,6 @@
 import {
   OrganizationStatus,
+  PlatformAuditAction,
   SubscriptionInterval,
   SubscriptionStatus,
   UserStatus,
@@ -12,9 +13,46 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  IsInt,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class PlatformActivityQueryDto {
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MaxLength(160)
+  search?: string;
+
+  @IsOptional()
+  @IsIn(['ALL', ...Object.values(PlatformAuditAction)])
+  action: 'ALL' | PlatformAuditAction = 'ALL';
+
+  @IsOptional()
+  @IsDateString({ strict: true })
+  from?: string;
+
+  @IsOptional()
+  @IsDateString({ strict: true })
+  to?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(1000000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([10, 20, 50])
+  pageSize = 20;
+}
 
 export class PlatformOrganizationsQueryDto {
   @IsOptional()

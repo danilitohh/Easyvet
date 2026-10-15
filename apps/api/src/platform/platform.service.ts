@@ -9,6 +9,7 @@ import { randomInt } from 'node:crypto';
 import {
   MembershipStatus,
   OrganizationStatus,
+  PlatformAuditAction,
   PlatformRole,
   SubscriptionInterval,
   SubscriptionStatus,
@@ -18,6 +19,7 @@ import type {
   AssignPlatformSubscriptionDto,
   CreatePlatformAdminAccountDto,
   PlatformOrganizationsQueryDto,
+  PlatformActivityQueryDto,
   PlatformSubscriptionsQueryDto,
   UpdatePlatformAdminAccountStatusDto,
   UpdatePlatformOrganizationStatusDto,
@@ -407,19 +409,58 @@ export class PlatformService {
     });
   }
 
-  async activity() {
-    const events = await this.prisma.platformAuditEvent.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-      select: {
-        id: true,
-        action: true,
-        metadata: true,
-        createdAt: true,
-        actor: { select: { email: true } },
-        organization: { select: { name: true } },
-      },
-    });
+  async activity(query: PlatformActivityQueryDto) {
+    if (query.from && query.to && query.from > query.to) {
+      throw new BadRequestException({
+        code: 'INVALID_ACTIVITY_DATE_RANGE',
+        message: 'The start date must be before or equal to the end date.',
+      });
+    }
+
+    const search = query.search?.trim();
+    const from = query.from ? new Date(`${query.from}T00:00:00.000-05:00`) : undefined;
+    const toExclusive = query.to ? new Date(`${query.to}T00:00:00.000-05:00`) : undefined;
+    if (toExclusive) toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);
+    const where = {
+      ...(query.action && query.action !== 'ALL'
+        ? { action: query.action as PlatformAuditAction }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              { actor: { email: { contains: search, mode: 'insensitive' as const } } },
+              { organization: { name: { contains: search, mode: 'insensitive' as const } } },
+            ],
+          }
+        : {}),
+      ...(from || toExclusive
+        ? {
+            createdAt: {
+              ...(from ? { gte: from } : {}),
+              ...(toExclusive ? { lt: toExclusive } : {}),
+            },
+          }
+        : {}),
+    };
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const [total, events] = await Promise.all([
+      this.prisma.platformAuditEvent.count({ where }),
+      this.prisma.platformAuditEvent.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          action: true,
+          metadata: true,
+          createdAt: true,
+          actor: { select: { email: true } },
+          organization: { select: { name: true } },
+        },
+      }),
+    ]);
     return {
       data: events.map((event) => ({
         id: event.id,
@@ -432,6 +473,10 @@ export class PlatformService {
             : null,
         createdAt: event.createdAt.toISOString(),
       })),
+      total,
+      page,
+      pageSize,
+      pageCount: Math.ceil(total / pageSize),
     };
   }
 

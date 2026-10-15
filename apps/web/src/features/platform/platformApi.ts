@@ -14,6 +14,7 @@ import {
   updatePlatformOrganizationStatusSchema,
   updatePlatformAdminAccountStatusSchema,
   type PlatformActivityResponse,
+  type PlatformActivityQuery,
   type PlatformOrganizationsResponse,
   type PlatformOverviewResponse,
   type AssignPlatformSubscription,
@@ -74,9 +75,20 @@ export const platformApi = {
       body,
     });
   },
-  async activity(signal?: AbortSignal): Promise<PlatformActivityResponse> {
+  async activity(
+    params: PlatformActivityQuery = {},
+    signal?: AbortSignal,
+  ): Promise<PlatformActivityResponse> {
+    const query = new URLSearchParams();
+    if (params.search?.trim()) query.set('search', params.search.trim());
+    if (params.action && params.action !== 'ALL') query.set('action', params.action);
+    if (params.from) query.set('from', params.from);
+    if (params.to) query.set('to', params.to);
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    const suffix = query.size ? `?${query.toString()}` : '';
     return platformActivityResponseSchema.parse(
-      await apiClient('/platform/activity', signal ? { signal } : {}),
+      await apiClient(`/platform/activity${suffix}`, signal ? { signal } : {}),
     );
   },
   async subscriptionPlans(signal?: AbortSignal) {
