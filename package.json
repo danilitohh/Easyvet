@@ -29,9 +29,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
-    "@nestjs/cli": "^12.0.3",
-    "@nestjs/schematics": "^12.0.3",
-    "@nestjs/testing": "^12.0.3",
+    "@nestjs/cli": "^11.0.24",
+    "@nestjs/schematics": "^11.0.20",
+    "@nestjs/testing": "^11.2.7",
     "@swc/core": "^1.13.3",
     "@swc/jest": "^0.2.39",
     "@testing-library/jest-dom": "^6.8.0",
