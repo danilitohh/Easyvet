@@ -5,6 +5,7 @@ import {
   emailVerificationSchema,
   loginResponseSchema,
   logoutResponseSchema,
+  platformAdminBootstrapRequestSchema,
   passwordResetConfirmSchema,
   passwordResetRequestSchema,
   publicActionResponseSchema,
@@ -15,6 +16,7 @@ import {
   type PasswordResetRequest,
   type LoginRequest,
   type LoginResponse,
+  type PlatformAdminBootstrapRequest,
   type RegistrationRequest,
   type SwitchOrganizationRequest,
 } from '@veterinary-saas/contracts';
@@ -22,6 +24,12 @@ import { apiClient } from './apiClient';
 
 // Auth API methods parse every response through the shared contracts package.
 export const authApi = {
+  async bootstrapPlatformAdmin(input: PlatformAdminBootstrapRequest): Promise<{ success: true }> {
+    const validated = platformAdminBootstrapRequestSchema.parse(input);
+    return publicActionResponseSchema.parse(
+      await apiClient('/auth/platform-admin/bootstrap', { method: 'POST', body: validated }),
+    );
+  },
   async register(input: RegistrationRequest): Promise<{ success: true }> {
     const validated = registrationRequestSchema.parse(input);
     return publicActionResponseSchema.parse(

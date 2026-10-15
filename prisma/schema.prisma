@@ -388,6 +388,7 @@ enum PlatformRole {
 
 enum PlatformAuditAction {
   ORGANIZATION_STATUS_CHANGED
+  PLATFORM_ADMIN_BOOTSTRAPPED
 }
 
 enum MembershipRole {

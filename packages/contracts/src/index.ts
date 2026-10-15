@@ -182,6 +182,12 @@ export const registrationRequestSchema = z
   })
   .strict();
 
+export const platformAdminBootstrapRequestSchema = z.object({
+  email: z.string().trim().email().max(320),
+  password: z.string().min(12).max(128),
+  bootstrapSecret: z.string().min(32).max(512),
+});
+
 export const emailActionRequestSchema = z.object({
   email: z.string().trim().email().max(320),
 });
@@ -223,6 +229,7 @@ export const logoutResponseSchema = z.object({
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type RegistrationRequest = z.infer<typeof registrationRequestSchema>;
+export type PlatformAdminBootstrapRequest = z.infer<typeof platformAdminBootstrapRequestSchema>;
 export type EmailActionRequest = z.infer<typeof emailActionRequestSchema>;
 export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordResetConfirm = z.infer<typeof passwordResetConfirmSchema>;
@@ -268,7 +275,7 @@ export const updatePlatformOrganizationStatusSchema = z.object({
 });
 export const platformActivityEventSchema = z.object({
   id: z.string().uuid(),
-  action: z.literal('ORGANIZATION_STATUS_CHANGED'),
+  action: z.enum(['ORGANIZATION_STATUS_CHANGED', 'PLATFORM_ADMIN_BOOTSTRAPPED']),
   organizationName: z.string().nullable(),
   actorEmail: z.string().email(),
   metadata: z.record(z.string(), z.unknown()).nullable(),

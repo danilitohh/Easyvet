@@ -36,6 +36,14 @@ Production, con un remitente verificado en Resend, y establece `APP_ORIGIN` en
 la URL pública de Easyvet. La migración de base de datos se aplica durante los
 builds de producción de la API; no se ejecuta para Preview.
 
+La cuenta inicial de super admin se configura en `/configurar-super-admin` sin
+crear una veterinaria. Antes, define `PLATFORM_ADMIN_BOOTSTRAP_SECRET` en las
+variables de entorno de Production de Vercel con un valor aleatorio de al menos
+32 caracteres (por ejemplo, generado con `openssl rand -base64 48`), y despliega
+la versión que incluye esa ruta. Usa esa clave una sola vez para crear la cuenta;
+después elimínala de Vercel y vuelve a desplegar. El servidor bloquea nuevas
+altas cuando ya existe un super admin.
+
 Inicie PostgreSQL y prepare el esquema local:
 
 ```bash

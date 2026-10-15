@@ -358,9 +358,13 @@ export function PlatformActivityPage() {
                   </span>
                   <div className="platform-activity-row__content">
                     <strong>
-                      {event.organizationName ?? 'Clínica archivada'} · {from} → {to}
+                      {event.action === 'PLATFORM_ADMIN_BOOTSTRAPPED'
+                        ? 'Cuenta inicial de super admin configurada'
+                        : `${event.organizationName ?? 'Clínica archivada'} · ${from} → ${to}`}
                     </strong>
-                    <p>{reason}</p>
+                    <p>
+                      {event.action === 'PLATFORM_ADMIN_BOOTSTRAPPED' ? event.actorEmail : reason}
+                    </p>
                     <small>
                       Por {event.actorEmail} · {dateLabel(event.createdAt)}
                     </small>

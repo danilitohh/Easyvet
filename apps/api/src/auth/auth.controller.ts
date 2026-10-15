@@ -12,6 +12,7 @@ import {
   ChangePasswordRequestDto,
   EmailRequestDto,
   LoginRequestDto,
+  PlatformAdminBootstrapDto,
   PasswordResetRequestDto,
   RegistrationRequestDto,
   SwitchOrganizationRequestDto,
@@ -21,6 +22,7 @@ import type { AuthenticatedRequest } from './auth.types';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
 import { RealtimeTokenService } from './realtime-token.service';
+import { PlatformAdminBootstrapService } from './platform-admin-bootstrap.service';
 import { Public } from '../authorization/public.decorator';
 import { PasswordChangeAllowed } from '../authorization/password-change-allowed.decorator';
 
@@ -32,6 +34,7 @@ export class AuthController {
     private readonly cookies: SessionCookieService,
     private readonly sessions: SessionsService,
     private readonly realtimeTokens: RealtimeTokenService,
+    private readonly platformBootstrap: PlatformAdminBootstrapService,
   ) {}
 
   @Post('login')
@@ -51,6 +54,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   register(@Body() body: RegistrationRequestDto): Promise<PublicActionResponse> {
     return this.accounts.register(body);
+  }
+
+  @Post('platform-admin/bootstrap')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  bootstrapPlatformAdmin(@Body() body: PlatformAdminBootstrapDto): Promise<PublicActionResponse> {
+    return this.platformBootstrap.createFirstAdmin(body);
   }
 
   @Post('verify-email')

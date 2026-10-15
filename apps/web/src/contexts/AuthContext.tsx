@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     pathname === '/' ||
     pathname === '/login' ||
     pathname === '/registro' ||
+    pathname === '/configurar-super-admin' ||
     pathname === '/verificar-correo' ||
     pathname === '/recuperar-contrasena' ||
     pathname === '/restablecer-contrasena' ||

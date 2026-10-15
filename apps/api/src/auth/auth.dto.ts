@@ -30,6 +30,22 @@ export class RegistrationRequestDto {
   password!: string;
 }
 
+export class PlatformAdminBootstrapDto {
+  @IsEmail()
+  @MaxLength(320)
+  email!: string;
+
+  @IsString()
+  @MinLength(12)
+  @MaxLength(128)
+  password!: string;
+
+  @IsString()
+  @MinLength(32)
+  @MaxLength(512)
+  bootstrapSecret!: string;
+}
+
 export class EmailRequestDto {
   @IsEmail()
   @MaxLength(320)

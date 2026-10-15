@@ -5,6 +5,7 @@ export const environmentSchema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     DATABASE_URL: z.string().url(),
+    PLATFORM_ADMIN_BOOTSTRAP_SECRET: z.string().min(32).optional(),
     SUPABASE_JWT_SECRET: z.string().trim().min(1).optional(),
     APP_ORIGIN: z.string().url(),
     RESEND_API_KEY: z.string().trim().min(1).optional(),

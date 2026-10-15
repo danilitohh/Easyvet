@@ -13,6 +13,7 @@ import { SessionAuthGuard } from './session-auth.guard';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
 import { RealtimeTokenService } from './realtime-token.service';
+import { PlatformAdminBootstrapService } from './platform-admin-bootstrap.service';
 
 // Authentication owns credentials and session lifecycle; authorization stays in Fase 3C.
 @Module({
@@ -28,6 +29,7 @@ import { RealtimeTokenService } from './realtime-token.service';
     SessionCookieService,
     SessionsService,
     RealtimeTokenService,
+    PlatformAdminBootstrapService,
     { provide: APP_GUARD, useClass: SessionAuthGuard },
   ],
   exports: [AuthService, PasswordService, SessionAuthGuard, SessionCookieService, SessionsService],

@@ -147,7 +147,6 @@ export class PlatformService {
 
   async activity() {
     const events = await this.prisma.platformAuditEvent.findMany({
-      where: { action: 'ORGANIZATION_STATUS_CHANGED' },
       orderBy: { createdAt: 'desc' },
       take: 20,
       select: {

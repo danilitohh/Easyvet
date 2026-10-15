@@ -132,6 +132,10 @@ export function RegistrationPage() {
           <p className="auth-form__switch">
             ¿Ya tienes una cuenta? <Link to="/login">Inicia sesión</Link>
           </p>
+          <p className="auth-form__switch">
+            ¿Administras Easyvet?{' '}
+            <Link to="/configurar-super-admin">Configurar acceso de plataforma</Link>
+          </p>
         </form>
       )}
     </AuthPageLayout>

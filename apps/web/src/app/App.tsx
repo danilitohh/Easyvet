@@ -6,6 +6,7 @@ import { HealthPage } from '../pages/HealthPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegistrationPage } from '../pages/RegistrationPage';
+import { PlatformAdminBootstrapPage } from '../pages/PlatformAdminBootstrapPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 import { PasswordResetRequestPage } from '../pages/PasswordResetRequestPage';
 import { PasswordResetPage } from '../pages/PasswordResetPage';
@@ -343,6 +344,7 @@ export function App() {
         />
         <Route path="login" element={<LoginPage />} />
         <Route path="registro" element={<RegistrationPage />} />
+        <Route path="configurar-super-admin" element={<PlatformAdminBootstrapPage />} />
         <Route path="verificar-correo" element={<VerifyEmailPage />} />
         <Route path="recuperar-contrasena" element={<PasswordResetRequestPage />} />
         <Route path="restablecer-contrasena" element={<PasswordResetPage />} />
