@@ -5,11 +5,31 @@ import { useAuth } from '../../contexts/useAuth';
 import '../../styles/platform.css';
 
 const links = [
-  { to: '/plataforma', label: 'Resumen', icon: '⌂', end: true },
-  { to: '/plataforma/clinicas', label: 'Clínicas', icon: '▦', end: false },
-  { to: '/plataforma/suscripciones', label: 'Planes', icon: '◇', end: false },
-  { to: '/plataforma/cuentas', label: 'Cuentas', icon: '◎', end: false },
-  { to: '/plataforma/actividad', label: 'Auditoría', icon: '◷', end: false },
+  { to: '/plataforma', label: 'Resumen', icon: '/icons-3d/platform/overview.png', end: true },
+  {
+    to: '/plataforma/clinicas',
+    label: 'Clínicas',
+    icon: '/icons-3d/platform/clinics.png',
+    end: false,
+  },
+  {
+    to: '/plataforma/suscripciones',
+    label: 'Planes',
+    icon: '/icons-3d/platform/plans.png',
+    end: false,
+  },
+  {
+    to: '/plataforma/cuentas',
+    label: 'Cuentas',
+    icon: '/icons-3d/platform/accounts.png',
+    end: false,
+  },
+  {
+    to: '/plataforma/actividad',
+    label: 'Auditoría',
+    icon: '/icons-3d/platform/audit.png',
+    end: false,
+  },
 ];
 
 export function PlatformShell() {
@@ -47,7 +67,7 @@ export function PlatformShell() {
               }
             >
               <span className="platform-nav__icon" aria-hidden="true">
-                {link.icon}
+                <img src={link.icon} alt="" width="28" height="28" decoding="async" />
               </span>
               <span>{link.label}</span>
             </NavLink>
