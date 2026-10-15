@@ -2,12 +2,20 @@ import { randomBytes } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
+  InternalServerErrorException,
   Injectable,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MembershipRole, MembershipStatus, Prisma, UserStatus } from '@prisma/client';
+import {
+  MembershipRole,
+  MembershipStatus,
+  Prisma,
+  SubscriptionInterval,
+  SubscriptionStatus,
+  UserStatus,
+} from '@prisma/client';
 import type { Environment } from '../config/env';
 import { PrismaService } from '../infrastructure/database/prisma.service';
 import { UsersService } from '../users/users.service';
@@ -71,6 +79,21 @@ export class AccountLifecycleService {
             timezone: 'America/Bogota',
             locale: 'es-CO',
             currencyCode: this.config.get('DEFAULT_CURRENCY_CODE', { infer: true }),
+          },
+        });
+        const freePlan = await tx.subscriptionPlan.findUnique({
+          where: { code: 'ESSENTIAL' },
+          select: { id: true },
+        });
+        if (!freePlan) {
+          throw new InternalServerErrorException({ code: 'SUBSCRIPTION_PLAN_CATALOG_MISSING' });
+        }
+        await tx.organizationSubscription.create({
+          data: {
+            organizationId: organization.id,
+            planId: freePlan.id,
+            status: SubscriptionStatus.ACTIVE,
+            interval: SubscriptionInterval.NONE,
           },
         });
         await tx.organizationCommercialSettings.create({

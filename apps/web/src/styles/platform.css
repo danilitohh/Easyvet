@@ -277,6 +277,18 @@
   color: #687386;
   background: #edf0f4;
 }
+.platform-status--trial {
+  color: #394eaa;
+  background: #e9edff;
+}
+.platform-status--past-due {
+  color: #96611b;
+  background: #fff3dc;
+}
+.platform-status--canceled {
+  color: #687386;
+  background: #edf0f4;
+}
 
 .platform-privacy-note,
 .platform-table__note {
@@ -386,6 +398,61 @@
   color: var(--platform-muted);
   font-size: 0.75rem;
 }
+.platform-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 1rem;
+}
+.platform-plan-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 1.35rem;
+}
+.platform-plan-card .section-kicker {
+  margin: 0;
+}
+.platform-plan-card h2 {
+  margin: 0;
+  color: #18243a;
+  font-size: 1.25rem;
+}
+.platform-plan-card__description {
+  min-height: 3rem;
+  margin: 0;
+  color: #667286;
+  font-size: 0.84rem;
+}
+.platform-plan-card__price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-top: 0.3rem;
+}
+.platform-plan-card__price strong {
+  color: #18243a;
+  font-size: 1.35rem;
+}
+.platform-plan-card__price span {
+  color: var(--platform-muted);
+  font-size: 0.75rem;
+}
+.platform-plan-card__features {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+  color: #46536a;
+  font-size: 0.8rem;
+}
+.platform-subscription-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
 .platform-table td:first-child small {
   display: block;
   margin-top: 0.2rem;
@@ -480,6 +547,9 @@
   .platform-detail-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+  .platform-plan-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 680px) {
@@ -498,7 +568,7 @@
     display: none;
   }
   .platform-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.25rem;
   }
   .platform-nav__label {
@@ -535,6 +605,9 @@
   }
   .platform-confirm-card__actions {
     flex-wrap: wrap;
+  }
+  .platform-subscription-form-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

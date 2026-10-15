@@ -59,6 +59,7 @@ model Organization {
   cashMovements            CashMovement[]
   commercialAuditEvents    CommercialAuditEvent[]
   platformAuditEvents      PlatformAuditEvent[]
+  subscription             OrganizationSubscription?
 
   @@map("organizations")
 }
@@ -89,16 +90,16 @@ model ClinicLocation {
 
 // User is a global platform identity; organization access is represented by Membership.
 model User {
-  id                 String       @id @default(uuid()) @db.Uuid
-  email              String       @unique
-  passwordHash       String       @map("password_hash")
-  status             UserStatus   @default(ACTIVE)
-  platformRole       PlatformRole @default(USER) @map("platform_role")
-  mustChangePassword Boolean      @default(false) @map("must_change_password")
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @updatedAt @map("updated_at")
-  memberships        Membership[]
-  sessions           Session[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  email               String               @unique
+  passwordHash        String               @map("password_hash")
+  status              UserStatus           @default(ACTIVE)
+  platformRole        PlatformRole         @default(USER) @map("platform_role")
+  mustChangePassword  Boolean              @default(false) @map("must_change_password")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  memberships         Membership[]
+  sessions            Session[]
   platformAuditEvents PlatformAuditEvent[]
 
   @@map("users")
@@ -389,6 +390,20 @@ enum PlatformRole {
 enum PlatformAuditAction {
   ORGANIZATION_STATUS_CHANGED
   PLATFORM_ADMIN_BOOTSTRAPPED
+  ORGANIZATION_SUBSCRIPTION_CHANGED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum SubscriptionInterval {
+  NONE
+  MONTHLY
+  ANNUAL
 }
 
 enum MembershipRole {
@@ -1333,6 +1348,45 @@ model PlatformAuditEvent {
   @@index([createdAt(sort: Desc)], map: "platform_audit_events_created_idx")
   @@index([organizationId, createdAt(sort: Desc)], map: "platform_audit_events_org_created_idx")
   @@map("platform_audit_events")
+}
+
+// Platform plans and assignments are administrative metadata; they do not yet gate tenant access.
+model SubscriptionPlan {
+  id                    String                     @id @default(uuid()) @db.Uuid
+  code                  String                     @unique @db.VarChar(32)
+  name                  String                     @db.VarChar(80)
+  eyebrow               String                     @db.VarChar(120)
+  description           String
+  currencyCode          String                     @default("COP") @map("currency_code") @db.VarChar(3)
+  monthlyPrice          Decimal?                   @map("monthly_price") @db.Decimal(14, 2)
+  annualPrice           Decimal?                   @map("annual_price") @db.Decimal(14, 2)
+  annualDiscountPercent Decimal?                   @map("annual_discount_percent") @db.Decimal(5, 2)
+  features              String[]                   @default([])
+  displayOrder          Int                        @default(0) @map("display_order")
+  isActive              Boolean                    @default(true) @map("is_active")
+  createdAt             DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  subscriptions         OrganizationSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model OrganizationSubscription {
+  id             String               @id @default(uuid()) @db.Uuid
+  organizationId String               @unique @map("organization_id") @db.Uuid
+  planId         String               @map("plan_id") @db.Uuid
+  status         SubscriptionStatus   @default(ACTIVE)
+  interval       SubscriptionInterval @default(NONE)
+  startsAt       DateTime             @default(now()) @map("starts_at") @db.Timestamptz(3)
+  trialEndsAt    DateTime?            @map("trial_ends_at") @db.Timestamptz(3)
+  endsAt         DateTime?            @map("ends_at") @db.Timestamptz(3)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  plan           SubscriptionPlan     @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([status, endsAt])
+  @@map("organization_subscriptions")
 }
 
 enum OrganizationAuditAction {

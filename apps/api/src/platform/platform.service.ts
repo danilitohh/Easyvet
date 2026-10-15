@@ -1,7 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { MembershipStatus, OrganizationStatus, UserStatus } from '@prisma/client';
+import {
+  MembershipStatus,
+  OrganizationStatus,
+  SubscriptionInterval,
+  SubscriptionStatus,
+  UserStatus,
+} from '@prisma/client';
 import type {
+  AssignPlatformSubscriptionDto,
   PlatformOrganizationsQueryDto,
+  PlatformSubscriptionsQueryDto,
   UpdatePlatformOrganizationStatusDto,
 } from './platform.dto';
 import { PrismaService } from '../infrastructure/database/prisma.service';
@@ -266,5 +274,223 @@ export class PlatformService {
         createdAt: event.createdAt.toISOString(),
       })),
     };
+  }
+
+  async subscriptionPlans() {
+    const plans = await this.prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: { displayOrder: 'asc' },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        eyebrow: true,
+        description: true,
+        currencyCode: true,
+        monthlyPrice: true,
+        annualPrice: true,
+        annualDiscountPercent: true,
+        features: true,
+      },
+    });
+    return {
+      data: plans.map((plan) => ({
+        ...plan,
+        monthlyPrice: plan.monthlyPrice?.toFixed(2) ?? null,
+        annualPrice: plan.annualPrice?.toFixed(2) ?? null,
+        annualDiscountPercent: plan.annualDiscountPercent?.toFixed(2) ?? null,
+      })),
+    };
+  }
+
+  async subscriptions(query: PlatformSubscriptionsQueryDto) {
+    const search = query.search?.trim();
+    const organizations = await this.prisma.organization.findMany({
+      ...(search
+        ? {
+            where: {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { slug: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          }
+        : {}),
+      orderBy: [{ createdAt: 'desc' }, { name: 'asc' }],
+      take: 100,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        subscription: {
+          select: {
+            id: true,
+            status: true,
+            interval: true,
+            startsAt: true,
+            trialEndsAt: true,
+            endsAt: true,
+            plan: { select: { code: true, name: true } },
+          },
+        },
+      },
+    });
+    return {
+      data: organizations.map((organization) => ({
+        id: organization.id,
+        name: organization.name,
+        slug: organization.slug,
+        organizationStatus: organization.status,
+        subscription: organization.subscription
+          ? {
+              id: organization.subscription.id,
+              planCode: organization.subscription.plan.code,
+              planName: organization.subscription.plan.name,
+              status: organization.subscription.status,
+              interval: organization.subscription.interval,
+              startsAt: organization.subscription.startsAt.toISOString(),
+              trialEndsAt: organization.subscription.trialEndsAt?.toISOString() ?? null,
+              endsAt: organization.subscription.endsAt?.toISOString() ?? null,
+            }
+          : null,
+      })),
+      total: organizations.length,
+      limit: 100,
+    };
+  }
+
+  async assignSubscription(
+    organizationId: string,
+    actorUserId: string,
+    input: AssignPlatformSubscriptionDto,
+  ) {
+    const [organization, plan] = await Promise.all([
+      this.prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { id: true, name: true },
+      }),
+      this.prisma.subscriptionPlan.findUnique({
+        where: { code: input.planCode },
+        select: { id: true, code: true, name: true },
+      }),
+    ]);
+    if (!organization) throw new NotFoundException({ code: 'ORGANIZATION_NOT_FOUND' });
+    if (!plan) throw new NotFoundException({ code: 'SUBSCRIPTION_PLAN_NOT_FOUND' });
+
+    const isFree = plan.code === 'ESSENTIAL';
+    if (
+      isFree &&
+      (input.status !== SubscriptionStatus.ACTIVE || input.interval !== SubscriptionInterval.NONE)
+    ) {
+      throw new BadRequestException({
+        code: 'INVALID_FREE_PLAN_SUBSCRIPTION',
+        message: 'The Esencial plan is active and does not use a billing interval.',
+      });
+    }
+    if (!isFree && input.interval === SubscriptionInterval.NONE) {
+      throw new BadRequestException({
+        code: 'BILLING_INTERVAL_REQUIRED',
+        message: 'Paid plans require a monthly or annual interval.',
+      });
+    }
+    if (input.status === SubscriptionStatus.TRIAL && !input.trialEndsAt) {
+      throw new BadRequestException({
+        code: 'TRIAL_END_REQUIRED',
+        message: 'A trial end date is required for trial subscriptions.',
+      });
+    }
+
+    const startsAt = input.startsAt ? new Date(input.startsAt) : new Date();
+    const trialEndsAt = input.trialEndsAt ? new Date(input.trialEndsAt) : null;
+    const endsAt = input.endsAt ? new Date(input.endsAt) : null;
+    if (
+      (trialEndsAt && trialEndsAt < startsAt) ||
+      (endsAt && endsAt < startsAt) ||
+      (input.status === SubscriptionStatus.TRIAL && trialEndsAt && endsAt && endsAt < trialEndsAt)
+    ) {
+      throw new BadRequestException({
+        code: 'INVALID_SUBSCRIPTION_DATES',
+        message: 'Subscription dates must be in chronological order.',
+      });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const previous = await tx.organizationSubscription.findUnique({
+        where: { organizationId },
+        select: {
+          status: true,
+          interval: true,
+          startsAt: true,
+          trialEndsAt: true,
+          endsAt: true,
+          plan: { select: { code: true, name: true } },
+        },
+      });
+      const updated = await tx.organizationSubscription.upsert({
+        where: { organizationId },
+        create: {
+          organizationId,
+          planId: plan.id,
+          status: input.status,
+          interval: input.interval,
+          startsAt,
+          trialEndsAt,
+          endsAt,
+        },
+        update: {
+          planId: plan.id,
+          status: input.status,
+          interval: input.interval,
+          startsAt,
+          trialEndsAt,
+          endsAt,
+        },
+        select: {
+          id: true,
+          status: true,
+          interval: true,
+          startsAt: true,
+          trialEndsAt: true,
+          endsAt: true,
+          plan: { select: { code: true, name: true } },
+        },
+      });
+      await tx.platformAuditEvent.create({
+        data: {
+          actorUserId,
+          organizationId,
+          action: 'ORGANIZATION_SUBSCRIPTION_CHANGED',
+          metadata: {
+            from: previous
+              ? {
+                  planCode: previous.plan.code,
+                  status: previous.status,
+                  interval: previous.interval,
+                }
+              : null,
+            to: {
+              planCode: plan.code,
+              status: updated.status,
+              interval: updated.interval,
+              startsAt: updated.startsAt.toISOString(),
+              trialEndsAt: updated.trialEndsAt?.toISOString() ?? null,
+              endsAt: updated.endsAt?.toISOString() ?? null,
+            },
+            reason: input.reason,
+          },
+        },
+      });
+      return {
+        id: updated.id,
+        organization: { id: organization.id, name: organization.name },
+        plan: updated.plan,
+        status: updated.status,
+        interval: updated.interval,
+        startsAt: updated.startsAt.toISOString(),
+        trialEndsAt: updated.trialEndsAt?.toISOString() ?? null,
+        endsAt: updated.endsAt?.toISOString() ?? null,
+      };
+    });
   }
 }

@@ -1,6 +1,14 @@
-import { OrganizationStatus } from '@prisma/client';
+import { OrganizationStatus, SubscriptionInterval, SubscriptionStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class PlatformOrganizationsQueryDto {
   @IsOptional()
@@ -17,6 +25,43 @@ export class PlatformOrganizationsQueryDto {
 export class UpdatePlatformOrganizationStatusDto {
   @IsIn([OrganizationStatus.ACTIVE, OrganizationStatus.SUSPENDED])
   status!: OrganizationStatus;
+
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(5)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class PlatformSubscriptionsQueryDto {
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MaxLength(160)
+  search?: string;
+}
+
+export class AssignPlatformSubscriptionDto {
+  @IsIn(['ESSENTIAL', 'GROWTH', 'CLINIC_PRO'])
+  planCode!: 'ESSENTIAL' | 'GROWTH' | 'CLINIC_PRO';
+
+  @IsEnum(SubscriptionStatus)
+  status!: SubscriptionStatus;
+
+  @IsEnum(SubscriptionInterval)
+  interval!: SubscriptionInterval;
+
+  @IsOptional()
+  @IsDateString()
+  startsAt?: string;
+
+  @IsOptional()
+  @IsDateString()
+  trialEndsAt?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endsAt?: string;
 
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()

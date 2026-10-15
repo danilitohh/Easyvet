@@ -5,13 +5,19 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Put,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { PlatformAdminGuard } from '../authorization/platform-admin.guard';
-import { PlatformOrganizationsQueryDto, UpdatePlatformOrganizationStatusDto } from './platform.dto';
+import {
+  AssignPlatformSubscriptionDto,
+  PlatformOrganizationsQueryDto,
+  PlatformSubscriptionsQueryDto,
+  UpdatePlatformOrganizationStatusDto,
+} from './platform.dto';
 import { PlatformService } from './platform.service';
 
 // Platform context contains only technical identity; it never exposes tenant or clinical data.
@@ -55,5 +61,24 @@ export class PlatformController {
   @Get('activity')
   activity() {
     return this.platform.activity();
+  }
+
+  @Get('subscription-plans')
+  subscriptionPlans() {
+    return this.platform.subscriptionPlans();
+  }
+
+  @Get('subscriptions')
+  subscriptions(@Query() query: PlatformSubscriptionsQueryDto) {
+    return this.platform.subscriptions(query);
+  }
+
+  @Put('organizations/:organizationId/subscription')
+  assignSubscription(
+    @Req() request: AuthenticatedRequest,
+    @Param('organizationId', new ParseUUIDPipe()) organizationId: string,
+    @Body() body: AssignPlatformSubscriptionDto,
+  ) {
+    return this.platform.assignSubscription(organizationId, request.auth!.user.id, body);
   }
 }

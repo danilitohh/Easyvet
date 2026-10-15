@@ -1,12 +1,18 @@
 import {
+  assignPlatformSubscriptionResponseSchema,
+  assignPlatformSubscriptionSchema,
   platformActivityResponseSchema,
   platformOrganizationDetailResponseSchema,
   platformOrganizationsResponseSchema,
   platformOverviewResponseSchema,
+  platformSubscriptionPlansResponseSchema,
+  platformSubscriptionsResponseSchema,
   updatePlatformOrganizationStatusSchema,
   type PlatformActivityResponse,
   type PlatformOrganizationsResponse,
   type PlatformOverviewResponse,
+  type AssignPlatformSubscription,
+  type PlatformSubscriptionsResponse,
   type UpdatePlatformOrganizationStatus,
 } from '@veterinary-saas/contracts';
 import { apiClient } from '../../services/apiClient';
@@ -44,6 +50,31 @@ export const platformApi = {
   async activity(signal?: AbortSignal): Promise<PlatformActivityResponse> {
     return platformActivityResponseSchema.parse(
       await apiClient('/platform/activity', signal ? { signal } : {}),
+    );
+  },
+  async subscriptionPlans(signal?: AbortSignal) {
+    return platformSubscriptionPlansResponseSchema.parse(
+      await apiClient('/platform/subscription-plans', signal ? { signal } : {}),
+    );
+  },
+  async subscriptions(
+    params: { search?: string } = {},
+    signal?: AbortSignal,
+  ): Promise<PlatformSubscriptionsResponse> {
+    const query = new URLSearchParams();
+    if (params.search?.trim()) query.set('search', params.search.trim());
+    const suffix = query.size ? `?${query.toString()}` : '';
+    return platformSubscriptionsResponseSchema.parse(
+      await apiClient(`/platform/subscriptions${suffix}`, signal ? { signal } : {}),
+    );
+  },
+  async assignSubscription(organizationId: string, input: AssignPlatformSubscription) {
+    const body = assignPlatformSubscriptionSchema.parse(input);
+    return assignPlatformSubscriptionResponseSchema.parse(
+      await apiClient(`/platform/organizations/${organizationId}/subscription`, {
+        method: 'PUT',
+        body,
+      }),
     );
   },
 };

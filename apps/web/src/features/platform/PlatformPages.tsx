@@ -6,11 +6,40 @@ import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { TextInput } from '../../components/ui/TextInput';
-import type { PlatformOrganization } from '@veterinary-saas/contracts';
+import type {
+  PlatformOrganization,
+  PlatformSubscriptionEntry,
+  PlatformSubscriptionPlan,
+} from '@veterinary-saas/contracts';
 import { platformApi } from './platformApi';
 
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(new Date(value));
+}
+
+function dateInputValue(value?: string | null) {
+  return value ? new Date(value).toISOString().slice(0, 10) : '';
+}
+
+function subscriptionStatusLabel(status: string) {
+  return (
+    {
+      TRIAL: 'Prueba',
+      ACTIVE: 'Activa',
+      PAST_DUE: 'Pendiente de pago',
+      CANCELED: 'Cancelada',
+    }[status] ?? status
+  );
+}
+
+function priceLabel(price: string | null, currencyCode = 'COP') {
+  if (price === null) return 'Precio por definir';
+  if (Number(price) === 0) return 'Gratis';
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: currencyCode,
+    maximumFractionDigits: 0,
+  }).format(Number(price));
 }
 
 const membershipRoleLabels: Record<string, string> = {
@@ -559,6 +588,356 @@ export function PlatformActivityPage() {
             {error ? 'Auditoría no disponible.' : 'Aún no hay cambios administrativos registrados.'}
           </p>
         )}
+      </Card>
+    </div>
+  );
+}
+
+export function PlatformSubscriptionsPage() {
+  const [plans, setPlans] = useState<PlatformSubscriptionPlan[]>([]);
+  const [organizations, setOrganizations] = useState<PlatformSubscriptionEntry[]>([]);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<PlatformSubscriptionEntry | null>(null);
+  const [planCode, setPlanCode] = useState('ESSENTIAL');
+  const [status, setStatus] = useState('ACTIVE');
+  const [interval, setInterval] = useState('NONE');
+  const [startsAt, setStartsAt] = useState(dateInputValue(new Date().toISOString()));
+  const [trialEndsAt, setTrialEndsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
+  const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError('');
+    Promise.all([
+      platformApi.subscriptionPlans(controller.signal),
+      platformApi.subscriptions({ search }, controller.signal),
+    ])
+      .then(([planResponse, subscriptionResponse]) => {
+        setPlans(planResponse.data);
+        setOrganizations(subscriptionResponse.data);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setError('No fue posible cargar planes y suscripciones.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [search, reloadKey]);
+
+  function openAssignment(organization: PlatformSubscriptionEntry) {
+    setSelected(organization);
+    setPlanCode(organization.subscription?.planCode ?? 'ESSENTIAL');
+    setStatus(organization.subscription?.status ?? 'ACTIVE');
+    setInterval(organization.subscription?.interval ?? 'NONE');
+    setStartsAt(
+      dateInputValue(organization.subscription?.startsAt) ||
+        dateInputValue(new Date().toISOString()),
+    );
+    setTrialEndsAt(dateInputValue(organization.subscription?.trialEndsAt));
+    setEndsAt(dateInputValue(organization.subscription?.endsAt));
+    setReason('');
+    setError('');
+  }
+
+  function changePlan(nextPlanCode: string) {
+    setPlanCode(nextPlanCode);
+    if (nextPlanCode === 'ESSENTIAL') {
+      setStatus('ACTIVE');
+      setInterval('NONE');
+      setTrialEndsAt('');
+    } else {
+      setInterval((current) => (current === 'NONE' ? 'MONTHLY' : current));
+    }
+  }
+
+  async function saveAssignment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected || reason.trim().length < 5) return;
+    setSaving(true);
+    setError('');
+    try {
+      await platformApi.assignSubscription(selected.id, {
+        planCode: planCode as 'ESSENTIAL' | 'GROWTH' | 'CLINIC_PRO',
+        status: status as 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED',
+        interval: interval as 'NONE' | 'MONTHLY' | 'ANNUAL',
+        ...(startsAt ? { startsAt } : {}),
+        ...(status === 'TRIAL' && trialEndsAt ? { trialEndsAt } : {}),
+        ...(endsAt ? { endsAt } : {}),
+        reason: reason.trim(),
+      });
+      setSelected(null);
+      setReloadKey((value) => value + 1);
+    } catch {
+      setError('No fue posible guardar la suscripción. Revisa los datos e intenta de nuevo.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="platform-page">
+      <PageHeader
+        eyebrow="Administración · planes"
+        title="Planes y suscripciones"
+        description="Consulta los planes comerciales y registra manualmente el plan vigente de cada clínica."
+      />
+      {error ? <Alert tone="error">{error}</Alert> : null}
+      <section className="platform-plan-grid" aria-label="Catálogo de planes">
+        {plans.map((plan) => (
+          <Card className="platform-plan-card" key={plan.id}>
+            <p className="section-kicker">{plan.eyebrow}</p>
+            <h2>{plan.name}</h2>
+            <p className="platform-plan-card__description">{plan.description}</p>
+            <div className="platform-plan-card__price">
+              <strong>{priceLabel(plan.monthlyPrice, plan.currencyCode)}</strong>
+              <span>{plan.monthlyPrice === '0.00' ? 'sin tarjeta' : 'COP / mes'}</span>
+            </div>
+            {plan.monthlyPrice !== '0.00' ? (
+              <p className="platform-table__note">
+                Anual: {priceLabel(plan.annualPrice, plan.currencyCode)} ·{' '}
+                {plan.annualDiscountPercent
+                  ? `${plan.annualDiscountPercent}% de descuento`
+                  : 'descuento por definir'}
+              </p>
+            ) : null}
+            <ul className="platform-plan-card__features">
+              {plan.features.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+          </Card>
+        ))}
+        {!plans.length && !loading ? (
+          <p className="platform-empty">No hay planes activos en el catálogo.</p>
+        ) : null}
+      </section>
+      <p className="platform-privacy-note">
+        La asignación es administrativa: no procesa pagos ni restringe el acceso por mora o
+        cancelación. Los precios de pago siguen pendientes.
+      </p>
+
+      {selected ? (
+        <Card
+          as="section"
+          className="platform-confirm-card"
+          aria-labelledby="subscription-form-title"
+        >
+          <form onSubmit={(event) => void saveAssignment(event)}>
+            <div className="platform-confirm-card__copy">
+              <p className="section-kicker">Asignación manual · {selected.name}</p>
+              <h2 id="subscription-form-title">Administrar suscripción</h2>
+              <p>
+                El cambio quedará registrado en la auditoría con tu motivo. No activa cobros
+                automáticos.
+              </p>
+            </div>
+            <div className="platform-subscription-form-grid">
+              <FormField label="Plan" htmlFor="platform-subscription-plan">
+                <select
+                  id="platform-subscription-plan"
+                  className="input"
+                  value={planCode}
+                  onChange={(event) => changePlan(event.target.value)}
+                >
+                  {plans.map((plan) => (
+                    <option value={plan.code} key={plan.code}>
+                      {plan.name}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Estado" htmlFor="platform-subscription-status">
+                <select
+                  id="platform-subscription-status"
+                  className="input"
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value)}
+                >
+                  {planCode === 'ESSENTIAL' ? (
+                    <option value="ACTIVE">Activa</option>
+                  ) : (
+                    <>
+                      <option value="TRIAL">Prueba</option>
+                      <option value="ACTIVE">Activa</option>
+                      <option value="PAST_DUE">Pendiente de pago</option>
+                      <option value="CANCELED">Cancelada</option>
+                    </>
+                  )}
+                </select>
+              </FormField>
+              <FormField label="Periodicidad" htmlFor="platform-subscription-interval">
+                <select
+                  id="platform-subscription-interval"
+                  className="input"
+                  value={interval}
+                  disabled={planCode === 'ESSENTIAL'}
+                  onChange={(event) => setInterval(event.target.value)}
+                >
+                  {planCode === 'ESSENTIAL' ? <option value="NONE">No aplica</option> : null}
+                  <option value="MONTHLY">Mensual</option>
+                  <option value="ANNUAL">Anual</option>
+                </select>
+              </FormField>
+              <FormField label="Inicio" htmlFor="platform-subscription-start">
+                <TextInput
+                  id="platform-subscription-start"
+                  type="date"
+                  value={startsAt}
+                  onChange={(event) => setStartsAt(event.target.value)}
+                  required
+                />
+              </FormField>
+              {status === 'TRIAL' ? (
+                <FormField label="Fin de prueba" htmlFor="platform-subscription-trial-end">
+                  <TextInput
+                    id="platform-subscription-trial-end"
+                    type="date"
+                    value={trialEndsAt}
+                    onChange={(event) => setTrialEndsAt(event.target.value)}
+                    required
+                  />
+                </FormField>
+              ) : null}
+              <FormField label="Fin de vigencia (opcional)" htmlFor="platform-subscription-end">
+                <TextInput
+                  id="platform-subscription-end"
+                  type="date"
+                  value={endsAt}
+                  onChange={(event) => setEndsAt(event.target.value)}
+                />
+              </FormField>
+              <FormField
+                label="Motivo del cambio"
+                htmlFor="platform-subscription-reason"
+                hint="Se guardará en la auditoría de plataforma."
+              >
+                <TextInput
+                  id="platform-subscription-reason"
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  minLength={5}
+                  maxLength={500}
+                  required
+                />
+              </FormField>
+            </div>
+            <div className="platform-confirm-card__actions">
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => setSelected(null)}
+                disabled={saving}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving || reason.trim().length < 5}>
+                {saving ? 'Guardando…' : 'Guardar suscripción'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      ) : null}
+
+      <Card className="platform-panel">
+        <div className="platform-toolbar">
+          <FormField label="Buscar clínica" htmlFor="platform-subscription-search">
+            <TextInput
+              id="platform-subscription-search"
+              type="search"
+              placeholder="Nombre o identificador"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </FormField>
+          <p className="platform-result-count">
+            {organizations.length} clínicas{organizations.length === 100 ? ' · máximo 100' : ''}
+          </p>
+        </div>
+        <div className="platform-table-wrap">
+          <table className="platform-table">
+            <thead>
+              <tr>
+                <th scope="col">Clínica</th>
+                <th scope="col">Plan</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Periodicidad</th>
+                <th scope="col">Vigencia</th>
+                <th scope="col">
+                  <span className="sr-only">Acciones</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {organizations.map((organization) => (
+                <tr key={organization.id}>
+                  <td>
+                    <strong>{organization.name}</strong>
+                    <small>/{organization.slug}</small>
+                  </td>
+                  <td>
+                    {organization.subscription?.planName ?? (
+                      <span className="platform-muted">Sin plan</span>
+                    )}
+                  </td>
+                  <td>
+                    {organization.subscription ? (
+                      <span
+                        className={`platform-status platform-status--${organization.subscription.status.toLowerCase().replace('_', '-')}`}
+                      >
+                        {subscriptionStatusLabel(organization.subscription.status)}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td>
+                    {organization.subscription?.interval === 'ANNUAL'
+                      ? 'Anual'
+                      : organization.subscription?.interval === 'MONTHLY'
+                        ? 'Mensual'
+                        : organization.subscription
+                          ? 'No aplica'
+                          : '—'}
+                  </td>
+                  <td>
+                    {organization.subscription?.endsAt
+                      ? dateLabel(organization.subscription.endsAt)
+                      : 'Sin fecha de fin'}
+                  </td>
+                  <td className="platform-table__action">
+                    <Button
+                      variant="secondary"
+                      type="button"
+                      onClick={() => openAssignment(organization)}
+                    >
+                      {organization.subscription ? 'Administrar' : 'Asignar plan'}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {!organizations.length ? (
+                <tr>
+                  <td colSpan={6} className="platform-table__empty">
+                    {loading
+                      ? 'Cargando suscripciones…'
+                      : 'No hay clínicas que coincidan con la búsqueda.'}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+        <p className="platform-table__note">
+          La lista consulta como máximo 100 clínicas. La gestión de pagos y los límites de uso aún
+          no están habilitados.
+        </p>
       </Card>
     </div>
   );

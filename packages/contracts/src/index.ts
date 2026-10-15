@@ -318,6 +318,65 @@ export const platformActivityEventSchema = z.object({
 export const platformActivityResponseSchema = z.object({
   data: z.array(platformActivityEventSchema),
 });
+export const subscriptionStatusSchema = z.enum(['TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELED']);
+export const subscriptionIntervalSchema = z.enum(['NONE', 'MONTHLY', 'ANNUAL']);
+export const platformSubscriptionPlanSchema = z.object({
+  id: z.string().uuid(),
+  code: z.enum(['ESSENTIAL', 'GROWTH', 'CLINIC_PRO']),
+  name: z.string(),
+  eyebrow: z.string(),
+  description: z.string(),
+  currencyCode: z.literal('COP'),
+  monthlyPrice: z.string().nullable(),
+  annualPrice: z.string().nullable(),
+  annualDiscountPercent: z.string().nullable(),
+  features: z.array(z.string()),
+});
+export const platformSubscriptionPlansResponseSchema = z.object({
+  data: z.array(platformSubscriptionPlanSchema),
+});
+export const platformSubscriptionEntrySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+  organizationStatus: z.enum(['ACTIVE', 'SUSPENDED', 'ARCHIVED']),
+  subscription: z
+    .object({
+      id: z.string().uuid(),
+      planCode: z.enum(['ESSENTIAL', 'GROWTH', 'CLINIC_PRO']),
+      planName: z.string(),
+      status: subscriptionStatusSchema,
+      interval: subscriptionIntervalSchema,
+      startsAt: z.string().datetime(),
+      trialEndsAt: z.string().datetime().nullable(),
+      endsAt: z.string().datetime().nullable(),
+    })
+    .nullable(),
+});
+export const platformSubscriptionsResponseSchema = z.object({
+  data: z.array(platformSubscriptionEntrySchema),
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+});
+export const assignPlatformSubscriptionSchema = z.object({
+  planCode: z.enum(['ESSENTIAL', 'GROWTH', 'CLINIC_PRO']),
+  status: subscriptionStatusSchema,
+  interval: subscriptionIntervalSchema,
+  startsAt: z.string().optional(),
+  trialEndsAt: z.string().optional(),
+  endsAt: z.string().optional(),
+  reason: z.string().trim().min(5).max(500),
+});
+export const assignPlatformSubscriptionResponseSchema = z.object({
+  id: z.string().uuid(),
+  organization: z.object({ id: z.string().uuid(), name: z.string() }),
+  plan: z.object({ code: z.string(), name: z.string() }),
+  status: subscriptionStatusSchema,
+  interval: subscriptionIntervalSchema,
+  startsAt: z.string().datetime(),
+  trialEndsAt: z.string().datetime().nullable(),
+  endsAt: z.string().datetime().nullable(),
+});
 export type PlatformOrganization = z.infer<typeof platformOrganizationSchema>;
 export type PlatformOverviewResponse = z.infer<typeof platformOverviewResponseSchema>;
 export type PlatformOrganizationsResponse = z.infer<typeof platformOrganizationsResponseSchema>;
@@ -328,6 +387,10 @@ export type UpdatePlatformOrganizationStatus = z.infer<
   typeof updatePlatformOrganizationStatusSchema
 >;
 export type PlatformActivityResponse = z.infer<typeof platformActivityResponseSchema>;
+export type PlatformSubscriptionPlan = z.infer<typeof platformSubscriptionPlanSchema>;
+export type PlatformSubscriptionEntry = z.infer<typeof platformSubscriptionEntrySchema>;
+export type PlatformSubscriptionsResponse = z.infer<typeof platformSubscriptionsResponseSchema>;
+export type AssignPlatformSubscription = z.infer<typeof assignPlatformSubscriptionSchema>;
 
 export const organizationCurrentResponseSchema = z.object({
   id: z.string().uuid(),
