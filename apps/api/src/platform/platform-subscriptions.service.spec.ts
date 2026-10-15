@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { PrismaService } from '../infrastructure/database/prisma.service';
+import { PasswordService } from '../auth/password.service';
+import { UsersService } from '../users/users.service';
 import { PlatformService } from './platform.service';
 
 describe('PlatformService subscriptions', () => {
@@ -25,7 +27,7 @@ describe('PlatformService subscriptions', () => {
     subscriptionPlan: { findUnique: planFindUnique },
     $transaction: transaction,
   } as unknown as PrismaService;
-  const service = new PlatformService(prisma);
+  const service = new PlatformService(prisma, {} as UsersService, {} as PasswordService);
 
   beforeEach(() => {
     jest.clearAllMocks();

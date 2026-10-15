@@ -1,7 +1,13 @@
-import { OrganizationStatus, SubscriptionInterval, SubscriptionStatus } from '@prisma/client';
+import {
+  OrganizationStatus,
+  SubscriptionInterval,
+  SubscriptionStatus,
+  UserStatus,
+} from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
+  IsEmail,
   IsEnum,
   IsIn,
   IsOptional,
@@ -39,6 +45,30 @@ export class PlatformSubscriptionsQueryDto {
   @IsString()
   @MaxLength(160)
   search?: string;
+}
+
+export class CreatePlatformAdminAccountDto {
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @IsEmail()
+  @MaxLength(320)
+  email!: string;
+
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(5)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class UpdatePlatformAdminAccountStatusDto {
+  @IsIn([UserStatus.ACTIVE, UserStatus.SUSPENDED])
+  status!: 'ACTIVE' | 'SUSPENDED';
+
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(5)
+  @MaxLength(500)
+  reason!: string;
 }
 
 export class AssignPlatformSubscriptionDto {

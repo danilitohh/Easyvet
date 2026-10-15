@@ -8,6 +8,7 @@ const links = [
   { to: '/plataforma', label: 'Resumen', icon: '⌂', end: true },
   { to: '/plataforma/clinicas', label: 'Clínicas', icon: '▦', end: false },
   { to: '/plataforma/suscripciones', label: 'Planes', icon: '◇', end: false },
+  { to: '/plataforma/cuentas', label: 'Cuentas', icon: '◎', end: false },
   { to: '/plataforma/actividad', label: 'Auditoría', icon: '◷', end: false },
 ];
 

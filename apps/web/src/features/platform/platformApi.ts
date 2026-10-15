@@ -1,23 +1,50 @@
 import {
   assignPlatformSubscriptionResponseSchema,
   assignPlatformSubscriptionSchema,
+  createPlatformAdminAccountResponseSchema,
+  createPlatformAdminAccountSchema,
   platformActivityResponseSchema,
+  platformAdminAccountSchema,
+  platformAdminAccountsResponseSchema,
   platformOrganizationDetailResponseSchema,
   platformOrganizationsResponseSchema,
   platformOverviewResponseSchema,
   platformSubscriptionPlansResponseSchema,
   platformSubscriptionsResponseSchema,
   updatePlatformOrganizationStatusSchema,
+  updatePlatformAdminAccountStatusSchema,
   type PlatformActivityResponse,
   type PlatformOrganizationsResponse,
   type PlatformOverviewResponse,
   type AssignPlatformSubscription,
+  type CreatePlatformAdminAccount,
   type PlatformSubscriptionsResponse,
   type UpdatePlatformOrganizationStatus,
+  type UpdatePlatformAdminAccountStatus,
 } from '@veterinary-saas/contracts';
 import { apiClient } from '../../services/apiClient';
 
 export const platformApi = {
+  async platformAccounts(params: { search?: string } = {}, signal?: AbortSignal) {
+    const query = new URLSearchParams();
+    if (params.search?.trim()) query.set('search', params.search.trim());
+    const suffix = query.size ? `?${query.toString()}` : '';
+    return platformAdminAccountsResponseSchema.parse(
+      await apiClient(`/platform/accounts${suffix}`, signal ? { signal } : {}),
+    );
+  },
+  async createPlatformAccount(input: CreatePlatformAdminAccount) {
+    const body = createPlatformAdminAccountSchema.parse(input);
+    return createPlatformAdminAccountResponseSchema.parse(
+      await apiClient('/platform/accounts', { method: 'POST', body }),
+    );
+  },
+  async updatePlatformAccountStatus(userId: string, input: UpdatePlatformAdminAccountStatus) {
+    const body = updatePlatformAdminAccountStatusSchema.parse(input);
+    return platformAdminAccountSchema.parse(
+      await apiClient(`/platform/accounts/${userId}/status`, { method: 'PATCH', body }),
+    );
+  },
   async overview(signal?: AbortSignal): Promise<PlatformOverviewResponse> {
     return platformOverviewResponseSchema.parse(
       await apiClient('/platform/overview', signal ? { signal } : {}),

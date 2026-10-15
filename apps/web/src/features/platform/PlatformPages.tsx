@@ -7,11 +7,13 @@ import { FormField } from '../../components/ui/FormField';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { TextInput } from '../../components/ui/TextInput';
 import type {
+  PlatformAdminAccount,
   PlatformOrganization,
   PlatformSubscriptionEntry,
   PlatformSubscriptionPlan,
 } from '@veterinary-saas/contracts';
 import { platformApi } from './platformApi';
+import { useAuth } from '../../contexts/useAuth';
 
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(new Date(value));
@@ -557,8 +559,6 @@ export function PlatformActivityPage() {
         {events.length ? (
           <div className="platform-activity-list">
             {events.map((event) => {
-              const from = typeof event.metadata?.from === 'string' ? event.metadata.from : '';
-              const to = typeof event.metadata?.to === 'string' ? event.metadata.to : '';
               const reason =
                 typeof event.metadata?.reason === 'string' ? event.metadata.reason : 'Sin motivo';
               return (
@@ -567,13 +567,13 @@ export function PlatformActivityPage() {
                     ↗
                   </span>
                   <div className="platform-activity-row__content">
-                    <strong>
-                      {event.action === 'PLATFORM_ADMIN_BOOTSTRAPPED'
-                        ? 'Cuenta inicial de super admin configurada'
-                        : `${event.organizationName ?? 'Clínica archivada'} · ${from} → ${to}`}
-                    </strong>
+                    <strong>{platformActivityTitle(event)}</strong>
                     <p>
-                      {event.action === 'PLATFORM_ADMIN_BOOTSTRAPPED' ? event.actorEmail : reason}
+                      {event.action === 'PLATFORM_ADMIN_BOOTSTRAPPED'
+                        ? event.actorEmail
+                        : event.action === 'PLATFORM_ADMIN_ACCOUNT_CREATED'
+                          ? `${typeof event.metadata?.email === 'string' ? event.metadata.email : 'Cuenta'} · ${reason}`
+                          : reason}
                     </p>
                     <small>
                       Por {event.actorEmail} · {dateLabel(event.createdAt)}
@@ -589,6 +589,315 @@ export function PlatformActivityPage() {
           </p>
         )}
       </Card>
+    </div>
+  );
+}
+
+function platformActivityTitle(
+  event: Awaited<ReturnType<typeof platformApi.activity>>['data'][number],
+) {
+  const from = typeof event.metadata?.from === 'string' ? event.metadata.from : '';
+  const to = typeof event.metadata?.to === 'string' ? event.metadata.to : '';
+  switch (event.action) {
+    case 'PLATFORM_ADMIN_BOOTSTRAPPED':
+      return 'Cuenta inicial de super admin configurada';
+    case 'PLATFORM_ADMIN_ACCOUNT_CREATED':
+      return 'Nueva cuenta de super admin creada';
+    case 'PLATFORM_ADMIN_ACCOUNT_STATUS_CHANGED':
+      return `Acceso de super admin · ${from} → ${to}`;
+    case 'ORGANIZATION_SUBSCRIPTION_CHANGED':
+      return `Suscripción de clínica · ${from} → ${to}`;
+    default:
+      return `${event.organizationName ?? 'Clínica'} · ${from} → ${to}`;
+  }
+}
+
+export function PlatformAccountsPage() {
+  const { user } = useAuth();
+  const [accounts, setAccounts] = useState<PlatformAdminAccount[]>([]);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [email, setEmail] = useState('');
+  const [creationReason, setCreationReason] = useState('');
+  const [createdCredential, setCreatedCredential] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<PlatformAdminAccount | null>(null);
+  const [nextStatus, setNextStatus] = useState<'ACTIVE' | 'SUSPENDED'>('SUSPENDED');
+  const [statusReason, setStatusReason] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError('');
+    platformApi
+      .platformAccounts({ search }, controller.signal)
+      .then((result) => {
+        setAccounts(result.data);
+        setTotal(result.total);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setError('No fue posible cargar las cuentas de plataforma.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [search, reloadKey]);
+
+  async function createAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    setCreatedCredential(null);
+    try {
+      const result = await platformApi.createPlatformAccount({
+        email,
+        reason: creationReason,
+      });
+      setCreatedCredential({ email: result.account.email, password: result.temporaryPassword });
+      setEmail('');
+      setCreationReason('');
+      setReloadKey((value) => value + 1);
+    } catch {
+      setError('No fue posible crear la cuenta. Verifica que el correo no esté registrado.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function beginStatusChange(account: PlatformAdminAccount) {
+    setSelectedAccount(account);
+    setNextStatus(account.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE');
+    setStatusReason('');
+    setError('');
+  }
+
+  async function saveStatusChange(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedAccount) return;
+    setSaving(true);
+    setError('');
+    try {
+      await platformApi.updatePlatformAccountStatus(selectedAccount.id, {
+        status: nextStatus,
+        reason: statusReason,
+      });
+      setSelectedAccount(null);
+      setReloadKey((value) => value + 1);
+    } catch {
+      setError(
+        nextStatus === 'SUSPENDED'
+          ? 'No se pudo suspender. No puedes suspender tu propia cuenta ni la última cuenta activa.'
+          : 'No fue posible reactivar esta cuenta.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="platform-page">
+      <PageHeader
+        eyebrow="Administración · equipo Easyvet"
+        title="Cuentas de plataforma"
+        description="Administra quién puede acceder a la consola de super admin. Estas cuentas no reciben membresías de clínicas."
+      />
+      {error ? <Alert tone="error">{error}</Alert> : null}
+      {createdCredential ? (
+        <Alert tone="success">
+          <div className="platform-credential-result" role="status">
+            <div>
+              <strong>Cuenta creada para {createdCredential.email}</strong>
+              <p>
+                Entrega esta clave temporal por un canal seguro. Se solicitará cambiarla al
+                ingresar.
+              </p>
+              <code>{createdCredential.password}</code>
+            </div>
+            <Button variant="ghost" type="button" onClick={() => setCreatedCredential(null)}>
+              Ocultar clave
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
+
+      <Card
+        as="section"
+        className="platform-confirm-card"
+        aria-labelledby="platform-account-create"
+      >
+        <form onSubmit={(event) => void createAccount(event)}>
+          <div className="platform-confirm-card__copy">
+            <p className="section-kicker">Acceso interno</p>
+            <h2 id="platform-account-create">Crear cuenta de super admin</h2>
+            <p>La clave temporal aparece una sola vez y no se guarda en la auditoría.</p>
+          </div>
+          <div className="platform-account-form">
+            <FormField label="Correo" htmlFor="platform-account-email">
+              <TextInput
+                id="platform-account-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                maxLength={320}
+                required
+              />
+            </FormField>
+            <FormField
+              label="Motivo de creación"
+              htmlFor="platform-account-reason"
+              hint="Quedará registrado en la auditoría."
+            >
+              <TextInput
+                id="platform-account-reason"
+                value={creationReason}
+                onChange={(event) => setCreationReason(event.target.value)}
+                minLength={5}
+                maxLength={500}
+                required
+              />
+            </FormField>
+          </div>
+          <div className="platform-confirm-card__actions">
+            <Button
+              type="submit"
+              disabled={saving || !email.trim() || creationReason.trim().length < 5}
+            >
+              {saving ? 'Creando…' : 'Crear cuenta'}
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      <Card className="platform-panel">
+        <div className="platform-toolbar">
+          <FormField label="Buscar por correo" htmlFor="platform-account-search">
+            <TextInput
+              id="platform-account-search"
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="admin@easyvet.co"
+            />
+          </FormField>
+          <p className="platform-result-count">{total} cuentas</p>
+        </div>
+        <div className="platform-table-wrap">
+          <table className="platform-table">
+            <thead>
+              <tr>
+                <th scope="col">Cuenta</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Creada</th>
+                <th scope="col">Acceso</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map((account) => (
+                <tr key={account.id}>
+                  <td>
+                    <strong>{account.email}</strong>
+                    {account.id === user?.id ? <small>Tu cuenta</small> : null}
+                  </td>
+                  <td>
+                    <span
+                      className={`platform-status platform-status--${account.status.toLowerCase()}`}
+                    >
+                      {account.status === 'ACTIVE'
+                        ? 'Activa'
+                        : account.status === 'SUSPENDED'
+                          ? 'Suspendida'
+                          : 'Pendiente de verificación'}
+                    </span>
+                  </td>
+                  <td>{dateLabel(account.createdAt)}</td>
+                  <td>
+                    {account.status !== 'PENDING_VERIFICATION' && account.id !== user?.id ? (
+                      <Button
+                        variant="secondary"
+                        type="button"
+                        onClick={() => beginStatusChange(account)}
+                      >
+                        {account.status === 'ACTIVE' ? 'Suspender' : 'Reactivar'}
+                      </Button>
+                    ) : account.id === user?.id ? (
+                      <span className="platform-table__note">No editable aquí</span>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+              {!accounts.length ? (
+                <tr>
+                  <td colSpan={4} className="platform-table__empty">
+                    {loading
+                      ? 'Cargando cuentas…'
+                      : error
+                        ? 'Cuentas no disponibles.'
+                        : 'No hay cuentas que coincidan con la búsqueda.'}
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+        <p className="platform-table__note">Mostrando hasta 100 cuentas de super admin.</p>
+      </Card>
+
+      {selectedAccount ? (
+        <Card
+          as="section"
+          className="platform-confirm-card"
+          aria-labelledby="platform-account-status"
+        >
+          <form onSubmit={(event) => void saveStatusChange(event)}>
+            <div className="platform-confirm-card__copy">
+              <p className="section-kicker">Confirmar cambio · {selectedAccount.email}</p>
+              <h2 id="platform-account-status">
+                {nextStatus === 'SUSPENDED' ? 'Suspender acceso' : 'Reactivar acceso'}
+              </h2>
+              <p>
+                {nextStatus === 'SUSPENDED'
+                  ? 'Se cerrarán las sesiones abiertas de esta cuenta.'
+                  : 'La cuenta podrá volver a iniciar sesión con su contraseña actual.'}
+              </p>
+            </div>
+            <FormField
+              label="Motivo del cambio"
+              htmlFor="platform-account-status-reason"
+              hint="Quedará registrado en la auditoría."
+            >
+              <TextInput
+                id="platform-account-status-reason"
+                value={statusReason}
+                onChange={(event) => setStatusReason(event.target.value)}
+                minLength={5}
+                maxLength={500}
+                required
+              />
+            </FormField>
+            <div className="platform-confirm-card__actions">
+              <Button variant="secondary" type="button" onClick={() => setSelectedAccount(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving || statusReason.trim().length < 5}>
+                {saving ? 'Guardando…' : 'Confirmar cambio'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      ) : null}
+      <p className="platform-privacy-note">
+        Las cuentas se administran por separado de las clínicas; esta sección no otorga acceso a sus
+        datos.
+      </p>
     </div>
   );
 }

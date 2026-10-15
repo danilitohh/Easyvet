@@ -199,6 +199,34 @@
   gap: 1rem;
 }
 
+.platform-account-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.platform-credential-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.platform-credential-result p {
+  margin: 0.35rem 0 0.65rem;
+}
+
+.platform-credential-result code {
+  display: inline-block;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.4rem;
+  color: #172033;
+  background: rgb(255 255 255 / 72%);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
 .platform-panel__heading {
   margin-bottom: 1.1rem;
 }
@@ -272,6 +300,10 @@
 .platform-status--suspended {
   color: #96611b;
   background: #fff3dc;
+}
+.platform-status--pending_verification {
+  color: #394eaa;
+  background: #e9edff;
 }
 .platform-status--archived {
   color: #687386;
@@ -568,7 +600,7 @@
     display: none;
   }
   .platform-nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.25rem;
   }
   .platform-nav__label {
@@ -608,6 +640,13 @@
   }
   .platform-subscription-form-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .platform-account-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .platform-credential-result {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

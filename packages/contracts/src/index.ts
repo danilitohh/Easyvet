@@ -309,7 +309,13 @@ export const updatePlatformOrganizationStatusSchema = z.object({
 });
 export const platformActivityEventSchema = z.object({
   id: z.string().uuid(),
-  action: z.enum(['ORGANIZATION_STATUS_CHANGED', 'PLATFORM_ADMIN_BOOTSTRAPPED']),
+  action: z.enum([
+    'ORGANIZATION_STATUS_CHANGED',
+    'PLATFORM_ADMIN_BOOTSTRAPPED',
+    'ORGANIZATION_SUBSCRIPTION_CHANGED',
+    'PLATFORM_ADMIN_ACCOUNT_CREATED',
+    'PLATFORM_ADMIN_ACCOUNT_STATUS_CHANGED',
+  ]),
   organizationName: z.string().nullable(),
   actorEmail: z.string().email(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
@@ -317,6 +323,34 @@ export const platformActivityEventSchema = z.object({
 });
 export const platformActivityResponseSchema = z.object({
   data: z.array(platformActivityEventSchema),
+});
+export const platformAdminAccountStatusSchema = z.enum([
+  'ACTIVE',
+  'SUSPENDED',
+  'PENDING_VERIFICATION',
+]);
+export const platformAdminAccountSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  status: platformAdminAccountStatusSchema,
+  createdAt: z.string().datetime(),
+});
+export const platformAdminAccountsResponseSchema = z.object({
+  data: z.array(platformAdminAccountSchema),
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+});
+export const createPlatformAdminAccountSchema = z.object({
+  email: z.string().trim().email().max(320),
+  reason: z.string().trim().min(5).max(500),
+});
+export const createPlatformAdminAccountResponseSchema = z.object({
+  account: platformAdminAccountSchema,
+  temporaryPassword: z.string().min(16),
+});
+export const updatePlatformAdminAccountStatusSchema = z.object({
+  status: z.enum(['ACTIVE', 'SUSPENDED']),
+  reason: z.string().trim().min(5).max(500),
 });
 export const subscriptionStatusSchema = z.enum(['TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELED']);
 export const subscriptionIntervalSchema = z.enum(['NONE', 'MONTHLY', 'ANNUAL']);
@@ -387,6 +421,12 @@ export type UpdatePlatformOrganizationStatus = z.infer<
   typeof updatePlatformOrganizationStatusSchema
 >;
 export type PlatformActivityResponse = z.infer<typeof platformActivityResponseSchema>;
+export type PlatformAdminAccount = z.infer<typeof platformAdminAccountSchema>;
+export type PlatformAdminAccountsResponse = z.infer<typeof platformAdminAccountsResponseSchema>;
+export type CreatePlatformAdminAccount = z.infer<typeof createPlatformAdminAccountSchema>;
+export type UpdatePlatformAdminAccountStatus = z.infer<
+  typeof updatePlatformAdminAccountStatusSchema
+>;
 export type PlatformSubscriptionPlan = z.infer<typeof platformSubscriptionPlanSchema>;
 export type PlatformSubscriptionEntry = z.infer<typeof platformSubscriptionEntrySchema>;
 export type PlatformSubscriptionsResponse = z.infer<typeof platformSubscriptionsResponseSchema>;

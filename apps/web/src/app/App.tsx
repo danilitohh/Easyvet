@@ -329,6 +329,11 @@ const PlatformSubscriptionsPage = lazy(() =>
     default: module.PlatformSubscriptionsPage,
   })),
 );
+const PlatformAccountsPage = lazy(() =>
+  import('../features/platform/PlatformPages').then((module) => ({
+    default: module.PlatformAccountsPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -398,6 +403,14 @@ export function App() {
                 element={
                   <Suspense fallback={<ClinicalRouteFallback />}>
                     <PlatformSubscriptionsPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="cuentas"
+                element={
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PlatformAccountsPage />
                   </Suspense>
                 }
               />

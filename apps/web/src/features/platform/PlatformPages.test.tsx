@@ -1,11 +1,18 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PlatformOrganizationDetailPage, PlatformSubscriptionsPage } from './PlatformPages';
+import {
+  PlatformAccountsPage,
+  PlatformOrganizationDetailPage,
+  PlatformSubscriptionsPage,
+} from './PlatformPages';
 import { platformApi } from './platformApi';
 
 vi.mock('./platformApi', () => ({
   platformApi: {
+    platformAccounts: vi.fn(),
+    createPlatformAccount: vi.fn(),
+    updatePlatformAccountStatus: vi.fn(),
     organizationDetail: vi.fn(),
     subscriptionPlans: vi.fn(),
     subscriptions: vi.fn(),
@@ -14,6 +21,7 @@ vi.mock('./platformApi', () => ({
 }));
 
 const organizationId = 'c2d02a42-e03a-4f78-99e9-78186c2a7851';
+const adminAccountId = '28623093-3b5b-4a6a-a624-6b5c9b043f4d';
 
 describe('PlatformOrganizationDetailPage', () => {
   beforeEach(() => {
@@ -160,6 +168,77 @@ describe('PlatformOrganizationDetailPage', () => {
           reason: 'Prueba aprobada por soporte',
         }),
       ),
+    );
+  });
+});
+
+describe('PlatformAccountsPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(platformApi.platformAccounts).mockResolvedValue({
+      data: [
+        {
+          id: adminAccountId,
+          email: 'admin-team@easyvet.co',
+          status: 'ACTIVE',
+          createdAt: '2026-10-15T10:00:00.000Z',
+        },
+      ],
+      total: 1,
+      limit: 100,
+    });
+    vi.mocked(platformApi.createPlatformAccount).mockResolvedValue({
+      account: {
+        id: adminAccountId,
+        email: 'new-admin@easyvet.co',
+        status: 'ACTIVE',
+        createdAt: '2026-10-15T10:00:00.000Z',
+      },
+      temporaryPassword: 'Secure-Temp-Password-1024',
+    });
+    vi.mocked(platformApi.updatePlatformAccountStatus).mockResolvedValue({
+      id: adminAccountId,
+      email: 'admin-team@easyvet.co',
+      status: 'SUSPENDED',
+      createdAt: '2026-10-15T10:00:00.000Z',
+    });
+  });
+
+  it('creates an isolated platform account and displays its temporary credential once', async () => {
+    render(<PlatformAccountsPage />);
+
+    fireEvent.change(screen.getByLabelText('Correo'), {
+      target: { value: 'new-admin@easyvet.co' },
+    });
+    fireEvent.change(screen.getByLabelText('Motivo de creación'), {
+      target: { value: 'Nueva integrante del equipo' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+
+    expect(await screen.findByText('Secure-Temp-Password-1024')).toBeInTheDocument();
+    expect(screen.getByText(/Se solicitará cambiarla al ingresar/)).toBeInTheDocument();
+    expect(platformApi.createPlatformAccount).toHaveBeenCalledWith({
+      email: 'new-admin@easyvet.co',
+      reason: 'Nueva integrante del equipo',
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar clave' }));
+    expect(screen.queryByText('Secure-Temp-Password-1024')).not.toBeInTheDocument();
+  });
+
+  it('requires a reason before changing an account status', async () => {
+    render(<PlatformAccountsPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Suspender' }));
+    fireEvent.change(screen.getByLabelText('Motivo del cambio'), {
+      target: { value: 'Acceso temporalmente suspendido' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar cambio' }));
+
+    await waitFor(() =>
+      expect(platformApi.updatePlatformAccountStatus).toHaveBeenCalledWith(adminAccountId, {
+        status: 'SUSPENDED',
+        reason: 'Acceso temporalmente suspendido',
+      }),
     );
   });
 });

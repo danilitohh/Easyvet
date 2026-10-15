@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Post,
   ParseUUIDPipe,
   Patch,
   Put,
@@ -14,8 +15,10 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 import { PlatformAdminGuard } from '../authorization/platform-admin.guard';
 import {
   AssignPlatformSubscriptionDto,
+  CreatePlatformAdminAccountDto,
   PlatformOrganizationsQueryDto,
   PlatformSubscriptionsQueryDto,
+  UpdatePlatformAdminAccountStatusDto,
   UpdatePlatformOrganizationStatusDto,
 } from './platform.dto';
 import { PlatformService } from './platform.service';
@@ -32,6 +35,28 @@ export class PlatformController {
       userId: request.auth!.user.id,
       platformRole: request.auth!.user.platformRole,
     };
+  }
+
+  @Get('accounts')
+  platformAccounts(@Query() query: PlatformSubscriptionsQueryDto) {
+    return this.platform.platformAccounts(query);
+  }
+
+  @Post('accounts')
+  createPlatformAccount(
+    @Req() request: AuthenticatedRequest,
+    @Body() body: CreatePlatformAdminAccountDto,
+  ) {
+    return this.platform.createPlatformAccount(request.auth!.user.id, body);
+  }
+
+  @Patch('accounts/:userId/status')
+  updatePlatformAccountStatus(
+    @Req() request: AuthenticatedRequest,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Body() body: UpdatePlatformAdminAccountStatusDto,
+  ) {
+    return this.platform.updatePlatformAccountStatus(request.auth!.user.id, userId, body);
   }
 
   @Get('overview')

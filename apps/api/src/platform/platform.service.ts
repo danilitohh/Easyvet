@@ -1,22 +1,181 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { randomInt } from 'node:crypto';
 import {
   MembershipStatus,
   OrganizationStatus,
+  PlatformRole,
   SubscriptionInterval,
   SubscriptionStatus,
   UserStatus,
 } from '@prisma/client';
 import type {
   AssignPlatformSubscriptionDto,
+  CreatePlatformAdminAccountDto,
   PlatformOrganizationsQueryDto,
   PlatformSubscriptionsQueryDto,
+  UpdatePlatformAdminAccountStatusDto,
   UpdatePlatformOrganizationStatusDto,
 } from './platform.dto';
 import { PrismaService } from '../infrastructure/database/prisma.service';
+import { PasswordService } from '../auth/password.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class PlatformService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly users: UsersService,
+    private readonly passwords: PasswordService,
+  ) {}
+
+  async platformAccounts(query: PlatformSubscriptionsQueryDto) {
+    const search = query.search?.trim();
+    const where = {
+      platformRole: PlatformRole.PLATFORM_ADMIN,
+      ...(search ? { email: { contains: search, mode: 'insensitive' as const } } : {}),
+    };
+    const [total, accounts] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { email: 'asc' }],
+        take: 100,
+        select: { id: true, email: true, status: true, createdAt: true },
+      }),
+    ]);
+    return {
+      data: accounts.map((account) => ({ ...account, createdAt: account.createdAt.toISOString() })),
+      total,
+      limit: 100,
+    };
+  }
+
+  async createPlatformAccount(actorUserId: string, input: CreatePlatformAdminAccountDto) {
+    const email = this.users.normalizeEmail(input.email);
+    const temporaryPassword = this.generateTemporaryPassword();
+    const passwordHash = await this.passwords.hash(temporaryPassword);
+
+    const account = await this.prisma.$transaction(async (tx) => {
+      const inserted = await tx.user.createMany({
+        data: {
+          email,
+          passwordHash,
+          status: UserStatus.ACTIVE,
+          platformRole: PlatformRole.PLATFORM_ADMIN,
+          mustChangePassword: true,
+        },
+        skipDuplicates: true,
+      });
+      if (inserted.count === 0) {
+        throw new ConflictException({
+          code: 'EMAIL_ALREADY_REGISTERED',
+          message: 'An account already uses this email.',
+        });
+      }
+      const created = await tx.user.findUniqueOrThrow({
+        where: { email },
+        select: { id: true, email: true, status: true, createdAt: true },
+      });
+      await tx.platformAuditEvent.create({
+        data: {
+          actorUserId,
+          action: 'PLATFORM_ADMIN_ACCOUNT_CREATED',
+          metadata: { email, reason: input.reason, mustChangePassword: true },
+        },
+      });
+      return created;
+    });
+
+    return {
+      account: { ...account, createdAt: account.createdAt.toISOString() },
+      temporaryPassword,
+    };
+  }
+
+  async updatePlatformAccountStatus(
+    actorUserId: string,
+    targetUserId: string,
+    input: UpdatePlatformAdminAccountStatusDto,
+  ) {
+    if (actorUserId === targetUserId && input.status === UserStatus.SUSPENDED) {
+      throw new ForbiddenException({
+        code: 'PLATFORM_SELF_SUSPENSION_FORBIDDEN',
+        message: 'You cannot suspend your own platform account.',
+      });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Serialize account status changes so two concurrent suspensions cannot remove the last admin.
+      await tx.$queryRaw<Array<{ acquired: number }>>`
+        WITH platform_admin_lock AS MATERIALIZED (
+          SELECT pg_advisory_xact_lock(783419205613::bigint)
+        )
+        SELECT 1::int AS acquired FROM platform_admin_lock
+      `;
+      const current = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, email: true, status: true, platformRole: true, createdAt: true },
+      });
+      if (!current || current.platformRole !== PlatformRole.PLATFORM_ADMIN) {
+        throw new NotFoundException({ code: 'PLATFORM_ADMIN_ACCOUNT_NOT_FOUND' });
+      }
+      if (current.status === input.status) {
+        return {
+          id: current.id,
+          email: current.email,
+          status: current.status,
+          createdAt: current.createdAt.toISOString(),
+        };
+      }
+      if (input.status === UserStatus.SUSPENDED) {
+        const activeAdmins = await tx.user.count({
+          where: { platformRole: PlatformRole.PLATFORM_ADMIN, status: UserStatus.ACTIVE },
+        });
+        if (activeAdmins <= 1) {
+          throw new BadRequestException({
+            code: 'LAST_ACTIVE_PLATFORM_ADMIN',
+            message: 'At least one active platform administrator must remain.',
+          });
+        }
+      }
+
+      const updated = await tx.user.update({
+        where: { id: targetUserId },
+        data: { status: input.status },
+        select: { id: true, email: true, status: true, createdAt: true },
+      });
+      if (input.status === UserStatus.SUSPENDED) {
+        await tx.session.updateMany({
+          where: { userId: targetUserId, revokedAt: null },
+          data: { revokedAt: new Date(), activeMembershipId: null },
+        });
+      }
+      await tx.platformAuditEvent.create({
+        data: {
+          actorUserId,
+          action: 'PLATFORM_ADMIN_ACCOUNT_STATUS_CHANGED',
+          metadata: {
+            email: current.email,
+            from: current.status,
+            to: input.status,
+            reason: input.reason,
+          },
+        },
+      });
+      return { ...updated, createdAt: updated.createdAt.toISOString() };
+    });
+  }
+
+  private generateTemporaryPassword(length = 22): string {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*+-_';
+    return Array.from({ length }, () => alphabet[randomInt(alphabet.length)]).join('');
+  }
 
   async overview() {
     const [
