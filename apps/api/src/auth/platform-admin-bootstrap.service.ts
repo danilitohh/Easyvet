@@ -38,7 +38,13 @@ export class PlatformAdminBootstrapService {
 
     return this.prisma.$transaction(async (tx) => {
       // Serialize first-admin attempts so two requests cannot both pass the empty-platform check.
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(783419205612::bigint)`;
+      // Keep PostgreSQL's void-returning lock call inside a CTE and return an int to Prisma.
+      await tx.$queryRaw<Array<{ acquired: number }>>`
+        WITH bootstrap_lock AS MATERIALIZED (
+          SELECT pg_advisory_xact_lock(783419205612::bigint)
+        )
+        SELECT 1::int AS acquired FROM bootstrap_lock
+      `;
       const existingAdminCount = await tx.user.count({
         where: { platformRole: PlatformRole.PLATFORM_ADMIN },
       });

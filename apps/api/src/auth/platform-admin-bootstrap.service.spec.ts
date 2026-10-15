@@ -60,6 +60,7 @@ describe('PlatformAdminBootstrapService', () => {
       select: { id: true, email: true },
     });
     expect(tx.platformAuditEvent.create).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
   it('rejects a wrong setup secret before touching the database', async () => {
