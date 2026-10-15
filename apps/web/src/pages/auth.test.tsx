@@ -53,6 +53,28 @@ describe('authentication screens', () => {
     expect(screen.getByRole('button', { name: 'Ingresar' })).toBeInTheDocument();
   });
 
+  it('keeps clinic registration and password recovery links without exposing super admin setup', () => {
+    mockedUseAuth.mockReturnValue({
+      login: vi.fn(),
+      switchOrganization: vi.fn(),
+      logout: vi.fn(),
+    } as never);
+    renderLogin();
+
+    expect(screen.getByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute(
+      'href',
+      '/recuperar-contrasena',
+    );
+    expect(screen.getByRole('link', { name: 'Crea tu cuenta gratis' })).toHaveAttribute(
+      'href',
+      '/registro',
+    );
+    expect(screen.queryByText('¿Administras Easyvet?')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Configurar acceso de plataforma' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('submits credentials and navigates to the dashboard', async () => {
     const login = vi.fn().mockResolvedValue({
       organizationSelectionRequired: false,
