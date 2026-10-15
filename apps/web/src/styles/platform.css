@@ -102,11 +102,13 @@
 
 .platform-nav__icon {
   display: inline-grid;
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
   place-items: center;
   font-size: 1rem;
   line-height: 1;
+  text-align: center;
 }
 
 .platform-sidebar__footer {
@@ -591,11 +593,13 @@
 
 .platform-activity-row__marker {
   display: grid;
-  flex: 0 0 2rem;
-  width: 2rem;
-  height: 2rem;
+  flex: 0 0 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
   place-items: center;
   color: var(--platform-accent);
+  line-height: 1;
+  text-align: center;
 }
 
 .platform-activity-row__content {

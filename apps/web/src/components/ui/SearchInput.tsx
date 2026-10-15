@@ -11,9 +11,7 @@ export function SearchInput({ value, onChange, placeholder = 'Buscar' }: SearchI
   return (
     <label className="search-input">
       <span className="sr-only">Buscar</span>
-      <span className="search-input__icon" aria-hidden="true">
-        /
-      </span>
+      <span className="search-input__icon" aria-hidden="true" />
       <TextInput
         type="search"
         value={value}

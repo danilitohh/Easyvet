@@ -110,7 +110,10 @@
   text-align: center;
   text-decoration: none;
   white-space: nowrap;
-  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .landing-button svg {
@@ -123,11 +126,6 @@
   justify-content: center;
   gap: 12px;
   white-space: nowrap;
-}
-
-.easyvet-icon {
-  display: block;
-  overflow: visible;
 }
 
 .easyvet-icon__accent {
@@ -294,7 +292,9 @@
   border: 1px solid rgb(255 255 255 / 82%);
   border-radius: 24px;
   background: rgb(255 255 255 / 88%);
-  box-shadow: 0 34px 80px rgb(33 44 96 / 19%), 0 8px 18px rgb(33 44 96 / 7%);
+  box-shadow:
+    0 34px 80px rgb(33 44 96 / 19%),
+    0 8px 18px rgb(33 44 96 / 7%);
   transform: rotate(1.5deg);
 }
 
@@ -528,9 +528,18 @@
   font-weight: 850;
 }
 
-.landing-appointment__avatar--blue { background: var(--color-blue-soft); color: var(--color-blue); }
-.landing-appointment__avatar--gold { background: var(--color-amber-soft); color: var(--color-amber); }
-.landing-appointment__avatar--rose { background: var(--color-rose-soft); color: var(--color-rose); }
+.landing-appointment__avatar--blue {
+  background: var(--color-blue-soft);
+  color: var(--color-blue);
+}
+.landing-appointment__avatar--gold {
+  background: var(--color-amber-soft);
+  color: var(--color-amber);
+}
+.landing-appointment__avatar--rose {
+  background: var(--color-rose-soft);
+  color: var(--color-rose);
+}
 
 .landing-appointment div {
   display: grid;
@@ -592,8 +601,12 @@
   background: var(--color-amber);
 }
 
-.landing-stock-bar span.landing-stock-bar__good { background: var(--color-success); }
-.landing-stock-bar span.landing-stock-bar__warn { background: var(--color-rose); }
+.landing-stock-bar span.landing-stock-bar__good {
+  background: var(--color-success);
+}
+.landing-stock-bar span.landing-stock-bar__warn {
+  background: var(--color-rose);
+}
 
 .landing-signal {
   display: flex;
@@ -644,7 +657,9 @@
   background: linear-gradient(145deg, rgb(255 255 255 / 92%), var(--color-brand-soft));
   color: var(--color-brand);
   box-shadow: 0 5px 12px rgb(33 44 96 / 8%);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .landing-signal__items span:hover b {
@@ -707,7 +722,10 @@
   border: 1px solid var(--landing-line);
   border-radius: 18px;
   background: rgb(255 255 255 / 70%);
-  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
 }
 
 .landing-feature-card:hover {
@@ -726,47 +744,24 @@
 }
 
 .landing-feature-card__icon {
-  position: relative;
   display: inline-grid;
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   place-items: center;
-  overflow: hidden;
-  border: 1px solid rgb(1 34 158 / 10%);
-  border-radius: 15px;
-  background: linear-gradient(145deg, #fff 8%, var(--landing-soft) 100%);
-  color: var(--color-brand-strong);
-  font-size: 1.15rem;
-  box-shadow: 0 10px 20px rgb(33 44 96 / 8%);
-  isolation: isolate;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  line-height: 1;
 }
 
-.landing-feature-card__icon::before {
-  position: absolute;
-  inset: -16px auto auto -12px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 82%);
-  content: '';
-  filter: blur(1px);
-  opacity: 0.72;
-  z-index: -1;
-}
-
-.landing-feature-card:hover .landing-feature-card__icon {
-  box-shadow: 0 13px 24px rgb(33 44 96 / 13%);
-  transform: translateY(-2px) rotate(-2deg);
+.landing-feature-card:hover .landing-feature-card__icon img {
+  transform: translateY(-2px);
 }
 
 .landing-feature-card__icon img {
   display: block;
-  align-self: center;
-  justify-self: center;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
+  object-position: center;
+  transition: transform 180ms ease;
 }
 
 .landing-feature-card h3 {
@@ -817,15 +812,12 @@
 
 .landing-pricing__note-icon {
   display: inline-grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
   place-items: center;
-  border: 1px solid rgb(1 34 158 / 11%);
-  border-radius: 9px;
-  background: linear-gradient(145deg, #fff, var(--color-brand-soft));
   color: var(--color-brand);
-  box-shadow: 0 6px 14px rgb(33 44 96 / 7%);
+  line-height: 1;
 }
 
 .landing-pricing__note-icon svg {
@@ -850,7 +842,10 @@
   background: rgb(255 255 255 / 76%);
   box-shadow: 0 14px 30px rgb(33 44 96 / 4%);
   text-align: center;
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
 }
 
 .landing-pricing-card:hover {
@@ -1062,14 +1057,11 @@
 
 .landing-workflow-card__spark {
   display: inline-grid;
-  width: 40px;
-  height: 40px;
+  width: 1.5rem;
+  height: 1.5rem;
   place-items: center;
-  border-radius: 13px;
-  border: 1px solid rgb(1 34 158 / 9%);
-  background: linear-gradient(145deg, #fff, var(--color-brand-soft));
   color: var(--color-brand);
-  box-shadow: 0 8px 16px rgb(33 44 96 / 10%), inset 0 1px rgb(255 255 255 / 90%);
+  line-height: 1;
 }
 
 .landing-workflow-list {
@@ -1094,22 +1086,18 @@
   width: 36px;
   height: 36px;
   place-items: center;
-  border: 1px solid rgb(1 34 158 / 11%);
-  border-radius: 11px;
-  background: linear-gradient(145deg, rgb(255 255 255 / 96%), var(--color-brand-soft));
   color: var(--color-brand-strong);
   font-size: 0.65rem;
   font-weight: 850;
-  box-shadow: inset 0 1px rgb(255 255 255 / 90%);
+  line-height: 1;
 }
 
 .landing-workflow-item__number img {
   display: block;
-  align-self: center;
-  justify-self: center;
   width: 30px;
   height: 30px;
   object-fit: contain;
+  object-position: center;
 }
 
 .landing-workflow-item div {
@@ -1367,7 +1355,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .landing-button,
-  .landing-feature-card {
+  .landing-feature-card,
+  .landing-feature-card__icon img {
     transition: none;
+  }
+  .landing-feature-card:hover .landing-feature-card__icon img {
+    transform: none;
   }
 }

@@ -259,6 +259,12 @@ select:focus-visible {
   padding: var(--space-5) clamp(20px, 3vw, 48px) 104px;
 }
 
+.easyvet-icon {
+  display: block;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
 .app-dock {
   position: fixed;
   bottom: 20px;
@@ -407,12 +413,15 @@ select:focus-visible {
 }
 .nav-item__icon {
   display: inline-grid;
-  width: 24px;
-  flex: 0 0 24px;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
   place-items: center;
   color: currentColor;
   font-size: 1rem;
   font-weight: 700;
+  line-height: 1;
+  text-align: center;
 }
 .nav-item__label {
   overflow: hidden;
@@ -855,13 +864,34 @@ select.input {
 }
 .search-input__icon {
   position: absolute;
-  top: 9px;
+  top: 50%;
   left: 12px;
   z-index: 1;
+  display: block;
+  width: 13px;
+  height: 13px;
   color: var(--color-ink-muted);
-  font-size: 0.9rem;
-  font-weight: 800;
-  transform: rotate(-45deg);
+  transform: translateY(-60%);
+}
+.search-input__icon::before {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 8px;
+  height: 8px;
+  border: 1.6px solid currentColor;
+  border-radius: 50%;
+  content: '';
+}
+.search-input__icon::after {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 5px;
+  height: 1.6px;
+  border-radius: 2px;
+  background: currentColor;
+  content: '';
+  transform: rotate(45deg);
 }
 .search-input .input {
   padding-left: 30px;
@@ -1020,15 +1050,16 @@ select.input {
   transform: translateY(-2px);
 }
 .quick-card__icon {
-  display: grid;
-  width: 36px;
-  height: 36px;
+  display: inline-grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
   place-items: center;
-  border-radius: 11px;
-  background: var(--color-surface);
   color: var(--color-brand);
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 800;
+  line-height: 1;
+  text-align: center;
 }
 .quick-card > span:nth-child(2) {
   display: grid;
@@ -1044,6 +1075,11 @@ select.input {
   line-height: 1.35;
 }
 .quick-card__arrow {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  line-height: 1;
   color: var(--color-brand);
   font-size: 1.15rem;
 }
@@ -1089,15 +1125,15 @@ select.input {
 }
 .empty-state__icon {
   display: grid;
-  width: 44px;
-  height: 44px;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
   place-items: center;
   margin-bottom: var(--space-2);
-  border-radius: 14px;
-  background: var(--color-brand-soft);
   color: var(--color-brand-strong);
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 800;
+  line-height: 1;
+  text-align: center;
 }
 .empty-state h2 {
   margin: 0;
