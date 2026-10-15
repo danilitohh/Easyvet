@@ -58,6 +58,7 @@ model Organization {
   cashSessions             CashSession[]
   cashMovements            CashMovement[]
   commercialAuditEvents    CommercialAuditEvent[]
+  platformAuditEvents      PlatformAuditEvent[]
 
   @@map("organizations")
 }
@@ -98,6 +99,7 @@ model User {
   updatedAt          DateTime     @updatedAt @map("updated_at")
   memberships        Membership[]
   sessions           Session[]
+  platformAuditEvents PlatformAuditEvent[]
 
   @@map("users")
 }
@@ -382,6 +384,10 @@ enum UserStatus {
 enum PlatformRole {
   USER
   PLATFORM_ADMIN
+}
+
+enum PlatformAuditAction {
+  ORGANIZATION_STATUS_CHANGED
 }
 
 enum MembershipRole {
@@ -1310,6 +1316,22 @@ model OrganizationAuditEvent {
   @@index([organizationId, createdAt(sort: Desc)], map: "organization_audit_events_org_created_idx")
   @@index([organizationId, entityType, entityId, createdAt(sort: Desc)], map: "organization_audit_events_entity_idx")
   @@map("organization_audit_events")
+}
+
+// PlatformAuditEvent captures cross-tenant administration without linking to clinical records.
+model PlatformAuditEvent {
+  id             String              @id @default(uuid()) @db.Uuid
+  actorUserId    String              @map("actor_user_id") @db.Uuid
+  organizationId String?             @map("organization_id") @db.Uuid
+  action         PlatformAuditAction
+  metadata       Json?
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  actor          User                @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([createdAt(sort: Desc)], map: "platform_audit_events_created_idx")
+  @@index([organizationId, createdAt(sort: Desc)], map: "platform_audit_events_org_created_idx")
+  @@map("platform_audit_events")
 }
 
 enum OrganizationAuditAction {

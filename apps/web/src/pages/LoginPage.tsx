@@ -26,7 +26,11 @@ export function LoginPage() {
     try {
       const response = await login({ email, password });
       navigate(
-        response.organizationSelectionRequired ? '/seleccionar-organizacion' : '/dashboard',
+        response.user.platformRole === 'PLATFORM_ADMIN'
+          ? '/plataforma'
+          : response.organizationSelectionRequired
+            ? '/seleccionar-organizacion'
+            : '/dashboard',
         {
           replace: true,
         },

@@ -13,7 +13,9 @@ import { LandingPage } from '../pages/LandingPage';
 import { OrganizationSelectorPage } from '../pages/OrganizationSelectorPage';
 import { AccessDeniedPage } from '../pages/AccessDeniedPage';
 import { AuthBoundary } from './AuthBoundary';
+import { PlatformAdminBoundary } from './PlatformAdminBoundary';
 import { AppErrorBoundary } from './AppErrorBoundary';
+import { PlatformShell } from '../components/layout/PlatformShell';
 import { PERMISSION } from '../auth/permissions';
 import { AnyPermissionRoute, PermissionRoute } from '../features/shared/ResourceFeedback';
 
@@ -301,6 +303,21 @@ const SettingsPage = lazy(() =>
 const ReportsPage = lazy(() =>
   import('../features/admin/ReportsPage').then((module) => ({ default: module.ReportsPage })),
 );
+const PlatformOverviewPage = lazy(() =>
+  import('../features/platform/PlatformPages').then((module) => ({
+    default: module.PlatformOverviewPage,
+  })),
+);
+const PlatformOrganizationsPage = lazy(() =>
+  import('../features/platform/PlatformPages').then((module) => ({
+    default: module.PlatformOrganizationsPage,
+  })),
+);
+const PlatformActivityPage = lazy(() =>
+  import('../features/platform/PlatformPages').then((module) => ({
+    default: module.PlatformActivityPage,
+  })),
+);
 
 function ClinicalRouteFallback() {
   return (
@@ -330,6 +347,34 @@ export function App() {
         <Route path="recuperar-contrasena" element={<PasswordResetRequestPage />} />
         <Route path="restablecer-contrasena" element={<PasswordResetPage />} />
         <Route element={<AuthBoundary />}>
+          <Route element={<PlatformAdminBoundary />}>
+            <Route path="plataforma" element={<PlatformShell />}>
+              <Route
+                index
+                element={
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PlatformOverviewPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="clinicas"
+                element={
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PlatformOrganizationsPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="actividad"
+                element={
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PlatformActivityPage />
+                  </Suspense>
+                }
+              />
+            </Route>
+          </Route>
           <Route
             path="cambiar-contrasena"
             element={

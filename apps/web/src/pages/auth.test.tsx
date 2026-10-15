@@ -30,6 +30,7 @@ function renderLogin() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<p>Dashboard</p>} />
         <Route path="/seleccionar-organizacion" element={<p>Selector</p>} />
+        <Route path="/plataforma" element={<p>Consola super admin</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -53,7 +54,10 @@ describe('authentication screens', () => {
   });
 
   it('submits credentials and navigates to the dashboard', async () => {
-    const login = vi.fn().mockResolvedValue({ organizationSelectionRequired: false });
+    const login = vi.fn().mockResolvedValue({
+      organizationSelectionRequired: false,
+      user: { platformRole: 'USER' },
+    });
     mockedUseAuth.mockReturnValue({ login, switchOrganization: vi.fn(), logout: vi.fn() } as never);
     renderLogin();
     fireEvent.change(screen.getByLabelText('Correo'), { target: { value: 'vet@example.com' } });
@@ -64,13 +68,29 @@ describe('authentication screens', () => {
   });
 
   it('navigates to organization selection when the server requires it', async () => {
-    const login = vi.fn().mockResolvedValue({ organizationSelectionRequired: true });
+    const login = vi.fn().mockResolvedValue({
+      organizationSelectionRequired: true,
+      user: { platformRole: 'USER' },
+    });
     mockedUseAuth.mockReturnValue({ login, switchOrganization: vi.fn(), logout: vi.fn() } as never);
     renderLogin();
     fireEvent.change(screen.getByLabelText('Correo'), { target: { value: 'multi@example.com' } });
     fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
     await waitFor(() => expect(screen.getByText('Selector')).toBeInTheDocument());
+  });
+
+  it('navigates platform administrators to the platform console', async () => {
+    const login = vi.fn().mockResolvedValue({
+      organizationSelectionRequired: false,
+      user: { platformRole: 'PLATFORM_ADMIN' },
+    });
+    mockedUseAuth.mockReturnValue({ login, switchOrganization: vi.fn(), logout: vi.fn() } as never);
+    renderLogin();
+    fireEvent.change(screen.getByLabelText('Correo'), { target: { value: 'admin@easyvet.co' } });
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
+    await waitFor(() => expect(screen.getByText('Consola super admin')).toBeInTheDocument());
   });
 
   it('shows a generic error when credentials are rejected', async () => {
@@ -95,7 +115,7 @@ describe('authentication screens', () => {
     renderLogin();
     fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
     expect(screen.getByRole('button', { name: 'Ingresando…' })).toBeDisabled();
-    resolveLogin({ organizationSelectionRequired: false });
+    resolveLogin({ organizationSelectionRequired: false, user: { platformRole: 'USER' } });
   });
 });
 

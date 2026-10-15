@@ -234,6 +234,57 @@ export type AuthMeResponse = z.infer<typeof authMeResponseSchema>;
 export type SwitchOrganizationRequest = z.infer<typeof switchOrganizationRequestSchema>;
 export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
 
+export const platformOrganizationStatusSchema = z.enum(['ACTIVE', 'SUSPENDED']);
+export const platformOrganizationFilterSchema = z.enum(['ALL', 'ACTIVE', 'SUSPENDED', 'ARCHIVED']);
+export const platformOrganizationSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'ARCHIVED']),
+  createdAt: z.string().datetime(),
+  memberCount: z.number().int().nonnegative(),
+});
+export const platformOverviewResponseSchema = z.object({
+  organizations: z.object({
+    total: z.number().int().nonnegative(),
+    active: z.number().int().nonnegative(),
+    suspended: z.number().int().nonnegative(),
+    archived: z.number().int().nonnegative(),
+  }),
+  users: z.object({
+    total: z.number().int().nonnegative(),
+    active: z.number().int().nonnegative(),
+  }),
+  memberships: z.object({ active: z.number().int().nonnegative() }),
+  recentOrganizations: z.array(platformOrganizationSchema),
+});
+export const platformOrganizationsResponseSchema = z.object({
+  data: z.array(platformOrganizationSchema),
+  total: z.number().int().nonnegative(),
+});
+export const updatePlatformOrganizationStatusSchema = z.object({
+  status: platformOrganizationStatusSchema,
+  reason: z.string().trim().min(5).max(500),
+});
+export const platformActivityEventSchema = z.object({
+  id: z.string().uuid(),
+  action: z.literal('ORGANIZATION_STATUS_CHANGED'),
+  organizationName: z.string().nullable(),
+  actorEmail: z.string().email(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  createdAt: z.string().datetime(),
+});
+export const platformActivityResponseSchema = z.object({
+  data: z.array(platformActivityEventSchema),
+});
+export type PlatformOrganization = z.infer<typeof platformOrganizationSchema>;
+export type PlatformOverviewResponse = z.infer<typeof platformOverviewResponseSchema>;
+export type PlatformOrganizationsResponse = z.infer<typeof platformOrganizationsResponseSchema>;
+export type UpdatePlatformOrganizationStatus = z.infer<
+  typeof updatePlatformOrganizationStatusSchema
+>;
+export type PlatformActivityResponse = z.infer<typeof platformActivityResponseSchema>;
+
 export const organizationCurrentResponseSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),

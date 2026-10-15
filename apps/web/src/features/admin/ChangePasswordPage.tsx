@@ -13,7 +13,7 @@ import './admin.css';
 // The only post-login destination available until a temporary credential is replaced.
 export function ChangePasswordPage() {
   const navigate = useNavigate();
-  const { changePassword, logout } = useAuth();
+  const { changePassword, logout, user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -34,7 +34,9 @@ export function ChangePasswordPage() {
     setSaving(true);
     try {
       await changePassword({ currentPassword, newPassword });
-      navigate('/dashboard', { replace: true });
+      navigate(user?.platformRole === 'PLATFORM_ADMIN' ? '/plataforma' : '/dashboard', {
+        replace: true,
+      });
     } catch (caught) {
       const code = caught instanceof ApiError ? caught.code : '';
       setError(
