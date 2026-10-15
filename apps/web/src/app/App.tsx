@@ -314,6 +314,11 @@ const PlatformOrganizationsPage = lazy(() =>
     default: module.PlatformOrganizationsPage,
   })),
 );
+const PlatformOrganizationDetailPage = lazy(() =>
+  import('../features/platform/PlatformPages').then((module) => ({
+    default: module.PlatformOrganizationDetailPage,
+  })),
+);
 const PlatformActivityPage = lazy(() =>
   import('../features/platform/PlatformPages').then((module) => ({
     default: module.PlatformActivityPage,
@@ -364,6 +369,14 @@ export function App() {
                 element={
                   <Suspense fallback={<ClinicalRouteFallback />}>
                     <PlatformOrganizationsPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="clinicas/:organizationId"
+                element={
+                  <Suspense fallback={<ClinicalRouteFallback />}>
+                    <PlatformOrganizationDetailPage />
                   </Suspense>
                 }
               />

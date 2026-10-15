@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -12,6 +12,16 @@ import { platformApi } from './platformApi';
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(new Date(value));
 }
+
+const membershipRoleLabels: Record<string, string> = {
+  OWNER: 'Propietario/a',
+  ADMIN: 'Administrador/a',
+  VETERINARIAN: 'Veterinario/a',
+  ASSISTANT: 'Auxiliar',
+  RECEPTION: 'Recepción',
+  GROOMER: 'Peluquería',
+  CASHIER: 'Caja',
+};
 
 function OrganizationStatus({ status }: { status: PlatformOrganization['status'] }) {
   const label =
@@ -103,7 +113,11 @@ export function PlatformOverviewPage() {
           </div>
         ) : (
           <p className="platform-empty">
-            {error ? 'Resumen no disponible.' : 'Cargando actividad…'}
+            {error
+              ? 'Resumen no disponible.'
+              : data
+                ? 'Aún no hay clínicas registradas.'
+                : 'Cargando actividad…'}
           </p>
         )}
       </Card>
@@ -272,7 +286,12 @@ export function PlatformOrganizationsPage() {
               {organizations.map((organization) => (
                 <tr key={organization.id}>
                   <td>
-                    <strong>{organization.name}</strong>
+                    <Link
+                      className="platform-organization-link"
+                      to={`/plataforma/clinicas/${organization.id}`}
+                    >
+                      <strong>{organization.name}</strong>
+                    </Link>
                     <small>/{organization.slug}</small>
                   </td>
                   <td>
@@ -314,6 +333,168 @@ export function PlatformOrganizationsPage() {
           Se muestran hasta 100 clínicas por consulta. La consola no presenta información clínica.
         </p>
       </Card>
+    </div>
+  );
+}
+
+export function PlatformOrganizationDetailPage() {
+  const { organizationId = '' } = useParams();
+  const [data, setData] = useState<Awaited<
+    ReturnType<typeof platformApi.organizationDetail>
+  > | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setData(null);
+    setError(false);
+    platformApi
+      .organizationDetail(organizationId, controller.signal)
+      .then(setData)
+      .catch(() => {
+        if (!controller.signal.aborted) setError(true);
+      });
+    return () => controller.abort();
+  }, [organizationId]);
+
+  return (
+    <div className="platform-page">
+      <Link className="platform-back-link" to="/plataforma/clinicas">
+        ← Volver a clínicas
+      </Link>
+      {error ? (
+        <Alert tone="error">No fue posible cargar esta clínica o no tienes acceso.</Alert>
+      ) : null}
+      {!data && !error ? <p className="platform-empty">Cargando clínica…</p> : null}
+      {data ? (
+        <>
+          <PageHeader
+            eyebrow={`Clínica · /${data.slug}`}
+            title={data.name}
+            description="Ficha administrativa. Esta vista no consulta pacientes ni información clínica."
+            action={<OrganizationStatus status={data.status} />}
+          />
+          <section className="platform-stat-grid" aria-label="Resumen administrativo de la clínica">
+            <Card className="platform-stat">
+              <span className="platform-stat__label">Integrantes</span>
+              <strong>{data.memberships.total}</strong>
+              <small>{data.memberships.active} con acceso activo</small>
+            </Card>
+            <Card className="platform-stat">
+              <span className="platform-stat__label">Invitaciones</span>
+              <strong>{data.memberships.invited}</strong>
+              <small>{data.memberships.suspended} accesos suspendidos</small>
+            </Card>
+            <Card className="platform-stat">
+              <span className="platform-stat__label">Sedes</span>
+              <strong>{data.locations.total}</strong>
+              <small>Máximo 10 sedes listadas abajo</small>
+            </Card>
+            <Card className="platform-stat">
+              <span className="platform-stat__label">Moneda y zona horaria</span>
+              <strong>{data.currencyCode}</strong>
+              <small>{data.timezone}</small>
+            </Card>
+          </section>
+
+          <div className="platform-detail-grid">
+            <Card className="platform-panel">
+              <div className="platform-panel__heading">
+                <div>
+                  <p className="section-kicker">Operación</p>
+                  <h2>Sedes registradas</h2>
+                </div>
+              </div>
+              {data.locations.data.length ? (
+                <div className="platform-detail-list">
+                  {data.locations.data.map((location) => (
+                    <div className="platform-detail-row" key={location.id}>
+                      <span>
+                        <strong>{location.name}</strong>
+                        <small>{location.city || 'Ciudad no registrada'}</small>
+                      </span>
+                      <span
+                        className={`platform-status platform-status--${location.status.toLowerCase()}`}
+                      >
+                        {location.status === 'ACTIVE'
+                          ? 'Activa'
+                          : location.status === 'SUSPENDED'
+                            ? 'Suspendida'
+                            : 'Archivada'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="platform-empty">Esta clínica aún no registra sedes.</p>
+              )}
+              {data.locations.total > data.locations.data.length ? (
+                <p className="platform-table__note">
+                  Se muestran 10 de {data.locations.total} sedes.
+                </p>
+              ) : null}
+            </Card>
+            <Card className="platform-panel">
+              <div className="platform-panel__heading">
+                <div>
+                  <p className="section-kicker">Accesos agregados</p>
+                  <h2>Integrantes por rol</h2>
+                </div>
+              </div>
+              {data.memberships.byRole.length ? (
+                <div className="platform-detail-list">
+                  {data.memberships.byRole.map(({ role, count }) => (
+                    <div className="platform-detail-row" key={role}>
+                      <strong>{membershipRoleLabels[role] ?? role.replaceAll('_', ' ')}</strong>
+                      <span>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="platform-empty">Sin integrantes registrados.</p>
+              )}
+              <p className="platform-table__note">
+                Solo se muestran conteos; no se exponen cuentas personales.
+              </p>
+            </Card>
+          </div>
+
+          <Card className="platform-panel">
+            <div className="platform-panel__heading">
+              <div>
+                <p className="section-kicker">Seguridad</p>
+                <h2>Actividad administrativa reciente</h2>
+              </div>
+            </div>
+            {data.recentAdministrativeActivity.length ? (
+              <div className="platform-detail-list">
+                {data.recentAdministrativeActivity.map((event) => (
+                  <div className="platform-detail-row" key={event.id}>
+                    <span>
+                      <strong>
+                        Estado: {event.from ?? '—'} → {event.to ?? '—'}
+                      </strong>
+                      <small>
+                        {event.reason || 'Sin motivo registrado'} · {event.actorEmail}
+                      </small>
+                    </span>
+                    <small>{dateLabel(event.createdAt)}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="platform-empty">No hay cambios administrativos registrados.</p>
+            )}
+            <p className="platform-table__note">
+              La actividad está limitada a acciones de plataforma; no incluye auditoría clínica.
+            </p>
+          </Card>
+          <p className="platform-privacy-note">
+            Registrada el {dateLabel(data.createdAt)} · Última actualización{' '}
+            {dateLabel(data.updatedAt)} · Idioma {data.locale}.
+          </p>
+        </>
+      ) : null}
     </div>
   );
 }

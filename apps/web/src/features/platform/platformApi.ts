@@ -1,5 +1,6 @@
 import {
   platformActivityResponseSchema,
+  platformOrganizationDetailResponseSchema,
   platformOrganizationsResponseSchema,
   platformOverviewResponseSchema,
   updatePlatformOrganizationStatusSchema,
@@ -26,6 +27,11 @@ export const platformApi = {
     const suffix = query.size ? `?${query.toString()}` : '';
     return platformOrganizationsResponseSchema.parse(
       await apiClient(`/platform/organizations${suffix}`, signal ? { signal } : {}),
+    );
+  },
+  async organizationDetail(organizationId: string, signal?: AbortSignal) {
+    return platformOrganizationDetailResponseSchema.parse(
+      await apiClient(`/platform/organizations/${organizationId}`, signal ? { signal } : {}),
     );
   },
   async updateOrganizationStatus(organizationId: string, input: UpdatePlatformOrganizationStatus) {

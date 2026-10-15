@@ -269,6 +269,40 @@ export const platformOrganizationsResponseSchema = z.object({
   data: z.array(platformOrganizationSchema),
   total: z.number().int().nonnegative(),
 });
+export const platformOrganizationDetailResponseSchema = platformOrganizationSchema.extend({
+  updatedAt: z.string().datetime(),
+  timezone: z.string(),
+  locale: z.string(),
+  currencyCode: z.string(),
+  memberships: z.object({
+    total: z.number().int().nonnegative(),
+    active: z.number().int().nonnegative(),
+    invited: z.number().int().nonnegative(),
+    suspended: z.number().int().nonnegative(),
+    byRole: z.array(z.object({ role: z.string(), count: z.number().int().nonnegative() })),
+  }),
+  locations: z.object({
+    total: z.number().int().nonnegative(),
+    data: z.array(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string(),
+        status: z.enum(['ACTIVE', 'SUSPENDED', 'ARCHIVED']),
+        city: z.string().nullable(),
+      }),
+    ),
+  }),
+  recentAdministrativeActivity: z.array(
+    z.object({
+      id: z.string().uuid(),
+      actorEmail: z.string().email(),
+      from: z.string().nullable(),
+      to: z.string().nullable(),
+      reason: z.string().nullable(),
+      createdAt: z.string().datetime(),
+    }),
+  ),
+});
 export const updatePlatformOrganizationStatusSchema = z.object({
   status: platformOrganizationStatusSchema,
   reason: z.string().trim().min(5).max(500),
@@ -287,6 +321,9 @@ export const platformActivityResponseSchema = z.object({
 export type PlatformOrganization = z.infer<typeof platformOrganizationSchema>;
 export type PlatformOverviewResponse = z.infer<typeof platformOverviewResponseSchema>;
 export type PlatformOrganizationsResponse = z.infer<typeof platformOrganizationsResponseSchema>;
+export type PlatformOrganizationDetailResponse = z.infer<
+  typeof platformOrganizationDetailResponseSchema
+>;
 export type UpdatePlatformOrganizationStatus = z.infer<
   typeof updatePlatformOrganizationStatusSchema
 >;

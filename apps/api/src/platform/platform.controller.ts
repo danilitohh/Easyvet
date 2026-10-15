@@ -38,6 +38,11 @@ export class PlatformController {
     return this.platform.organizations(query);
   }
 
+  @Get('organizations/:organizationId')
+  organizationDetail(@Param('organizationId', new ParseUUIDPipe()) organizationId: string) {
+    return this.platform.organizationDetail(organizationId);
+  }
+
   @Patch('organizations/:organizationId/status')
   changeOrganizationStatus(
     @Req() request: AuthenticatedRequest,

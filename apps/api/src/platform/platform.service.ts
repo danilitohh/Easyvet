@@ -105,6 +105,101 @@ export class PlatformService {
     };
   }
 
+  async organizationDetail(organizationId: string) {
+    const organization = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        timezone: true,
+        locale: true,
+        currencyCode: true,
+        _count: {
+          select: {
+            memberships: true,
+            clinicLocations: true,
+          },
+        },
+        clinicLocations: {
+          orderBy: { name: 'asc' },
+          take: 10,
+          select: { id: true, name: true, status: true, city: true },
+        },
+      },
+    });
+    if (!organization) throw new NotFoundException({ code: 'ORGANIZATION_NOT_FOUND' });
+
+    const [membershipGroups, recentEvents] = await Promise.all([
+      this.prisma.membership.groupBy({
+        by: ['status', 'role'],
+        where: { organizationId },
+        _count: { _all: true },
+      }),
+      this.prisma.platformAuditEvent.findMany({
+        where: { organizationId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          metadata: true,
+          createdAt: true,
+          actor: { select: { email: true } },
+        },
+      }),
+    ]);
+
+    const membershipCounts = { ACTIVE: 0, INVITED: 0, SUSPENDED: 0 };
+    const roleCounts = new Map<string, number>();
+    for (const group of membershipGroups) {
+      membershipCounts[group.status] += group._count._all;
+      roleCounts.set(group.role, (roleCounts.get(group.role) ?? 0) + group._count._all);
+    }
+
+    return {
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      status: organization.status,
+      createdAt: organization.createdAt.toISOString(),
+      updatedAt: organization.updatedAt.toISOString(),
+      memberCount: organization._count.memberships,
+      timezone: organization.timezone,
+      locale: organization.locale,
+      currencyCode: organization.currencyCode,
+      memberships: {
+        total: organization._count.memberships,
+        active: membershipCounts.ACTIVE,
+        invited: membershipCounts.INVITED,
+        suspended: membershipCounts.SUSPENDED,
+        byRole: [...roleCounts.entries()]
+          .sort(([first], [second]) => first.localeCompare(second))
+          .map(([role, count]) => ({ role, count })),
+      },
+      locations: {
+        total: organization._count.clinicLocations,
+        data: organization.clinicLocations,
+      },
+      recentAdministrativeActivity: recentEvents.map((event) => {
+        const metadata =
+          event.metadata && typeof event.metadata === 'object' && !Array.isArray(event.metadata)
+            ? event.metadata
+            : {};
+        return {
+          id: event.id,
+          actorEmail: event.actor.email,
+          from: typeof metadata.from === 'string' ? metadata.from : null,
+          to: typeof metadata.to === 'string' ? metadata.to : null,
+          reason: typeof metadata.reason === 'string' ? metadata.reason : null,
+          createdAt: event.createdAt.toISOString(),
+        };
+      }),
+    };
+  }
+
   async changeOrganizationStatus(
     organizationId: string,
     actorUserId: string,
