@@ -232,8 +232,9 @@ a {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
-select:focus-visible {
-  outline: 3px solid rgb(7 53 217 / 28%);
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-brand-strong);
   outline-offset: 3px;
 }
 .sr-only {
