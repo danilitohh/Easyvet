@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../config/env';
 import { LocalStorageAdapter } from './local-storage.adapter';
 import { S3CompatibleStorageAdapter } from './s3-storage.adapter';
+import { SupabaseStorageAdapter } from './supabase-storage.adapter';
 import { STORAGE_SERVICE } from './storage.service';
 
 // Storage selection is centralized so feature services never depend on a vendor implementation.
@@ -12,6 +13,14 @@ import { STORAGE_SERVICE } from './storage.service';
       provide: STORAGE_SERVICE,
       inject: [ConfigService],
       useFactory: (config: ConfigService<Environment, true>) => {
+        if (config.get('STORAGE_DRIVER', { infer: true }) === 'supabase') {
+          return new SupabaseStorageAdapter({
+            url: config.get('SUPABASE_URL', { infer: true })!,
+            serviceRoleKey: config.get('SUPABASE_SERVICE_ROLE_KEY', { infer: true })!,
+            bucket: config.get('SUPABASE_STORAGE_BUCKET', { infer: true }),
+          });
+        }
+
         if (config.get('STORAGE_DRIVER', { infer: true }) === 's3') {
           return new S3CompatibleStorageAdapter({
             endpoint: config.get('STORAGE_S3_ENDPOINT', { infer: true })!,

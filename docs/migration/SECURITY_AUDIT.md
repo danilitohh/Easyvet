@@ -215,6 +215,10 @@ La misma revisión encontró RLS desactivado en las tablas de aplicación; `publ
 
 Quedó sin confirmar el rol efectivo de Prisma en producción: `pg_stat_activity` no mostró una conexión identificable de la API y no se obtuvo acceso de lectura a los metadatos de variables de Vercel. El rol `postgres` observado en SQL Editor no demuestra cuál usa el runtime. Antes de diseñar políticas RLS para las tablas de negocio hay que verificar el usuario efectivo de la conexión Prisma; habilitar RLS sin esa información puede romper la API o crear una falsa sensación de aislamiento. La defensa debe combinar filtros obligatorios por organización, constraints/índices compuestos, políticas DB verificables cuando la arquitectura las soporte y pruebas de aislamiento entre tenants.
 
+### Archivos clínicos en Vercel
+
+La revisión de solo lectura de Vercel (2026-10-16) encontró que `STORAGE_DRIVER` no está configurado, por lo que la configuración anterior seleccionaba el directorio local `.easyvet-storage`. Vercel documenta que las funciones solo tienen filesystem de lectura y `/tmp` efímero; el proyecto Supabase no tenía buckets. La fase `20261016040000_supabase_private_document_storage` añade un bucket privado y un adaptador server-side con `SUPABASE_SERVICE_ROLE_KEY`, y selecciona Supabase Storage automáticamente en Vercel. La validación debe confirmarse tras el deployment con una carga/descarga autorizada de prueba; no se usaron ni borraron documentos reales.
+
 ## Riesgos específicos para el SaaS multi-tenant
 
 1. No existe scoping por organización en tablas, cachés, archivos, secuencias, settings, sesiones, jobs ni integraciones.
