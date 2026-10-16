@@ -4,17 +4,18 @@
 
 ## Resultado observado
 
+- Revalidado el 16 de octubre de 2026 mediante la conexión administrativa de Supabase y sus asesores; las consultas fueron solo `SELECT` y no devolvieron filas de negocio.
 - El esquema `public` tenía 49 tablas: 48 con RLS deshabilitado y `api_rate_limit_buckets` con RLS habilitado y forzado.
 - En la consulta de catálogo, los roles `anon` y `authenticated` no tenían permisos directos sobre las tablas públicas observadas. Tampoco tenían `USAGE` ni `CREATE` sobre el esquema `public`.
 - `service_role` tenía permisos de tabla sobre 48 tablas y `BYPASSRLS`; no tenía `SELECT` sobre `api_rate_limit_buckets` en la consulta revisada.
 - Los privilegios predeterminados de `supabase_admin` incluyen permisos amplios a `anon` y `authenticated` para tablas, secuencias y funciones creadas por ese rol. Hoy esos dos roles no tienen `USAGE` sobre `public`, por lo que el catálogo no muestra acceso efectivo al esquema. El usuario SQL `postgres` no es miembro de `supabase_admin` ni puede asumir ese rol; por tanto, no puede corregir directamente esos privilegios predeterminados.
 - `realtime.messages` tenía una política `SELECT` para `authenticated`, limitada a extensiones `broadcast` y al topic `easyvet:org:` más el `organization_id` del JWT.
-- El asesor de seguridad solo reportó RLS habilitado sin políticas en `api_rate_limit_buckets`. Esa tabla es operativa del servidor; no se encontró acceso directo de los roles cliente en el catálogo.
-- El asesor de rendimiento reportó 137 claves foráneas sin índice de cobertura. Es un listado de candidatos, no evidencia de que todas sean cuellos de botella; deben priorizarse con consultas y planes reales.
+- El asesor de seguridad reportó RLS habilitado sin políticas en `api_rate_limit_buckets`. Esa tabla es operativa del servidor; no se encontró acceso directo de los roles cliente en el catálogo, por lo que el estado observado es de denegación por defecto para esos roles.
+- El asesor de rendimiento reportó 137 claves foráneas sin índice de cobertura y 95 índices sin uso observado. Son candidatos para investigar, no evidencia de que todas sean cuellos de botella o índices descartables; deben priorizarse con estadísticas de uso, consultas y planes reales tras obtener tráfico representativo.
 
 ## Límite de lo que esta consulta prueba
 
-La consulta del editor SQL se ejecutó como `postgres`: `rolsuper = false`, `rolbypassrls = true`. Esto **no identifica el rol que utiliza el runtime de Vercel**. No se inspeccionaron cadenas de conexión ni secretos.
+La consulta SQL administrativa se ejecutó como `postgres`: `rolsuper = false`, `rolbypassrls = true`. Una inspección de `pg_stat_activity` no encontró conexiones de Prisma/API en ese instante; solo mostró servicios internos de Supabase y la conexión de gestión. Esto **no identifica ni descarta el rol que utiliza el runtime de Vercel cuando hay tráfico**. No se inspeccionaron cadenas de conexión ni secretos.
 
 El panel de superadmin incluye la ruta autenticada `GET /api/platform/database-posture`, que devuelve únicamente el nombre del rol runtime y los booleanos de `BYPASSRLS` y superusuario. La tarjeta aparece en `/plataforma`, bajo “Seguridad de infraestructura”. La sesión de navegador consultada durante esta auditoría no estaba autenticada, así que no se pudo leer ese dato.
 
@@ -24,7 +25,7 @@ No habilitar RLS en las tablas restantes hasta confirmar el rol runtime y verifi
 
 Revisar además la ruta de creación futura de objetos. Los privilegios predeterminados permisivos pertenecen a `supabase_admin`; el `postgres` observado no puede alterarlos. No convertirlos en un cambio de seguridad automatizado hasta verificar con Supabase el mecanismo soportado para administrarlos y confirmar qué rol ejecuta cada tipo de migración.
 
-No crear los 137 índices en bloque. Revisar primero estadísticas de uso, consultas lentas y `EXPLAIN` de los recorridos más usados; aplicar únicamente índices que atiendan filtros/joins observados y verificar que no dupliquen índices compuestos existentes.
+No crear los 137 índices ni eliminar los 95 índices reportados sin uso en bloque. Revisar primero estadísticas de uso durante una ventana representativa, consultas lentas y `EXPLAIN` de los recorridos más usados; aplicar únicamente índices que atiendan filtros/joins observados y verificar que no dupliquen índices compuestos existentes. La ausencia de uso puede deberse a poco tráfico o a estadísticas reiniciadas.
 
 ## Nota de consulta
 
