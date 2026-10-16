@@ -4,7 +4,7 @@
 
 ## Transporte y cabeceras
 
-La respuesta `GET /` devolvió `200` y las cabeceras `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, CSP con `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy` restrictiva. Vercel aplica HSTS por defecto en `.vercel.app`; por eso no se agregó una segunda regla a `vercel.json`.
+La respuesta `GET /` devolvió `200` y las cabeceras `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, CSP con `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy` restrictiva. Vercel aplica HSTS por defecto en `.vercel.app`; además, la API fija estas cabeceras desde Nest para no depender únicamente del proxy cuando se ejecuta fuera de Vercel.
 
 `GET /api/v1/health` devolvió `200 {"status":"ok"}`, `Cache-Control: no-store` y los mismos headers de seguridad. La API reflejó el origen permitido `https://easyvet.vercel.app`. Al probar con `Origin: https://attacker.invalid`, la respuesta siguió exponiendo únicamente `https://easyvet.vercel.app`, no el origen atacante; por política de mismo origen, un navegador no podrá leer esa respuesta desde el origen no permitido.
 
