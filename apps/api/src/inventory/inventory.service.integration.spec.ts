@@ -175,6 +175,35 @@ describeDatabase('inventory service', () => {
     ).toBe(false);
   });
 
+  it('filters low-stock rows and returns matching totals from the paged database aggregate', async () => {
+    const lowItem = await createItem({ minimumStock: '1' });
+    const stockedItem = await createItem({ minimumStock: '1' });
+    const noMinimumItem = await createItem();
+    await recordMovement(movement(stockedItem.id, locationA, 'RECEIPT', '2'));
+    await recordMovement(movement(stockedItem.id, locationB, 'RECEIPT', '2'));
+
+    const lowStock = await inventory.listStock(organizationId, {
+      page: 1,
+      pageSize: 20,
+      status: 'ACTIVE',
+      lowStock: true,
+    });
+    const notLowStock = await inventory.listStock(organizationId, {
+      page: 1,
+      pageSize: 20,
+      status: 'ACTIVE',
+      lowStock: false,
+    });
+
+    expect(lowStock.pagination.total).toBe(1);
+    expect(lowStock.data.map((row) => row.item.id)).toEqual([lowItem.id]);
+    expect(lowStock.data[0]).toMatchObject({ lowStock: true, lowStockLocations: 2, stock: '0' });
+    expect(notLowStock.pagination.total).toBe(2);
+    expect(notLowStock.data.map((row) => row.item.id)).toEqual(
+      expect.arrayContaining([stockedItem.id, noMinimumItem.id]),
+    );
+  });
+
   it('creates lots atomically with receipt and classifies civil expiry in the organization timezone', async () => {
     const item = await createItem({ lotTracking: true });
     const todayParts = new Intl.DateTimeFormat('en', {

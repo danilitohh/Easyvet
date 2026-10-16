@@ -2859,16 +2859,17 @@ export const createInventoryTransferRequestSchema = z
 
 export const inventoryStockQuerySchema = z
   .object({
-    page: z.coerce.number().int().min(1).default(1),
+    page: z.coerce.number().int().min(1).max(10_000).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
     clinicLocationId: z.string().uuid().optional(),
     itemType: inventoryItemTypeSchema.optional(),
+    status: z.enum(['ACTIVE', 'ARCHIVED', 'ALL']).optional(),
     lowStock: z
       .union([z.boolean(), z.enum(['true', 'false']).transform((value) => value === 'true')])
       .optional(),
     includeArchived: z
       .union([z.boolean(), z.enum(['true', 'false']).transform((value) => value === 'true')])
-      .default(false),
+      .optional(),
   })
   .strict();
 export const inventoryStockSummarySchema = z.object({

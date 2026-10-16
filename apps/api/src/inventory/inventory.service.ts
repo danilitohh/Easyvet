@@ -37,6 +37,12 @@ import { PrismaService } from '../infrastructure/database/prisma.service';
 
 type Transaction = Prisma.TransactionClient;
 type InventoryDatabase = PrismaService | Transaction;
+type StockFilterPageRow = {
+  inventoryItemId: string | null;
+  stock: Prisma.Decimal | null;
+  lowStockLocations: number | null;
+  total: bigint;
+};
 
 // Catalog responses never expose a Prisma Decimal instance or an unrelated tenant relation.
 const itemSelect = {
@@ -397,24 +403,39 @@ export class InventoryService {
     if (query.clinicLocationId) {
       await this.requireLocationForRead(organizationId, query.clinicLocationId);
     }
+    if (query.lowStock !== undefined) {
+      return this.listStockByLowStock(organizationId, query);
+    }
     const where: Prisma.InventoryItemWhereInput = {
       organizationId,
-      ...(query.includeArchived ? {} : { status: InventoryItemStatus.ACTIVE }),
+      ...(query.status
+        ? query.status === 'ALL'
+          ? {}
+          : { status: query.status }
+        : query.includeArchived
+          ? {}
+          : { status: InventoryItemStatus.ACTIVE }),
       ...(query.itemType ? { itemType: query.itemType } : {}),
     };
-    const items = await this.prisma.inventoryItem.findMany({
-      where,
-      select: itemSelect,
-      orderBy: [{ name: 'asc' }, { id: 'asc' }],
-    });
+    // Every catalog page fetches only the visible item records; the aggregate follows that page.
+    const [items, catalogTotal] = await Promise.all([
+      this.prisma.inventoryItem.findMany({
+        where,
+        select: itemSelect,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.inventoryItem.count({ where }),
+    ]);
     if (items.length === 0) {
       return {
         data: [],
         pagination: {
           page: query.page,
           pageSize: query.pageSize,
-          total: 0,
-          totalPages: 0,
+          total: catalogTotal,
+          totalPages: catalogTotal === 0 ? 0 : Math.ceil(catalogTotal / query.pageSize),
         },
       };
     }
@@ -436,7 +457,7 @@ export class InventoryService {
     const activeLocations = locations.filter(
       (location) => location.status === ClinicLocationStatus.ACTIVE,
     );
-    let rows = items.map((item) => {
+    const rows = items.map((item) => {
       const stock = locations.reduce(
         (sum, location) => sum.plus(balances.get(balanceKey(item.id, location.id)) ?? ZERO),
         ZERO,
@@ -456,13 +477,122 @@ export class InventoryService {
         clinicLocationId: query.clinicLocationId ?? null,
       };
     });
-    if (query.lowStock !== undefined) {
-      rows = rows.filter((row) => row.lowStock === query.lowStock);
-    }
-    const total = rows.length;
-    const offset = (query.page - 1) * query.pageSize;
     return {
-      data: rows.slice(offset, offset + query.pageSize),
+      data: rows,
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total: catalogTotal,
+        totalPages: catalogTotal === 0 ? 0 : Math.ceil(catalogTotal / query.pageSize),
+      },
+    };
+  }
+
+  // The stock-level filter aggregates in PostgreSQL and pages matching item IDs before loading
+  // catalog details, so neither movement rows nor the full item catalog cross into Node memory.
+  private async listStockByLowStock(
+    organizationId: string,
+    query: InventoryStockQuery,
+  ): Promise<InventoryStockListResponse> {
+    const itemStatusFilter =
+      query.status === 'ALL' || (query.status === undefined && query.includeArchived)
+        ? Prisma.empty
+        : Prisma.sql`AND status::text = ${query.status ?? InventoryItemStatus.ACTIVE}`;
+    const itemTypeFilter = query.itemType
+      ? Prisma.sql`AND item_type::text = ${query.itemType}`
+      : Prisma.empty;
+    const locationFilter = query.clinicLocationId
+      ? Prisma.sql`AND id = ${query.clinicLocationId}::uuid`
+      : Prisma.empty;
+    const movementLocationFilter = query.clinicLocationId
+      ? Prisma.sql`AND clinic_location_id = ${query.clinicLocationId}::uuid`
+      : Prisma.empty;
+    const offset = (query.page - 1) * query.pageSize;
+    const pageRows = await this.prisma.$queryRaw<StockFilterPageRow[]>(Prisma.sql`
+      WITH item_scope AS (
+        SELECT id, name, minimum_stock
+        FROM inventory_items
+        WHERE organization_id = ${organizationId}::uuid
+          ${itemStatusFilter}
+          ${itemTypeFilter}
+      ),
+      location_scope AS (
+        SELECT id, status
+        FROM clinic_locations
+        WHERE organization_id = ${organizationId}::uuid
+          ${locationFilter}
+      ),
+      movement_balances AS (
+        SELECT inventory_item_id, clinic_location_id, SUM(quantity_delta) AS stock
+        FROM inventory_movements
+        WHERE organization_id = ${organizationId}::uuid
+          AND inventory_item_id IN (SELECT id FROM item_scope)
+          ${movementLocationFilter}
+        GROUP BY inventory_item_id, clinic_location_id
+      ),
+      stock_by_item AS (
+        SELECT item.id,
+               COALESCE(SUM(balance.stock), 0) AS stock,
+               COUNT(location.id) FILTER (
+                 WHERE location.status::text = 'ACTIVE'
+                   AND item.minimum_stock IS NOT NULL
+                   AND COALESCE(balance.stock, 0) <= item.minimum_stock
+               )::int AS low_stock_locations
+        FROM item_scope AS item
+        LEFT JOIN location_scope AS location ON TRUE
+        LEFT JOIN movement_balances AS balance
+          ON balance.inventory_item_id = item.id
+          AND balance.clinic_location_id = location.id
+        GROUP BY item.id, item.minimum_stock
+      ),
+      matched AS (
+        SELECT item.id, item.name, stock.stock, stock.low_stock_locations
+        FROM item_scope AS item
+        JOIN stock_by_item AS stock ON stock.id = item.id
+        WHERE (stock.low_stock_locations > 0) = ${query.lowStock}
+      )
+      SELECT page.id AS "inventoryItemId",
+             page.stock AS stock,
+             page.low_stock_locations AS "lowStockLocations",
+             totals.total AS total
+      FROM (SELECT COUNT(*) AS total FROM matched) AS totals
+      LEFT JOIN LATERAL (
+        SELECT id, name, stock, low_stock_locations
+        FROM matched
+        ORDER BY name ASC, id ASC
+        LIMIT ${query.pageSize} OFFSET ${offset}
+      ) AS page ON TRUE
+    `);
+    const total = Number(pageRows[0]?.total ?? 0);
+    const selectedRows = pageRows.filter(
+      (row): row is StockFilterPageRow & { inventoryItemId: string } =>
+        row.inventoryItemId !== null,
+    );
+    const items = selectedRows.length
+      ? await this.prisma.inventoryItem.findMany({
+          where: {
+            organizationId,
+            id: { in: selectedRows.map((row) => row.inventoryItemId) },
+          },
+          select: itemSelect,
+        })
+      : [];
+    const itemsById = new Map(items.map((item) => [item.id, item]));
+
+    return {
+      data: selectedRows.flatMap((row) => {
+        const item = itemsById.get(row.inventoryItemId);
+        if (!item) return [];
+        return [
+          {
+            item: toInventoryItem(item),
+            stock: row.stock?.toString() ?? '0',
+            lowStock: query.lowStock!,
+            lowStockLocations: row.lowStockLocations ?? 0,
+            clinicLocationId: query.clinicLocationId ?? null,
+          },
+        ];
+      }),
       pagination: {
         page: query.page,
         pageSize: query.pageSize,

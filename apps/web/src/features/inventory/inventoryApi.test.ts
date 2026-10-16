@@ -17,12 +17,13 @@ describe('inventory API boundary', () => {
     const result = await inventoryApi.stock({
       page: 1,
       pageSize: 20,
+      status: 'ACTIVE',
       lowStock: false,
       includeArchived: false,
     });
 
     expect(mocks.apiClient).toHaveBeenCalledWith(
-      '/inventory/stock?page=1&pageSize=20&lowStock=false&includeArchived=false',
+      '/inventory/stock?page=1&pageSize=20&status=ACTIVE&lowStock=false&includeArchived=false',
       {},
     );
     expect(result.data).toEqual([]);

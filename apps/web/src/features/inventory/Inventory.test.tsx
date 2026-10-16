@@ -159,7 +159,7 @@ const itemDetail: InventoryItemDetail = {
 
 const stockList: InventoryStockListResponse = {
   data: [{ item, stock: '2.500001', lowStock: true, lowStockLocations: 2, clinicLocationId: null }],
-  pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
+  pagination: { page: 1, pageSize: 20, total: 41, totalPages: 3 },
 };
 
 // Each test starts from tenant-scoped data and explicit permission state.
@@ -244,7 +244,7 @@ describe('inventory frontend', () => {
     expect(
       screen.getByText(/Todas las sedes · el stock total se suma entre sedes/),
     ).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('Artículos activos').parentElement).toHaveTextContent('3');
     expect(screen.getAllByText('Bajo mínimo').length).toBeGreaterThan(1);
     expect(screen.getByRole('link', { name: /Vacuna demo/ })).toHaveAttribute(
       'href',
@@ -260,6 +260,21 @@ describe('inventory frontend', () => {
     );
     fireEvent.change(screen.getByLabelText('Sede'), { target: { value: ids.locationA } });
     expect(mocks.resourceKeys.some((key) => key.includes(ids.locationA))).toBe(true);
+  });
+
+  it('requests the next inventory page and resets pagination when filters change', () => {
+    render(
+      <MemoryRouter initialEntries={['/inventario']}>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    expect(mocks.resourceKeys.some((key) => key.includes('"page":2'))).toBe(true);
+
+    fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'SUPPLY' } });
+    expect(mocks.resourceKeys.some((key) => key.includes('"page":1') && key.includes('SUPPLY')))
+      .toBe(true);
   });
 
   it('creates item metadata without creating stock or movements', async () => {

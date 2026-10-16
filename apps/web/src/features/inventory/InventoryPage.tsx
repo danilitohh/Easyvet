@@ -11,7 +11,7 @@ import { LoadingState } from '../../components/ui/LoadingState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Select } from '../../components/ui/Select';
 import { agendaApi } from '../agenda/agendaApi';
-import { ResourceError } from '../shared/ResourceFeedback';
+import { PaginationControls, ResourceError } from '../shared/ResourceFeedback';
 import { useActiveOrganizationId } from '../shared/hooks';
 import { useInventoryResource } from './useInventoryResources';
 import { inventoryApi, INVENTORY_MUTATED_EVENT } from './inventoryApi';
@@ -29,12 +29,14 @@ export function InventoryPage() {
   const [itemType, setItemType] = useState<InventoryItemType | ''>('');
   const [lowStock, setLowStock] = useState<'' | 'true' | 'false'>('');
   const [status, setStatus] = useState<InventoryItemStatus | 'ALL'>('ACTIVE');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     setLocationId('');
     setItemType('');
     setLowStock('');
     setStatus('ACTIVE');
+    setPage(1);
   }, [organizationId]);
 
   const locationResource = useInventoryResource('locations', canRead, (signal) =>
@@ -42,14 +44,14 @@ export function InventoryPage() {
   );
   const query = useMemo(
     () => ({
-      page: 1,
-      pageSize: 100,
+      page,
+      pageSize: 20,
       ...(locationId ? { clinicLocationId: locationId } : {}),
       ...(itemType ? { itemType } : {}),
       ...(lowStock ? { lowStock: lowStock === 'true' } : {}),
-      includeArchived: status !== 'ACTIVE',
+      status,
     }),
-    [itemType, locationId, lowStock, status],
+    [itemType, locationId, lowStock, page, status],
   );
   const stockResource = useInventoryResource(`stock:${JSON.stringify(query)}`, canRead, (signal) =>
     inventoryApi.stock(query, signal),
@@ -69,9 +71,7 @@ export function InventoryPage() {
     return () => window.removeEventListener(INVENTORY_MUTATED_EVENT, reload);
   }, [reloadStock, reloadSummary]);
 
-  const items = (stockResource.data?.data ?? []).filter((row) =>
-    status === 'ALL' ? true : row.item.status === status,
-  );
+  const items = stockResource.data?.data ?? [];
   const isLoading = stockResource.loading || locationResource.loading;
 
   return (
@@ -137,7 +137,13 @@ export function InventoryPage() {
           <div className="inventory-filter-grid" aria-label="Filtros de inventario">
             <label>
               <span>Sede</span>
-              <Select value={locationId} onChange={(event) => setLocationId(event.target.value)}>
+              <Select
+                value={locationId}
+                onChange={(event) => {
+                  setLocationId(event.target.value);
+                  setPage(1);
+                }}
+              >
                 <option value="">Todas las sedes</option>
                 {locationResource.data
                   ?.filter((location) => location.status === 'ACTIVE')
@@ -152,7 +158,10 @@ export function InventoryPage() {
               <span>Tipo</span>
               <Select
                 value={itemType}
-                onChange={(event) => setItemType(event.target.value as InventoryItemType | '')}
+                onChange={(event) => {
+                  setItemType(event.target.value as InventoryItemType | '');
+                  setPage(1);
+                }}
               >
                 <option value="">Todos los tipos</option>
                 {ITEM_TYPES.map((type) => (
@@ -166,7 +175,10 @@ export function InventoryPage() {
               <span>Estado de stock</span>
               <Select
                 value={lowStock}
-                onChange={(event) => setLowStock(event.target.value as typeof lowStock)}
+                onChange={(event) => {
+                  setLowStock(event.target.value as typeof lowStock);
+                  setPage(1);
+                }}
               >
                 <option value="">Cualquier nivel</option>
                 <option value="true">Bajo mínimo</option>
@@ -177,7 +189,10 @@ export function InventoryPage() {
               <span>Catálogo</span>
               <Select
                 value={status}
-                onChange={(event) => setStatus(event.target.value as InventoryItemStatus | 'ALL')}
+                onChange={(event) => {
+                  setStatus(event.target.value as InventoryItemStatus | 'ALL');
+                  setPage(1);
+                }}
               >
                 <option value="ACTIVE">Activos</option>
                 <option value="ARCHIVED">Archivados</option>
@@ -299,6 +314,11 @@ export function InventoryPage() {
             </div>
           </>
         ) : null}
+        <PaginationControls
+          page={stockResource.data?.pagination.page ?? page}
+          totalPages={stockResource.data?.pagination.totalPages ?? 0}
+          onChange={setPage}
+        />
       </Card>
       <p className="inventory-footnote">
         El mínimo se compara por sede usando el mismo umbral del artículo. El indicador no genera

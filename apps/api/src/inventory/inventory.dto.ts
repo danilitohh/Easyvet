@@ -258,6 +258,10 @@ export class InventoryStockQueryDto {
   itemType?: InventoryItemType;
 
   @IsOptional()
+  @IsIn(['ACTIVE', 'ARCHIVED', 'ALL'])
+  status?: InventoryItemStatus | 'ALL';
+
+  @IsOptional()
   @Transform(({ value }) => parseQueryBoolean(value))
   @IsBoolean()
   lowStock?: boolean;
