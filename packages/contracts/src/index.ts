@@ -3194,9 +3194,8 @@ export const cashSessionSchema = z.object({
   notes: z.string().nullable(),
 });
 
-export const cashSessionDetailSchema = cashSessionSchema.extend({
-  movements: z.array(cashMovementSchema),
-});
+// Session details contain the bounded drawer summary; ledger history is read through its paginated endpoint.
+export const cashSessionDetailSchema = cashSessionSchema;
 export const cashSessionListQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).default(1),

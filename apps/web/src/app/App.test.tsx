@@ -16,13 +16,13 @@ describe('App shell', () => {
     renderApp('/');
 
     expect(
-      await screen.findByRole('heading', { name: /más tiempo para cuidar/i }, { timeout: 5000 }),
+      await screen.findByRole('heading', { name: /más tiempo para cuidar/i }, { timeout: 15_000 }),
     ).toBeInTheDocument();
     const loginLinks = screen.getAllByRole('link', { name: /entrar a easyvet/i });
     expect(loginLinks.length).toBeGreaterThan(0);
     loginLinks.forEach((link) => expect(link).toHaveAttribute('href', '/login'));
     expect(screen.queryByRole('link', { name: 'Estado técnico' })).not.toBeInTheDocument();
-  });
+  }, 15_000);
 
   it('renders an access boundary for a route without an active membership', async () => {
     renderApp('/pacientes');

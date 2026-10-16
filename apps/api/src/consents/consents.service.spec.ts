@@ -45,12 +45,20 @@ describe('ConsentsService pagination', () => {
       clinicalProcedure: null,
       signatureRequests: [],
     };
-    const count = jest.fn().mockResolvedValue(11);
-    const findMany = jest.fn().mockResolvedValue([row]);
+    const count = jest.fn<(input: unknown) => Promise<number>>().mockResolvedValue(11);
+    const findMany = jest
+      .fn<(input: unknown) => Promise<(typeof row)[]>>()
+      .mockResolvedValue([row]);
     const prisma = {
-      patient: { findFirst: jest.fn().mockResolvedValue({ id: patientId }) },
+      patient: {
+        findFirst: jest
+          .fn<(input: unknown) => Promise<{ id: string }>>()
+          .mockResolvedValue({ id: patientId }),
+      },
       consent: { count, findMany },
-      clinicalDocument: { findFirst: jest.fn().mockResolvedValue(null) },
+      clinicalDocument: {
+        findFirst: jest.fn<(input: unknown) => Promise<null>>().mockResolvedValue(null),
+      },
       $transaction: jest.fn((operations: readonly Promise<unknown>[]) => Promise.all(operations)),
     };
     const service = new ConsentsService(prisma as never, {} as never, {} as never);

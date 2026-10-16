@@ -63,6 +63,17 @@ export function CashPage() {
     [selectedId],
   );
   const detail = useCommercialResource(detailLoader, Boolean(selectedId));
+  const movementsLoader = useCallback(
+    (signal: AbortSignal) =>
+      selectedId
+        ? commercialApi.listCashMovements(selectedId, { page: 1, pageSize: 100 }, signal)
+        : Promise.resolve({
+            data: [],
+            pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
+          }),
+    [selectedId],
+  );
+  const movements = useCommercialResource(movementsLoader, Boolean(selectedId));
   const historyLoader = useCallback(
     (signal: AbortSignal) =>
       locationId
@@ -111,6 +122,7 @@ export function CashPage() {
     current.reload();
     history.reload();
     detail.reload();
+    movements.reload();
   }
 
   async function perform(action: (signal: AbortSignal) => Promise<unknown>, success: () => void) {
@@ -333,14 +345,16 @@ export function CashPage() {
                 </div>
               </div>
               <CommercialState
-                loading={detail.loading}
-                error={detail.error}
-                empty={!detail.loading && !detail.error && session.movements.length === 0}
-                retry={detail.reload}
+                loading={movements.loading}
+                error={movements.error}
+                empty={
+                  !movements.loading && !movements.error && (movements.data?.data.length ?? 0) === 0
+                }
+                retry={movements.reload}
               />
-              {session.movements.length ? (
+              {movements.data?.data.length ? (
                 <div className="commercial-list">
-                  {session.movements.map((movement) => (
+                  {movements.data.data.map((movement) => (
                     <div className="commercial-row commercial-row--static" key={movement.id}>
                       <span className="commercial-row__main">
                         <strong>{MOVEMENT_LABEL[movement.movementType]}</strong>

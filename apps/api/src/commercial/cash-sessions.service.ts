@@ -116,22 +116,15 @@ export class CashSessionsService {
     return toCashSession(session, totals.get(session.id) ?? ZERO);
   }
 
-  // Details pair the current/final expected balance with ordered append-only ledger evidence.
+  // Details return only the current/final balance summary; ledger history is paginated separately.
   async findOne(organizationId: string, sessionId: string): Promise<CashSessionDetail> {
     const session = await this.prisma.cashSession.findFirst({
       where: { id: sessionId, organizationId },
       include: cashSessionInclude,
     });
     if (!session) throw notFound();
-    const [totals, movements] = await Promise.all([
-      this.ledgerTotals(organizationId, [sessionId]),
-      this.prisma.cashMovement.findMany({
-        where: { organizationId, cashSessionId: sessionId },
-        select: cashMovementSelect,
-        orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
-      }),
-    ]);
-    return toCashSessionDetail(session, totals.get(sessionId) ?? ZERO, movements);
+    const totals = await this.ledgerTotals(organizationId, [sessionId]);
+    return toCashSessionDetail(session, totals.get(sessionId) ?? ZERO);
   }
 
   // Ledger history is separately paginated for cash desks with many movements.

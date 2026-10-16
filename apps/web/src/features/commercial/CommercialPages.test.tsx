@@ -154,7 +154,6 @@ const session: CashSessionDetail = {
   countedCashAmount: null,
   differenceAmount: null,
   notes: null,
-  movements: [],
 };
 
 function renderAt(path: string, element: ReactNode) {
@@ -231,6 +230,7 @@ describe('commercial screens', () => {
       resource({ currencyCode: 'COP' }),
       resource(session),
       resource(session),
+      resource(page([])),
       resource(page([session])),
     ];
     renderAt('/caja', <CashPage />);

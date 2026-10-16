@@ -212,7 +212,6 @@ export function toCashMovement(movement: CashMovementRecord): CashMovement {
 export function toCashSessionDetail(
   session: CashSessionRecord,
   ledgerTotal: Prisma.Decimal,
-  movements: CashMovementRecord[],
 ): CashSessionDetail {
-  return { ...toCashSession(session, ledgerTotal), movements: movements.map(toCashMovement) };
+  return toCashSession(session, ledgerTotal);
 }
