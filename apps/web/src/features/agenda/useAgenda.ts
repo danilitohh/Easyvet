@@ -23,7 +23,10 @@ import type { AgendaFilters, AgendaView } from './agendaUtils';
 import { fallbackRangeForView } from './agendaUtils';
 import { useRealtimeRevision } from '../../contexts/useRealtime';
 
-const EMPTY_APPOINTMENTS: AppointmentListResponse = { data: [] };
+const EMPTY_APPOINTMENTS: AppointmentListResponse = {
+  data: [],
+  pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
+};
 const EMPTY_PATIENTS: PatientsListResponse = {
   data: [],
   pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
@@ -118,23 +121,18 @@ const EMPTY_MEMBERSHIPS: PaginatedMembershipResponse = {
 export function useAgendaReferenceData(): LoadState<ReferenceData> {
   const organizationId = useActiveOrganizationId();
   const enabled = appConfig.dataMode === 'mock' || Boolean(organizationId);
-  const loader = useCallback(
-    async (signal: AbortSignal): Promise<ReferenceData> => {
-      const locations = await agendaApi.listLocations(signal);
-      return { locations };
-    },
-    [],
-  );
-  return useAbortableResource(
-    loader,
-    enabled,
-    [organizationId],
-    EMPTY_REFERENCE_DATA,
-  );
+  const loader = useCallback(async (signal: AbortSignal): Promise<ReferenceData> => {
+    const locations = await agendaApi.listLocations(signal);
+    return { locations };
+  }, []);
+  return useAbortableResource(loader, enabled, [organizationId], EMPTY_REFERENCE_DATA);
 }
 
 // Staff lookups stay tenant-scoped and fetch only one searchable page at a time.
-export function useAgendaMemberships(search: string, page = 1): LoadState<PaginatedMembershipResponse> {
+export function useAgendaMemberships(
+  search: string,
+  page = 1,
+): LoadState<PaginatedMembershipResponse> {
   const organizationId = useActiveOrganizationId();
   const canReadMemberships = useCan(PERMISSION.MEMBERSHIPS_READ);
   const [debouncedSearch, setDebouncedSearch] = useState(search.trim());

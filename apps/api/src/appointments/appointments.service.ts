@@ -178,19 +178,34 @@ export class AppointmentsService {
     const from = parseInstant(query.from);
     const to = parseInstant(query.to);
     this.assertRange(from, to);
-    return this.prisma.appointment.findMany({
-      where: {
-        organizationId,
-        startsAt: { lt: to.toJSDate() },
-        endsAt: { gt: from.toJSDate() },
-        ...(query.clinicLocationId ? { clinicLocationId: query.clinicLocationId } : {}),
-        ...(query.assignedMembershipId ? { assignedMembershipId: query.assignedMembershipId } : {}),
-        ...(query.patientId ? { patientId: query.patientId } : {}),
-        ...(query.status ? { status: query.status } : {}),
+    const where: Prisma.AppointmentWhereInput = {
+      organizationId,
+      startsAt: { lt: to.toJSDate() },
+      endsAt: { gt: from.toJSDate() },
+      ...(query.clinicLocationId ? { clinicLocationId: query.clinicLocationId } : {}),
+      ...(query.assignedMembershipId ? { assignedMembershipId: query.assignedMembershipId } : {}),
+      ...(query.patientId ? { patientId: query.patientId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.appointment.findMany({
+        where,
+        orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        select: appointmentSelect,
+      }),
+      this.prisma.appointment.count({ where }),
+    ]);
+    return {
+      data,
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: Math.ceil(total / query.pageSize),
       },
-      orderBy: { startsAt: 'asc' },
-      select: appointmentSelect,
-    });
+    };
   }
 
   async findById(organizationId: string, appointmentId: string): Promise<AppointmentRecord> {

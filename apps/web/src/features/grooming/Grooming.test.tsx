@@ -195,7 +195,10 @@ beforeEach(() => {
     reload: vi.fn(),
   };
   mocks.appointmentsResource = {
-    data: { data: [appointment] },
+    data: {
+      data: [appointment],
+      pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
+    },
     loading: false,
     error: null,
     reload: vi.fn(),

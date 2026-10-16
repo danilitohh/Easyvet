@@ -156,6 +156,16 @@ export const groomingApi = {
 
     // Preserve an older or cancelled linked appointment so a draft can explicitly unlink it.
     const current = await agendaApi.findAppointment(currentAppointmentId, signal);
-    return appointmentListResponseSchema.parse({ data: [...upcoming.data, current] });
+    return appointmentListResponseSchema.parse({
+      data: [...upcoming.data, current],
+      pagination: {
+        ...upcoming.pagination,
+        total: upcoming.pagination.total + 1,
+        totalPages: Math.max(
+          1,
+          Math.ceil((upcoming.pagination.total + 1) / upcoming.pagination.pageSize),
+        ),
+      },
+    });
   },
 };

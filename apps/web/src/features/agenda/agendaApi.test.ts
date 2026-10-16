@@ -35,7 +35,7 @@ describe('agendaApi', () => {
   });
 
   it('sends all supported appointment filters and the requested range', async () => {
-    const response = { data: [] };
+    const response = { data: [], pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 } };
     apiClientMock.mockResolvedValue(response);
     const signal = new AbortController().signal;
     await agendaApi.listAppointments({
@@ -54,7 +54,10 @@ describe('agendaApi', () => {
   });
 
   it('does not send unsupported empty filters', async () => {
-    apiClientMock.mockResolvedValue({ data: [] });
+    apiClientMock.mockResolvedValue({
+      data: [],
+      pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
+    });
     await agendaApi.listAppointments({
       from: '2026-09-21T05:00:00Z',
       to: '2026-09-22T05:00:00Z',

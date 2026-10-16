@@ -2131,6 +2131,7 @@ export const appointmentResponseSchema = z.object({
 
 export const appointmentListResponseSchema = z.object({
   data: z.array(appointmentResponseSchema),
+  pagination: paginationSchema,
 });
 
 export const createAppointmentRequestSchema = z
@@ -2169,6 +2170,8 @@ export const updateAppointmentRequestSchema = z
 
 export const appointmentListQuerySchema = z
   .object({
+    page: z.coerce.number().int().min(1).max(10_000).optional(),
+    pageSize: z.coerce.number().int().min(1).max(100).optional(),
     from: z.string().datetime({ offset: true }),
     to: z.string().datetime({ offset: true }),
     clinicLocationId: z.string().uuid().optional(),

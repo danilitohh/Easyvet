@@ -83,6 +83,20 @@ export class CancelAppointmentDto {
 }
 
 export class AppointmentListQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize = 100;
+
   @IsISO8601(zonedTimestamp)
   from!: string;
 

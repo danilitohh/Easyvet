@@ -59,7 +59,10 @@ const cancelledAppointment = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.listAppointments.mockResolvedValue({ data: [] });
+  mocks.listAppointments.mockResolvedValue({
+    data: [],
+    pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
+  });
   mocks.findAppointment.mockResolvedValue(cancelledAppointment);
 });
 

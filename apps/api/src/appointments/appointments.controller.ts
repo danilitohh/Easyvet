@@ -83,8 +83,11 @@ export class AppointmentsController {
     @CurrentTenant() tenant: TenantContext,
     @Query() query: AppointmentListQueryDto,
   ): Promise<AppointmentListResponse> {
-    const appointments = await this.appointments.list(tenant.organizationId, query);
-    return { data: appointments.map((appointment) => toAppointmentResponse(appointment as never)) };
+    const result = await this.appointments.list(tenant.organizationId, query);
+    return {
+      data: result.data.map((appointment) => toAppointmentResponse(appointment as never)),
+      pagination: result.pagination,
+    };
   }
 
   @Get('appointments/:appointmentId')
