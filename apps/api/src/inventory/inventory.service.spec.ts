@@ -9,6 +9,50 @@ import type { PrismaService } from '../infrastructure/database/prisma.service';
 import { InventoryService } from './inventory.service';
 
 describe('InventoryService stock pagination', () => {
+  it('loads only the requested batch page and preserves the item total', async () => {
+    const organizationId = '40000000-0000-4000-8000-000000000021';
+    const itemId = '40000000-0000-4000-8000-000000000022';
+    const batchFindMany = jest.fn<(...args: unknown[]) => Promise<unknown[]>>().mockResolvedValue([
+      {
+        id: '40000000-0000-4000-8000-000000000023',
+        organizationId,
+        inventoryItemId: itemId,
+        lotNumber: 'LOT-2',
+        expiryOn: new Date('2035-02-01T00:00:00.000Z'),
+        notes: null,
+        createdAt: new Date('2035-01-02T00:00:00.000Z'),
+      },
+    ]);
+    const batchCount = jest.fn<(args: unknown) => Promise<number>>().mockResolvedValue(45);
+    const prisma = {
+      inventoryBatch: { findMany: batchFindMany, count: batchCount },
+      inventoryItem: {
+        findFirst: jest
+          .fn<(...args: unknown[]) => Promise<unknown>>()
+          .mockResolvedValue({ id: itemId, organizationId }),
+      },
+      $transaction: jest.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
+    } as unknown as PrismaService;
+
+    const result = await new InventoryService(prisma).listBatches(organizationId, itemId, {
+      page: 2,
+      pageSize: 20,
+    });
+
+    expect(batchFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 20,
+        take: 20,
+        orderBy: [{ expiryOn: 'asc' }, { lotNumber: 'asc' }, { id: 'asc' }],
+      }),
+    );
+    expect(batchCount).toHaveBeenCalledWith({ where: { organizationId, inventoryItemId: itemId } });
+    expect(result).toMatchObject({
+      data: [{ id: '40000000-0000-4000-8000-000000000023' }],
+      pagination: { page: 2, pageSize: 20, total: 45, totalPages: 3 },
+    });
+  });
+
   it('loads only the requested item page and preserves the catalog total', async () => {
     const organizationId = '40000000-0000-4000-8000-000000000001';
     const itemId = '40000000-0000-4000-8000-000000000002';

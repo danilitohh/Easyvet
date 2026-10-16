@@ -15,6 +15,7 @@ import type {
   CreateInventoryMovementRequest,
   CreateInventoryTransferRequest,
   InventoryBatchListResponse,
+  InventoryBatchListQuery,
   InventoryDashboardSummary,
   InventoryItem,
   InventoryItemListQuery,
@@ -39,6 +40,7 @@ import {
   CreateInventoryTransferDto,
   InventoryItemListQueryDto,
   InventoryMovementListQueryDto,
+  InventoryBatchListQueryDto,
   InventoryStockQueryDto,
   UpdateInventoryItemDto,
 } from './inventory.dto';
@@ -79,8 +81,13 @@ export class InventoryController {
   batches(
     @CurrentTenant() tenant: TenantContext,
     @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @Query() query: InventoryBatchListQueryDto,
   ): Promise<InventoryBatchListResponse> {
-    return this.inventory.listBatches(tenant.organizationId, itemId);
+    return this.inventory.listBatches(
+      tenant.organizationId,
+      itemId,
+      query as InventoryBatchListQuery,
+    );
   }
 
   @Get('inventory/items/:itemId')

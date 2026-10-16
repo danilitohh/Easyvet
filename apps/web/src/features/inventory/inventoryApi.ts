@@ -3,6 +3,7 @@ import {
   createInventoryMovementRequestSchema,
   createInventoryTransferRequestSchema,
   inventoryBatchListResponseSchema,
+  inventoryBatchListQuerySchema,
   inventoryDashboardSummarySchema,
   inventoryItemListQuerySchema,
   inventoryItemListResponseSchema,
@@ -18,6 +19,8 @@ import {
   type CreateInventoryMovementRequest,
   type CreateInventoryTransferRequest,
   type InventoryDashboardSummary,
+  type InventoryBatchListQuery,
+  type InventoryBatchListResponse,
   type InventoryItem,
   type InventoryItemListQuery,
   type InventoryItemListResponse,
@@ -121,9 +124,14 @@ export const inventoryApi = {
     );
   },
 
-  async batches(id: string, signal?: AbortSignal) {
+  async batches(
+    id: string,
+    input: Partial<InventoryBatchListQuery> = {},
+    signal?: AbortSignal,
+  ): Promise<InventoryBatchListResponse> {
+    const query = inventoryBatchListQuerySchema.parse(input);
     return inventoryBatchListResponseSchema.parse(
-      await apiClient(`/inventory/items/${id}/batches`, withSignal(signal)),
+      await apiClient(`/inventory/items/${id}/batches${queryString(query)}`, withSignal(signal)),
     );
   },
 

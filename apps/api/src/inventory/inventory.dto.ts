@@ -314,3 +314,20 @@ export class InventoryMovementListQueryDto {
   @Matches(OFFSET_DATE_TIME)
   to?: string;
 }
+
+// Batch history is tenant/item scoped and bounded like the movement ledger.
+export class InventoryBatchListQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize = 20;
+}

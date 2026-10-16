@@ -2799,7 +2799,19 @@ export const inventoryBatchSummarySchema = inventoryBatchSchema.extend({
 });
 export const inventoryBatchListResponseSchema = z.object({
   data: z.array(inventoryBatchSchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
 });
+export const inventoryBatchListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).max(10_000).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict();
 
 export const inventoryMovementSchema = z.object({
   id: z.string().uuid(),
@@ -2964,6 +2976,7 @@ export type CreateInventoryItemRequest = z.infer<typeof createInventoryItemReque
 export type UpdateInventoryItemRequest = z.infer<typeof updateInventoryItemRequestSchema>;
 export type InventoryBatch = z.infer<typeof inventoryBatchSchema>;
 export type InventoryBatchListResponse = z.infer<typeof inventoryBatchListResponseSchema>;
+export type InventoryBatchListQuery = z.infer<typeof inventoryBatchListQuerySchema>;
 export type InventoryBatchSummary = z.infer<typeof inventoryBatchSummarySchema>;
 export type InventoryMovement = z.infer<typeof inventoryMovementSchema>;
 export type InventoryMovementListResponse = z.infer<typeof inventoryMovementListResponseSchema>;

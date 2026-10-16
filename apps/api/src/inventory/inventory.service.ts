@@ -17,6 +17,7 @@ import type {
   CreateInventoryMovementRequest,
   CreateInventoryTransferRequest,
   InventoryBatch,
+  InventoryBatchListQuery,
   InventoryBatchListResponse,
   InventoryBatchSummary,
   InventoryDashboardSummary,
@@ -673,13 +674,31 @@ export class InventoryService {
   }
 
   // Batch reads are tenant/item scoped and keep creation inside a receipt operation.
-  async listBatches(organizationId: string, itemId: string): Promise<InventoryBatchListResponse> {
+  async listBatches(
+    organizationId: string,
+    itemId: string,
+    query: InventoryBatchListQuery,
+  ): Promise<InventoryBatchListResponse> {
     await this.requireItemForRead(organizationId, itemId);
-    const batches = await this.prisma.inventoryBatch.findMany({
-      where: { organizationId, inventoryItemId: itemId },
-      orderBy: [{ expiryOn: 'asc' }, { lotNumber: 'asc' }, { id: 'asc' }],
-    });
-    return { data: batches.map(toInventoryBatch) };
+    const where = { organizationId, inventoryItemId: itemId };
+    const [batches, total] = await this.prisma.$transaction([
+      this.prisma.inventoryBatch.findMany({
+        where,
+        orderBy: [{ expiryOn: 'asc' }, { lotNumber: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.inventoryBatch.count({ where }),
+    ]);
+    return {
+      data: batches.map(toInventoryBatch),
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / query.pageSize),
+      },
+    };
   }
 
   // Dashboard counters are lightweight projections over the catalog, active locations and grouped ledger.
