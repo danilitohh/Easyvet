@@ -1,24 +1,59 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { AppShell } from '../components/layout/AppShell';
-import { DashboardPage } from '../pages/DashboardPage';
-import { HealthPage } from '../pages/HealthPage';
-import { NotFoundPage } from '../pages/NotFoundPage';
-import { LoginPage } from '../pages/LoginPage';
-import { RegistrationPage } from '../pages/RegistrationPage';
-import { PlatformAdminBootstrapPage } from '../pages/PlatformAdminBootstrapPage';
-import { VerifyEmailPage } from '../pages/VerifyEmailPage';
-import { PasswordResetRequestPage } from '../pages/PasswordResetRequestPage';
-import { PasswordResetPage } from '../pages/PasswordResetPage';
-import { LandingPage } from '../pages/LandingPage';
-import { OrganizationSelectorPage } from '../pages/OrganizationSelectorPage';
-import { AccessDeniedPage } from '../pages/AccessDeniedPage';
 import { AuthBoundary } from './AuthBoundary';
 import { PlatformAdminBoundary } from './PlatformAdminBoundary';
 import { AppErrorBoundary } from './AppErrorBoundary';
-import { PlatformShell } from '../components/layout/PlatformShell';
 import { PERMISSION } from '../auth/permissions';
 import { AnyPermissionRoute, PermissionRoute } from '../features/shared/ResourceFeedback';
+import { AccessDeniedPage } from '../pages/AccessDeniedPage';
+
+const AppShell = lazy(() =>
+  import('../components/layout/AppShell').then((module) => ({ default: module.AppShell })),
+);
+const PlatformShell = lazy(() =>
+  import('../components/layout/PlatformShell').then((module) => ({
+    default: module.PlatformShell,
+  })),
+);
+const DashboardPage = lazy(() =>
+  import('../pages/DashboardPage').then((module) => ({ default: module.DashboardPage })),
+);
+const HealthPage = lazy(() =>
+  import('../pages/HealthPage').then((module) => ({ default: module.HealthPage })),
+);
+const NotFoundPage = lazy(() =>
+  import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
+);
+const LoginPage = lazy(() =>
+  import('../pages/LoginPage').then((module) => ({ default: module.LoginPage })),
+);
+const RegistrationPage = lazy(() =>
+  import('../pages/RegistrationPage').then((module) => ({ default: module.RegistrationPage })),
+);
+const PlatformAdminBootstrapPage = lazy(() =>
+  import('../pages/PlatformAdminBootstrapPage').then((module) => ({
+    default: module.PlatformAdminBootstrapPage,
+  })),
+);
+const VerifyEmailPage = lazy(() =>
+  import('../pages/VerifyEmailPage').then((module) => ({ default: module.VerifyEmailPage })),
+);
+const PasswordResetRequestPage = lazy(() =>
+  import('../pages/PasswordResetRequestPage').then((module) => ({
+    default: module.PasswordResetRequestPage,
+  })),
+);
+const PasswordResetPage = lazy(() =>
+  import('../pages/PasswordResetPage').then((module) => ({ default: module.PasswordResetPage })),
+);
+const LandingPage = lazy(() =>
+  import('../pages/LandingPage').then((module) => ({ default: module.LandingPage })),
+);
+const OrganizationSelectorPage = lazy(() =>
+  import('../pages/OrganizationSelectorPage').then((module) => ({
+    default: module.OrganizationSelectorPage,
+  })),
+);
 
 const OwnerListPage = lazy(() =>
   import('../features/owners/OwnerListPage').then((module) => ({ default: module.OwnerListPage })),
@@ -335,12 +370,16 @@ const PlatformAccountsPage = lazy(() =>
   })),
 );
 
-function ClinicalRouteFallback() {
+function RouteFallback() {
   return (
-    <div className="loading-state" role="status">
-      Cargando historia clínica
+    <div className="route-loading" role="status" aria-live="polite">
+      Cargando Easyvet…
     </div>
   );
+}
+
+function LazyRoute({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>;
 }
 
 // Route declarations keep every product area addressable without hiding sections in the DOM.
@@ -348,28 +387,84 @@ export function App() {
   return (
     <AppErrorBoundary>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route
+          path="/"
+          element={
+            <LazyRoute>
+              <LandingPage />
+            </LazyRoute>
+          }
+        />
         <Route
           path="firmar/:token"
           element={
-            <Suspense fallback={<ClinicalRouteFallback />}>
+            <Suspense fallback={<RouteFallback />}>
               <PublicSignaturePage />
             </Suspense>
           }
         />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="registro" element={<RegistrationPage />} />
-        <Route path="configurar-super-admin" element={<PlatformAdminBootstrapPage />} />
-        <Route path="verificar-correo" element={<VerifyEmailPage />} />
-        <Route path="recuperar-contrasena" element={<PasswordResetRequestPage />} />
-        <Route path="restablecer-contrasena" element={<PasswordResetPage />} />
+        <Route
+          path="login"
+          element={
+            <LazyRoute>
+              <LoginPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="registro"
+          element={
+            <LazyRoute>
+              <RegistrationPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="configurar-super-admin"
+          element={
+            <LazyRoute>
+              <PlatformAdminBootstrapPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="verificar-correo"
+          element={
+            <LazyRoute>
+              <VerifyEmailPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="recuperar-contrasena"
+          element={
+            <LazyRoute>
+              <PasswordResetRequestPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="restablecer-contrasena"
+          element={
+            <LazyRoute>
+              <PasswordResetPage />
+            </LazyRoute>
+          }
+        />
         <Route element={<AuthBoundary />}>
           <Route element={<PlatformAdminBoundary />}>
-            <Route path="plataforma" element={<PlatformShell />}>
+            <Route
+              path="plataforma"
+              element={
+                <LazyRoute>
+                  <PlatformShell />
+                </LazyRoute>
+              }
+            >
               <Route
                 index
                 element={
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PlatformOverviewPage />
                   </Suspense>
                 }
@@ -377,7 +472,7 @@ export function App() {
               <Route
                 path="clinicas"
                 element={
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PlatformOrganizationsPage />
                   </Suspense>
                 }
@@ -385,7 +480,7 @@ export function App() {
               <Route
                 path="clinicas/:organizationId"
                 element={
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PlatformOrganizationDetailPage />
                   </Suspense>
                 }
@@ -393,7 +488,7 @@ export function App() {
               <Route
                 path="actividad"
                 element={
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PlatformActivityPage />
                   </Suspense>
                 }
@@ -401,7 +496,7 @@ export function App() {
               <Route
                 path="suscripciones"
                 element={
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PlatformSubscriptionsPage />
                   </Suspense>
                 }
@@ -409,7 +504,7 @@ export function App() {
               <Route
                 path="cuentas"
                 element={
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PlatformAccountsPage />
                   </Suspense>
                 }
@@ -419,20 +514,33 @@ export function App() {
           <Route
             path="cambiar-contrasena"
             element={
-              <Suspense fallback={<ClinicalRouteFallback />}>
+              <Suspense fallback={<RouteFallback />}>
                 <ChangePasswordPage />
               </Suspense>
             }
           />
-          <Route path="seleccionar-organizacion" element={<OrganizationSelectorPage />} />
+          <Route
+            path="seleccionar-organizacion"
+            element={
+              <LazyRoute>
+                <OrganizationSelectorPage />
+              </LazyRoute>
+            }
+          />
           <Route path="acceso-denegado" element={<AccessDeniedPage />} />
-          <Route element={<AppShell />}>
+          <Route
+            element={
+              <LazyRoute>
+                <AppShell />
+              </LazyRoute>
+            }
+          >
             <Route path="dashboard" element={<DashboardPage />} />
             <Route
               path="usuarios"
               element={
                 <PermissionRoute permission={PERMISSION.MEMBERS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <UsersListPage />
                   </Suspense>
                 </PermissionRoute>
@@ -442,7 +550,7 @@ export function App() {
               path="usuarios/nuevo"
               element={
                 <PermissionRoute permission={PERMISSION.MEMBERS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <MemberCreatePage />
                   </Suspense>
                 </PermissionRoute>
@@ -452,7 +560,7 @@ export function App() {
               path="usuarios/:membershipId"
               element={
                 <PermissionRoute permission={PERMISSION.MEMBERS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <MemberDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -462,7 +570,7 @@ export function App() {
               path="configuracion"
               element={
                 <PermissionRoute permission={PERMISSION.ORGANIZATION_SETTINGS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <SettingsPage />
                   </Suspense>
                 </PermissionRoute>
@@ -479,7 +587,7 @@ export function App() {
                     PERMISSION.REPORTS_INVENTORY,
                   ]}
                 >
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ReportsPage />
                   </Suspense>
                 </AnyPermissionRoute>
@@ -489,7 +597,7 @@ export function App() {
               path="inventario"
               element={
                 <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <InventoryPage />
                   </Suspense>
                 </PermissionRoute>
@@ -499,7 +607,7 @@ export function App() {
               path="inventario/nuevo"
               element={
                 <PermissionRoute permission={PERMISSION.INVENTORY_ITEMS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <InventoryItemFormPage />
                   </Suspense>
                 </PermissionRoute>
@@ -509,7 +617,7 @@ export function App() {
               path="inventario/:itemId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.INVENTORY_ITEMS_UPDATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <InventoryItemFormPage />
                   </Suspense>
                 </PermissionRoute>
@@ -519,7 +627,7 @@ export function App() {
               path="inventario/:itemId"
               element={
                 <PermissionRoute permission={PERMISSION.INVENTORY_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <InventoryItemDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -529,7 +637,7 @@ export function App() {
               path="ventas"
               element={
                 <PermissionRoute permission={PERMISSION.SALES_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <SalesListPage />
                   </Suspense>
                 </PermissionRoute>
@@ -539,7 +647,7 @@ export function App() {
               path="ventas/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.SALES_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <SaleFormPage />
                   </Suspense>
                 </PermissionRoute>
@@ -549,7 +657,7 @@ export function App() {
               path="ventas/:saleId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.SALES_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <SaleFormPage />
                   </Suspense>
                 </PermissionRoute>
@@ -559,7 +667,7 @@ export function App() {
               path="ventas/:saleId"
               element={
                 <PermissionRoute permission={PERMISSION.SALES_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <SaleDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -569,7 +677,7 @@ export function App() {
               path="facturacion"
               element={
                 <PermissionRoute permission={PERMISSION.BILLING_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <BillingPage />
                   </Suspense>
                 </PermissionRoute>
@@ -579,7 +687,7 @@ export function App() {
               path="facturacion/:invoiceId"
               element={
                 <PermissionRoute permission={PERMISSION.BILLING_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <InvoiceDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -589,7 +697,7 @@ export function App() {
               path="caja"
               element={
                 <PermissionRoute permission={PERMISSION.CASH_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <CashPage />
                   </Suspense>
                 </PermissionRoute>
@@ -599,7 +707,7 @@ export function App() {
               path="peluqueria"
               element={
                 <PermissionRoute permission={PERMISSION.GROOMING_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <GroomingQueuePage />
                   </Suspense>
                 </PermissionRoute>
@@ -609,7 +717,7 @@ export function App() {
               path="peluqueria/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.GROOMING_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <GroomingFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -619,7 +727,7 @@ export function App() {
               path="peluqueria/:groomingVisitId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.GROOMING_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <GroomingFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -629,7 +737,7 @@ export function App() {
               path="peluqueria/:groomingVisitId"
               element={
                 <PermissionRoute permission={PERMISSION.GROOMING_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <GroomingVisitDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -639,7 +747,7 @@ export function App() {
               path="seguimientos"
               element={
                 <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <FollowUpsPage />
                   </Suspense>
                 </PermissionRoute>
@@ -649,7 +757,7 @@ export function App() {
               path="seguimientos/:followUpId"
               element={
                 <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <FollowUpDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -659,7 +767,7 @@ export function App() {
               path="seguimientos/:followUpId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.FOLLOW_UPS_UPDATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <FollowUpFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -669,7 +777,7 @@ export function App() {
               path="pacientes/:patientId/seguimientos/nuevo"
               element={
                 <PermissionRoute permission={PERMISSION.FOLLOW_UPS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <FollowUpFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -680,7 +788,7 @@ export function App() {
               path="perfil/profesional"
               element={
                 <PermissionRoute permission={PERMISSION.CLINICAL_RECORDS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ProfessionalProfilePage />
                   </Suspense>
                 </PermissionRoute>
@@ -835,7 +943,7 @@ export function App() {
                     PERMISSION.GROOMING_READ,
                   ]}
                 >
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ClinicalHistoryPage />
                   </Suspense>
                 </AnyPermissionRoute>
@@ -845,7 +953,7 @@ export function App() {
               path="pacientes/:patientId/historia/seguimientos"
               element={
                 <PermissionRoute permission={PERMISSION.FOLLOW_UPS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PatientFollowUpsPage />
                   </Suspense>
                 </PermissionRoute>
@@ -855,7 +963,7 @@ export function App() {
               path="pacientes/:patientId/historia/peluqueria"
               element={
                 <PermissionRoute permission={PERMISSION.GROOMING_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <GroomingHistoryPage />
                   </Suspense>
                 </PermissionRoute>
@@ -865,7 +973,7 @@ export function App() {
               path="pacientes/:patientId/historia/documentos"
               element={
                 <PermissionRoute permission={PERMISSION.DOCUMENTS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <DocumentsPage />
                   </Suspense>
                 </PermissionRoute>
@@ -875,7 +983,7 @@ export function App() {
               path="pacientes/:patientId/historia/consentimientos"
               element={
                 <PermissionRoute permission={PERMISSION.CONSENTS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ConsentsPage />
                   </Suspense>
                 </PermissionRoute>
@@ -885,7 +993,7 @@ export function App() {
               path="pacientes/:patientId/historia/consentimientos/:consentId"
               element={
                 <PermissionRoute permission={PERMISSION.CONSENTS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ConsentDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -895,7 +1003,7 @@ export function App() {
               path="pacientes/:patientId/historia/consentimientos/:consentId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.CONSENTS_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ConsentFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -905,7 +1013,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/consentimientos/nuevo"
               element={
                 <PermissionRoute permission={PERMISSION.CONSENTS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ConsentFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -917,7 +1025,7 @@ export function App() {
                 <AnyPermissionRoute
                   permissions={[PERMISSION.PROCEDURES_READ, PERMISSION.ANESTHESIA_READ]}
                 >
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ProceduresAnesthesiaListPage />
                   </Suspense>
                 </AnyPermissionRoute>
@@ -927,7 +1035,7 @@ export function App() {
               path="pacientes/:patientId/historia/hospitalizaciones"
               element={
                 <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <HospitalizationListPage />
                   </Suspense>
                 </PermissionRoute>
@@ -937,7 +1045,7 @@ export function App() {
               path="pacientes/:patientId/historia/diagnosticos"
               element={
                 <PermissionRoute permission={PERMISSION.DIAGNOSTICS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <DiagnosticOrderListPage />
                   </Suspense>
                 </PermissionRoute>
@@ -947,7 +1055,7 @@ export function App() {
               path="pacientes/:patientId/historia/diagnosticos/:diagnosticOrderId"
               element={
                 <PermissionRoute permission={PERMISSION.DIAGNOSTICS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <DiagnosticOrderDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -957,7 +1065,7 @@ export function App() {
               path="pacientes/:patientId/historia/diagnosticos/:diagnosticOrderId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.DIAGNOSTICS_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <DiagnosticOrderFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -967,7 +1075,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/diagnosticos/nuevo"
               element={
                 <PermissionRoute permission={PERMISSION.DIAGNOSTICS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <DiagnosticOrderFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -977,7 +1085,7 @@ export function App() {
               path="pacientes/:patientId/historia/hospitalizaciones/:hospitalizationId"
               element={
                 <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <HospitalizationDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -987,7 +1095,7 @@ export function App() {
               path="pacientes/:patientId/historia/hospitalizaciones/:hospitalizationId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_UPDATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <HospitalizationFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -997,7 +1105,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/hospitalizacion/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.HOSPITALIZATIONS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <HospitalizationFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -1007,7 +1115,7 @@ export function App() {
               path="pacientes/:patientId/historia/procedimientos/:procedureId"
               element={
                 <PermissionRoute permission={PERMISSION.PROCEDURES_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ProcedureDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -1017,7 +1125,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/procedimientos/nuevo"
               element={
                 <PermissionRoute permission={PERMISSION.PROCEDURES_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ProcedureFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -1027,7 +1135,7 @@ export function App() {
               path="pacientes/:patientId/historia/procedimientos/:procedureId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.PROCEDURES_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ProcedureFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -1037,7 +1145,7 @@ export function App() {
               path="pacientes/:patientId/historia/anestesias/:anesthesiaRecordId"
               element={
                 <PermissionRoute permission={PERMISSION.ANESTHESIA_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <AnesthesiaDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -1047,7 +1155,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/anestesias/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.ANESTHESIA_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <AnesthesiaFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -1057,7 +1165,7 @@ export function App() {
               path="pacientes/:patientId/historia/anestesias/:anesthesiaRecordId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.ANESTHESIA_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <AnesthesiaFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -1067,7 +1175,7 @@ export function App() {
               path="pacientes/:patientId/historia/prescripciones"
               element={
                 <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PrescriptionListPage />
                   </Suspense>
                 </PermissionRoute>
@@ -1076,7 +1184,7 @@ export function App() {
             <Route
               path="pacientes/:patientId/historia/preventivos"
               element={
-                <Suspense fallback={<ClinicalRouteFallback />}>
+                <Suspense fallback={<RouteFallback />}>
                   <PreventiveCarePage />
                 </Suspense>
               }
@@ -1085,7 +1193,7 @@ export function App() {
               path="pacientes/:patientId/historia/preventivos/vacunas/:vaccinationId"
               element={
                 <PermissionRoute permission={PERMISSION.VACCINATIONS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <VaccinationDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -1095,7 +1203,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/vacunas/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.VACCINATIONS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <VaccinationFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -1105,7 +1213,7 @@ export function App() {
               path="pacientes/:patientId/historia/preventivos/vacunas/:vaccinationId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.VACCINATIONS_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <VaccinationFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -1115,7 +1223,7 @@ export function App() {
               path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId"
               element={
                 <PermissionRoute permission={PERMISSION.DEWORMINGS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <DewormingDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -1125,7 +1233,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/desparasitaciones/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.DEWORMINGS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <DewormingFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -1135,7 +1243,7 @@ export function App() {
               path="pacientes/:patientId/historia/preventivos/desparasitaciones/:dewormingId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.DEWORMINGS_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <DewormingFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -1145,7 +1253,7 @@ export function App() {
               path="pacientes/:patientId/historia/prescripciones/:prescriptionId"
               element={
                 <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PrescriptionDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -1155,7 +1263,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/prescripciones/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PrescriptionFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -1165,7 +1273,7 @@ export function App() {
               path="pacientes/:patientId/historia/prescripciones/:prescriptionId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.PRESCRIPTIONS_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <PrescriptionFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -1175,7 +1283,7 @@ export function App() {
               path="pacientes/:patientId/historia/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ClinicalEncounterFormPage mode="create" />
                   </Suspense>
                 </PermissionRoute>
@@ -1185,7 +1293,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId"
               element={
                 <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_READ}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ClinicalEncounterDetailPage />
                   </Suspense>
                 </PermissionRoute>
@@ -1195,7 +1303,7 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/editar"
               element={
                 <PermissionRoute permission={PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ClinicalEncounterFormPage mode="edit" />
                   </Suspense>
                 </PermissionRoute>
@@ -1205,7 +1313,7 @@ export function App() {
               path="pacientes/:patientId/historia/evoluciones/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.CLINICAL_EVOLUTIONS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ClinicalEvolutionFormPage />
                   </Suspense>
                 </PermissionRoute>
@@ -1215,13 +1323,20 @@ export function App() {
               path="pacientes/:patientId/historia/encuentros/:encounterId/evoluciones/nueva"
               element={
                 <PermissionRoute permission={PERMISSION.CLINICAL_EVOLUTIONS_CREATE}>
-                  <Suspense fallback={<ClinicalRouteFallback />}>
+                  <Suspense fallback={<RouteFallback />}>
                     <ClinicalEvolutionFormPage />
                   </Suspense>
                 </PermissionRoute>
               }
             />
-            <Route path="*" element={<NotFoundPage />} />
+            <Route
+              path="*"
+              element={
+                <LazyRoute>
+                  <NotFoundPage />
+                </LazyRoute>
+              }
+            />
           </Route>
         </Route>
       </Routes>
