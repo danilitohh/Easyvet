@@ -18,12 +18,12 @@
 
 - El job `.github/workflows/ci.yml` crea `veterinary` como `LOGIN SUPERUSER`. Por tanto, las pruebas de integración demuestran las reglas explícitas de Prisma/servicio, pero **no** prueban el comportamiento de RLS con el rol de la aplicación ni una configuración de mínimo privilegio.
 - La auditoría de catálogo de Supabase registrada en `docs/migration/SECURITY_AUDIT.md` encontró RLS deshabilitado en las tablas de negocio y sin privilegios directos de tablas/esquema para `anon` y `authenticated`; `api_rate_limit_buckets` es la excepción con RLS forzado. La API es la frontera de acceso observada para los datos de negocio.
-- No se confirmó qué rol usa Prisma en Production. La cuenta del navegador disponible actualmente redirige a `/login`, y no se ingresaron credenciales. El rol `postgres` del editor SQL no prueba el rol del runtime.
+- La vista protegida `GET /api/v1/platform/database-posture`, consultada en Production con la sesión del super admin, confirmó que Prisma usa el rol `postgres`: `bypassesRowLevelSecurity: true` y `superuser: false`. Por tanto, el runtime actual puede omitir RLS aunque no sea superusuario; esta evidencia no debe confundirse con el rol del editor SQL.
 - No se habilita RLS aquí: hacerlo sin confirmar el rol y probar sus políticas puede romper la API sin impedir necesariamente el acceso previsto.
 - No se ejecutó Strix ni una prueba de penetración: la herramienta usa payloads que pueden cambiar datos y requiere autorización específica. Este informe no es una certificación de seguridad.
 
 ## Resultado y siguiente control
 
-En la revisión estática no se confirmó un bypass cross-tenant en las rutas y patrones examinados. Los filtros server-side y varias restricciones relacionales ofrecen controles útiles; permanece pendiente una verificación de mínimo privilegio y RLS con el rol efectivo de Production, además de ampliar de forma sistemática la revisión de cada consulta tenant-scoped.
+En la revisión estática no se confirmó un bypass cross-tenant en las rutas y patrones examinados. Los filtros server-side y varias restricciones relacionales ofrecen controles útiles. Sin embargo, el runtime de Production usa `postgres` con capacidad de omitir RLS y las tablas de negocio siguen sin RLS; esto es un hallazgo de mínimo privilegio que debe corregirse antes de considerar cerrado el aislamiento en la base de datos.
 
-El siguiente paso seguro para RLS es obtener el **nombre del rol efectivo de Prisma** mediante la vista protegida de postura de base de datos del super admin. Con ese dato se puede preparar una prueba en una base efímera con un rol equivalente antes de proponer cambios SQL de producción.
+El siguiente paso seguro es preparar una prueba en una base efímera con un rol equivalente sin bypass de RLS, mapear cómo la API debe establecer el contexto de organización para las políticas y solo después proponer una migración reversible y gradual. No se debe cambiar el `DATABASE_URL` de Production ni activar RLS masivamente hasta validar esos predicados con datos de dos organizaciones.
