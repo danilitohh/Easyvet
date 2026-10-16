@@ -72,8 +72,13 @@ export class InventoryController {
   itemStock(
     @CurrentTenant() tenant: TenantContext,
     @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @Query() query: InventoryBatchListQueryDto,
   ): Promise<InventoryItemStockDetail> {
-    return this.inventory.itemStock(tenant.organizationId, itemId);
+    return this.inventory.itemStock(
+      tenant.organizationId,
+      itemId,
+      query as InventoryBatchListQuery,
+    );
   }
 
   @Get('inventory/items/:itemId/batches')

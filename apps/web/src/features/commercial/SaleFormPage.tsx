@@ -213,7 +213,7 @@ export function SaleFormPage() {
       batchControllers.current.set(itemId, request);
       setBatchLoading((state) => ({ ...state, [itemId]: true }));
       try {
-        const detail = await inventoryApi.itemStock(itemId, request.signal);
+        const detail = await inventoryApi.itemStockAllBatches(itemId, request.signal);
         const available = detail.batches.filter((batch) =>
           batch.locations.some(
             (location) =>

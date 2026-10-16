@@ -153,6 +153,7 @@ const itemDetail: InventoryItemDetail = {
         expiryStatus: 'EXPIRED',
       },
     ],
+    batchPagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
   },
   recentMovements: [],
 };
@@ -273,8 +274,9 @@ describe('inventory frontend', () => {
     expect(mocks.resourceKeys.some((key) => key.includes('"page":2'))).toBe(true);
 
     fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'SUPPLY' } });
-    expect(mocks.resourceKeys.some((key) => key.includes('"page":1') && key.includes('SUPPLY')))
-      .toBe(true);
+    expect(
+      mocks.resourceKeys.some((key) => key.includes('"page":1') && key.includes('SUPPLY')),
+    ).toBe(true);
   });
 
   it('creates item metadata without creating stock or movements', async () => {

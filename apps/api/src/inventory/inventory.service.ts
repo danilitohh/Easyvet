@@ -604,43 +604,67 @@ export class InventoryService {
   }
 
   // A detail projection groups ledger rows by location and batch and derives local-date expiry labels.
-  async itemStock(organizationId: string, itemId: string): Promise<InventoryItemStockDetail> {
-    await this.requireItemForRead(organizationId, itemId);
-    const [locations, batches, grouped, today] = await Promise.all([
-      this.prisma.clinicLocation.findMany({
-        where: { organizationId },
-        select: { id: true, name: true, status: true },
-        orderBy: [{ name: 'asc' }, { id: 'asc' }],
-      }),
-      this.prisma.inventoryBatch.findMany({
-        where: { organizationId, inventoryItemId: itemId },
-        orderBy: [{ expiryOn: 'asc' }, { lotNumber: 'asc' }, { id: 'asc' }],
-      }),
-      this.prisma.inventoryMovement.groupBy({
-        by: ['clinicLocationId', 'inventoryBatchId'],
-        where: { organizationId, inventoryItemId: itemId },
-        _sum: { quantityDelta: true },
-      }),
-      this.getOrganizationToday(organizationId),
-    ]);
+  async itemStock(
+    organizationId: string,
+    itemId: string,
+    query: InventoryBatchListQuery = { page: 1, pageSize: 100 },
+  ): Promise<InventoryItemStockDetail> {
+    const item = await this.requireItemForRead(organizationId, itemId);
+    const [locations, batches, batchTotal, totalStockRow, groupedLocations, today] =
+      await Promise.all([
+        this.prisma.clinicLocation.findMany({
+          where: { organizationId },
+          select: { id: true, name: true, status: true },
+          orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        }),
+        this.prisma.inventoryBatch.findMany({
+          where: { organizationId, inventoryItemId: itemId },
+          orderBy: [{ expiryOn: 'asc' }, { lotNumber: 'asc' }, { id: 'asc' }],
+          skip: (query.page - 1) * query.pageSize,
+          take: query.pageSize,
+        }),
+        this.prisma.inventoryBatch.count({
+          where: { organizationId, inventoryItemId: itemId },
+        }),
+        this.prisma.inventoryMovement.aggregate({
+          where: { organizationId, inventoryItemId: itemId },
+          _sum: { quantityDelta: true },
+        }),
+        this.prisma.inventoryMovement.groupBy({
+          by: ['clinicLocationId'],
+          where: { organizationId, inventoryItemId: itemId },
+          _sum: { quantityDelta: true },
+        }),
+        this.getOrganizationToday(organizationId),
+      ]);
+    const groupedBatches = batches.length
+      ? await this.prisma.inventoryMovement.groupBy({
+          by: ['clinicLocationId', 'inventoryBatchId'],
+          where: {
+            organizationId,
+            inventoryItemId: itemId,
+            inventoryBatchId: { in: batches.map((batch) => batch.id) },
+          },
+          _sum: { quantityDelta: true },
+        })
+      : [];
     const locationBalances = new Map<string, Prisma.Decimal>();
     const batchLocationBalances = new Map<string, Prisma.Decimal>();
-    let totalStock = ZERO;
-    for (const group of grouped) {
+    for (const group of groupedLocations) {
       const amount = group._sum.quantityDelta ?? ZERO;
-      totalStock = totalStock.plus(amount);
       const locationKey = group.clinicLocationId;
       locationBalances.set(locationKey, (locationBalances.get(locationKey) ?? ZERO).plus(amount));
-      if (group.inventoryBatchId) {
-        const key = `${group.inventoryBatchId}:${locationKey}`;
-        batchLocationBalances.set(key, (batchLocationBalances.get(key) ?? ZERO).plus(amount));
-      }
     }
-    const item = await this.requireItemForRead(organizationId, itemId);
+    for (const group of groupedBatches) {
+      const amount = group._sum.quantityDelta ?? ZERO;
+      if (!group.inventoryBatchId) continue;
+      const key = `${group.inventoryBatchId}:${group.clinicLocationId}`;
+      batchLocationBalances.set(key, (batchLocationBalances.get(key) ?? ZERO).plus(amount));
+    }
     const minimum = item.minimumStock;
     return {
       inventoryItemId: itemId,
-      totalStock: totalStock.toString(),
+      totalStock: (totalStockRow._sum.quantityDelta ?? ZERO).toString(),
       locations: locations.map((location) => {
         const stock = locationBalances.get(location.id) ?? ZERO;
         return {
@@ -670,6 +694,12 @@ export class InventoryService {
           expiryStatus: expiryStatus(expiryOn, today),
         };
       }),
+      batchPagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total: batchTotal,
+        totalPages: batchTotal === 0 ? 0 : Math.ceil(batchTotal / query.pageSize),
+      },
     };
   }
 

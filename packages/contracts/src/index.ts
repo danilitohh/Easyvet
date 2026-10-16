@@ -2980,6 +2980,12 @@ export const inventoryItemStockDetailSchema = z.object({
     }),
   ),
   batches: z.array(inventoryBatchSummarySchema),
+  batchPagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
 });
 // Detail responses combine immutable catalog data with ledger-derived balances and recent history.
 export const inventoryItemDetailSchema = inventoryItemSchema.extend({

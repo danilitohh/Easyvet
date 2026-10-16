@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   inventoryItemDetailSchema,
@@ -45,6 +45,7 @@ export function InventoryItemDetailPage() {
 }
 
 function InventoryItemDetail({ itemId }: { itemId: string }) {
+  const organizationId = useActiveOrganizationId();
   const canUpdate = useCan(PERMISSION.INVENTORY_ITEMS_UPDATE);
   const canArchive = useCan(PERMISSION.INVENTORY_ITEMS_ARCHIVE);
   const canMove = useCan(PERMISSION.INVENTORY_MOVEMENTS_CREATE);
@@ -55,10 +56,16 @@ function InventoryItemDetail({ itemId }: { itemId: string }) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveError, setArchiveError] = useState<unknown>(null);
   const [archiving, setArchiving] = useState(false);
+  const [additionalBatches, setAdditionalBatches] = useState<
+    InventoryItemDetailModel['stock']['batches']
+  >([]);
+  const [batchPage, setBatchPage] = useState(1);
+  const [loadingMoreBatches, setLoadingMoreBatches] = useState(false);
+  const [batchError, setBatchError] = useState<unknown>(null);
   const detail = useInventoryResource(`item-detail:${itemId}`, true, async (signal) => {
     const [item, stock, movements] = await Promise.all([
       inventoryApi.findItem(itemId, signal),
-      inventoryApi.itemStock(itemId, signal),
+      inventoryApi.itemStock(itemId, { page: 1, pageSize: 100 }, signal),
       inventoryApi.movements({ inventoryItemId: itemId, page: 1, pageSize: 10 }, signal),
     ]);
     return inventoryItemDetailSchema.parse({ ...item, stock, recentMovements: movements.data });
@@ -68,15 +75,29 @@ function InventoryItemDetail({ itemId }: { itemId: string }) {
   );
 
   const reloadDetail = detail.reload;
+  const reloadWithFreshBatches = useCallback(() => {
+    setAdditionalBatches([]);
+    setBatchPage(1);
+    setBatchError(null);
+    reloadDetail();
+  }, [reloadDetail]);
+
   useEffect(() => {
-    const reload = () => reloadDetail();
+    setAdditionalBatches([]);
+    setBatchPage(1);
+    setBatchError(null);
+  }, [itemId, organizationId]);
+
+  useEffect(() => {
+    const reload = () => reloadWithFreshBatches();
     window.addEventListener(INVENTORY_MUTATED_EVENT, reload);
     return () => window.removeEventListener(INVENTORY_MUTATED_EVENT, reload);
-  }, [reloadDetail]);
+  }, [reloadWithFreshBatches]);
 
   const item = detail.data;
   const isArchived = item?.status === 'ARCHIVED';
   const hasStock = item?.stock.totalStock !== undefined && !isZero(item.stock.totalStock);
+  const displayedBatches = item ? [...item.stock.batches, ...additionalBatches] : [];
 
   const confirmArchive = async () => {
     if (!canArchive || !item || hasStock || archiving) return;
@@ -92,6 +113,26 @@ function InventoryItemDetail({ itemId }: { itemId: string }) {
       if (guard.isCurrent()) setArchiveError(error);
     } finally {
       if (guard.isCurrent()) setArchiving(false);
+    }
+  };
+
+  const loadMoreBatches = async () => {
+    if (!item || loadingMoreBatches || batchPage >= item.stock.batchPagination.totalPages) return;
+    setLoadingMoreBatches(true);
+    setBatchError(null);
+    try {
+      const next = await inventoryApi.itemStock(
+        itemId,
+        { page: batchPage + 1, pageSize: 100 },
+        guard.signal,
+      );
+      if (!guard.isCurrent()) return;
+      setAdditionalBatches((current) => [...current, ...next.batches]);
+      setBatchPage(next.batchPagination.page);
+    } catch (error) {
+      if (guard.isCurrent()) setBatchError(error);
+    } finally {
+      if (guard.isCurrent()) setLoadingMoreBatches(false);
     }
   };
 
@@ -232,22 +273,39 @@ function InventoryItemDetail({ itemId }: { itemId: string }) {
               <p className="section-kicker">Trazabilidad</p>
               <h2>Lotes y vencimientos</h2>
             </div>
-            <Badge tone="neutral">{`${item.stock.batches.length} lotes`}</Badge>
+            <Badge tone="neutral">{`${item.stock.batchPagination.total} lotes`}</Badge>
           </div>
           {!item.lotTracking ? (
             <p className="inventory-muted">Este artículo no controla stock por lote.</p>
           ) : null}
-          {item.lotTracking && item.stock.batches.length === 0 ? (
+          {item.lotTracking && item.stock.batchPagination.total === 0 ? (
             <p className="inventory-muted">
               Aún no hay lotes registrados. Crea uno al recibir existencias.
             </p>
           ) : null}
           {item.lotTracking ? (
-            <div className="inventory-batch-list">
-              {item.stock.batches.map((batch) => (
-                <BatchCard key={batch.id} batch={batch} unit={item.baseUnit} />
-              ))}
-            </div>
+            <>
+              <div className="inventory-batch-list">
+                {displayedBatches.map((batch) => (
+                  <BatchCard key={batch.id} batch={batch} unit={item.baseUnit} />
+                ))}
+              </div>
+              {batchError ? (
+                <ResourceError error={batchError} fallback="No fue posible cargar más lotes." />
+              ) : null}
+              {batchPage < item.stock.batchPagination.totalPages ? (
+                <div className="inventory-operation-actions">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => void loadMoreBatches()}
+                    disabled={loadingMoreBatches}
+                  >
+                    {loadingMoreBatches ? 'Cargando lotes…' : 'Cargar más lotes'}
+                  </Button>
+                </div>
+              ) : null}
+            </>
           ) : null}
         </Card>
       </section>
@@ -350,15 +408,15 @@ function InventoryItemDetail({ itemId }: { itemId: string }) {
       {operation ? (
         <InventoryOperationDialog
           item={item}
-          stock={item.stock}
+          stock={{ ...item.stock, batches: displayedBatches }}
           locations={locations.data ?? []}
           operation={operation}
           onClose={() => setOperation(null)}
           onDone={() => {
             setOperation(null);
-            detail.reload();
+            reloadWithFreshBatches();
           }}
-          onRefresh={detail.reload}
+          onRefresh={reloadWithFreshBatches}
         />
       ) : null}
       <Modal

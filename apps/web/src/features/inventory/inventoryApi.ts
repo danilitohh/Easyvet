@@ -118,10 +118,34 @@ export const inventoryApi = {
     );
   },
 
-  async itemStock(id: string, signal?: AbortSignal): Promise<InventoryItemStockDetail> {
+  async itemStock(
+    id: string,
+    input: Partial<InventoryBatchListQuery> = {},
+    signal?: AbortSignal,
+  ): Promise<InventoryItemStockDetail> {
+    const query = inventoryBatchListQuerySchema.parse(input);
     return inventoryItemStockDetailSchema.parse(
-      await apiClient(`/inventory/items/${id}/stock`, withSignal(signal)),
+      await apiClient(`/inventory/items/${id}/stock${queryString(query)}`, withSignal(signal)),
     );
+  },
+
+  async itemStockAllBatches(id: string, signal?: AbortSignal): Promise<InventoryItemStockDetail> {
+    const firstPage = await this.itemStock(id, { page: 1, pageSize: 100 }, signal);
+    const batches = [...firstPage.batches];
+    for (let page = 2; page <= firstPage.batchPagination.totalPages; page += 1) {
+      const nextPage = await this.itemStock(id, { page, pageSize: 100 }, signal);
+      batches.push(...nextPage.batches);
+    }
+    return {
+      ...firstPage,
+      batches,
+      batchPagination: {
+        ...firstPage.batchPagination,
+        page: 1,
+        pageSize: 100,
+        totalPages: firstPage.batchPagination.total === 0 ? 0 : 1,
+      },
+    };
   },
 
   async batches(

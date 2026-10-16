@@ -9,6 +9,102 @@ import type { PrismaService } from '../infrastructure/database/prisma.service';
 import { InventoryService } from './inventory.service';
 
 describe('InventoryService stock pagination', () => {
+  it('aggregates item totals independently and limits batch-location work to the requested page', async () => {
+    const organizationId = '40000000-0000-4000-8000-000000000031';
+    const itemId = '40000000-0000-4000-8000-000000000032';
+    const locationId = '40000000-0000-4000-8000-000000000033';
+    const batchId = '40000000-0000-4000-8000-000000000034';
+    const batch = {
+      id: batchId,
+      organizationId,
+      inventoryItemId: itemId,
+      lotNumber: 'LOT-2',
+      expiryOn: new Date('2035-02-01T00:00:00.000Z'),
+      notes: null,
+      createdAt: new Date('2035-01-02T00:00:00.000Z'),
+    };
+    const item = {
+      id: itemId,
+      organizationId,
+      name: 'Vacuna',
+      sku: null,
+      itemType: InventoryItemType.MEDICATION,
+      baseUnit: 'dosis',
+      lotTracking: true,
+      minimumStock: new Prisma.Decimal('2'),
+      description: null,
+      notes: null,
+      status: InventoryItemStatus.ACTIVE,
+      createdAt: new Date('2035-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2035-01-01T00:00:00.000Z'),
+    };
+    const groupBy = jest
+      .fn<(...args: unknown[]) => Promise<unknown[]>>()
+      .mockImplementation((...args) => {
+        const input = args[0] as { by: string[] };
+        return input.by.includes('inventoryBatchId')
+          ? Promise.resolve([
+              {
+                clinicLocationId: locationId,
+                inventoryBatchId: batchId,
+                _sum: { quantityDelta: new Prisma.Decimal('3') },
+              },
+            ])
+          : Promise.resolve([
+              {
+                clinicLocationId: locationId,
+                _sum: { quantityDelta: new Prisma.Decimal('3') },
+              },
+            ]);
+      });
+    const prisma = {
+      inventoryItem: {
+        findFirst: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(item),
+      },
+      clinicLocation: {
+        findMany: jest
+          .fn<(...args: unknown[]) => Promise<unknown[]>>()
+          .mockResolvedValue([
+            { id: locationId, name: 'Sede', status: ClinicLocationStatus.ACTIVE },
+          ]),
+      },
+      inventoryBatch: {
+        findMany: jest.fn<(...args: unknown[]) => Promise<unknown[]>>().mockResolvedValue([batch]),
+        count: jest.fn<(args: unknown) => Promise<number>>().mockResolvedValue(12),
+      },
+      inventoryMovement: {
+        aggregate: jest
+          .fn<(...args: unknown[]) => Promise<unknown>>()
+          .mockResolvedValue({ _sum: { quantityDelta: new Prisma.Decimal('3') } }),
+        groupBy,
+      },
+      organization: {
+        findUnique: jest
+          .fn<(...args: unknown[]) => Promise<unknown>>()
+          .mockResolvedValue({ timezone: 'UTC' }),
+      },
+    } as unknown as PrismaService;
+
+    const result = await new InventoryService(prisma).itemStock(organizationId, itemId, {
+      page: 2,
+      pageSize: 1,
+    });
+
+    expect(prisma.inventoryBatch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 1, take: 1 }),
+    );
+    expect(groupBy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ inventoryBatchId: { in: [batchId] } }),
+      }),
+    );
+    expect(result).toMatchObject({
+      totalStock: '3',
+      batchPagination: { page: 2, pageSize: 1, total: 12, totalPages: 12 },
+      batches: [{ id: batchId, totalStock: '3' }],
+    });
+  });
+
   it('loads only the requested batch page and preserves the item total', async () => {
     const organizationId = '40000000-0000-4000-8000-000000000021';
     const itemId = '40000000-0000-4000-8000-000000000022';
