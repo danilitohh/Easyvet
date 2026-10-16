@@ -33,8 +33,8 @@ import { RateLimitService } from '../http/rate-limit.service';
     RealtimeTokenService,
     PlatformAdminBootstrapService,
     RateLimitService,
-    { provide: APP_GUARD, useClass: PublicRateLimitGuard },
     { provide: APP_GUARD, useClass: SessionAuthGuard },
+    { provide: APP_GUARD, useClass: PublicRateLimitGuard },
   ],
   exports: [AuthService, PasswordService, SessionAuthGuard, SessionCookieService, SessionsService],
 })

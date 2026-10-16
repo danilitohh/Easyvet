@@ -31,6 +31,7 @@ describe('PublicRateLimitGuard', () => {
     params: Record<string, string>;
     headers: Record<string, string>;
     ip: string;
+    auth?: { user: { id: string } };
   } = { body: { email: ' Client@Example.Test ' }, params: {}, headers: {}, ip: '127.0.0.1' };
   const context = {
     getHandler: () => ({}),
@@ -45,6 +46,7 @@ describe('PublicRateLimitGuard', () => {
     delete process.env.VERCEL;
     request.headers = {};
     request.ip = '127.0.0.1';
+    delete request.auth;
     reflector.getAllAndOverride.mockReturnValue([rule]);
     consume.mockResolvedValue({ limited: false, retryAfterSeconds: 0 });
   });
@@ -98,5 +100,34 @@ describe('PublicRateLimitGuard', () => {
     expect(error).toBeInstanceOf(HttpException);
     expect((error as HttpException).getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
     expect(response.setHeader).toHaveBeenCalledWith('Retry-After', '45');
+  });
+
+  it('uses the authenticated user ID for per-account rate limits', async () => {
+    request.auth = { user: { id: 'user-123' } };
+    reflector.getAllAndOverride.mockReturnValue([
+      { ...rule, name: 'auth.change-password.user', identity: 'user' },
+    ]);
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+
+    expect(consume).toHaveBeenCalledWith(
+      'auth.change-password.user',
+      'user-123',
+      8,
+      60_000,
+      undefined,
+    );
+  });
+
+  it('fails closed if a per-user rule runs without an authenticated principal', async () => {
+    reflector.getAllAndOverride.mockReturnValue([
+      { ...rule, name: 'auth.change-password.user', identity: 'user' },
+    ]);
+
+    const error = await guard.canActivate(context).catch((cause: unknown) => cause);
+
+    expect(error).toBeInstanceOf(HttpException);
+    expect((error as HttpException).getStatus()).toBe(HttpStatus.UNAUTHORIZED);
+    expect(consume).not.toHaveBeenCalled();
   });
 });

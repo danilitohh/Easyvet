@@ -140,11 +140,23 @@ export class AuthController {
   }
 
   @Get('realtime-token')
+  @RateLimit({
+    name: 'auth.realtime-token.user',
+    identity: 'user',
+    limit: 60,
+    windowMs: 15 * 60_000,
+  })
   realtimeToken(@Req() request: AuthenticatedRequest) {
     return this.realtimeTokens.issue(request.auth!);
   }
 
   @Post('switch-organization')
+  @RateLimit({
+    name: 'auth.switch-organization.user',
+    identity: 'user',
+    limit: 20,
+    windowMs: 15 * 60_000,
+  })
   @HttpCode(HttpStatus.OK)
   async switchOrganization(
     @Req() request: AuthenticatedRequest,
@@ -167,7 +179,10 @@ export class AuthController {
 
   @Post('change-password')
   @PasswordChangeAllowed()
-  @RateLimit({ name: 'auth.change-password.ip', identity: 'ip', limit: 10, windowMs: 15 * 60_000 })
+  @RateLimit(
+    { name: 'auth.change-password.ip', identity: 'ip', limit: 10, windowMs: 15 * 60_000 },
+    { name: 'auth.change-password.user', identity: 'user', limit: 5, windowMs: 15 * 60_000 },
+  )
   @HttpCode(HttpStatus.OK)
   changePassword(@Req() request: AuthenticatedRequest, @Body() body: ChangePasswordRequestDto) {
     return this.auth.changePassword(request.auth!, body.currentPassword, body.newPassword);

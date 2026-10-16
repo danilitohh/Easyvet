@@ -93,12 +93,35 @@ describe('AuthController rate limits', () => {
         ],
       },
       {
+        handler: AuthController.prototype.realtimeToken,
+        expected: [
+          { name: 'auth.realtime-token.user', identity: 'user', limit: 60, windowMs: 15 * 60_000 },
+        ],
+      },
+      {
+        handler: AuthController.prototype.switchOrganization,
+        expected: [
+          {
+            name: 'auth.switch-organization.user',
+            identity: 'user',
+            limit: 20,
+            windowMs: 15 * 60_000,
+          },
+        ],
+      },
+      {
         handler: AuthController.prototype.changePassword,
         expected: [
           {
             name: 'auth.change-password.ip',
             identity: 'ip',
             limit: 10,
+            windowMs: 15 * 60_000,
+          },
+          {
+            name: 'auth.change-password.user',
+            identity: 'user',
+            limit: 5,
             windowMs: 15 * 60_000,
           },
         ],

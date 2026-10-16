@@ -8,10 +8,12 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
+import type { AuthenticatedRequest } from '../auth/auth.types';
 import { RATE_LIMIT_POLICY_KEY, RateLimitRule } from './rate-limit.decorator';
 import { RateLimitService } from './rate-limit.service';
 
-type PublicRequest = Request<{ token?: string }, unknown, unknown>;
+type PublicRequest = Request<{ token?: string }, unknown, unknown> &
+  Partial<Pick<AuthenticatedRequest, 'auth'>>;
 
 @Injectable()
 export class PublicRateLimitGuard implements CanActivate {
@@ -34,13 +36,7 @@ export class PublicRateLimitGuard implements CanActivate {
       const result =
         rule.mode === 'check'
           ? await this.limits.check(rule.name, identity)
-          : await this.limits.consume(
-              rule.name,
-              identity,
-              rule.limit,
-              rule.windowMs,
-              rule.blockMs,
-            );
+          : await this.limits.consume(rule.name, identity, rule.limit, rule.windowMs, rule.blockMs);
       if (!result.limited) continue;
 
       const response = context.switchToHttp().getResponse<Response>();
@@ -60,7 +56,19 @@ export class PublicRateLimitGuard implements CanActivate {
     if (identityType === 'ip') return this.clientIp(request);
     if (identityType === 'email') {
       const body = request.body as { email?: unknown } | undefined;
-      return typeof body?.email === 'string' ? body.email.trim().toLowerCase().slice(0, 320) : 'invalid';
+      return typeof body?.email === 'string'
+        ? body.email.trim().toLowerCase().slice(0, 320)
+        : 'invalid';
+    }
+    if (identityType === 'user') {
+      const userId = request.auth?.user.id;
+      if (typeof userId !== 'string' || userId.length === 0) {
+        throw new HttpException(
+          { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      return userId;
     }
     const body = request.body as { token?: unknown } | undefined;
     const token = typeof body?.token === 'string' ? body.token : request.params.token;
