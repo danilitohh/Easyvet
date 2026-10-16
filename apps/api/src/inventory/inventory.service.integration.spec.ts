@@ -44,8 +44,11 @@ describeDatabase('inventory service', () => {
   }
 
   // Test items belong to unique test tenants so retries never collide with seeded catalog data.
-  async function createItem(overrides: Partial<CreateInventoryItemRequest> = {}) {
-    const item = await inventory.createItem(organizationId, {
+  async function createItem(
+    overrides: Partial<CreateInventoryItemRequest> = {},
+    tenantOrganizationId = organizationId,
+  ) {
+    const item = await inventory.createItem(tenantOrganizationId, {
       name: `Artículo QA ${suffix}`,
       itemType: 'SUPPLY',
       baseUnit: 'unidad',
@@ -176,19 +179,52 @@ describeDatabase('inventory service', () => {
   });
 
   it('filters low-stock rows and returns matching totals from the paged database aggregate', async () => {
-    const lowItem = await createItem({ minimumStock: '1' });
-    const stockedItem = await createItem({ minimumStock: '1' });
-    const noMinimumItem = await createItem();
-    await recordMovement(movement(stockedItem.id, locationA, 'RECEIPT', '2'));
-    await recordMovement(movement(stockedItem.id, locationB, 'RECEIPT', '2'));
+    // Isolate the aggregate assertion from low-stock fixtures created by other tests in this suite.
+    const tenant = await prisma.organization.create({
+      data: { name: `Inventory Filter QA ${suffix}`, slug: `inventory-filter-qa-${suffix}` },
+    });
+    organizations.push(tenant.id);
+    const user = await prisma.user.create({
+      data: {
+        email: `inventory-filter-owner-${suffix}@example.local`,
+        passwordHash: 'integration-only',
+      },
+    });
+    users.push(user.id);
+    const membership = await prisma.membership.create({
+      data: { userId: user.id, organizationId: tenant.id, role: 'OWNER', status: 'ACTIVE' },
+    });
+    memberships.push(membership.id);
+    const filterOwner: TenantContext = {
+      organizationId: tenant.id,
+      membershipId: membership.id,
+      role: 'OWNER',
+      clinicalRole: null,
+      userId: user.id,
+    };
+    const [filterLocationA, filterLocationB] = await Promise.all([
+      prisma.clinicLocation.create({
+        data: { organizationId: tenant.id, name: 'Sede Norte QA filtro', status: 'ACTIVE' },
+      }),
+      prisma.clinicLocation.create({
+        data: { organizationId: tenant.id, name: 'Sede Centro QA filtro', status: 'ACTIVE' },
+      }),
+    ]);
+    locations.push(filterLocationA.id, filterLocationB.id);
 
-    const lowStock = await inventory.listStock(organizationId, {
+    const lowItem = await createItem({ minimumStock: '1' }, tenant.id);
+    const stockedItem = await createItem({ minimumStock: '1' }, tenant.id);
+    const noMinimumItem = await createItem({}, tenant.id);
+    await recordMovement(movement(stockedItem.id, filterLocationA.id, 'RECEIPT', '2'), filterOwner);
+    await recordMovement(movement(stockedItem.id, filterLocationB.id, 'RECEIPT', '2'), filterOwner);
+
+    const lowStock = await inventory.listStock(tenant.id, {
       page: 1,
       pageSize: 20,
       status: 'ACTIVE',
       lowStock: true,
     });
-    const notLowStock = await inventory.listStock(organizationId, {
+    const notLowStock = await inventory.listStock(tenant.id, {
       page: 1,
       pageSize: 20,
       status: 'ACTIVE',
