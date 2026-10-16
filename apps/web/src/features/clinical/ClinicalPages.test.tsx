@@ -100,7 +100,10 @@ vi.mock('./useClinical', () => ({
     reload: vi.fn(),
   }),
   useClinicalVitals: () => ({
-    data: { data: mocks.vitals },
+    data: {
+      data: mocks.vitals,
+      pagination: { page: 1, pageSize: 100, total: mocks.vitals.length, totalPages: 1 },
+    },
     vitals: mocks.vitals,
     loading: false,
     error: null,

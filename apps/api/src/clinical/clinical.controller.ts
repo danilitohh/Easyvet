@@ -31,6 +31,7 @@ import { TenantContextGuard } from '../authorization/tenant-context.guard';
 import {
   ClinicalEncounterQueryDto,
   ClinicalEncounterVersionDto,
+  ClinicalVitalQueryDto,
   CreateClinicalEncounterDto,
   CreateClinicalEvolutionDto,
   CreateClinicalVitalDto,
@@ -131,8 +132,9 @@ export class ClinicalController {
   async listVitals(
     @CurrentTenant() tenant: TenantContext,
     @Param('encounterId', new ParseUUIDPipe()) encounterId: string,
+    @Query() query: ClinicalVitalQueryDto,
   ): Promise<ClinicalVitalListResponse> {
-    return { data: await this.clinical.listVitals(tenant, encounterId) };
+    return this.clinical.listVitals(tenant, encounterId, query);
   }
 
   @Post('clinical-encounters/:encounterId/vitals')

@@ -115,9 +115,18 @@ export const clinicalApi = {
     );
   },
 
-  async listVitals(encounterId: string, signal?: AbortSignal): Promise<ClinicalVitalListResponse> {
+  async listVitals(
+    encounterId: string,
+    params: { page?: number; pageSize?: number; signal?: AbortSignal } = {},
+  ): Promise<ClinicalVitalListResponse> {
     return clinicalVitalListResponseSchema.parse(
-      await apiClient(`/clinical-encounters/${encounterId}/vitals`, signalInit(signal)),
+      await apiClient(
+        `/clinical-encounters/${encounterId}/vitals${queryString({
+          page: String(params.page ?? 1),
+          pageSize: String(params.pageSize ?? 100),
+        })}`,
+        signalInit(params.signal),
+      ),
     );
   },
 

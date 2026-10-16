@@ -68,7 +68,10 @@ const EMPTY_EVOLUTIONS: ClinicalEvolutionListResponse = {
   data: [],
   pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
 };
-const EMPTY_VITALS: ClinicalVitalListResponse = { data: [] };
+const EMPTY_VITALS: ClinicalVitalListResponse = {
+  data: [],
+  pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
+};
 const EMPTY_PRACTITIONERS: ClinicalPractitionerListResponse = { data: [] };
 const EMPTY_CLINICAL_MEMBERS: ClinicalMemberListResponse = { data: [] };
 
@@ -175,7 +178,7 @@ export function useClinicalVitals(encounterId: string | undefined, enabled: bool
   const state = useClinicalResource(
     (signal) =>
       encounterId
-        ? clinicalApi.listVitals(encounterId, signal)
+        ? clinicalApi.listVitals(encounterId, { page: 1, pageSize: 100, signal })
         : Promise.reject(new Error('Encuentro requerido')),
     enabled && Boolean(encounterId) && (appConfig.dataMode === 'mock' || Boolean(organizationId)),
     [organizationId, encounterId],

@@ -1007,6 +1007,7 @@ export const clinicalEvolutionListResponseSchema = z.object({
 
 export const clinicalVitalListResponseSchema = z.object({
   data: z.array(clinicalVitalResponseSchema),
+  pagination: paginationSchema,
 });
 
 const clinicalNarrativeField = (max = 20_000) => z.string().trim().max(max).nullable().optional();

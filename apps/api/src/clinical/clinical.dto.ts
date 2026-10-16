@@ -251,6 +251,23 @@ export class CreateClinicalVitalDto {
   observations?: string | null;
 }
 
+// Vital history is bounded per request so one encounter cannot produce an unbounded response.
+export class ClinicalVitalQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize = 100;
+}
+
 export class ClinicalEncounterQueryDto {
   @IsOptional()
   @Type(() => Number)

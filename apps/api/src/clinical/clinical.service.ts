@@ -29,6 +29,7 @@ import { PrismaService } from '../infrastructure/database/prisma.service';
 import {
   ClinicalEncounterQueryDto,
   ClinicalEncounterVersionDto,
+  ClinicalVitalQueryDto,
   CreateClinicalEncounterDto,
   CreateClinicalEvolutionDto,
   CreateClinicalVitalDto,
@@ -569,14 +570,23 @@ export class ClinicalService {
     return this.findEncounter(tenant, updated);
   }
 
-  async listVitals(tenant: TenantContext, encounterId: string): Promise<ClinicalVitalResponse[]> {
+  async listVitals(tenant: TenantContext, encounterId: string, query: ClinicalVitalQueryDto) {
     await this.requireEncounter(tenant.organizationId, encounterId);
-    const vitals = await this.prisma.vitalMeasurement.findMany({
-      where: { organizationId: tenant.organizationId, clinicalEncounterId: encounterId },
-      select: vitalSelect,
-      orderBy: [{ measuredAt: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
-    });
-    return vitals.map((item) => this.toVitalResponse(item));
+    const where = { organizationId: tenant.organizationId, clinicalEncounterId: encounterId };
+    const [data, total] = await Promise.all([
+      this.prisma.vitalMeasurement.findMany({
+        where,
+        select: vitalSelect,
+        orderBy: [{ measuredAt: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.vitalMeasurement.count({ where }),
+    ]);
+    return {
+      data: data.map((item) => this.toVitalResponse(item)),
+      pagination: this.pagination(query.page, query.pageSize, total),
+    };
   }
 
   async addVital(
