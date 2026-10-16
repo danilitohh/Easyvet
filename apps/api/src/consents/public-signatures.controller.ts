@@ -15,6 +15,7 @@ import type { Request } from 'express';
 import type { UploadedFile as UploadedMultipartFile } from '../http/uploaded-file';
 import { Public } from '../authorization/public.decorator';
 import { PublicSignatureDto } from '../documents/documents.dto';
+import { RateLimit } from '../http/rate-limit.decorator';
 import { ConsentsService } from './consents.service';
 
 // Public token routes return only consent-signing data and explicitly prohibit caching or referrer leakage.
@@ -24,6 +25,10 @@ export class PublicSignaturesController {
 
   @Get(':token')
   @Public()
+  @RateLimit(
+    { name: 'public-signature.read.ip', identity: 'ip', limit: 60, windowMs: 60_000 },
+    { name: 'public-signature.read.token', identity: 'token', limit: 20, windowMs: 60_000 },
+  )
   @Header('Cache-Control', 'no-store, max-age=0')
   @Header('Referrer-Policy', 'no-referrer')
   get(@Param('token') token: string) {
@@ -32,6 +37,10 @@ export class PublicSignaturesController {
 
   @Post(':token/sign')
   @Public()
+  @RateLimit(
+    { name: 'public-signature.sign.ip', identity: 'ip', limit: 10, windowMs: 60 * 60_000 },
+    { name: 'public-signature.sign.token', identity: 'token', limit: 5, windowMs: 60 * 60_000 },
+  )
   @Header('Cache-Control', 'no-store, max-age=0')
   @Header('Referrer-Policy', 'no-referrer')
   @UseInterceptors(FileInterceptor('signature', { limits: { fileSize: 1024 * 1024, files: 1 } }))

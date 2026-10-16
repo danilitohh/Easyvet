@@ -14,6 +14,8 @@ import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
 import { RealtimeTokenService } from './realtime-token.service';
 import { PlatformAdminBootstrapService } from './platform-admin-bootstrap.service';
+import { PublicRateLimitGuard } from '../http/public-rate-limit.guard';
+import { RateLimitService } from '../http/rate-limit.service';
 
 // Authentication owns credentials and session lifecycle; authorization stays in Fase 3C.
 @Module({
@@ -30,6 +32,8 @@ import { PlatformAdminBootstrapService } from './platform-admin-bootstrap.servic
     SessionsService,
     RealtimeTokenService,
     PlatformAdminBootstrapService,
+    RateLimitService,
+    { provide: APP_GUARD, useClass: PublicRateLimitGuard },
     { provide: APP_GUARD, useClass: SessionAuthGuard },
   ],
   exports: [AuthService, PasswordService, SessionAuthGuard, SessionCookieService, SessionsService],

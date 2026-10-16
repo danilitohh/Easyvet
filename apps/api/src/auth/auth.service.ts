@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserStatus } from '@prisma/client';
 import { PrismaService } from '../infrastructure/database/prisma.service';
 import { UsersService } from '../users/users.service';
@@ -6,6 +12,7 @@ import { PasswordService } from './password.service';
 import { AuthenticatedRequestContext } from './auth.types';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
+import { RateLimitService } from '../http/rate-limit.service';
 
 // Coordinates credential verification without exposing password or session internals to controllers.
 @Injectable()
@@ -16,6 +23,7 @@ export class AuthService {
     private readonly passwords: PasswordService,
     private readonly sessions: SessionsService,
     private readonly cookies: SessionCookieService,
+    private readonly rateLimits: RateLimitService,
   ) {}
 
   async login(email: string, password: string) {
@@ -31,8 +39,24 @@ export class AuthService {
     }
 
     if (!user || user.status !== UserStatus.ACTIVE || !validPassword) {
+      const result = await this.rateLimits.consume(
+        'auth.login.failure.email',
+        normalizedEmail,
+        5,
+        15 * 60_000,
+      );
+      if (result.limited) {
+        throw new HttpException(
+          {
+            code: 'RATE_LIMITED',
+            message: 'Demasiados intentos fallidos. Intenta de nuevo más tarde.',
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
+    await this.rateLimits.clear('auth.login.failure.email', normalizedEmail);
 
     const memberships = await this.sessions.getActiveMemberships(user.id);
     const onlyMembership = memberships.length === 1 ? memberships[0] : undefined;

@@ -222,6 +222,18 @@ model Session {
   @@map("sessions")
 }
 
+// Short-lived, non-reversible buckets shared by all API instances for abuse prevention.
+model ApiRateLimitBucket {
+  keyHash         String    @id @map("key_hash") @db.Char(64)
+  requestCount    Int       @default(0) @map("request_count")
+  windowStartedAt DateTime  @map("window_started_at") @db.Timestamptz(3)
+  blockedUntil    DateTime? @map("blocked_until") @db.Timestamptz(3)
+  expiresAt       DateTime  @map("expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt])
+  @@map("api_rate_limit_buckets")
+}
+
 // Owner is a tenant-scoped responsible person; archive preserves future history.
 model Owner {
   id                           String              @id @default(uuid()) @db.Uuid

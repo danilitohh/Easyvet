@@ -25,6 +25,7 @@ import { RealtimeTokenService } from './realtime-token.service';
 import { PlatformAdminBootstrapService } from './platform-admin-bootstrap.service';
 import { Public } from '../authorization/public.decorator';
 import { PasswordChangeAllowed } from '../authorization/password-change-allowed.decorator';
+import { RateLimit } from '../http/rate-limit.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -39,6 +40,16 @@ export class AuthController {
 
   @Post('login')
   @Public()
+  @RateLimit(
+    { name: 'auth.login.ip', identity: 'ip', limit: 30, windowMs: 15 * 60_000 },
+    {
+      name: 'auth.login.failure.email',
+      identity: 'email',
+      limit: 5,
+      windowMs: 15 * 60_000,
+      mode: 'check',
+    },
+  )
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() body: LoginRequestDto,
@@ -51,6 +62,10 @@ export class AuthController {
 
   @Post('register')
   @Public()
+  @RateLimit(
+    { name: 'auth.register.ip', identity: 'ip', limit: 8, windowMs: 60 * 60_000 },
+    { name: 'auth.register.email', identity: 'email', limit: 3, windowMs: 60 * 60_000 },
+  )
   @HttpCode(HttpStatus.OK)
   register(@Body() body: RegistrationRequestDto): Promise<PublicActionResponse> {
     return this.accounts.register(body);
@@ -58,6 +73,7 @@ export class AuthController {
 
   @Post('platform-admin/bootstrap')
   @Public()
+  @RateLimit({ name: 'auth.bootstrap.ip', identity: 'ip', limit: 5, windowMs: 60 * 60_000 })
   @HttpCode(HttpStatus.OK)
   bootstrapPlatformAdmin(@Body() body: PlatformAdminBootstrapDto): Promise<PublicActionResponse> {
     return this.platformBootstrap.createFirstAdmin(body);
@@ -65,6 +81,10 @@ export class AuthController {
 
   @Post('verify-email')
   @Public()
+  @RateLimit(
+    { name: 'auth.verify-email.ip', identity: 'ip', limit: 20, windowMs: 60 * 60_000 },
+    { name: 'auth.verify-email.token', identity: 'token', limit: 5, windowMs: 60 * 60_000 },
+  )
   @HttpCode(HttpStatus.OK)
   verifyEmail(@Body() body: TokenRequestDto): Promise<PublicActionResponse> {
     return this.accounts.verifyEmail(body.token);
@@ -72,6 +92,10 @@ export class AuthController {
 
   @Post('verification/resend')
   @Public()
+  @RateLimit(
+    { name: 'auth.resend-verification.ip', identity: 'ip', limit: 10, windowMs: 60 * 60_000 },
+    { name: 'auth.resend-verification.email', identity: 'email', limit: 3, windowMs: 60 * 60_000 },
+  )
   @HttpCode(HttpStatus.OK)
   resendVerification(@Body() body: EmailRequestDto): Promise<PublicActionResponse> {
     return this.accounts.resendVerification(body.email);
@@ -79,6 +103,10 @@ export class AuthController {
 
   @Post('password-reset/request')
   @Public()
+  @RateLimit(
+    { name: 'auth.password-reset-request.ip', identity: 'ip', limit: 10, windowMs: 60 * 60_000 },
+    { name: 'auth.password-reset-request.email', identity: 'email', limit: 3, windowMs: 60 * 60_000 },
+  )
   @HttpCode(HttpStatus.OK)
   requestPasswordReset(@Body() body: EmailRequestDto): Promise<PublicActionResponse> {
     return this.accounts.requestPasswordReset(body.email);
@@ -86,6 +114,10 @@ export class AuthController {
 
   @Post('password-reset/confirm')
   @Public()
+  @RateLimit(
+    { name: 'auth.password-reset-confirm.ip', identity: 'ip', limit: 10, windowMs: 60 * 60_000 },
+    { name: 'auth.password-reset-confirm.token', identity: 'token', limit: 5, windowMs: 60 * 60_000 },
+  )
   @HttpCode(HttpStatus.OK)
   resetPassword(@Body() body: PasswordResetRequestDto): Promise<PublicActionResponse> {
     return this.accounts.resetPassword(body.token, body.newPassword);
