@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  InternalServerErrorException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -232,6 +233,27 @@ export class PlatformService {
         memberCount: organization._count.memberships,
       })),
     };
+  }
+
+  async databasePosture() {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ role: string; bypassesRowLevelSecurity: boolean; superuser: boolean }>
+    >`
+      SELECT
+        current_user AS role,
+        COALESCE(role_info.rolbypassrls, false) AS "bypassesRowLevelSecurity",
+        COALESCE(role_info.rolsuper, false) AS superuser
+      FROM (SELECT current_user AS role_name) AS current_role
+      LEFT JOIN pg_roles AS role_info ON role_info.rolname = current_role.role_name
+    `;
+    const posture = rows[0];
+    if (!posture) {
+      throw new InternalServerErrorException({
+        code: 'DATABASE_POSTURE_UNAVAILABLE',
+        message: 'Database role posture is unavailable',
+      });
+    }
+    return posture;
   }
 
   async organizations(query: PlatformOrganizationsQueryDto) {

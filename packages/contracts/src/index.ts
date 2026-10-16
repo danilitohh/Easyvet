@@ -265,6 +265,11 @@ export const platformOverviewResponseSchema = z.object({
   memberships: z.object({ active: z.number().int().nonnegative() }),
   recentOrganizations: z.array(platformOrganizationSchema),
 });
+export const platformDatabasePostureResponseSchema = z.object({
+  role: z.string().min(1).max(63),
+  bypassesRowLevelSecurity: z.boolean(),
+  superuser: z.boolean(),
+});
 export const platformOrganizationsResponseSchema = z.object({
   data: z.array(platformOrganizationSchema),
   total: z.number().int().nonnegative(),
@@ -437,6 +442,9 @@ export const assignPlatformSubscriptionResponseSchema = z.object({
 });
 export type PlatformOrganization = z.infer<typeof platformOrganizationSchema>;
 export type PlatformOverviewResponse = z.infer<typeof platformOverviewResponseSchema>;
+export type PlatformDatabasePostureResponse = z.infer<
+  typeof platformDatabasePostureResponseSchema
+>;
 export type PlatformOrganizationsResponse = z.infer<typeof platformOrganizationsResponseSchema>;
 export type PlatformOrganizationDetailResponse = z.infer<
   typeof platformOrganizationDetailResponseSchema

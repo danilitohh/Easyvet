@@ -32,10 +32,12 @@ describe('PlatformService organization detail', () => {
   const organizationFindMany = jest.fn<(args: unknown) => Promise<unknown[]>>();
   const groupBy = jest.fn<(args: unknown) => Promise<unknown[]>>();
   const findMany = jest.fn<(args: unknown) => Promise<unknown[]>>();
+  const queryRaw = jest.fn<() => Promise<unknown[]>>();
   const prisma = {
     organization: { findUnique, count: organizationCount, findMany: organizationFindMany },
     membership: { groupBy },
     platformAuditEvent: { findMany },
+    $queryRaw: queryRaw,
   } as unknown as PrismaService;
   const service = new PlatformService(prisma, {} as UsersService, {} as PasswordService);
 
@@ -57,6 +59,21 @@ describe('PlatformService organization detail', () => {
         actor: { email: 'admin@easyvet.co' },
       },
     ]);
+    queryRaw.mockResolvedValue([
+      { role: 'postgres', bypassesRowLevelSecurity: true, superuser: false },
+    ]);
+  });
+
+  it('reports only the runtime role and its RLS bypass capability', async () => {
+    await expect(service.databasePosture()).resolves.toEqual({
+      role: 'postgres',
+      bypassesRowLevelSecurity: true,
+      superuser: false,
+    });
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    const sql = String(queryRaw.mock.calls[0]);
+    expect(sql).not.toContain('DATABASE_URL');
+    expect(sql).not.toContain('password');
   });
 
   it('returns only aggregated membership data and scoped administrative activity', async () => {

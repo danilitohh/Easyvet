@@ -66,7 +66,11 @@ function OrganizationStatus({ status }: { status: PlatformOrganization['status']
 
 export function PlatformOverviewPage() {
   const [data, setData] = useState<Awaited<ReturnType<typeof platformApi.overview>> | null>(null);
+  const [databasePosture, setDatabasePosture] = useState<
+    Awaited<ReturnType<typeof platformApi.databasePosture>> | null
+  >(null);
   const [error, setError] = useState(false);
+  const [databasePostureError, setDatabasePostureError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -75,6 +79,12 @@ export function PlatformOverviewPage() {
       .then((result) => setData(result))
       .catch(() => {
         if (!controller.signal.aborted) setError(true);
+      });
+    platformApi
+      .databasePosture(controller.signal)
+      .then((result) => setDatabasePosture(result))
+      .catch(() => {
+        if (!controller.signal.aborted) setDatabasePostureError(true);
       });
     return () => controller.abort();
   }, []);
@@ -116,6 +126,36 @@ export function PlatformOverviewPage() {
           <small>Vínculos de equipo activos</small>
         </Card>
       </section>
+
+      <Card className="platform-panel platform-database-posture" aria-labelledby="database-posture-title">
+        <div className="platform-panel__heading">
+          <div>
+            <p className="section-kicker">Seguridad de infraestructura</p>
+            <h2 id="database-posture-title">Rol de base de datos de la aplicación</h2>
+          </div>
+          {databasePosture ? (
+            <span
+              className={`platform-status ${databasePosture.bypassesRowLevelSecurity || databasePosture.superuser ? 'platform-status--suspended' : 'platform-status--active'}`}
+            >
+              {databasePosture.bypassesRowLevelSecurity || databasePosture.superuser
+                ? 'Puede omitir RLS'
+                : 'No omite RLS'}
+            </span>
+          ) : null}
+        </div>
+        {databasePostureError ? (
+          <p role="status">No fue posible consultar el rol de base de datos del runtime.</p>
+        ) : databasePosture ? (
+          <>
+            <p>Rol conectado: <strong>{databasePosture.role}</strong></p>
+            <p className="platform-privacy-note">
+              Este dato describe el rol del runtime; no verifica las políticas RLS ni el aislamiento entre clínicas.
+            </p>
+          </>
+        ) : (
+          <p role="status">Consultando el rol del runtime…</p>
+        )}
+      </Card>
 
       <Card className="platform-panel">
         <div className="platform-panel__heading">

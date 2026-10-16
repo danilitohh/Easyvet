@@ -66,6 +66,11 @@ export class PlatformController {
     return this.platform.overview();
   }
 
+  @Get('database-posture')
+  databasePosture() {
+    return this.platform.databasePosture();
+  }
+
   @Get('organizations')
   organizations(@Query() query: PlatformOrganizationsQueryDto) {
     return this.platform.organizations(query);

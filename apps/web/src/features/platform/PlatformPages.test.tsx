@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   PlatformAccountsPage,
   PlatformActivityPage,
+  PlatformOverviewPage,
   PlatformOrganizationsPage,
   PlatformOrganizationDetailPage,
   PlatformSubscriptionsPage,
@@ -12,6 +13,8 @@ import { platformApi } from './platformApi';
 
 vi.mock('./platformApi', () => ({
   platformApi: {
+    overview: vi.fn(),
+    databasePosture: vi.fn(),
     platformAccounts: vi.fn(),
     organizations: vi.fn(),
     updateOrganizationStatus: vi.fn(),
@@ -35,6 +38,49 @@ const activityEvent = {
   metadata: { from: 'ACTIVE', to: 'SUSPENDED', reason: 'Revisión de soporte' },
   createdAt: '2026-10-15T14:00:00.000Z',
 };
+
+describe('PlatformOverviewPage database posture', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(platformApi.overview).mockResolvedValue({
+      organizations: { total: 0, active: 0, suspended: 0, archived: 0 },
+      users: { total: 1, active: 1 },
+      memberships: { active: 0 },
+      recentOrganizations: [],
+    });
+    vi.mocked(platformApi.databasePosture).mockResolvedValue({
+      role: 'postgres',
+      bypassesRowLevelSecurity: true,
+      superuser: false,
+    });
+  });
+
+  it('shows a clear warning when the runtime role can bypass RLS', async () => {
+    render(
+      <MemoryRouter>
+        <PlatformOverviewPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Puede omitir RLS')).toBeInTheDocument();
+    expect(screen.getByText('postgres')).toBeInTheDocument();
+    expect(
+      screen.getByText(/no verifica las políticas RLS ni el aislamiento entre clínicas/i),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the platform overview available if the role diagnostic fails', async () => {
+    vi.mocked(platformApi.databasePosture).mockRejectedValue(new Error('unavailable'));
+    render(
+      <MemoryRouter>
+        <PlatformOverviewPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('No fue posible consultar el rol de base de datos del runtime.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Una vista clara de toda la plataforma.' })).toBeInTheDocument();
+  });
+});
 
 describe('PlatformActivityPage', () => {
   beforeEach(() => {

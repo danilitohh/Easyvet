@@ -4,6 +4,7 @@ import {
   createPlatformAdminAccountResponseSchema,
   createPlatformAdminAccountSchema,
   platformActivityResponseSchema,
+  platformDatabasePostureResponseSchema,
   platformAdminAccountSchema,
   platformAdminAccountsResponseSchema,
   platformOrganizationDetailResponseSchema,
@@ -54,6 +55,11 @@ export const platformApi = {
   async overview(signal?: AbortSignal): Promise<PlatformOverviewResponse> {
     return platformOverviewResponseSchema.parse(
       await apiClient('/platform/overview', signal ? { signal } : {}),
+    );
+  },
+  async databasePosture(signal?: AbortSignal) {
+    return platformDatabasePostureResponseSchema.parse(
+      await apiClient('/platform/database-posture', signal ? { signal } : {}),
     );
   },
   async organizations(
