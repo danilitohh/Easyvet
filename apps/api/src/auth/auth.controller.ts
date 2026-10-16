@@ -105,7 +105,12 @@ export class AuthController {
   @Public()
   @RateLimit(
     { name: 'auth.password-reset-request.ip', identity: 'ip', limit: 10, windowMs: 60 * 60_000 },
-    { name: 'auth.password-reset-request.email', identity: 'email', limit: 3, windowMs: 60 * 60_000 },
+    {
+      name: 'auth.password-reset-request.email',
+      identity: 'email',
+      limit: 3,
+      windowMs: 60 * 60_000,
+    },
   )
   @HttpCode(HttpStatus.OK)
   requestPasswordReset(@Body() body: EmailRequestDto): Promise<PublicActionResponse> {
@@ -116,7 +121,12 @@ export class AuthController {
   @Public()
   @RateLimit(
     { name: 'auth.password-reset-confirm.ip', identity: 'ip', limit: 10, windowMs: 60 * 60_000 },
-    { name: 'auth.password-reset-confirm.token', identity: 'token', limit: 5, windowMs: 60 * 60_000 },
+    {
+      name: 'auth.password-reset-confirm.token',
+      identity: 'token',
+      limit: 5,
+      windowMs: 60 * 60_000,
+    },
   )
   @HttpCode(HttpStatus.OK)
   resetPassword(@Body() body: PasswordResetRequestDto): Promise<PublicActionResponse> {
@@ -157,6 +167,7 @@ export class AuthController {
 
   @Post('change-password')
   @PasswordChangeAllowed()
+  @RateLimit({ name: 'auth.change-password.ip', identity: 'ip', limit: 10, windowMs: 15 * 60_000 })
   @HttpCode(HttpStatus.OK)
   changePassword(@Req() request: AuthenticatedRequest, @Body() body: ChangePasswordRequestDto) {
     return this.auth.changePassword(request.auth!, body.currentPassword, body.newPassword);
