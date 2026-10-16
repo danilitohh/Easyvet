@@ -64,6 +64,19 @@ export class PlatformOrganizationsQueryDto {
   @IsOptional()
   @IsIn(['ALL', ...Object.values(OrganizationStatus)])
   status: 'ALL' | OrganizationStatus = 'ALL';
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([10, 20, 50])
+  pageSize = 20;
 }
 
 export class UpdatePlatformOrganizationStatusDto {
@@ -83,6 +96,27 @@ export class PlatformSubscriptionsQueryDto {
   @IsString()
   @MaxLength(160)
   search?: string;
+}
+
+export class PlatformAccountsQueryDto {
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MaxLength(160)
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([10, 20, 50])
+  pageSize = 20;
 }
 
 export class CreatePlatformAdminAccountDto {

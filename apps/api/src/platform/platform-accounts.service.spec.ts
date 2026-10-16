@@ -59,17 +59,33 @@ describe('PlatformService platform accounts', () => {
     ]);
     count.mockResolvedValue(1);
 
-    await expect(service.platformAccounts({})).resolves.toMatchObject({
+    await expect(service.platformAccounts({ page: 1, pageSize: 20 })).resolves.toMatchObject({
       data: [{ id: targetId, email: 'admin@easyvet.co', status: 'ACTIVE' }],
       total: 1,
-      limit: 100,
+      page: 1,
+      pageSize: 20,
     });
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { platformRole: PlatformRole.PLATFORM_ADMIN },
+        skip: 0,
+        take: 20,
         select: { id: true, email: true, status: true, createdAt: true },
       }),
     );
+  });
+
+  it('applies the requested bounded page to platform account queries', async () => {
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(55);
+
+    await expect(service.platformAccounts({ page: 3, pageSize: 10 })).resolves.toMatchObject({
+      data: [],
+      total: 55,
+      page: 3,
+      pageSize: 10,
+    });
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 20, take: 10 }));
   });
 
   it('creates an isolated platform admin and audits without storing the temporary password', async () => {

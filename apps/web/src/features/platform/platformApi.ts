@@ -26,9 +26,14 @@ import {
 import { apiClient } from '../../services/apiClient';
 
 export const platformApi = {
-  async platformAccounts(params: { search?: string } = {}, signal?: AbortSignal) {
+  async platformAccounts(
+    params: { search?: string; page?: number; pageSize?: number } = {},
+    signal?: AbortSignal,
+  ) {
     const query = new URLSearchParams();
     if (params.search?.trim()) query.set('search', params.search.trim());
+    if (params.page && params.page !== 1) query.set('page', String(params.page));
+    if (params.pageSize && params.pageSize !== 20) query.set('pageSize', String(params.pageSize));
     const suffix = query.size ? `?${query.toString()}` : '';
     return platformAdminAccountsResponseSchema.parse(
       await apiClient(`/platform/accounts${suffix}`, signal ? { signal } : {}),
@@ -52,12 +57,14 @@ export const platformApi = {
     );
   },
   async organizations(
-    params: { search?: string; status?: string } = {},
+    params: { search?: string; status?: string; page?: number; pageSize?: number } = {},
     signal?: AbortSignal,
   ): Promise<PlatformOrganizationsResponse> {
     const query = new URLSearchParams();
     if (params.search?.trim()) query.set('search', params.search.trim());
     if (params.status && params.status !== 'ALL') query.set('status', params.status);
+    if (params.page && params.page !== 1) query.set('page', String(params.page));
+    if (params.pageSize && params.pageSize !== 20) query.set('pageSize', String(params.pageSize));
     const suffix = query.size ? `?${query.toString()}` : '';
     return platformOrganizationsResponseSchema.parse(
       await apiClient(`/platform/organizations${suffix}`, signal ? { signal } : {}),

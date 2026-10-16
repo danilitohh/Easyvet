@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { TextInput } from '../../components/ui/TextInput';
+import { PaginationControls } from '../shared/ResourceFeedback';
 import type {
   PlatformAdminAccount,
   PlatformActivityQuery,
@@ -165,6 +166,8 @@ export function PlatformOrganizationsPage() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const [selected, setSelected] = useState<PlatformOrganization | null>(null);
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
@@ -177,10 +180,12 @@ export function PlatformOrganizationsPage() {
     setLoading(true);
     setError('');
     platformApi
-      .organizations({ search, status }, controller.signal)
+      .organizations({ search, status, page, pageSize }, controller.signal)
       .then((result) => {
         setOrganizations(result.data);
         setTotal(result.total);
+        const nextPageCount = Math.max(1, Math.ceil(result.total / pageSize));
+        if (page > nextPageCount) setPage(nextPageCount);
       })
       .catch(() => {
         if (!controller.signal.aborted) setError('No fue posible cargar las clínicas.');
@@ -189,7 +194,9 @@ export function PlatformOrganizationsPage() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [search, status, reloadKey]);
+  }, [search, status, page, pageSize, reloadKey]);
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   async function changeStatus(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -281,7 +288,10 @@ export function PlatformOrganizationsPage() {
               type="search"
               placeholder="Nombre o identificador"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
             />
           </FormField>
           <FormField label="Estado" htmlFor="platform-org-status">
@@ -289,7 +299,10 @@ export function PlatformOrganizationsPage() {
               id="platform-org-status"
               className="input"
               value={status}
-              onChange={(event) => setStatus(event.target.value)}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setPage(1);
+              }}
             >
               <option value="ALL">Todos</option>
               <option value="ACTIVE">Activas</option>
@@ -361,8 +374,10 @@ export function PlatformOrganizationsPage() {
             </tbody>
           </table>
         </div>
+        <PaginationControls page={page} totalPages={pageCount} onChange={setPage} />
         <p className="platform-table__note">
-          Se muestran hasta 100 clínicas por consulta. La consola no presenta información clínica.
+          Mostrando {organizations.length} de {total} clínicas. La consola no presenta información
+          clínica.
         </p>
       </Card>
     </div>
@@ -739,6 +754,8 @@ export function PlatformAccountsPage() {
   const [accounts, setAccounts] = useState<PlatformAdminAccount[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const [email, setEmail] = useState('');
   const [creationReason, setCreationReason] = useState('');
   const [createdCredential, setCreatedCredential] = useState<{
@@ -758,10 +775,12 @@ export function PlatformAccountsPage() {
     setLoading(true);
     setError('');
     platformApi
-      .platformAccounts({ search }, controller.signal)
+      .platformAccounts({ search, page, pageSize }, controller.signal)
       .then((result) => {
         setAccounts(result.data);
         setTotal(result.total);
+        const nextPageCount = Math.max(1, Math.ceil(result.total / pageSize));
+        if (page > nextPageCount) setPage(nextPageCount);
       })
       .catch(() => {
         if (!controller.signal.aborted)
@@ -771,7 +790,9 @@ export function PlatformAccountsPage() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [search, reloadKey]);
+  }, [search, page, pageSize, reloadKey]);
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   async function createAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -786,6 +807,7 @@ export function PlatformAccountsPage() {
       setCreatedCredential({ email: result.account.email, password: result.temporaryPassword });
       setEmail('');
       setCreationReason('');
+      setPage(1);
       setReloadKey((value) => value + 1);
     } catch {
       setError('No fue posible crear la cuenta. Verifica que el correo no esté registrado.');
@@ -906,7 +928,10 @@ export function PlatformAccountsPage() {
               id="platform-account-search"
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
               placeholder="admin@easyvet.co"
             />
           </FormField>
@@ -970,7 +995,10 @@ export function PlatformAccountsPage() {
             </tbody>
           </table>
         </div>
-        <p className="platform-table__note">Mostrando hasta 100 cuentas de super admin.</p>
+        <PaginationControls page={page} totalPages={pageCount} onChange={setPage} />
+        <p className="platform-table__note">
+          Mostrando {accounts.length} de {total} cuentas de super admin.
+        </p>
       </Card>
 
       {selectedAccount ? (

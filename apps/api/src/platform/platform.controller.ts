@@ -15,6 +15,7 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 import { PlatformAdminGuard } from '../authorization/platform-admin.guard';
 import {
   AssignPlatformSubscriptionDto,
+  PlatformAccountsQueryDto,
   CreatePlatformAdminAccountDto,
   PlatformActivityQueryDto,
   PlatformOrganizationsQueryDto,
@@ -39,7 +40,7 @@ export class PlatformController {
   }
 
   @Get('accounts')
-  platformAccounts(@Query() query: PlatformSubscriptionsQueryDto) {
+  platformAccounts(@Query() query: PlatformAccountsQueryDto) {
     return this.platform.platformAccounts(query);
   }
 

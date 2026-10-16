@@ -28,10 +28,12 @@ describe('PlatformService organization detail', () => {
     ],
   };
   const findUnique = jest.fn<(args: unknown) => Promise<typeof organization | null>>();
+  const organizationCount = jest.fn<(args?: unknown) => Promise<number>>();
+  const organizationFindMany = jest.fn<(args: unknown) => Promise<unknown[]>>();
   const groupBy = jest.fn<(args: unknown) => Promise<unknown[]>>();
   const findMany = jest.fn<(args: unknown) => Promise<unknown[]>>();
   const prisma = {
-    organization: { findUnique },
+    organization: { findUnique, count: organizationCount, findMany: organizationFindMany },
     membership: { groupBy },
     platformAuditEvent: { findMany },
   } as unknown as PrismaService;
@@ -40,6 +42,8 @@ describe('PlatformService organization detail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     findUnique.mockResolvedValue(organization);
+    organizationCount.mockResolvedValue(45);
+    organizationFindMany.mockResolvedValue([]);
     groupBy.mockResolvedValue([
       { status: 'ACTIVE', role: 'OWNER', _count: { _all: 1 } },
       { status: 'ACTIVE', role: 'VETERINARIAN', _count: { _all: 1 } },
@@ -94,5 +98,29 @@ describe('PlatformService organization detail', () => {
     );
     expect(groupBy).not.toHaveBeenCalled();
     expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it('filters and paginates platform clinic listings in the database', async () => {
+    organizationFindMany.mockResolvedValue([
+      {
+        id: organizationId,
+        name: 'Clínica Central',
+        slug: 'clinica-central',
+        status: 'ACTIVE',
+        createdAt: organization.createdAt,
+        _count: { memberships: 3 },
+      },
+    ]);
+
+    await expect(
+      service.organizations({ search: 'central', status: 'ACTIVE', page: 3, pageSize: 10 }),
+    ).resolves.toMatchObject({ total: 45, page: 3, pageSize: 10, data: [{ id: organizationId }] });
+    expect(organizationFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 20,
+        take: 10,
+        where: expect.objectContaining({ status: 'ACTIVE' }),
+      }),
+    );
   });
 });

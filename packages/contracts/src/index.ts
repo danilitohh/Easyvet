@@ -268,6 +268,8 @@ export const platformOverviewResponseSchema = z.object({
 export const platformOrganizationsResponseSchema = z.object({
   data: z.array(platformOrganizationSchema),
   total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
 });
 export const platformOrganizationDetailResponseSchema = platformOrganizationSchema.extend({
   updatedAt: z.string().datetime(),
@@ -359,7 +361,8 @@ export const platformAdminAccountSchema = z.object({
 export const platformAdminAccountsResponseSchema = z.object({
   data: z.array(platformAdminAccountSchema),
   total: z.number().int().nonnegative(),
-  limit: z.number().int().positive(),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
 });
 export const createPlatformAdminAccountSchema = z.object({
   email: z.string().trim().email().max(320),

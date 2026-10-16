@@ -19,6 +19,7 @@ import type {
   AssignPlatformSubscriptionDto,
   CreatePlatformAdminAccountDto,
   PlatformOrganizationsQueryDto,
+  PlatformAccountsQueryDto,
   PlatformActivityQueryDto,
   PlatformSubscriptionsQueryDto,
   UpdatePlatformAdminAccountStatusDto,
@@ -36,7 +37,7 @@ export class PlatformService {
     private readonly passwords: PasswordService,
   ) {}
 
-  async platformAccounts(query: PlatformSubscriptionsQueryDto) {
+  async platformAccounts(query: PlatformAccountsQueryDto) {
     const search = query.search?.trim();
     const where = {
       platformRole: PlatformRole.PLATFORM_ADMIN,
@@ -47,14 +48,16 @@ export class PlatformService {
       this.prisma.user.findMany({
         where,
         orderBy: [{ createdAt: 'desc' }, { email: 'asc' }],
-        take: 100,
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
         select: { id: true, email: true, status: true, createdAt: true },
       }),
     ]);
     return {
       data: accounts.map((account) => ({ ...account, createdAt: account.createdAt.toISOString() })),
       total,
-      limit: 100,
+      page: query.page,
+      pageSize: query.pageSize,
     };
   }
 
@@ -249,7 +252,8 @@ export class PlatformService {
       this.prisma.organization.findMany({
         where,
         orderBy: [{ createdAt: 'desc' }, { name: 'asc' }],
-        take: 100,
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
         select: {
           id: true,
           name: true,
@@ -263,6 +267,8 @@ export class PlatformService {
 
     return {
       total,
+      page: query.page,
+      pageSize: query.pageSize,
       data: organizations.map((organization) => ({
         id: organization.id,
         name: organization.name,

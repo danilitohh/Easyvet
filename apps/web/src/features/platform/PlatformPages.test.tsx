@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   PlatformAccountsPage,
   PlatformActivityPage,
+  PlatformOrganizationsPage,
   PlatformOrganizationDetailPage,
   PlatformSubscriptionsPage,
 } from './PlatformPages';
@@ -12,6 +13,8 @@ import { platformApi } from './platformApi';
 vi.mock('./platformApi', () => ({
   platformApi: {
     platformAccounts: vi.fn(),
+    organizations: vi.fn(),
+    updateOrganizationStatus: vi.fn(),
     activity: vi.fn(),
     createPlatformAccount: vi.fn(),
     updatePlatformAccountStatus: vi.fn(),
@@ -235,6 +238,36 @@ describe('PlatformOrganizationDetailPage', () => {
   });
 });
 
+describe('PlatformOrganizationsPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(platformApi.organizations).mockResolvedValue({
+      data: [],
+      total: 45,
+      page: 1,
+      pageSize: 20,
+    });
+  });
+
+  it('requests bounded clinic pages and advances using the server total', async () => {
+    render(<PlatformOrganizationsPage />);
+
+    expect(await screen.findByText(/Mostrando 0 de 45 clínicas/)).toBeInTheDocument();
+    expect(platformApi.organizations).toHaveBeenCalledWith(
+      { search: '', status: 'ALL', page: 1, pageSize: 20 },
+      expect.anything(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+
+    await waitFor(() =>
+      expect(platformApi.organizations).toHaveBeenLastCalledWith(
+        { search: '', status: 'ALL', page: 2, pageSize: 20 },
+        expect.anything(),
+      ),
+    );
+  });
+});
+
 describe('PlatformAccountsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -247,8 +280,9 @@ describe('PlatformAccountsPage', () => {
           createdAt: '2026-10-15T10:00:00.000Z',
         },
       ],
-      total: 1,
-      limit: 100,
+      total: 21,
+      page: 1,
+      pageSize: 20,
     });
     vi.mocked(platformApi.createPlatformAccount).mockResolvedValue({
       account: {
@@ -286,6 +320,26 @@ describe('PlatformAccountsPage', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Ocultar clave' }));
     expect(screen.queryByText('Secure-Temp-Password-1024')).not.toBeInTheDocument();
+  });
+
+  it('requests server-side account pages and advances through the result set', async () => {
+    render(<PlatformAccountsPage />);
+
+    expect(
+      await screen.findByText('Mostrando 1 de 21 cuentas de super admin.'),
+    ).toBeInTheDocument();
+    expect(platformApi.platformAccounts).toHaveBeenCalledWith(
+      { search: '', page: 1, pageSize: 20 },
+      expect.anything(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+
+    await waitFor(() =>
+      expect(platformApi.platformAccounts).toHaveBeenLastCalledWith(
+        { search: '', page: 2, pageSize: 20 },
+        expect.anything(),
+      ),
+    );
   });
 
   it('requires a reason before changing an account status', async () => {
