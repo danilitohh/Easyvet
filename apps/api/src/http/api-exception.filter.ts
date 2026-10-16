@@ -42,7 +42,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
         : this.readMessage(exceptionResponse, status);
     const body: ErrorBody = {
       statusCode: status,
-      code: this.readCode(exceptionResponse, status),
+      code:
+        status >= HttpStatus.INTERNAL_SERVER_ERROR
+          ? `HTTP_${status}`
+          : this.readCode(exceptionResponse, status),
       message,
     };
 

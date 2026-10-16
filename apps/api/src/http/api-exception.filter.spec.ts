@@ -68,7 +68,13 @@ describe('ApiExceptionFilter', () => {
     } as unknown as ArgumentsHost;
 
     new ApiExceptionFilter().catch(
-      new HttpException('DATABASE_URL=postgres://private connection failed', 500),
+      new HttpException(
+        {
+          code: 'PRIVATE_DATABASE_FAILURE',
+          message: 'DATABASE_URL=postgres://private connection failed',
+        },
+        500,
+      ),
       host,
     );
 
@@ -81,5 +87,6 @@ describe('ApiExceptionFilter', () => {
     );
     expect(JSON.stringify(responseBody.mock.calls)).not.toContain('private connection');
     expect(JSON.stringify(responseBody.mock.calls)).not.toContain('DATABASE_URL');
+    expect(JSON.stringify(responseBody.mock.calls)).not.toContain('PRIVATE_DATABASE_FAILURE');
   });
 });
