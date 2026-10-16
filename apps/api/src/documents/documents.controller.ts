@@ -22,6 +22,7 @@ import { PermissionGuard } from '../authorization/permission.guard';
 import { PERMISSIONS } from '../authorization/permissions';
 import { RequirePermissions } from '../authorization/require-permissions.decorator';
 import { TenantContextGuard } from '../authorization/tenant-context.guard';
+import { RateLimit } from '../http/rate-limit.decorator';
 import { DocumentsService } from './documents.service';
 import {
   DocumentListQueryDto,
@@ -63,6 +64,7 @@ export class DocumentsController {
 
   @Post('patients/:patientId/documents')
   @RequirePermissions(PERMISSIONS.CLINICAL.DOCUMENTS_UPLOAD)
+  @RateLimit({ name: 'documents.upload.ip', identity: 'ip', limit: 20, windowMs: 15 * 60_000 })
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, files: 1 } }))
   upload(
     @CurrentTenant() tenant: TenantContext,
