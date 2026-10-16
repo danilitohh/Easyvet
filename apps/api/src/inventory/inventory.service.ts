@@ -44,6 +44,11 @@ type StockFilterPageRow = {
   lowStockLocations: number | null;
   total: bigint;
 };
+type InventoryDashboardLowStockRow = { count: bigint };
+type InventoryDashboardExpiryRow = {
+  expiredBatches: bigint;
+  expiringSoonBatches: bigint;
+};
 
 // Catalog responses never expose a Prisma Decimal instance or an unrelated tenant relation.
 const itemSelect = {
@@ -731,71 +736,63 @@ export class InventoryService {
     };
   }
 
-  // Dashboard counters are lightweight projections over the catalog, active locations and grouped ledger.
+  // Dashboard counters are database aggregates so tenant growth does not become application memory.
   async dashboardSummary(organizationId: string): Promise<InventoryDashboardSummary> {
-    const [items, locations, timezone] = await Promise.all([
-      this.prisma.inventoryItem.findMany({
+    const [activeItems, timezone] = await Promise.all([
+      this.prisma.inventoryItem.count({
         where: { organizationId, status: InventoryItemStatus.ACTIVE },
-        select: { id: true, minimumStock: true },
-      }),
-      this.prisma.clinicLocation.findMany({
-        where: { organizationId, status: ClinicLocationStatus.ACTIVE },
-        select: { id: true },
       }),
       this.getOrganizationTimezone(organizationId),
     ]);
-    let lowStockItemLocations = 0;
-    if (items.length > 0 && locations.length > 0) {
-      const groups = await this.groupItemLocationBalances(
-        this.prisma,
-        organizationId,
-        items.map((item) => item.id),
-      );
-      const balances = this.toItemLocationBalanceMap(groups);
-      for (const item of items) {
-        if (item.minimumStock === null) continue;
-        for (const location of locations) {
-          if ((balances.get(balanceKey(item.id, location.id)) ?? ZERO).lte(item.minimumStock)) {
-            lowStockItemLocations += 1;
-          }
-        }
-      }
-    }
     const today = organizationToday(timezone);
     const soon = addCivilDays(today, 30);
-    const batches = await this.prisma.inventoryBatch.findMany({
-      where: {
-        organizationId,
-        expiryOn: { lte: new Date(`${soon}T00:00:00.000Z`) },
-        inventoryItem: { status: InventoryItemStatus.ACTIVE },
-      },
-      select: { id: true, expiryOn: true },
-    });
-    const batchIds = batches.map((batch) => batch.id);
-    const batchGroups =
-      batchIds.length === 0
-        ? []
-        : await this.prisma.inventoryMovement.groupBy({
-            by: ['inventoryBatchId'],
-            where: { organizationId, inventoryBatchId: { in: batchIds } },
-            _sum: { quantityDelta: true },
-          });
-    const batchBalances = new Map(
-      batchGroups.map((group) => [group.inventoryBatchId, group._sum.quantityDelta ?? ZERO]),
-    );
-    let expiredBatches = 0;
-    let expiringSoonBatches = 0;
-    for (const batch of batches) {
-      if ((batchBalances.get(batch.id) ?? ZERO).lte(0) || !batch.expiryOn) continue;
-      const expiryOn = civilDateString(batch.expiryOn)!;
-      if (expiryOn < today) expiredBatches += 1;
-      else expiringSoonBatches += 1;
-    }
+    const [lowStockRows, expiryRows] = await Promise.all([
+      this.prisma.$queryRaw<InventoryDashboardLowStockRow[]>(Prisma.sql`
+        SELECT COUNT(*)::bigint AS count
+        FROM inventory_items AS item
+        CROSS JOIN clinic_locations AS location
+        LEFT JOIN (
+          SELECT inventory_item_id, clinic_location_id, SUM(quantity_delta) AS stock
+          FROM inventory_movements
+          WHERE organization_id = ${organizationId}::uuid
+          GROUP BY inventory_item_id, clinic_location_id
+        ) AS balance
+          ON balance.inventory_item_id = item.id
+         AND balance.clinic_location_id = location.id
+        WHERE item.organization_id = ${organizationId}::uuid
+          AND item.status = 'ACTIVE'
+          AND location.organization_id = ${organizationId}::uuid
+          AND location.status = 'ACTIVE'
+          AND item.minimum_stock IS NOT NULL
+          AND COALESCE(balance.stock, 0) <= item.minimum_stock
+      `),
+      this.prisma.$queryRaw<InventoryDashboardExpiryRow[]>(Prisma.sql`
+        SELECT
+          COUNT(*) FILTER (WHERE batch.expiry_on < ${today}::date)::bigint AS "expiredBatches",
+          COUNT(*) FILTER (WHERE batch.expiry_on >= ${today}::date)::bigint AS "expiringSoonBatches"
+        FROM inventory_batches AS batch
+        INNER JOIN inventory_items AS item
+          ON item.id = batch.inventory_item_id
+         AND item.organization_id = batch.organization_id
+        LEFT JOIN (
+          SELECT inventory_batch_id, SUM(quantity_delta) AS stock
+          FROM inventory_movements
+          WHERE organization_id = ${organizationId}::uuid
+            AND inventory_batch_id IS NOT NULL
+          GROUP BY inventory_batch_id
+        ) AS balance ON balance.inventory_batch_id = batch.id
+        WHERE batch.organization_id = ${organizationId}::uuid
+          AND item.status = 'ACTIVE'
+          AND batch.expiry_on IS NOT NULL
+          AND batch.expiry_on <= ${soon}::date
+          AND COALESCE(balance.stock, 0) > 0
+      `),
+    ]);
     return {
-      activeItems: items.length,
-      lowStockItemLocations,
-      expiredBatches,
-      expiringSoonBatches,
+      activeItems,
+      lowStockItemLocations: Number(lowStockRows[0]?.count ?? 0),
+      expiredBatches: Number(expiryRows[0]?.expiredBatches ?? 0),
+      expiringSoonBatches: Number(expiryRows[0]?.expiringSoonBatches ?? 0),
     };
   }
 

@@ -9,6 +9,36 @@ import type { PrismaService } from '../infrastructure/database/prisma.service';
 import { InventoryService } from './inventory.service';
 
 describe('InventoryService stock pagination', () => {
+  it('computes dashboard counters with database aggregates instead of loading inventory collections', async () => {
+    const organizationId = '40000000-0000-4000-8000-000000000041';
+    const queryRaw = jest
+      .fn<(...args: unknown[]) => Promise<unknown[]>>()
+      .mockResolvedValueOnce([{ count: 3n }])
+      .mockResolvedValueOnce([{ expiredBatches: 2n, expiringSoonBatches: 4n }]);
+    const itemCount = jest.fn<(args: unknown) => Promise<number>>().mockResolvedValue(8);
+    const prisma = {
+      inventoryItem: { count: itemCount },
+      organization: {
+        findUnique: jest
+          .fn<(...args: unknown[]) => Promise<unknown>>()
+          .mockResolvedValue({ timezone: 'UTC' }),
+      },
+      $queryRaw: queryRaw,
+    } as unknown as PrismaService;
+
+    await expect(new InventoryService(prisma).dashboardSummary(organizationId)).resolves.toEqual({
+      activeItems: 8,
+      lowStockItemLocations: 3,
+      expiredBatches: 2,
+      expiringSoonBatches: 4,
+    });
+
+    expect(itemCount).toHaveBeenCalledWith({
+      where: { organizationId, status: InventoryItemStatus.ACTIVE },
+    });
+    expect(queryRaw).toHaveBeenCalledTimes(2);
+  });
+
   it('aggregates item totals independently and limits batch-location work to the requested page', async () => {
     const organizationId = '40000000-0000-4000-8000-000000000031';
     const itemId = '40000000-0000-4000-8000-000000000032';
