@@ -20,6 +20,8 @@ La consulta SQL administrativa se ejecutó como `postgres`: `rolsuper = false`, 
 
 El panel de superadmin incluye la ruta autenticada `GET /api/platform/database-posture`, que devuelve únicamente el nombre del rol runtime y los booleanos de `BYPASSRLS` y superusuario. La tarjeta aparece en `/plataforma`, bajo “Seguridad de infraestructura”. La sesión de navegador consultada durante esta auditoría no estaba autenticada, así que no se pudo leer ese dato.
 
+El pipeline de CI sí ejecutó la suite PostgreSQL en una instancia efímera y aislada con resultado exitoso para el commit `d0d1c3e`. Sin embargo, `.github/workflows/ci.yml` crea allí `veterinary` como `LOGIN SUPERUSER` y `package.json` usa ese rol para `test:db`. La suite demuestra reglas de negocio e aislamiento explícito de Prisma en escenarios de integración, pero ese rol omite RLS; no es una prueba de políticas RLS ni representa el privilegio mínimo del runtime de Vercel. No cambiar ese rol hasta separar permisos de migración, propiedad de tablas y operaciones especiales que hoy requieren privilegios elevados.
+
 ## Decisión pendiente
 
 No habilitar RLS en las tablas restantes hasta confirmar el rol runtime y verificar el efecto en una base efímera usando exactamente los roles de aplicación. No conceder acceso a `anon` ni `authenticated` por conveniencia: el backend NestJS es quien aplica sesión, permisos y aislamiento multi-tenant. Después de cualquier cambio aprobado, volver a ejecutar la auditoría de roles cliente y las pruebas de autorización por tenant.
