@@ -96,19 +96,22 @@ export function PaginationControls({
   page,
   totalPages,
   onChange,
+  ariaLabel = 'Paginación',
 }: {
   page: number;
   totalPages: number;
   onChange: (page: number) => void;
+  ariaLabel?: string;
 }) {
   if (totalPages <= 1) return null;
   return (
-    <nav className="pagination" aria-label="Paginación">
+    <nav className="pagination" aria-label={ariaLabel}>
       <Button
         variant="secondary"
         type="button"
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
+        aria-label={ariaLabel === 'Paginación' ? undefined : `${ariaLabel}: página anterior`}
       >
         Anterior
       </Button>
@@ -120,6 +123,7 @@ export function PaginationControls({
         type="button"
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
+        aria-label={ariaLabel === 'Paginación' ? undefined : `${ariaLabel}: página siguiente`}
       >
         Siguiente
       </Button>

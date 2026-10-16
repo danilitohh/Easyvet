@@ -10,7 +10,9 @@ import type {
 import { ApiError } from '../../services/apiClient';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { FormField } from '../../components/ui/FormField';
 import { Select } from '../../components/ui/Select';
+import { TextInput } from '../../components/ui/TextInput';
 import { agendaApi } from '../agenda/agendaApi';
 import { inventoryApi } from '../inventory/inventoryApi';
 import { ownersApi } from '../owners/ownersApi';
@@ -26,6 +28,7 @@ import {
   unitsToDecimal,
 } from './commercialUtils';
 import { useCommercialResource } from './useCommercialResource';
+import { PaginationControls } from '../shared/ResourceFeedback';
 import './commercial.css';
 
 type SaleLineDraft = {
@@ -71,26 +74,51 @@ export function SaleFormPage() {
   const [locationId, setLocationId] = useState('');
   const [ownerId, setOwnerId] = useState('');
   const [patientId, setPatientId] = useState('');
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const [patientSearch, setPatientSearch] = useState('');
+  const [ownerPage, setOwnerPage] = useState(1);
+  const [patientPage, setPatientPage] = useState(1);
+  const [selectedOwner, setSelectedOwner] = useState<{ id: string; label: string } | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<{ id: string; label: string } | null>(
+    null,
+  );
   const [lines, setLines] = useState<SaleLineDraft[]>([blankLine()]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [loadingSale, setLoadingSale] = useState(isEdit);
   const requestedBatches = useRef(new Set<string>());
   const locationsLoader = useCallback((signal: AbortSignal) => agendaApi.listLocations(signal), []);
-  const customersLoader = useCallback(
+  const ownerLoader = useCallback(
     (signal: AbortSignal) =>
-      Promise.all([
-        ownersApi.list({ page: 1, pageSize: 100, status: 'ACTIVE' }, signal),
-        patientsApi.list({ page: 1, pageSize: 100, status: 'ACTIVE', signal }),
-      ]),
-    [],
+      ownersApi.list(
+        {
+          page: ownerPage,
+          pageSize: 20,
+          status: 'ACTIVE',
+          search: ownerSearch,
+        },
+        signal,
+      ),
+    [ownerPage, ownerSearch],
+  );
+  const patientLoader = useCallback(
+    (signal: AbortSignal) =>
+      patientsApi.list({
+        page: patientPage,
+        pageSize: 20,
+        status: 'ACTIVE',
+        search: patientSearch,
+        signal,
+      }),
+    [patientPage, patientSearch],
   );
   const organizationLoader = useCallback(
     (signal: AbortSignal) => agendaApi.currentOrganization(signal),
     [],
   );
   const locationResource = useCommercialResource(locationsLoader);
-  const customerResource = useCommercialResource(customersLoader);
+  const ownerResource = useCommercialResource(ownerLoader);
+  const patientResource = useCommercialResource(patientLoader);
   const organizationResource = useCommercialResource(organizationLoader);
   const stockLoader = useCallback(
     (signal: AbortSignal) =>
@@ -114,8 +142,10 @@ export function SaleFormPage() {
   const saleResource = useCommercialResource(existingLoader, isEdit);
   const [batches, setBatches] = useState<Record<string, InventoryBatchSummary[]>>({});
   const [batchLoading, setBatchLoading] = useState<Record<string, boolean>>({});
-  const owners = customerResource.data?.[0].data ?? [];
-  const patients = customerResource.data?.[1].data ?? [];
+  const owners = ownerResource.data?.data ?? [];
+  const patients = patientResource.data?.data ?? [];
+  const ownerPageCount = Math.max(1, ownerResource.data?.pagination.totalPages ?? 1);
+  const patientPageCount = Math.max(1, patientResource.data?.pagination.totalPages ?? 1);
   const stock = stockResource.data?.data ?? [];
   const currency =
     saleResource.data?.currencyCode ?? organizationResource.data?.currencyCode ?? '—';
@@ -130,6 +160,12 @@ export function SaleFormPage() {
     setLocationId('');
     setOwnerId('');
     setPatientId('');
+    setOwnerSearch('');
+    setPatientSearch('');
+    setOwnerPage(1);
+    setPatientPage(1);
+    setSelectedOwner(null);
+    setSelectedPatient(null);
     setLines([blankLine()]);
     setError('');
   }, [organizationId]);
@@ -151,6 +187,16 @@ export function SaleFormPage() {
     setLocationId(sale.clinicLocationId);
     setOwnerId(sale.ownerId ?? '');
     setPatientId(sale.patientId ?? '');
+    setSelectedOwner(
+      sale.ownerId
+        ? { id: sale.ownerId, label: sale.customerNameSnapshot ?? 'Propietario asociado' }
+        : null,
+    );
+    setSelectedPatient(
+      sale.patientId
+        ? { id: sale.patientId, label: sale.patientNameSnapshot ?? 'Paciente asociado' }
+        : null,
+    );
     setLines(draftLines(sale));
     setLoadingSale(false);
   }, [navigate, saleResource.data]);
@@ -353,35 +399,118 @@ export function SaleFormPage() {
                   ))}
               </Select>
             </label>
-            <label className="commercial-field">
-              <span>Paciente (opcional)</span>
+            <div className="commercial-field">
+              <label htmlFor="sale-patient-select">Paciente (opcional)</label>
+              <FormField label="Buscar paciente" htmlFor="sale-patient-search">
+                <TextInput
+                  id="sale-patient-search"
+                  type="search"
+                  placeholder="Nombre del paciente"
+                  value={patientSearch}
+                  onChange={(event) => {
+                    setPatientSearch(event.target.value);
+                    setPatientPage(1);
+                  }}
+                />
+              </FormField>
               <Select
+                id="sale-patient-select"
+                aria-label="Paciente (opcional)"
                 value={patientId}
                 onChange={(event) => {
+                  const selected = patients.find((patient) => patient.id === event.target.value);
+                  const label = selected
+                    ? `${selected.name} · ${selected.owner.firstName} ${selected.owner.lastName ?? ''}`.trim()
+                    : '';
                   setPatientId(event.target.value);
+                  setSelectedPatient(selected ? { id: selected.id, label } : null);
                   setOwnerId('');
+                  setSelectedOwner(null);
                 }}
               >
                 <option value="">Sin paciente</option>
+                {selectedPatient &&
+                !patients.some((patient) => patient.id === selectedPatient.id) ? (
+                  <option value={selectedPatient.id}>{selectedPatient.label}</option>
+                ) : null}
                 {patients.map((patient) => (
                   <option value={patient.id} key={patient.id}>
                     {patient.name} · {patient.owner.firstName} {patient.owner.lastName ?? ''}
                   </option>
                 ))}
               </Select>
-            </label>
+              <PaginationControls
+                page={patientPage}
+                totalPages={patientPageCount}
+                onChange={setPatientPage}
+                ariaLabel="Paginación de pacientes"
+              />
+              {patientResource.loading ? (
+                <p role="status" aria-live="polite">
+                  Buscando pacientes…
+                </p>
+              ) : patientResource.data ? (
+                <p role="status" aria-live="polite">
+                  {patientResource.data.pagination.total} pacientes encontrados; página{' '}
+                  {patientPage} de {patientPageCount}.
+                </p>
+              ) : null}
+            </div>
             {!patientId ? (
-              <label className="commercial-field">
-                <span>Propietario (opcional)</span>
-                <Select value={ownerId} onChange={(event) => setOwnerId(event.target.value)}>
+              <div className="commercial-field">
+                <label htmlFor="sale-owner-select">Propietario (opcional)</label>
+                <FormField label="Buscar propietario" htmlFor="sale-owner-search">
+                  <TextInput
+                    id="sale-owner-search"
+                    type="search"
+                    placeholder="Nombre, correo o documento"
+                    value={ownerSearch}
+                    onChange={(event) => {
+                      setOwnerSearch(event.target.value);
+                      setOwnerPage(1);
+                    }}
+                  />
+                </FormField>
+                <Select
+                  id="sale-owner-select"
+                  aria-label="Propietario (opcional)"
+                  value={ownerId}
+                  onChange={(event) => {
+                    const selected = owners.find((owner) => owner.id === event.target.value);
+                    const label = selected
+                      ? `${selected.firstName} ${selected.lastName ?? ''}`.trim()
+                      : '';
+                    setOwnerId(event.target.value);
+                    setSelectedOwner(selected ? { id: selected.id, label } : null);
+                  }}
+                >
                   <option value="">Consumidor final / sin propietario</option>
+                  {selectedOwner && !owners.some((owner) => owner.id === selectedOwner.id) ? (
+                    <option value={selectedOwner.id}>{selectedOwner.label}</option>
+                  ) : null}
                   {owners.map((owner) => (
                     <option value={owner.id} key={owner.id}>
                       {owner.firstName} {owner.lastName ?? ''}
                     </option>
                   ))}
                 </Select>
-              </label>
+                <PaginationControls
+                  page={ownerPage}
+                  totalPages={ownerPageCount}
+                  onChange={setOwnerPage}
+                  ariaLabel="Paginación de propietarios"
+                />
+                {ownerResource.loading ? (
+                  <p role="status" aria-live="polite">
+                    Buscando propietarios…
+                  </p>
+                ) : ownerResource.data ? (
+                  <p role="status" aria-live="polite">
+                    {ownerResource.data.pagination.total} propietarios encontrados; página{' '}
+                    {ownerPage} de {ownerPageCount}.
+                  </p>
+                ) : null}
+              </div>
             ) : (
               <p className="commercial-hint">
                 El propietario se obtiene del paciente seleccionado.
