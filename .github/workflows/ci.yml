@@ -61,12 +61,12 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_DB: easyvet_test
-          POSTGRES_USER: veterinary
-          POSTGRES_PASSWORD: veterinary_dev_only
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U veterinary -d easyvet_test"
+          --health-cmd "pg_isready -U postgres -d easyvet_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -86,10 +86,21 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Create Supabase roles in ephemeral database
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE anon NOLOGIN;
+          CREATE ROLE authenticated NOLOGIN;
+          CREATE ROLE service_role NOLOGIN BYPASSRLS;
+          CREATE ROLE veterinary LOGIN SUPERUSER PASSWORD 'veterinary_dev_only';
+          SQL
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
+
       - name: Apply migrations to ephemeral test database
         run: npx --no-install prisma migrate deploy --schema prisma/schema.prisma --config prisma.config.ts
         env:
-          DATABASE_URL: postgresql://veterinary:veterinary_dev_only@127.0.0.1:5432/easyvet_test
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
 
       - name: Run database integration tests
         run: npm run test:db
