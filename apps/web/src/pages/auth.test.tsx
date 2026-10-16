@@ -8,10 +8,13 @@ import { useAuth } from '../contexts/useAuth';
 import { AuthBoundary } from '../app/AuthBoundary';
 import { AppHeader } from '../components/layout/AppHeader';
 import { getRouteMeta } from '../data/navigation';
+import { authApi } from '../services/auth';
 
 vi.mock('../contexts/useAuth', () => ({ useAuth: vi.fn() }));
+vi.mock('../services/auth', () => ({ authApi: { register: vi.fn() } }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const mockedRegister = vi.mocked(authApi.register);
 const membership = {
   id: '00000000-0000-4000-8000-000000000010',
   role: 'OWNER' as const,
@@ -40,6 +43,8 @@ function renderLogin() {
 describe('authentication screens', () => {
   beforeEach(() => {
     mockedUseAuth.mockReset();
+    mockedRegister.mockReset();
+    mockedRegister.mockResolvedValue({ success: true });
   });
 
   it('renders the login form fields', () => {
@@ -88,6 +93,47 @@ describe('authentication screens', () => {
     expect(
       screen.queryByRole('link', { name: 'Configurar acceso de plataforma' }),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute(
+      'href',
+      '/privacidad',
+    );
+    expect(screen.getByRole('link', { name: 'Términos y condiciones' })).toHaveAttribute(
+      'href',
+      '/terminos',
+    );
+  });
+
+  it('submits explicit legal consent when creating a clinic account', async () => {
+    render(
+      <MemoryRouter initialEntries={['/registro']}>
+        <RegistrationPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText('Tu nombre'), { target: { value: 'Amelia Castro' } });
+    fireEvent.change(screen.getByLabelText('Nombre de la veterinaria'), {
+      target: { value: 'Clínica Norte' },
+    });
+    fireEvent.change(screen.getByLabelText('Correo de trabajo'), {
+      target: { value: 'amelia@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Contraseña'), {
+      target: { value: 'a-secure-password-123' },
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Crear mi cuenta' }));
+
+    await waitFor(() =>
+      expect(mockedRegister).toHaveBeenCalledWith({
+        displayName: 'Amelia Castro',
+        clinicName: 'Clínica Norte',
+        email: 'amelia@example.com',
+        password: 'a-secure-password-123',
+        privacyConsent: true,
+        termsConsent: true,
+      }),
+    );
   });
 
   it('submits credentials and navigates to the dashboard', async () => {

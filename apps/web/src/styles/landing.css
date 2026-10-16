@@ -1187,6 +1187,30 @@
   margin: 0;
 }
 
+.landing-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+}
+
+.landing-footer__links a {
+  color: var(--landing-muted);
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+.landing-footer__links a:hover,
+.landing-footer__links a:focus-visible {
+  color: var(--landing-ink);
+  text-decoration: underline;
+}
+
+.landing-footer__links a:focus-visible {
+  outline: 3px solid var(--color-focus, #0a6f68);
+  outline-offset: 4px;
+}
+
 @media (max-width: 1060px) {
   .landing-hero {
     grid-template-columns: minmax(0, 0.8fr) minmax(480px, 1.2fr);
@@ -1293,6 +1317,10 @@
 
   .landing-footer .landing-brand {
     width: 100%;
+  }
+
+  .landing-footer__links {
+    justify-content: flex-start;
   }
 }
 

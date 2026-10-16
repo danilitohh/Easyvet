@@ -12,6 +12,7 @@ export function RegistrationPage() {
   const [clinicName, setClinicName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [legalConsent, setLegalConsent] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -21,7 +22,14 @@ export function RegistrationPage() {
     setError('');
     setSubmitting(true);
     try {
-      await authApi.register({ displayName, clinicName, email, password });
+      await authApi.register({
+        displayName,
+        clinicName,
+        email,
+        password,
+        privacyConsent: true,
+        termsConsent: true,
+      });
       setRegistered(true);
     } catch (caught) {
       if (caught instanceof ApiError && caught.code === 'EMAIL_ALREADY_REGISTERED') {
@@ -119,6 +127,19 @@ export function RegistrationPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </FormField>
+          <label className="auth-form__consent">
+            <input
+              type="checkbox"
+              checked={legalConsent}
+              required
+              onChange={(event) => setLegalConsent(event.target.checked)}
+            />
+            <span>
+              Autorizo el tratamiento de mis datos para crear y administrar mi cuenta y mi clínica
+              según la <Link to="/privacidad">Política de privacidad</Link>, y acepto los{' '}
+              <Link to="/terminos">Términos y condiciones</Link>.
+            </span>
+          </label>
           {error ? (
             <p className="form-error" role="alert">
               {error}

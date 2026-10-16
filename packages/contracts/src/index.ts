@@ -179,6 +179,8 @@ export const registrationRequestSchema = z
     clinicName: z.string().trim().min(2).max(160),
     email: z.string().trim().email().max(320),
     password: z.string().min(12).max(128),
+    privacyConsent: z.literal(true),
+    termsConsent: z.literal(true),
   })
   .strict();
 
@@ -442,9 +444,7 @@ export const assignPlatformSubscriptionResponseSchema = z.object({
 });
 export type PlatformOrganization = z.infer<typeof platformOrganizationSchema>;
 export type PlatformOverviewResponse = z.infer<typeof platformOverviewResponseSchema>;
-export type PlatformDatabasePostureResponse = z.infer<
-  typeof platformDatabasePostureResponseSchema
->;
+export type PlatformDatabasePostureResponse = z.infer<typeof platformDatabasePostureResponseSchema>;
 export type PlatformOrganizationsResponse = z.infer<typeof platformOrganizationsResponseSchema>;
 export type PlatformOrganizationDetailResponse = z.infer<
   typeof platformOrganizationDetailResponseSchema

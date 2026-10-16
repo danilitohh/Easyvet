@@ -29,6 +29,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     pathname === '/verificar-correo' ||
     pathname === '/recuperar-contrasena' ||
     pathname === '/restablecer-contrasena' ||
+    pathname === '/privacidad' ||
+    pathname === '/terminos' ||
+    pathname === '/cookies' ||
+    pathname === '/reembolsos' ||
     pathname.startsWith('/firmar/');
   const [state, setState] = useState<AuthState>(() =>
     appConfig.dataMode === 'mock'

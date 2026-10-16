@@ -49,6 +49,9 @@ const PasswordResetPage = lazy(() =>
 const LandingPage = lazy(() =>
   import('../pages/LandingPage').then((module) => ({ default: module.LandingPage })),
 );
+const LegalPage = lazy(() =>
+  import('../pages/LegalPage').then((module) => ({ default: module.LegalPage })),
+);
 const OrganizationSelectorPage = lazy(() =>
   import('../pages/OrganizationSelectorPage').then((module) => ({
     default: module.OrganizationSelectorPage,
@@ -448,6 +451,38 @@ export function App() {
           element={
             <LazyRoute>
               <PasswordResetPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="privacidad"
+          element={
+            <LazyRoute>
+              <LegalPage document="privacy" />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="terminos"
+          element={
+            <LazyRoute>
+              <LegalPage document="terms" />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="cookies"
+          element={
+            <LazyRoute>
+              <LegalPage document="cookies" />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="reembolsos"
+          element={
+            <LazyRoute>
+              <LegalPage document="refunds" />
             </LazyRoute>
           }
         />

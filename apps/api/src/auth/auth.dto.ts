@@ -1,4 +1,13 @@
-import { IsEmail, IsNotEmpty, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import {
+  Equals,
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class LoginRequestDto {
   @IsEmail()
@@ -28,6 +37,14 @@ export class RegistrationRequestDto {
   @MinLength(12)
   @MaxLength(128)
   password!: string;
+
+  @IsBoolean()
+  @Equals(true)
+  privacyConsent!: boolean;
+
+  @IsBoolean()
+  @Equals(true)
+  termsConsent!: boolean;
 }
 
 export class PlatformAdminBootstrapDto {

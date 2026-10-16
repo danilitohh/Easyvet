@@ -22,13 +22,15 @@ const features: Array<{
     number: '01',
     icon: '/icons-3d/calendar.png',
     title: 'Agenda que respira',
-    description: 'Organiza consultas, procedimientos y peluquería en una vista clara para todo el equipo.',
+    description:
+      'Organiza consultas, procedimientos y peluquería en una vista clara para todo el equipo.',
   },
   {
     number: '02',
     icon: '/icons-3d/clipboard.png',
     title: 'Historias clínicas completas',
-    description: 'Ten la evolución de cada paciente a la mano, desde la consulta hasta el seguimiento.',
+    description:
+      'Ten la evolución de cada paciente a la mano, desde la consulta hasta el seguimiento.',
   },
   {
     number: '03',
@@ -154,12 +156,26 @@ export function LandingPage() {
             </a>
           </div>
           <div className="landing-proof" aria-label="Beneficios de Easyvet">
-            <span><i aria-hidden="true"><EasyvetIcon name="check" size={13} /></i> Pensado para equipos veterinarios</span>
-            <span><i aria-hidden="true"><EasyvetIcon name="check" size={13} /></i> Información organizada</span>
+            <span>
+              <i aria-hidden="true">
+                <EasyvetIcon name="check" size={13} />
+              </i>{' '}
+              Pensado para equipos veterinarios
+            </span>
+            <span>
+              <i aria-hidden="true">
+                <EasyvetIcon name="check" size={13} />
+              </i>{' '}
+              Información organizada
+            </span>
           </div>
         </AnimatedContent>
 
-        <AnimatedContent className="landing-hero__visual" delay={120} aria-label="Vista previa del dashboard de Easyvet">
+        <AnimatedContent
+          className="landing-hero__visual"
+          delay={120}
+          aria-label="Vista previa del dashboard de Easyvet"
+        >
           <div className="landing-visual-orb landing-visual-orb--one" aria-hidden="true" />
           <div className="landing-visual-orb landing-visual-orb--two" aria-hidden="true" />
           <div className="landing-dashboard-preview">
@@ -171,7 +187,9 @@ export function LandingPage() {
                 <strong>Easyvet</strong>
               </div>
               <span className="landing-preview-date">Clínica de ejemplo</span>
-              <span className="landing-preview-avatar" aria-hidden="true">AM</span>
+              <span className="landing-preview-avatar" aria-hidden="true">
+                AM
+              </span>
             </div>
             <div className="landing-dashboard-preview__body">
               <div className="landing-preview-heading">
@@ -204,24 +222,41 @@ export function LandingPage() {
                 <div className="landing-preview-schedule">
                   <div className="landing-preview-card-heading">
                     <strong>Agenda de hoy</strong>
-                    <span>Ver agenda <EasyvetIcon name="arrow-up-right" size={12} /></span>
+                    <span>
+                      Ver agenda <EasyvetIcon name="arrow-up-right" size={12} />
+                    </span>
                   </div>
                   <div className="landing-appointment">
                     <time>09:00</time>
-                    <span className="landing-appointment__avatar landing-appointment__avatar--blue">B</span>
-                    <div><strong>Bella</strong><small>Consulta general · Dra. Castro</small></div>
+                    <span className="landing-appointment__avatar landing-appointment__avatar--blue">
+                      B
+                    </span>
+                    <div>
+                      <strong>Bella</strong>
+                      <small>Consulta general · Dra. Castro</small>
+                    </div>
                     <em>En curso</em>
                   </div>
                   <div className="landing-appointment">
                     <time>10:30</time>
-                    <span className="landing-appointment__avatar landing-appointment__avatar--gold">M</span>
-                    <div><strong>Milo</strong><small>Vacunación · Dr. Rojas</small></div>
+                    <span className="landing-appointment__avatar landing-appointment__avatar--gold">
+                      M
+                    </span>
+                    <div>
+                      <strong>Milo</strong>
+                      <small>Vacunación · Dr. Rojas</small>
+                    </div>
                     <em className="landing-appointment__pending">Pendiente</em>
                   </div>
                   <div className="landing-appointment">
                     <time>12:00</time>
-                    <span className="landing-appointment__avatar landing-appointment__avatar--rose">L</span>
-                    <div><strong>Luna</strong><small>Control · Dra. Castro</small></div>
+                    <span className="landing-appointment__avatar landing-appointment__avatar--rose">
+                      L
+                    </span>
+                    <div>
+                      <strong>Luna</strong>
+                      <small>Control · Dra. Castro</small>
+                    </div>
                     <em className="landing-appointment__confirmed">Confirmada</em>
                   </div>
                 </div>
@@ -230,9 +265,27 @@ export function LandingPage() {
                     <strong>Inventario</strong>
                     <span className="landing-preview-alert">2 alertas</span>
                   </div>
-                  <div className="landing-stock-item"><span>Vacuna antirrábica</span><b>12</b><i className="landing-stock-bar"><span style={{ width: '34%' }} /></i></div>
-                  <div className="landing-stock-item"><span>Jeringas 5 ml</span><b>86</b><i className="landing-stock-bar"><span className="landing-stock-bar__good" style={{ width: '72%' }} /></i></div>
-                  <div className="landing-stock-item"><span>Isoflurano</span><b>4</b><i className="landing-stock-bar"><span className="landing-stock-bar__warn" style={{ width: '18%' }} /></i></div>
+                  <div className="landing-stock-item">
+                    <span>Vacuna antirrábica</span>
+                    <b>12</b>
+                    <i className="landing-stock-bar">
+                      <span style={{ width: '34%' }} />
+                    </i>
+                  </div>
+                  <div className="landing-stock-item">
+                    <span>Jeringas 5 ml</span>
+                    <b>86</b>
+                    <i className="landing-stock-bar">
+                      <span className="landing-stock-bar__good" style={{ width: '72%' }} />
+                    </i>
+                  </div>
+                  <div className="landing-stock-item">
+                    <span>Isoflurano</span>
+                    <b>4</b>
+                    <i className="landing-stock-bar">
+                      <span className="landing-stock-bar__warn" style={{ width: '18%' }} />
+                    </i>
+                  </div>
                 </div>
               </div>
             </div>
@@ -247,27 +300,44 @@ export function LandingPage() {
         <p>Todo lo importante de tu clínica, conectado.</p>
         <div className="landing-signal__items">
           {signalItems.map(([label, icon]) => (
-            <span key={label}><b aria-hidden="true"><img src={icon} alt="" width="24" height="24" /></b> {label}</span>
+            <span key={label}>
+              <b aria-hidden="true">
+                <img src={icon} alt="" width="24" height="24" />
+              </b>{' '}
+              {label}
+            </span>
           ))}
         </div>
       </section>
 
-      <section className="landing-section landing-section--features" id="producto" aria-labelledby="features-title">
+      <section
+        className="landing-section landing-section--features"
+        id="producto"
+        aria-labelledby="features-title"
+      >
         <AnimatedContent className="landing-section__intro">
-          <p className="landing-eyebrow"><ShimmerText>Una operación más ligera</ShimmerText></p>
+          <p className="landing-eyebrow">
+            <ShimmerText>Una operación más ligera</ShimmerText>
+          </p>
           <h2 id="features-title">La claridad también es parte del cuidado.</h2>
-          <p>Una herramienta serena para las decisiones que hacen avanzar tu clínica todos los días.</p>
+          <p>
+            Una herramienta serena para las decisiones que hacen avanzar tu clínica todos los días.
+          </p>
         </AnimatedContent>
         <div className="landing-feature-grid">
           {features.map((feature) => (
             <SpotlightCard className="landing-feature-card" key={feature.number}>
               <div className="landing-feature-card__topline">
-                <span className="landing-feature-card__icon" aria-hidden="true"><img src={feature.icon} alt="" width="40" height="40" /></span>
+                <span className="landing-feature-card__icon" aria-hidden="true">
+                  <img src={feature.icon} alt="" width="40" height="40" />
+                </span>
                 <span>{feature.number}</span>
               </div>
               <h3>{feature.title}</h3>
               <p>{feature.description}</p>
-              <span className="landing-feature-card__arrow" aria-hidden="true"><EasyvetIcon name="arrow-up-right" size={17} /></span>
+              <span className="landing-feature-card__arrow" aria-hidden="true">
+                <EasyvetIcon name="arrow-up-right" size={17} />
+              </span>
             </SpotlightCard>
           ))}
         </div>
@@ -275,17 +345,30 @@ export function LandingPage() {
 
       <section className="landing-pricing" id="precios" aria-labelledby="pricing-title">
         <AnimatedContent className="landing-section__intro">
-          <p className="landing-eyebrow"><ShimmerText>Planes para cada etapa</ShimmerText></p>
+          <p className="landing-eyebrow">
+            <ShimmerText>Planes para cada etapa</ShimmerText>
+          </p>
           <h2 id="pricing-title">Empieza con lo esencial. Crece a tu ritmo.</h2>
-          <p>Elige la forma de trabajo que mejor acompaña a tu clínica. Todos los valores estarán expresados en COP.</p>
+          <p>
+            Elige la forma de trabajo que mejor acompaña a tu clínica. Todos los valores estarán
+            expresados en COP.
+          </p>
         </AnimatedContent>
         <div className="landing-pricing__note" role="note">
-          <span className="landing-pricing__note-icon" aria-hidden="true"><EasyvetIcon name="sparkle" size={15} /></span>
-          <span>El plan anual tendrá un descuento especial. Los precios de los planes de pago se publicarán próximamente.</span>
+          <span className="landing-pricing__note-icon" aria-hidden="true">
+            <EasyvetIcon name="sparkle" size={15} />
+          </span>
+          <span>
+            El plan anual tendrá un descuento especial. Los precios de los planes de pago se
+            publicarán próximamente.
+          </span>
         </div>
         <div className="landing-pricing-grid">
           {pricingPlans.map((plan) => (
-            <article className={`landing-pricing-card${plan.featured ? ' landing-pricing-card--featured' : ''}`} key={plan.name}>
+            <article
+              className={`landing-pricing-card${plan.featured ? ' landing-pricing-card--featured' : ''}`}
+              key={plan.name}
+            >
               {plan.badge && <span className="landing-pricing-card__badge">{plan.badge}</span>}
               <div className="landing-pricing-card__heading">
                 <p>{plan.eyebrow}</p>
@@ -299,7 +382,9 @@ export function LandingPage() {
               <ul className="landing-pricing-card__features">
                 {plan.features.map((feature) => (
                   <li key={feature}>
-                    <span aria-hidden="true"><EasyvetIcon name="check" size={14} /></span>
+                    <span aria-hidden="true">
+                      <EasyvetIcon name="check" size={14} />
+                    </span>
                     {feature}
                   </li>
                 ))}
@@ -328,14 +413,23 @@ export function LandingPage() {
                 <span className="landing-preview-kicker">Tu clínica en contexto</span>
                 <strong>Una vista para cada decisión</strong>
               </div>
-              <span className="landing-workflow-card__spark" aria-hidden="true"><EasyvetIcon name="sparkle" size={18} /></span>
+              <span className="landing-workflow-card__spark" aria-hidden="true">
+                <EasyvetIcon name="sparkle" size={18} />
+              </span>
             </div>
             <div className="landing-workflow-list">
               {workflowItems.map(([title, description, icon]) => (
                 <div className="landing-workflow-item" key={title}>
-                  <span className="landing-workflow-item__number" aria-hidden="true"><img src={icon} alt="" width="30" height="30" /></span>
-                  <div><strong>{title}</strong><small>{description}</small></div>
-                  <span className="landing-workflow-item__arrow" aria-hidden="true"><EasyvetIcon name="arrow-up-right" size={15} /></span>
+                  <span className="landing-workflow-item__number" aria-hidden="true">
+                    <img src={icon} alt="" width="30" height="30" />
+                  </span>
+                  <div>
+                    <strong>{title}</strong>
+                    <small>{description}</small>
+                  </div>
+                  <span className="landing-workflow-item__arrow" aria-hidden="true">
+                    <EasyvetIcon name="arrow-up-right" size={15} />
+                  </span>
                 </div>
               ))}
             </div>
@@ -358,9 +452,18 @@ export function LandingPage() {
       <footer className="landing-footer">
         <div className="landing-brand landing-brand--footer">
           <BrandMark compact />
-          <span className="landing-brand__copy"><strong>Easyvet</strong><small>Gestión veterinaria</small></span>
+          <span className="landing-brand__copy">
+            <strong>Easyvet</strong>
+            <small>Gestión veterinaria</small>
+          </span>
         </div>
         <p>Una operación más clara para cuidar mejor.</p>
+        <nav className="landing-footer__links" aria-label="Información legal">
+          <Link to="/privacidad">Privacidad</Link>
+          <Link to="/terminos">Términos</Link>
+          <Link to="/cookies">Cookies</Link>
+          <Link to="/reembolsos">Reembolsos</Link>
+        </nav>
         <span>© {new Date().getFullYear()} Easyvet</span>
       </footer>
     </main>

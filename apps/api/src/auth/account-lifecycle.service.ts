@@ -25,6 +25,7 @@ import { PasswordService } from './password.service';
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 15 * 60 * 1000;
+const LEGAL_CONSENT_VERSION = '2026-10-16-draft';
 
 // Owns public account creation, email verification and password recovery for global User identities.
 @Injectable()
@@ -45,12 +46,28 @@ export class AccountLifecycleService {
     clinicName: string;
     email: string;
     password: string;
+    privacyConsent: boolean;
+    termsConsent: boolean;
   }) {
+    if (!input.privacyConsent || !input.termsConsent) {
+      throw new BadRequestException({
+        code: 'LEGAL_CONSENT_REQUIRED',
+        message: 'Legal consent is required',
+      });
+    }
     await this.email.ensureAvailable();
     const email = this.users.normalizeEmail(input.email);
     const existing = await this.users.findByEmail(email);
     if (existing) {
       if (existing.status === UserStatus.PENDING_VERIFICATION) {
+        await this.prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            privacyConsentAt: new Date(),
+            termsConsentAt: new Date(),
+            legalConsentVersion: LEGAL_CONSENT_VERSION,
+          },
+        });
         await this.sendVerification(email, existing.id, existing.passwordHash);
         return { success: true as const };
       }
@@ -61,6 +78,7 @@ export class AccountLifecycleService {
     }
 
     const passwordHash = await this.passwords.hash(input.password);
+    const consentedAt = new Date();
     try {
       const userId = await this.prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
@@ -68,6 +86,9 @@ export class AccountLifecycleService {
             email,
             passwordHash,
             status: UserStatus.PENDING_VERIFICATION,
+            privacyConsentAt: consentedAt,
+            termsConsentAt: consentedAt,
+            legalConsentVersion: LEGAL_CONSENT_VERSION,
           },
           select: { id: true },
         });
