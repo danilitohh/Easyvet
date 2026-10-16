@@ -695,9 +695,23 @@ export const clinicalPractitionerResponseSchema = z.object({
   profileConfigured: z.boolean(),
 });
 
+const clinicalMembershipPaginationSchema = z.object({
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+  totalPages: z.number().int().nonnegative(),
+});
+
 export const clinicalPractitionerListResponseSchema = z.object({
   data: z.array(clinicalPractitionerResponseSchema),
+  pagination: clinicalMembershipPaginationSchema,
 });
+export const clinicalMembershipListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).max(10_000).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(100),
+  })
+  .strict();
 
 // Preventive-care selectors need both practitioners and clinical assistants while the
 // historical practitioner lookup remains intentionally practitioner-only.
@@ -712,6 +726,7 @@ export const clinicalMemberResponseSchema = z.object({
 
 export const clinicalMemberListResponseSchema = z.object({
   data: z.array(clinicalMemberResponseSchema),
+  pagination: clinicalMembershipPaginationSchema,
 });
 
 export type ProfessionalProfileResponse = z.infer<typeof professionalProfileResponseSchema>;
@@ -719,6 +734,7 @@ export type UpsertProfessionalProfileRequest = z.infer<
   typeof upsertProfessionalProfileRequestSchema
 >;
 export type ClinicalPractitionerResponse = z.infer<typeof clinicalPractitionerResponseSchema>;
+export type ClinicalMembershipListQuery = z.infer<typeof clinicalMembershipListQuerySchema>;
 export type ClinicalPractitionerListResponse = z.infer<
   typeof clinicalPractitionerListResponseSchema
 >;

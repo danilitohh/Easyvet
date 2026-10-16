@@ -28,6 +28,23 @@ export class UpsertProfessionalProfileDto {
   licenseNumber?: string | null;
 }
 
+// Clinical membership selectors are paginated to keep tenant-scoped staff lookups bounded.
+export class ClinicalMembershipListQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize = 100;
+}
+
 // Clinical writes intentionally expose only editable clinical fields; tenant, audit and lifecycle
 // fields are always derived by the service from the authenticated context and database state.
 export class CreateClinicalEncounterDto {

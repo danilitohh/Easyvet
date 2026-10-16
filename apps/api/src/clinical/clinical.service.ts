@@ -22,6 +22,7 @@ import type {
   ClinicalVitalResponse,
   ClinicalPractitionerListResponse,
   ClinicalMemberListResponse,
+  ClinicalMembershipListQuery,
   ProfessionalProfileResponse,
 } from '@veterinary-saas/contracts';
 import type { TenantContext } from '../authorization/authorization.types';
@@ -267,20 +268,29 @@ export class ClinicalService {
     return profile;
   }
 
-  async listPractitioners(tenant: TenantContext): Promise<ClinicalPractitionerListResponse> {
-    const memberships = await this.prisma.membership.findMany({
-      where: {
-        organizationId: tenant.organizationId,
-        status: MembershipStatus.ACTIVE,
-        clinicalRole: ClinicalRole.PRACTITIONER,
-        user: { status: UserStatus.ACTIVE },
-      },
-      select: {
-        id: true,
-        professionalProfile: { select: { displayName: true, licenseNumber: true } },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+  async listPractitioners(
+    tenant: TenantContext,
+    query: ClinicalMembershipListQuery,
+  ): Promise<ClinicalPractitionerListResponse> {
+    const where = {
+      organizationId: tenant.organizationId,
+      status: MembershipStatus.ACTIVE,
+      clinicalRole: ClinicalRole.PRACTITIONER,
+      user: { status: UserStatus.ACTIVE },
+    };
+    const [memberships, total] = await this.prisma.$transaction([
+      this.prisma.membership.findMany({
+        where,
+        select: {
+          id: true,
+          professionalProfile: { select: { displayName: true, licenseNumber: true } },
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.membership.count({ where }),
+    ]);
     return {
       data: memberships.map((membership) => ({
         membershipId: membership.id,
@@ -288,24 +298,34 @@ export class ClinicalService {
         licenseNumber: membership.professionalProfile?.licenseNumber ?? null,
         profileConfigured: Boolean(membership.professionalProfile?.displayName?.trim()),
       })),
+      pagination: this.membershipPagination(query, total),
     };
   }
 
-  async listClinicalMembers(tenant: TenantContext): Promise<ClinicalMemberListResponse> {
-    const memberships = await this.prisma.membership.findMany({
-      where: {
-        organizationId: tenant.organizationId,
-        status: MembershipStatus.ACTIVE,
-        clinicalRole: { in: [ClinicalRole.PRACTITIONER, ClinicalRole.CLINICAL_ASSISTANT] },
-        user: { status: UserStatus.ACTIVE },
-      },
-      select: {
-        id: true,
-        clinicalRole: true,
-        professionalProfile: { select: { displayName: true } },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+  async listClinicalMembers(
+    tenant: TenantContext,
+    query: ClinicalMembershipListQuery,
+  ): Promise<ClinicalMemberListResponse> {
+    const where = {
+      organizationId: tenant.organizationId,
+      status: MembershipStatus.ACTIVE,
+      clinicalRole: { in: [ClinicalRole.PRACTITIONER, ClinicalRole.CLINICAL_ASSISTANT] },
+      user: { status: UserStatus.ACTIVE },
+    };
+    const [memberships, total] = await this.prisma.$transaction([
+      this.prisma.membership.findMany({
+        where,
+        select: {
+          id: true,
+          clinicalRole: true,
+          professionalProfile: { select: { displayName: true } },
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.membership.count({ where }),
+    ]);
     return {
       data: memberships.map((membership) => ({
         membershipId: membership.id,
@@ -313,6 +333,16 @@ export class ClinicalService {
         displayName: membership.professionalProfile?.displayName ?? null,
         profileConfigured: Boolean(membership.professionalProfile?.displayName?.trim()),
       })),
+      pagination: this.membershipPagination(query, total),
+    };
+  }
+
+  private membershipPagination(query: ClinicalMembershipListQuery, total: number) {
+    return {
+      page: query.page,
+      pageSize: query.pageSize,
+      total,
+      totalPages: total === 0 ? 0 : Math.ceil(total / query.pageSize),
     };
   }
 

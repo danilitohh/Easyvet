@@ -72,8 +72,14 @@ const EMPTY_VITALS: ClinicalVitalListResponse = {
   data: [],
   pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
 };
-const EMPTY_PRACTITIONERS: ClinicalPractitionerListResponse = { data: [] };
-const EMPTY_CLINICAL_MEMBERS: ClinicalMemberListResponse = { data: [] };
+const EMPTY_PRACTITIONERS: ClinicalPractitionerListResponse = {
+  data: [],
+  pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
+};
+const EMPTY_CLINICAL_MEMBERS: ClinicalMemberListResponse = {
+  data: [],
+  pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
+};
 
 // Clinical reads are tenant-keyed and abort in-flight requests on organization changes.
 export function useClinicalOrganization(): LoadState<OrganizationCurrentResponse> {

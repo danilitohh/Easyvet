@@ -20,6 +20,7 @@ import type {
   ClinicalVitalResponse,
   ClinicalPractitionerListResponse,
   ClinicalMemberListResponse,
+  ClinicalMembershipListQuery,
   ProfessionalProfileResponse,
 } from '@veterinary-saas/contracts';
 import { CurrentTenant } from '../authorization/current-tenant.decorator';
@@ -36,6 +37,7 @@ import {
   CreateClinicalEvolutionDto,
   CreateClinicalVitalDto,
   ClinicalEvolutionQueryDto,
+  ClinicalMembershipListQueryDto,
   UpdateClinicalEncounterDto,
   VoidClinicalEncounterDto,
   UpsertProfessionalProfileDto,
@@ -69,14 +71,18 @@ export class ClinicalController {
   @RequirePermissions(PERMISSIONS.CLINICAL.ENCOUNTERS_CREATE)
   listPractitioners(
     @CurrentTenant() tenant: TenantContext,
+    @Query() query: ClinicalMembershipListQueryDto,
   ): Promise<ClinicalPractitionerListResponse> {
-    return this.clinical.listPractitioners(tenant);
+    return this.clinical.listPractitioners(tenant, query as ClinicalMembershipListQuery);
   }
 
   @Get('clinical/members')
   @RequirePermissions(PERMISSIONS.CLINICAL.RECORDS_READ)
-  listClinicalMembers(@CurrentTenant() tenant: TenantContext): Promise<ClinicalMemberListResponse> {
-    return this.clinical.listClinicalMembers(tenant);
+  listClinicalMembers(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query: ClinicalMembershipListQueryDto,
+  ): Promise<ClinicalMemberListResponse> {
+    return this.clinical.listClinicalMembers(tenant, query as ClinicalMembershipListQuery);
   }
 
   @Get('patients/:patientId/clinical-record')

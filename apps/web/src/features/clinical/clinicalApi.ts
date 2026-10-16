@@ -197,15 +197,37 @@ export const clinicalApi = {
   },
 
   async listPractitioners(signal?: AbortSignal): Promise<ClinicalPractitionerListResponse> {
-    return clinicalPractitionerListResponseSchema.parse(
-      await apiClient('/clinical/practitioners', signalInit(signal)),
-    );
+    const data: ClinicalPractitionerListResponse['data'] = [];
+    let page = 1;
+    let totalPages = 1;
+    let total = 0;
+    do {
+      const response = clinicalPractitionerListResponseSchema.parse(
+        await apiClient(`/clinical/practitioners?page=${page}&pageSize=100`, signalInit(signal)),
+      );
+      data.push(...response.data);
+      total = response.pagination.total;
+      totalPages = response.pagination.totalPages;
+      page += 1;
+    } while (page <= totalPages);
+    return { data, pagination: { page: 1, pageSize: 100, total, totalPages: total === 0 ? 0 : 1 } };
   },
 
   async listClinicalMembers(signal?: AbortSignal): Promise<ClinicalMemberListResponse> {
-    return clinicalMemberListResponseSchema.parse(
-      await apiClient('/clinical/members', signalInit(signal)),
-    );
+    const data: ClinicalMemberListResponse['data'] = [];
+    let page = 1;
+    let totalPages = 1;
+    let total = 0;
+    do {
+      const response = clinicalMemberListResponseSchema.parse(
+        await apiClient(`/clinical/members?page=${page}&pageSize=100`, signalInit(signal)),
+      );
+      data.push(...response.data);
+      total = response.pagination.total;
+      totalPages = response.pagination.totalPages;
+      page += 1;
+    } while (page <= totalPages);
+    return { data, pagination: { page: 1, pageSize: 100, total, totalPages: total === 0 ? 0 : 1 } };
   },
 
   async listEvolutions(
