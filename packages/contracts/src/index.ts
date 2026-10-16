@@ -2238,6 +2238,11 @@ export const availabilityRuleResponseSchema = z.object({
   createdAt: z.string().datetime({ offset: true }),
   updatedAt: z.string().datetime({ offset: true }),
 });
+export const availabilityRuleListResponseSchema = z.object({
+  data: z.array(availabilityRuleResponseSchema),
+  pagination: paginationSchema,
+  activeCount: z.number().int().nonnegative(),
+});
 
 export const availabilityRuleRequestSchema = z
   .object({
@@ -2272,6 +2277,7 @@ export type CancelAppointmentRequest = z.infer<typeof cancelAppointmentRequestSc
 export type UpdateAppointmentRequest = z.infer<typeof updateAppointmentRequestSchema>;
 export type AppointmentListQuery = z.infer<typeof appointmentListQuerySchema>;
 export type AvailabilityRuleResponse = z.infer<typeof availabilityRuleResponseSchema>;
+export type AvailabilityRuleListResponse = z.infer<typeof availabilityRuleListResponseSchema>;
 export type AvailabilityRuleRequest = z.infer<typeof availabilityRuleRequestSchema>;
 export type AvailableSlotsResponse = z.infer<typeof availableSlotsResponseSchema>;
 

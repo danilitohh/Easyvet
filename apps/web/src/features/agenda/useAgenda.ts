@@ -6,6 +6,7 @@ import { useActiveOrganizationId } from '../shared/hooks';
 import type {
   AppointmentListResponse,
   AppointmentResponse,
+  AvailabilityRuleListResponse,
   AvailabilityRuleResponse,
   AvailableSlotsResponse,
   LocationResponse,
@@ -252,14 +253,27 @@ export function notifyAvailabilityChanged(): void {
   window.dispatchEvent(new Event('easyvet:availability-changed'));
 }
 
-export function useAgendaAvailability(): LoadState<AvailabilityRuleResponse[]> {
+export function useAgendaAvailability(page = 1): LoadState<AvailabilityRuleListResponse> {
   const organizationId = useActiveOrganizationId();
   const enabled = appConfig.dataMode === 'mock' || Boolean(organizationId);
-  return useAbortableResource<AvailabilityRuleResponse[]>(
-    (signal) => agendaApi.listAvailability(signal),
+  return useAbortableResource<AvailabilityRuleListResponse>(
+    (signal) => agendaApi.listAvailability({ page, pageSize: 20, signal }),
     enabled,
-    [organizationId],
-    [],
+    [organizationId, page],
+    { data: [], activeCount: 0, pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 } },
+  );
+}
+
+export function useAgendaAvailabilityRule(
+  ruleId: string | undefined,
+): LoadState<AvailabilityRuleResponse> {
+  const organizationId = useActiveOrganizationId();
+  const enabled = (appConfig.dataMode === 'mock' || Boolean(organizationId)) && Boolean(ruleId);
+  return useAbortableResource<AvailabilityRuleResponse>(
+    (signal) => agendaApi.findAvailability(ruleId!, signal),
+    enabled,
+    [organizationId, ruleId],
+    null,
   );
 }
 

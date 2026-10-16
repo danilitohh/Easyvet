@@ -14,6 +14,7 @@ vi.mock('@veterinary-saas/contracts', () => {
     appointmentResponseSchema: passthrough,
     availableSlotsResponseSchema: passthrough,
     availabilityRuleRequestSchema: passthrough,
+    availabilityRuleListResponseSchema: passthrough,
     availabilityRuleResponseSchema: { ...passthrough, array: () => passthrough },
     cancelAppointmentRequestSchema: { parse: (value: unknown) => value },
     createAppointmentRequestSchema: { parse: (value: unknown) => value },
@@ -201,7 +202,7 @@ describe('agendaApi', () => {
       notes: 'Horario general',
     };
     await agendaApi.listAvailability();
-    expect(apiClientMock).toHaveBeenLastCalledWith('/availability-rules', {});
+    expect(apiClientMock).toHaveBeenLastCalledWith('/availability-rules?page=1&pageSize=20', {});
     await agendaApi.createAvailability(input);
     expect(apiClientMock).toHaveBeenLastCalledWith('/availability-rules', {
       method: 'POST',

@@ -22,6 +22,7 @@ import { agendaApi } from './agendaApi';
 import {
   notifyAvailabilityChanged,
   useAgendaAvailability,
+  useAgendaAvailabilityRule,
   useAgendaMemberships,
   useAgendaOrganization,
   useAgendaReferenceData,
@@ -73,7 +74,9 @@ export function AvailabilityPage() {
   const organizationId = useActiveOrganizationId();
   const organization = useAgendaOrganization();
   const references = useAgendaReferenceData();
-  const availability = useAgendaAvailability();
+  const [availabilityPage, setAvailabilityPage] = useState(1);
+  const availability = useAgendaAvailability(availabilityPage);
+  const availabilityRule = useAgendaAvailabilityRule(ruleId);
   const canManage = useCan(PERMISSION.AVAILABILITY_MANAGE);
   const isCreateRoute = location.pathname.endsWith('/nueva');
   const formOpen = Boolean(ruleId || isCreateRoute);
@@ -97,13 +100,15 @@ export function AvailabilityPage() {
     () => memberships.data?.data.filter((membership) => membership.status === 'ACTIVE') ?? [],
     [memberships.data],
   );
-  const editingRule = ruleId ? availability.data?.find((rule) => rule.id === ruleId) : null;
+  const editingRule = ruleId
+    ? (availabilityRule.data ?? availability.data?.data.find((rule) => rule.id === ruleId))
+    : null;
   const visibleRules = useMemo(
     () =>
-      (availability.data ?? []).filter(
+      (availability.data?.data ?? []).filter(
         (rule) => filter === 'ALL' || (filter === 'ACTIVE' ? rule.isActive : !rule.isActive),
       ),
-    [availability.data, filter],
+    [availability.data?.data, filter],
   );
   const groupedRules = useMemo(() => {
     const groups = new Map<string, AvailabilityRuleResponse[]>();
@@ -112,7 +117,7 @@ export function AvailabilityPage() {
     );
     return [...groups.entries()];
   }, [visibleRules]);
-  const activeRuleCount = (availability.data ?? []).filter((rule) => rule.isActive).length;
+  const activeRuleCount = availability.data?.activeCount ?? 0;
 
   useEffect(() => {
     if (originalOrganizationRef.current && organizationId !== originalOrganizationRef.current) {
@@ -121,6 +126,7 @@ export function AvailabilityPage() {
       setServerError(null);
       setProfessionalSearch('');
       setProfessionalPage(1);
+      setAvailabilityPage(1);
       navigate('/agenda/disponibilidad', { replace: true });
     }
   }, [navigate, organizationId]);
@@ -203,7 +209,12 @@ export function AvailabilityPage() {
     }
   }
 
-  if (organization.loading || references.loading || availability.loading) {
+  if (
+    organization.loading ||
+    references.loading ||
+    availability.loading ||
+    (Boolean(ruleId) && availabilityRule.loading)
+  ) {
     return (
       <Card className="resource-card">
         <LoadingState label="Cargando disponibilidad" />
@@ -212,6 +223,8 @@ export function AvailabilityPage() {
   }
   if (availability.error)
     return <ResourceError error={availability.error} onRetry={availability.reload} />;
+  if (availabilityRule.error)
+    return <ResourceError error={availabilityRule.error} onRetry={availabilityRule.reload} />;
   if (ruleId && !editingRule) {
     return <ResourceError error={new ApiError('Resource not found', 404, 'RESOURCE_NOT_FOUND')} />;
   }
@@ -287,7 +300,10 @@ export function AvailabilityPage() {
           <Select
             aria-label="Filtrar reglas por estado"
             value={filter}
-            onChange={(event) => setFilter(event.target.value as typeof filter)}
+            onChange={(event) => {
+              setFilter(event.target.value as typeof filter);
+              setAvailabilityPage(1);
+            }}
           >
             <option value="ALL">Todas</option>
             <option value="ACTIVE">Activas</option>
@@ -313,10 +329,8 @@ export function AvailabilityPage() {
                           </span>
                         </div>
                         <p>
-                          {rule.membershipId
-                            ? professionalName(rule)
-                            : 'Horario general de sede'}{' '}
-                          · intervalo de {rule.slotMinutes} min
+                          {rule.membershipId ? professionalName(rule) : 'Horario general de sede'} ·
+                          intervalo de {rule.slotMinutes} min
                         </p>
                         {rule.notes ? <small>{rule.notes}</small> : null}
                       </div>
@@ -353,6 +367,16 @@ export function AvailabilityPage() {
             );
           })
         )}
+        <PaginationControls
+          page={availability.data?.pagination.page ?? availabilityPage}
+          totalPages={availability.data?.pagination.totalPages ?? 1}
+          onChange={setAvailabilityPage}
+          ariaLabel="Paginación de reglas de disponibilidad"
+        />
+        <p className="availability-list__note">
+          Mostrando {availability.data?.data.length ?? 0} de{' '}
+          {availability.data?.pagination.total ?? 0} reglas.
+        </p>
         {activeRuleCount === 0 ? (
           <Alert tone="warning">
             No hay reglas activas aplicables: el sistema está en modo UNRESTRICTED.
@@ -473,7 +497,11 @@ function AvailabilityForm({
           placeholder="Nombre o correo del profesional"
         />
       </FormField>
-      <FormField label="Profesional" htmlFor="availability-membership" hint="Vacío significa horario general de sede.">
+      <FormField
+        label="Profesional"
+        htmlFor="availability-membership"
+        hint="Vacío significa horario general de sede."
+      >
         <Select
           id="availability-membership"
           value={form.membershipId ?? ''}
@@ -490,7 +518,9 @@ function AvailabilityForm({
           ))}
         </Select>
         <p role="status" aria-live="polite">
-          {membershipLoading ? 'Buscando profesionales…' : `${membershipTotal} profesionales activos`}
+          {membershipLoading
+            ? 'Buscando profesionales…'
+            : `${membershipTotal} profesionales activos`}
         </p>
         {membershipError ? (
           <div role="alert">

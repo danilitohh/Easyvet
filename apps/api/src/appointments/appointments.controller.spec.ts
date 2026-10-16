@@ -22,42 +22,51 @@ describe('AppointmentsController availability membership summary', () => {
       createdAt,
       updatedAt: createdAt,
     };
-    const listAvailability = jest.fn(async (requestedOrganizationId: string) => {
-      expect(requestedOrganizationId).toBe(organizationId);
-      return [
-        {
-          ...rule,
-          membership: {
-            id: rule.membershipId,
-            organizationId,
-            role: 'VETERINARIAN',
-            user: { email: 'vet@easyvet.test' },
-          },
-        },
-        {
-          ...rule,
-          id: '66666666-6666-4666-8666-666666666666',
-          membership: {
-            id: rule.membershipId,
-            organizationId: otherOrganizationId,
-            role: 'VETERINARIAN',
-            user: { email: 'foreign@other-clinic.test' },
-          },
-        },
-      ];
-    });
+    const listAvailability = jest.fn(
+      async (requestedOrganizationId: string, _query: { page: number; pageSize: number }) => {
+        expect(requestedOrganizationId).toBe(organizationId);
+        return {
+          data: [
+            {
+              ...rule,
+              membership: {
+                id: rule.membershipId,
+                organizationId,
+                role: 'VETERINARIAN',
+                user: { email: 'vet@easyvet.test' },
+              },
+            },
+            {
+              ...rule,
+              id: '66666666-6666-4666-8666-666666666666',
+              membership: {
+                id: rule.membershipId,
+                organizationId: otherOrganizationId,
+                role: 'VETERINARIAN',
+                user: { email: 'foreign@other-clinic.test' },
+              },
+            },
+          ],
+          activeCount: 2,
+          pagination: { page: 1, pageSize: 20, total: 2, totalPages: 1 },
+        };
+      },
+    );
     const controller = new AppointmentsController({
       listAvailability,
     } as unknown as AppointmentsService);
     const tenant = { organizationId } as TenantContext;
 
-    const result = await controller.listAvailability(tenant);
-    expect(result).toMatchObject([
-      { membership: { id: rule.membershipId, user: { email: 'vet@easyvet.test' } } },
-      { membership: null },
-    ]);
-    expect(listAvailability).toHaveBeenCalledWith(organizationId);
-    expect(result[0]).not.toHaveProperty('membership.organizationId');
-    expect(result[1]).not.toHaveProperty('membership.user.email', 'foreign@other-clinic.test');
+    const result = await controller.listAvailability(tenant, { page: 1, pageSize: 20 });
+    expect(result).toMatchObject({
+      data: [
+        { membership: { id: rule.membershipId, user: { email: 'vet@easyvet.test' } } },
+        { membership: null },
+      ],
+      activeCount: 2,
+    });
+    expect(listAvailability).toHaveBeenCalledWith(organizationId, { page: 1, pageSize: 20 });
+    expect(result.data[0]).not.toHaveProperty('membership.organizationId');
+    expect(result.data[1]).not.toHaveProperty('membership.user.email', 'foreign@other-clinic.test');
   });
 });

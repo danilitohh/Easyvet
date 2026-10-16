@@ -13,6 +13,7 @@ import {
 import type {
   AppointmentListResponse,
   AppointmentResponse,
+  AvailabilityRuleListResponse,
   AvailabilityRuleResponse,
   AvailableSlotsResponse,
 } from '@veterinary-saas/contracts';
@@ -26,6 +27,7 @@ import { TenantContextGuard } from '../authorization/tenant-context.guard';
 import {
   AppointmentListQueryDto,
   AvailabilityRuleDto,
+  AvailabilityRuleListQueryDto,
   AvailableSlotsQueryDto,
   CancelAppointmentDto,
   CreateAppointmentDto,
@@ -52,7 +54,7 @@ function toAppointmentResponse(
 
 function toAvailabilityResponse(
   rule:
-    | Awaited<ReturnType<AppointmentsService['listAvailability']>>[number]
+    | Awaited<ReturnType<AppointmentsService['listAvailability']>>['data'][number]
     | Awaited<ReturnType<AppointmentsService['createAvailability']>>,
 ): AvailabilityRuleResponse {
   const membership =
@@ -226,9 +228,24 @@ export class AppointmentsController {
   @RequirePermissions(PERMISSIONS.AVAILABILITY.READ)
   async listAvailability(
     @CurrentTenant() tenant: TenantContext,
-  ): Promise<AvailabilityRuleResponse[]> {
-    return (await this.appointments.listAvailability(tenant.organizationId)).map(
-      toAvailabilityResponse,
+    @Query() query: AvailabilityRuleListQueryDto,
+  ): Promise<AvailabilityRuleListResponse> {
+    const result = await this.appointments.listAvailability(tenant.organizationId, query);
+    return {
+      data: result.data.map(toAvailabilityResponse),
+      pagination: result.pagination,
+      activeCount: result.activeCount,
+    };
+  }
+
+  @Get('availability-rules/:ruleId')
+  @RequirePermissions(PERMISSIONS.AVAILABILITY.READ)
+  async findAvailability(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('ruleId', new ParseUUIDPipe()) ruleId: string,
+  ): Promise<AvailabilityRuleResponse> {
+    return toAvailabilityResponse(
+      await this.appointments.findAvailability(tenant.organizationId, ruleId),
     );
   }
 

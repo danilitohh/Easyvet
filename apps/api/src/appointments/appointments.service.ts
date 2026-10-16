@@ -19,6 +19,7 @@ import { PrismaService } from '../infrastructure/database/prisma.service';
 import {
   AppointmentListQueryDto,
   AvailabilityRuleDto,
+  AvailabilityRuleListQueryDto,
   AvailableSlotsQueryDto,
   CancelAppointmentDto,
   CreateAppointmentDto,
@@ -469,12 +470,38 @@ export class AppointmentsService {
     return this.findById(organizationId, appointmentId);
   }
 
-  listAvailability(organizationId: string) {
-    return this.prisma.availabilityRule.findMany({
-      where: { organizationId },
-      orderBy: [{ clinicLocationId: 'asc' }, { dayOfWeek: 'asc' }, { startLocalTime: 'asc' }],
+  async listAvailability(organizationId: string, query: AvailabilityRuleListQueryDto) {
+    const where = { organizationId };
+    const [data, total, activeCount] = await Promise.all([
+      this.prisma.availabilityRule.findMany({
+        where,
+        orderBy: [{ clinicLocationId: 'asc' }, { dayOfWeek: 'asc' }, { startLocalTime: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        select: availabilityListSelect,
+      }),
+      this.prisma.availabilityRule.count({ where }),
+      this.prisma.availabilityRule.count({ where: { ...where, isActive: true } }),
+    ]);
+    return {
+      data,
+      activeCount,
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / query.pageSize),
+      },
+    };
+  }
+
+  async findAvailability(organizationId: string, ruleId: string) {
+    const rule = await this.prisma.availabilityRule.findFirst({
+      where: { id: ruleId, organizationId },
       select: availabilityListSelect,
     });
+    if (!rule) throw new NotFoundException({ code: 'AVAILABILITY_RULE_NOT_FOUND' });
+    return rule;
   }
 
   async createAvailability(organizationId: string, input: AvailabilityRuleDto) {

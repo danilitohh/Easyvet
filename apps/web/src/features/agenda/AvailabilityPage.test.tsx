@@ -28,7 +28,17 @@ vi.mock('./agendaApi', () => ({
 vi.mock('./useAgenda', () => ({
   notifyAvailabilityChanged: vi.fn(),
   useAgendaAvailability: () => ({
-    data: mocks.rules,
+    data: {
+      data: mocks.rules,
+      activeCount: mocks.rules.filter((rule) => rule.isActive).length,
+      pagination: { page: 1, pageSize: 20, total: mocks.rules.length, totalPages: 1 },
+    },
+    loading: false,
+    error: null,
+    reload: mocks.availabilityReload,
+  }),
+  useAgendaAvailabilityRule: () => ({
+    data: null,
     loading: false,
     error: null,
     reload: mocks.availabilityReload,
@@ -104,7 +114,9 @@ describe('AvailabilityPage', () => {
       target: { value: 'vet@' },
     });
     expect(mocks.membershipLookup).toHaveBeenLastCalledWith('vet@', 1);
-    fireEvent.click(screen.getByRole('button', { name: 'Paginación de profesionales: página siguiente' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Paginación de profesionales: página siguiente' }),
+    );
     expect(mocks.membershipLookup).toHaveBeenLastCalledWith('vet@', 2);
   });
 

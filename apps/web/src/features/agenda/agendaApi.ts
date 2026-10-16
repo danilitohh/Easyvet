@@ -3,6 +3,7 @@ import {
   appointmentResponseSchema,
   availableSlotsResponseSchema,
   availabilityRuleRequestSchema,
+  availabilityRuleListResponseSchema,
   availabilityRuleResponseSchema,
   cancelAppointmentRequestSchema,
   createAppointmentRequestSchema,
@@ -14,6 +15,7 @@ import {
   updateAppointmentRequestSchema,
   type AvailableSlotsResponse,
   type AvailabilityRuleRequest,
+  type AvailabilityRuleListResponse,
   type AvailabilityRuleResponse,
   type CancelAppointmentRequest,
   type CreateAppointmentRequest,
@@ -56,6 +58,11 @@ export type AvailableSlotsParams = {
 };
 
 export type AvailabilityRuleInput = AvailabilityRuleRequest;
+export type AvailabilityRuleListParams = {
+  page?: number;
+  pageSize?: number;
+  signal?: AbortSignal;
+};
 
 function queryString(values: Record<string, string | undefined>): string {
   const query = new URLSearchParams();
@@ -167,10 +174,23 @@ export const agendaApi = {
   },
 
   // Availability rules are civil recurring schedules and never receive tenant fields from the UI.
-  async listAvailability(signal?: AbortSignal): Promise<AvailabilityRuleResponse[]> {
-    return availabilityRuleResponseSchema
-      .array()
-      .parse(await apiClient('/availability-rules', signalInit(signal)));
+  async listAvailability({
+    page = 1,
+    pageSize = 20,
+    signal,
+  }: AvailabilityRuleListParams = {}): Promise<AvailabilityRuleListResponse> {
+    return availabilityRuleListResponseSchema.parse(
+      await apiClient(
+        `/availability-rules${queryString({ page: String(page), pageSize: String(pageSize) })}`,
+        signalInit(signal),
+      ),
+    );
+  },
+
+  async findAvailability(id: string, signal?: AbortSignal): Promise<AvailabilityRuleResponse> {
+    return availabilityRuleResponseSchema.parse(
+      await apiClient(`/availability-rules/${id}`, signalInit(signal)),
+    );
   },
 
   async createAvailability(input: AvailabilityRuleInput): Promise<AvailabilityRuleResponse> {
