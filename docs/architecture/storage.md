@@ -15,18 +15,28 @@ no exponen `storageKey` ni paths locales.
 
 ## Drivers y configuración
 
-- `STORAGE_DRIVER=local` (default): `LocalStorageAdapter`, root configurado por
-  `STORAGE_LOCAL_ROOT`; recomendado solo para desarrollo/local QA.
-- `STORAGE_DRIVER=s3`: `S3CompatibleStorageAdapter` usa el SDK S3, endpoint,
-  región, bucket, credenciales y `forcePathStyle` desde variables de entorno. La
-  configuración valida que endpoint, bucket y credenciales estén presentes al
-  seleccionar el driver.
+- **Local:** `STORAGE_DRIVER=local` selecciona `LocalStorageAdapter`, con root en
+  `STORAGE_LOCAL_ROOT`. Es el valor por defecto fuera de Vercel y se recomienda
+  solo para desarrollo o QA local. La configuración rechaza este driver en Vercel.
+- **Supabase Storage:** `STORAGE_DRIVER=supabase` selecciona
+  `SupabaseStorageAdapter`. En Vercel se infiere `supabase` si no se establece
+  `STORAGE_DRIVER`; fuera de Vercel, `local` sigue siendo el default. Requiere
+  `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en el servidor. El bucket se define
+  con `SUPABASE_STORAGE_BUCKET` y su valor predeterminado es
+  `easyvet-clinical-documents`. El adaptador usa la clave de servicio solo desde
+  backend; el bucket de producción debe permanecer privado.
+- **S3 compatible:** `STORAGE_DRIVER=s3` selecciona
+  `S3CompatibleStorageAdapter`, que requiere endpoint, bucket y credenciales; la
+  región y `forcePathStyle` se configuran mediante variables de entorno.
 
-La interfaz de driver S3 está implementada, pero esta fase no configuró una cuenta
-ni ejecutó QA contra un servicio remoto. Para producción se debe usar un bucket
-privado, TLS, credenciales de mínimo privilegio, cifrado/retención según política
-del producto y observabilidad del proveedor. No configurar el root local en una
-ruta servida estáticamente por el frontend.
+La selección y validación se implementan en `apps/api/src/config/env.ts` y
+`apps/api/src/storage/storage.module.ts`. Esto describe el comportamiento del
+código; no demuestra qué overrides o credenciales están configurados actualmente
+en Production de Vercel. La interfaz S3 está implementada, pero no se verificó una
+cuenta ni QA contra un servicio S3 remoto. En cualquier proveedor de producción se
+requieren bucket privado, TLS, credenciales de mínimo privilegio,
+cifrado/retención según política del producto y observabilidad del proveedor. No
+configurar el root local en una ruta servida estáticamente por el frontend.
 
 ## Consistencia y fallos
 
