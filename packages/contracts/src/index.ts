@@ -2175,6 +2175,14 @@ export const availabilityRuleResponseSchema = z.object({
   organizationId: z.string().uuid(),
   clinicLocationId: z.string().uuid(),
   membershipId: z.string().uuid().nullable(),
+  membership: z
+    .object({
+      id: z.string().uuid(),
+      role: membershipRoleSchema,
+      user: z.object({ email: z.string().email() }),
+    })
+    .nullable()
+    .optional(),
   dayOfWeek: z.number().int().min(0).max(6),
   startLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   endLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),

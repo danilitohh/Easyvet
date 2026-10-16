@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
+  type MembershipResponse,
   type AppointmentResponse,
   type CreateAppointmentRequest,
   type RescheduleAppointmentRequest,
@@ -12,6 +13,8 @@ import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { PaginationControls } from '../shared/ResourceFeedback';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { Select } from '../../components/ui/Select';
 import { TextInput } from '../../components/ui/TextInput';
 import { ApiError } from '../../services/apiClient';
@@ -27,6 +30,7 @@ import { agendaApi } from './agendaApi';
 import {
   useAgendaAppointment,
   useAgendaAvailableSlots,
+  useAgendaMemberships,
   useAgendaOrganization,
   useAgendaPatients,
   useAgendaReferenceData,
@@ -116,7 +120,11 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
   const previousOrganizationRef = useRef(organizationId);
   const initializedRef = useRef(false);
   const [patientSearch, setPatientSearch] = useState('');
+  const [professionalSearch, setProfessionalSearch] = useState('');
+  const [professionalPage, setProfessionalPage] = useState(1);
+  const [selectedMembership, setSelectedMembership] = useState<MembershipResponse | null>(null);
   const patients = useAgendaPatients(patientSearch.trim());
+  const memberships = useAgendaMemberships(professionalSearch, professionalPage);
   const [form, setForm] = useState<AppointmentFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<unknown>(null);
@@ -125,6 +133,10 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
   useEffect(() => {
     if (!organizationId) return;
     if (previousOrganizationRef.current && previousOrganizationRef.current !== organizationId) {
+      setSelectedMembership(null);
+      setProfessionalSearch('');
+      setProfessionalPage(1);
+      setForm(EMPTY_FORM);
       navigate('/agenda', { replace: true });
       return;
     }
@@ -169,8 +181,25 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
     [references.data],
   );
   const activeMemberships = useMemo(
-    () => references.data?.memberships.filter((membership) => membership.status === 'ACTIVE') ?? [],
-    [references.data],
+    () => {
+      const options = memberships.data?.data ?? [];
+      const currentAppointmentMembership = appointmentState.data?.assignedMembership;
+      const fallback: MembershipResponse | null = selectedMembership ?? (currentAppointmentMembership
+        ? {
+            id: currentAppointmentMembership.id,
+            role: currentAppointmentMembership.role,
+            clinicalRole: null,
+            status: 'ACTIVE',
+            user: { email: currentAppointmentMembership.user.email, displayName: null },
+            professionalProfileConfigured: false,
+          }
+        : null);
+      return [
+        ...options,
+        ...(fallback && !options.some(({ id }) => id === fallback.id) ? [fallback] : []),
+      ].filter((membership) => membership.status === 'ACTIVE');
+    },
+    [appointmentState.data?.assignedMembership, memberships.data, selectedMembership],
   );
   const patientOptions = useMemo(
     () => patients.data?.data.filter((patient) => patient.status === 'ACTIVE') ?? [],
@@ -465,12 +494,29 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
                 </span>
               ) : null}
             </FormField>
+            <FormField label="Buscar profesional" htmlFor="appointment-professional-search">
+              <SearchInput
+                id="appointment-professional-search"
+                value={professionalSearch}
+                onChange={(value) => {
+                  setProfessionalSearch(value);
+                  setProfessionalPage(1);
+                }}
+                placeholder="Nombre o correo del profesional"
+              />
+            </FormField>
             <FormField label="Profesional" htmlFor="appointment-professional">
               <Select
                 id="appointment-professional"
                 value={form.assignedMembershipId}
                 disabled={mode === 'reschedule'}
-                onChange={(event) => update('assignedMembershipId', event.target.value)}
+                onChange={(event) => {
+                  const membershipId = event.target.value;
+                  setSelectedMembership(
+                    memberships.data?.data.find(({ id }) => id === membershipId) ?? null,
+                  );
+                  update('assignedMembershipId', membershipId);
+                }}
               >
                 <option value="">Sin profesional asignado</option>
                 {activeMemberships.map((membership) => (
@@ -479,6 +525,27 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
                   </option>
                 ))}
               </Select>
+              <p role="status" aria-live="polite">
+                {memberships.loading
+                  ? 'Buscando profesionales…'
+                  : `${memberships.data?.total ?? 0} profesionales activos`}
+              </p>
+              {memberships.error ? (
+                <div role="alert">
+                  <p>No fue posible cargar profesionales.</p>
+                  <Button variant="secondary" type="button" onClick={memberships.reload}>
+                    Reintentar carga de profesionales
+                  </Button>
+                </div>
+              ) : null}
+              <PaginationControls
+                page={memberships.data?.page ?? 1}
+                totalPages={Math.ceil(
+                  (memberships.data?.total ?? 0) / (memberships.data?.pageSize ?? 20),
+                )}
+                onChange={setProfessionalPage}
+                ariaLabel="Paginación de profesionales"
+              />
             </FormField>
           </div>
           {mode !== 'edit' ? (

@@ -50,8 +50,6 @@ const memberSelect = {
   professionalProfile: { select: { displayName: true } },
 } satisfies Prisma.MembershipSelect;
 
-type MemberRow = Prisma.MembershipGetPayload<{ select: typeof memberSelect }>;
-
 // Provides tenant-scoped staff workflows while leaving global identity controls with Auth/Platform.
 @Injectable()
 export class MembershipsService {
@@ -76,15 +74,6 @@ export class MembershipsService {
     return this.prisma.membership.findMany({
       where: { userId },
       include: { organization: true },
-      orderBy: { createdAt: 'asc' },
-    });
-  }
-
-  // Legacy membership lookup stays compatible for professional selectors without global user status.
-  async findForOrganization(organizationId: string): Promise<MemberRow[]> {
-    return this.prisma.membership.findMany({
-      where: { organizationId },
-      select: memberSelect,
       orderBy: { createdAt: 'asc' },
     });
   }

@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
   activeOrganizationId: '22222222-2222-4222-8222-222222222222',
   rules: [] as AvailabilityRuleResponse[],
+  membershipLookup: vi.fn(),
 }));
 
 vi.mock('./agendaApi', () => ({
@@ -58,12 +59,12 @@ vi.mock('./useAgenda', () => ({
           city: 'Bogotá',
         },
       ],
-      memberships: [],
     },
     loading: false,
     error: null,
     reload: vi.fn(),
   }),
+  useAgendaMemberships: (search: string, page: number) => mocks.membershipLookup(search, page),
 }));
 vi.mock('../../auth/useCan', () => ({ useCan: () => true }));
 vi.mock('../shared/hooks', () => ({
@@ -88,6 +89,23 @@ describe('AvailabilityPage', () => {
     mocks.updateAvailability.mockReset();
     mocks.deactivateAvailability.mockReset();
     mocks.availabilityReload.mockReset();
+    mocks.membershipLookup.mockReset();
+    mocks.membershipLookup.mockReturnValue({
+      data: { data: [], page: 1, pageSize: 1, total: 2 },
+      loading: false,
+      error: null,
+      reload: vi.fn(),
+    });
+  });
+
+  it('searches and paginates professionals for availability rules', () => {
+    renderAvailability('/agenda/disponibilidad/nueva');
+    fireEvent.change(screen.getByPlaceholderText('Nombre o correo del profesional'), {
+      target: { value: 'vet@' },
+    });
+    expect(mocks.membershipLookup).toHaveBeenLastCalledWith('vet@', 1);
+    fireEvent.click(screen.getByRole('button', { name: 'Paginación de profesionales: página siguiente' }));
+    expect(mocks.membershipLookup).toHaveBeenLastCalledWith('vet@', 2);
   });
 
   it('explains unrestricted mode when no active rules exist', () => {

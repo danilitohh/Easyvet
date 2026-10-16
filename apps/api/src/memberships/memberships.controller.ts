@@ -53,9 +53,12 @@ export class MembershipsController {
 
   @Get('memberships')
   @RequirePermissions(PERMISSIONS.MEMBERS.READ)
-  async list(@CurrentTenant() tenant: TenantContext): Promise<MembershipResponse[]> {
-    const memberships = await this.memberships.findForOrganization(tenant.organizationId);
-    return memberships.map((membership) => toMembershipResponse(membership));
+  async list(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query: ListStaffDto,
+  ): Promise<PaginatedMembershipResponse> {
+    const page = await this.memberships.findPageForOrganization(tenant.organizationId, query);
+    return { ...page, data: page.data.map((membership) => toMembershipResponse(membership)) };
   }
 
   @Get('memberships/:membershipId')

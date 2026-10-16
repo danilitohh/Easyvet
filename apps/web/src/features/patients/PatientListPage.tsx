@@ -124,6 +124,7 @@ export function PatientListPage() {
       <Card className="resource-card">
         <div className="resource-toolbar">
           <SearchInput
+            id="patient-list-search"
             value={search}
             onChange={updateSearch}
             placeholder="Buscar por nombre, microchip o propietario"

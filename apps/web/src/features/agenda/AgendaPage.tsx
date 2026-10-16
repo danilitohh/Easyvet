@@ -25,6 +25,7 @@ import {
 import {
   initialAgendaRange,
   useAgendaAppointments,
+  useAgendaMemberships,
   useAgendaOrganization,
   useAgendaPatients,
   useAgendaReferenceData,
@@ -72,6 +73,9 @@ export function AgendaPage() {
   const [filters, setFilters] = useState<AgendaFilterValues>(DEFAULT_FILTERS);
   const [patientSearch, setPatientSearch] = useState('');
   const [debouncedPatientSearch, setDebouncedPatientSearch] = useState('');
+  const [professionalSearch, setProfessionalSearch] = useState('');
+  const [professionalPage, setProfessionalPage] = useState(1);
+  const memberships = useAgendaMemberships(professionalSearch, professionalPage);
   const [range, setRange] = useState<{ from: string; to: string } | null>(null);
   const previousOrganizationRef = useRef(organizationId);
 
@@ -106,6 +110,8 @@ export function AgendaPage() {
     setFilters(DEFAULT_FILTERS);
     setPatientSearch('');
     setDebouncedPatientSearch('');
+    setProfessionalSearch('');
+    setProfessionalPage(1);
     setRange(null);
     if (appointmentId) {
       const next = new URLSearchParams(searchParams);
@@ -209,17 +215,28 @@ export function AgendaPage() {
       />
       <Card className="agenda-card agenda-card--filters">
         <AgendaFilters
+          key={organizationId}
           filters={filters}
           locations={referenceData.data?.locations ?? []}
-          memberships={referenceData.data?.memberships ?? []}
+          memberships={memberships.data ?? { data: [], page: 1, pageSize: 20, total: 0 }}
+          professionalSearch={professionalSearch}
+          professionalLoading={memberships.loading}
+          professionalError={memberships.error}
           patients={patients.data?.data ?? []}
           patientSearch={patientSearch}
-          observedAppointments={allAppointments}
           onChange={setFilters}
+          onProfessionalSearchChange={(value) => {
+            setProfessionalSearch(value);
+            setProfessionalPage(1);
+          }}
+          onProfessionalPageChange={setProfessionalPage}
+          onProfessionalRetry={memberships.reload}
           onPatientSearchChange={setPatientSearch}
           onReset={() => {
             setFilters(DEFAULT_FILTERS);
             setPatientSearch('');
+            setProfessionalSearch('');
+            setProfessionalPage(1);
           }}
         />
         {referenceData.error ? (

@@ -19,7 +19,7 @@ vi.mock('@veterinary-saas/contracts', () => {
     cancelAppointmentRequestSchema: { parse: (value: unknown) => value },
     createAppointmentRequestSchema: { parse: (value: unknown) => value },
     locationResponseSchema: arrayPassthrough,
-    membershipResponseSchema: arrayPassthrough,
+    paginatedMembershipResponseSchema: passthrough,
     organizationCurrentResponseSchema: passthrough,
     patientsListResponseSchema: passthrough,
     rescheduleAppointmentRequestSchema: { parse: (value: unknown) => value },
@@ -86,10 +86,14 @@ describe('agendaApi', () => {
     expect(apiClientMock).toHaveBeenCalledWith('/organization/locations', {});
   });
 
-  it('loads memberships through the approved tenant lookup', async () => {
-    apiClientMock.mockResolvedValue([{ id: 'membership' }]);
-    await agendaApi.listMemberships();
-    expect(apiClientMock).toHaveBeenCalledWith('/organization/memberships', {});
+  it('loads one searchable page of active memberships through the tenant lookup', async () => {
+    apiClientMock.mockResolvedValue({ data: [], page: 2, pageSize: 20, total: 41 });
+    const signal = new AbortController().signal;
+    await agendaApi.listMemberships({ page: 2, pageSize: 20, search: ' vet ', signal });
+    expect(apiClientMock).toHaveBeenCalledWith(
+      '/organization/memberships?page=2&pageSize=20&status=ACTIVE&search=vet',
+      { signal },
+    );
   });
 
   it('uses paginated active patient search for the patient filter', async () => {

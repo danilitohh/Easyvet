@@ -89,6 +89,18 @@ const availabilitySelect = {
   updatedAt: true,
 } satisfies Prisma.AvailabilityRuleSelect;
 
+const availabilityListSelect = {
+  ...availabilitySelect,
+  membership: {
+    select: {
+      id: true,
+      organizationId: true,
+      role: true,
+      user: { select: { email: true } },
+    },
+  },
+} satisfies Prisma.AvailabilityRuleSelect;
+
 type AppointmentRecord = Prisma.AppointmentGetPayload<{ select: typeof appointmentSelect }>;
 type AvailabilityRecord = Prisma.AvailabilityRuleGetPayload<{ select: typeof availabilitySelect }>;
 type DomainDatabase = PrismaService | Prisma.TransactionClient;
@@ -446,7 +458,7 @@ export class AppointmentsService {
     return this.prisma.availabilityRule.findMany({
       where: { organizationId },
       orderBy: [{ clinicLocationId: 'asc' }, { dayOfWeek: 'asc' }, { startLocalTime: 'asc' }],
-      select: availabilitySelect,
+      select: availabilityListSelect,
     });
   }
 
@@ -476,7 +488,7 @@ export class AppointmentsService {
         slotMinutes: input.slotMinutes,
         notes: trimNullable(input.notes) ?? null,
       },
-      select: availabilitySelect,
+      select: availabilityListSelect,
     });
     return rule;
   }
@@ -526,7 +538,7 @@ export class AppointmentsService {
         ...(input.notes === undefined ? {} : { notes: trimNullable(input.notes) ?? null }),
         ...(input.isActive === undefined ? {} : { isActive: input.isActive }),
       },
-      select: availabilitySelect,
+      select: availabilityListSelect,
     });
   }
 
@@ -538,7 +550,7 @@ export class AppointmentsService {
     if (result.count !== 1) throw notFound();
     return this.prisma.availabilityRule.findUniqueOrThrow({
       where: { id: ruleId },
-      select: availabilitySelect,
+      select: availabilityListSelect,
     });
   }
 

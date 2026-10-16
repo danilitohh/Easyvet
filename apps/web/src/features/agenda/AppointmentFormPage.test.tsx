@@ -49,18 +49,26 @@ vi.mock('./useAgenda', () => ({
           city: 'Bogotá',
         },
       ],
-      memberships: [
+    },
+    loading: false,
+    error: null,
+    reload: vi.fn(),
+  }),
+  useAgendaMemberships: () => ({
+    data: {
+      data: [
         {
           id: '66666666-6666-4666-8666-666666666666',
           role: 'VETERINARIAN',
+          clinicalRole: null,
           status: 'ACTIVE',
-          user: {
-            id: '77777777-7777-4777-8777-777777777777',
-            email: 'vet@example.com',
-            status: 'ACTIVE',
-          },
+          user: { email: 'vet@example.com', displayName: null },
+          professionalProfileConfigured: false,
         },
       ],
+      page: 1,
+      pageSize: 20,
+      total: 1,
     },
     loading: false,
     error: null,

@@ -9,11 +9,16 @@ import type {
   AvailabilityRuleResponse,
   AvailableSlotsResponse,
   LocationResponse,
-  MembershipResponse,
   OrganizationCurrentResponse,
+  PaginatedMembershipResponse,
   PatientsListResponse,
 } from '@veterinary-saas/contracts';
-import { agendaApi, type AgendaListParams, type AgendaPatientParams } from './agendaApi';
+import {
+  agendaApi,
+  type AgendaListParams,
+  type AgendaMembershipParams,
+  type AgendaPatientParams,
+} from './agendaApi';
 import type { AgendaFilters, AgendaView } from './agendaUtils';
 import { fallbackRangeForView } from './agendaUtils';
 import { useRealtimeRevision } from '../../contexts/useRealtime';
@@ -99,31 +104,64 @@ export function useAgendaOrganization(): LoadState<OrganizationCurrentResponse> 
 
 type ReferenceData = {
   locations: LocationResponse[];
-  memberships: MembershipResponse[];
 };
 
-const EMPTY_REFERENCE_DATA: ReferenceData = { locations: [], memberships: [] };
+const EMPTY_REFERENCE_DATA: ReferenceData = { locations: [] };
+const EMPTY_MEMBERSHIPS: PaginatedMembershipResponse = {
+  data: [],
+  page: 1,
+  pageSize: 20,
+  total: 0,
+};
 
 // Reference data is tenant-scoped and loaded together so filters cannot mix organizations.
 export function useAgendaReferenceData(): LoadState<ReferenceData> {
   const organizationId = useActiveOrganizationId();
-  const canReadMemberships = useCan(PERMISSION.MEMBERSHIPS_READ);
   const enabled = appConfig.dataMode === 'mock' || Boolean(organizationId);
   const loader = useCallback(
     async (signal: AbortSignal): Promise<ReferenceData> => {
-      const [locations, memberships] = await Promise.all([
-        agendaApi.listLocations(signal),
-        canReadMemberships ? agendaApi.listMemberships(signal) : Promise.resolve([]),
-      ]);
-      return { locations, memberships };
+      const locations = await agendaApi.listLocations(signal);
+      return { locations };
     },
-    [canReadMemberships],
+    [],
   );
   return useAbortableResource(
     loader,
     enabled,
-    [organizationId, canReadMemberships],
+    [organizationId],
     EMPTY_REFERENCE_DATA,
+  );
+}
+
+// Staff lookups stay tenant-scoped and fetch only one searchable page at a time.
+export function useAgendaMemberships(search: string, page = 1): LoadState<PaginatedMembershipResponse> {
+  const organizationId = useActiveOrganizationId();
+  const canReadMemberships = useCan(PERMISSION.MEMBERSHIPS_READ);
+  const [debouncedSearch, setDebouncedSearch] = useState(search.trim());
+
+  useEffect(() => {
+    const normalized = search.trim();
+    if (!normalized) {
+      setDebouncedSearch('');
+      return;
+    }
+    const timer = window.setTimeout(() => setDebouncedSearch(normalized), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const params = useMemo<AgendaMembershipParams>(
+    () => ({ page, pageSize: 20, search: debouncedSearch }),
+    [debouncedSearch, page],
+  );
+  const loader = useCallback(
+    (signal: AbortSignal) => agendaApi.listMemberships({ ...params, signal }),
+    [params],
+  );
+  return useAbortableResource(
+    loader,
+    (appConfig.dataMode === 'mock' || Boolean(organizationId)) && canReadMemberships,
+    [organizationId, canReadMemberships, params.page, params.search],
+    EMPTY_MEMBERSHIPS,
   );
 }
 

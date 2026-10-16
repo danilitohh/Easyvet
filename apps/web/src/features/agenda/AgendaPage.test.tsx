@@ -44,7 +44,13 @@ vi.mock('./useAgenda', () => ({
     reload: vi.fn(),
   }),
   useAgendaReferenceData: () => ({
-    data: { locations: [], memberships: [] },
+    data: { locations: [] },
+    loading: false,
+    error: null,
+    reload: vi.fn(),
+  }),
+  useAgendaMemberships: () => ({
+    data: { data: [], page: 1, pageSize: 20, total: 0 },
     loading: false,
     error: null,
     reload: vi.fn(),

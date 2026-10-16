@@ -7,7 +7,7 @@ import {
   cancelAppointmentRequestSchema,
   createAppointmentRequestSchema,
   locationResponseSchema,
-  membershipResponseSchema,
+  paginatedMembershipResponseSchema,
   organizationCurrentResponseSchema,
   patientsListResponseSchema,
   rescheduleAppointmentRequestSchema,
@@ -21,7 +21,7 @@ import {
   type AppointmentListResponse,
   type AppointmentResponse,
   type LocationResponse,
-  type MembershipResponse,
+  type PaginatedMembershipResponse,
   type OrganizationCurrentResponse,
   type PatientsListResponse,
   type RescheduleAppointmentRequest,
@@ -34,6 +34,13 @@ export type AgendaListParams = AppointmentListQuery & {
 };
 
 export type AgendaPatientParams = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  signal?: AbortSignal;
+};
+
+export type AgendaMembershipParams = {
   page?: number;
   pageSize?: number;
   search?: string;
@@ -221,9 +228,20 @@ export const agendaApi = {
     return locationResponseSchema.array().parse(response);
   },
 
-  async listMemberships(signal?: AbortSignal): Promise<MembershipResponse[]> {
-    const response = await apiClient('/organization/memberships', signalInit(signal));
-    return membershipResponseSchema.array().parse(response);
+  async listMemberships({
+    signal,
+    ...params
+  }: AgendaMembershipParams = {}): Promise<PaginatedMembershipResponse> {
+    const response = await apiClient(
+      `/organization/memberships${queryString({
+        page: String(params.page ?? 1),
+        pageSize: String(params.pageSize ?? 20),
+        status: 'ACTIVE',
+        search: params.search?.trim() || undefined,
+      })}`,
+      signalInit(signal),
+    );
+    return paginatedMembershipResponseSchema.parse(response);
   },
 
   async listPatients({

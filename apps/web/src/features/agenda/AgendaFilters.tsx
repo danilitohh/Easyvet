@@ -1,22 +1,29 @@
+import { useEffect, useState } from 'react';
 import type {
-  AppointmentResponse,
   LocationResponse,
   MembershipResponse,
+  PaginatedMembershipResponse,
   PatientResponse,
 } from '@veterinary-saas/contracts';
 import { FormField } from '../../components/ui/FormField';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { Select } from '../../components/ui/Select';
+import { PaginationControls } from '../shared/ResourceFeedback';
 import { STATUS_LABELS, type AgendaFilters as AgendaFilterValues } from './agendaUtils';
 
 type AgendaFiltersProps = {
   filters: AgendaFilterValues;
   locations: LocationResponse[];
-  memberships: MembershipResponse[];
+  memberships: PaginatedMembershipResponse;
+  professionalSearch: string;
+  professionalLoading: boolean;
+  professionalError: unknown;
   patients: PatientResponse[];
   patientSearch: string;
-  observedAppointments: AppointmentResponse[];
   onChange: (filters: AgendaFilterValues) => void;
+  onProfessionalSearchChange: (value: string) => void;
+  onProfessionalPageChange: (page: number) => void;
+  onProfessionalRetry: () => void;
   onPatientSearchChange: (value: string) => void;
   onReset: () => void;
 };
@@ -30,37 +37,36 @@ export function AgendaFilters({
   filters,
   locations,
   memberships,
+  professionalSearch,
+  professionalLoading,
+  professionalError,
   patients,
   patientSearch,
-  observedAppointments,
   onChange,
+  onProfessionalSearchChange,
+  onProfessionalPageChange,
+  onProfessionalRetry,
   onPatientSearchChange,
   onReset,
 }: AgendaFiltersProps) {
-  const fallbackMemberships = observedAppointments.reduce<MembershipResponse[]>(
-    (items, appointment) => {
-      const membership = appointment.assignedMembership;
-      if (membership && !items.some((item) => item.id === membership.id)) {
-        items.push({
-          id: membership.id,
-          role: membership.role,
-          clinicalRole: null,
-          status: 'ACTIVE',
-          user: { email: membership.user.email, displayName: null },
-          professionalProfileConfigured: false,
-        });
-      }
-      return items;
-    },
-    [],
-  );
-  const professionalOptions = memberships.length ? memberships : fallbackMemberships;
+  const [selectedMembership, setSelectedMembership] = useState<MembershipResponse | null>(null);
+  useEffect(() => {
+    const selected = memberships.data.find(({ id }) => id === filters.assignedMembershipId);
+    if (selected) setSelectedMembership(selected);
+  }, [filters.assignedMembershipId, memberships.data]);
+  const professionalOptions = [
+    ...memberships.data,
+    ...(selectedMembership && !memberships.data.some(({ id }) => id === selectedMembership.id)
+      ? [selectedMembership]
+      : []),
+  ];
   const hasFilters = Boolean(
     filters.clinicLocationId ||
     filters.assignedMembershipId ||
     filters.patientId ||
     filters.status !== 'ALL' ||
-    patientSearch,
+    patientSearch ||
+    professionalSearch,
   );
 
   return (
@@ -98,16 +104,28 @@ export function AgendaFilters({
               ))}
           </Select>
         </FormField>
+        <FormField label="Buscar profesional" htmlFor="agenda-professional-search">
+          <SearchInput
+            id="agenda-professional-search"
+            value={professionalSearch}
+            onChange={onProfessionalSearchChange}
+            placeholder="Nombre o correo del profesional"
+          />
+        </FormField>
         <FormField label="Profesional" htmlFor="agenda-professional-filter">
           <Select
             id="agenda-professional-filter"
             value={filters.assignedMembershipId || 'ALL'}
-            onChange={(event) =>
+            onChange={(event) => {
+              const value = event.target.value;
+              setSelectedMembership(
+                memberships.data.find((membership) => membership.id === value) ?? null,
+              );
               onChange({
                 ...filters,
-                assignedMembershipId: event.target.value === 'ALL' ? '' : event.target.value,
-              })
-            }
+                assignedMembershipId: value === 'ALL' ? '' : value,
+              });
+            }}
           >
             <option value="ALL">Todos los profesionales</option>
             <option value="UNASSIGNED">Sin profesional asignado</option>
@@ -120,6 +138,27 @@ export function AgendaFilters({
               ))}
           </Select>
         </FormField>
+        <div>
+          <p role="status" aria-live="polite">
+            {professionalLoading
+              ? 'Buscando profesionales…'
+              : `${memberships.total} profesionales activos · página ${memberships.page}`}
+          </p>
+          {professionalError ? (
+            <div role="alert">
+              <p>No fue posible cargar profesionales.</p>
+              <button className="button button--ghost button--compact" type="button" onClick={onProfessionalRetry}>
+                Reintentar carga de profesionales
+              </button>
+            </div>
+          ) : null}
+          <PaginationControls
+            page={memberships.page}
+            totalPages={Math.ceil(memberships.total / memberships.pageSize)}
+            onChange={onProfessionalPageChange}
+            ariaLabel="Paginación de profesionales"
+          />
+        </div>
         <FormField label="Estado" htmlFor="agenda-status-filter">
           <Select
             id="agenda-status-filter"
@@ -138,6 +177,7 @@ export function AgendaFilters({
         </FormField>
         <FormField label="Buscar Patient" htmlFor="agenda-patient-search">
           <SearchInput
+            id="agenda-patient-search"
             value={patientSearch}
             onChange={onPatientSearchChange}
             placeholder="Nombre del Patient"

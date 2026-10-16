@@ -470,18 +470,35 @@ describeDatabase('real authentication and sessions', () => {
   it('lists only memberships from the active organization without sensitive fields', async () => {
     const agent = request.agent(app.getHttpServer());
     await login(singleUser.email, agent);
-    const response = await agent.get('/api/v1/organization/memberships').expect(200);
-    expect(response.body).toHaveLength(4);
+    const response = await agent
+      .get('/api/v1/organization/memberships?page=1&pageSize=20')
+      .expect(200);
+    expect(response.body.total).toBe(4);
+    expect(response.body.data).toHaveLength(4);
     expect(
-      response.body.some((membership: { id: string }) => membership.id === foreignMembershipId),
+      response.body.data.some((membership: { id: string }) => membership.id === foreignMembershipId),
     ).toBe(false);
     expect(
-      response.body.some(
+      response.body.data.some(
         (membership: { user: { email: string } }) => membership.user.email === singleUser.email,
       ),
     ).toBe(true);
-    expect(response.body[0]).not.toHaveProperty('passwordHash');
-    expect(response.body[0]).not.toHaveProperty('tokenHash');
+    expect(response.body.data[0]).not.toHaveProperty('passwordHash');
+    expect(response.body.data[0]).not.toHaveProperty('tokenHash');
+
+    const firstPage = await agent
+      .get('/api/v1/organization/memberships?page=1&pageSize=2')
+      .expect(200);
+    const secondPage = await agent
+      .get('/api/v1/organization/memberships?page=2&pageSize=2')
+      .expect(200);
+    expect(firstPage.body).toMatchObject({ page: 1, pageSize: 2, total: 4 });
+    expect(secondPage.body).toMatchObject({ page: 2, pageSize: 2, total: 4 });
+    expect(firstPage.body.data).toHaveLength(2);
+    expect(secondPage.body.data).toHaveLength(2);
+    expect(firstPage.body.data.map((member: { id: string }) => member.id)).not.toEqual(
+      secondPage.body.data.map((member: { id: string }) => member.id),
+    );
   });
 
   it('denies membership listing to a reception role', async () => {

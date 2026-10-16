@@ -51,10 +51,21 @@ function toAppointmentResponse(
 }
 
 function toAvailabilityResponse(
-  rule: Awaited<ReturnType<AppointmentsService['listAvailability']>>[number],
+  rule:
+    | Awaited<ReturnType<AppointmentsService['listAvailability']>>[number]
+    | Awaited<ReturnType<AppointmentsService['createAvailability']>>,
 ): AvailabilityRuleResponse {
+  const membership =
+    'membership' in rule && rule.membership?.organizationId === rule.organizationId
+      ? {
+          id: rule.membership.id,
+          role: rule.membership.role,
+          user: { email: rule.membership.user.email },
+        }
+      : null;
   return {
     ...rule,
+    membership,
     createdAt: rule.createdAt.toISOString(),
     updatedAt: rule.updatedAt.toISOString(),
   };

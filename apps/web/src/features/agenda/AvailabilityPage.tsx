@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import type {
-  AvailabilityRuleRequest,
-  AvailabilityRuleResponse,
-  MembershipResponse,
-} from '@veterinary-saas/contracts';
+import type { AvailabilityRuleRequest, AvailabilityRuleResponse } from '@veterinary-saas/contracts';
 import { Alert } from '../../components/ui/Alert';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -13,18 +9,20 @@ import { FormField } from '../../components/ui/FormField';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { Modal } from '../../components/ui/Modal';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { Select } from '../../components/ui/Select';
 import { TextInput } from '../../components/ui/TextInput';
 import { useCan } from '../../auth/useCan';
 import { PERMISSION } from '../../auth/permissions';
 import { ApiError } from '../../services/apiClient';
-import { ResourceError } from '../shared/ResourceFeedback';
+import { PaginationControls, ResourceError } from '../shared/ResourceFeedback';
 import { errorMessage } from '../shared/resourceUtils';
 import { DAY_OF_WEEK_LABELS, DAY_OF_WEEK_OPTIONS } from './agendaUtils';
 import { agendaApi } from './agendaApi';
 import {
   notifyAvailabilityChanged,
   useAgendaAvailability,
+  useAgendaMemberships,
   useAgendaOrganization,
   useAgendaReferenceData,
 } from './useAgenda';
@@ -61,12 +59,10 @@ function minutes(value: string): number {
   return hours * 60 + mins;
 }
 
-function professionalName(
-  rule: AvailabilityRuleResponse,
-  memberships: MembershipResponse[] | undefined,
-): string {
-  const membership = memberships?.find((item) => item.id === rule.membershipId);
-  return membership ? `${membership.user.email} · ${membership.role}` : 'Profesional específico';
+function professionalName(rule: AvailabilityRuleResponse): string {
+  return rule.membership
+    ? `${rule.membership.user.email} · ${rule.membership.role}`
+    : 'Profesional específico';
 }
 
 // Availability administration keeps civil recurring rules separate from the main calendar.
@@ -86,6 +82,9 @@ export function AvailabilityPage() {
   const [serverError, setServerError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [professionalSearch, setProfessionalSearch] = useState('');
+  const [professionalPage, setProfessionalPage] = useState(1);
+  const memberships = useAgendaMemberships(professionalSearch, professionalPage);
   const [pendingRule, setPendingRule] = useState<AvailabilityRuleResponse | null>(null);
   const [pendingAction, setPendingAction] = useState<'deactivate' | 'activate' | null>(null);
   const originalOrganizationRef = useRef(organizationId);
@@ -95,8 +94,8 @@ export function AvailabilityPage() {
     [references.data],
   );
   const activeMemberships = useMemo(
-    () => references.data?.memberships.filter((membership) => membership.status === 'ACTIVE') ?? [],
-    [references.data],
+    () => memberships.data?.data.filter((membership) => membership.status === 'ACTIVE') ?? [],
+    [memberships.data],
   );
   const editingRule = ruleId ? availability.data?.find((rule) => rule.id === ruleId) : null;
   const visibleRules = useMemo(
@@ -120,6 +119,8 @@ export function AvailabilityPage() {
       originalOrganizationRef.current = organizationId;
       setForm(EMPTY_FORM);
       setServerError(null);
+      setProfessionalSearch('');
+      setProfessionalPage(1);
       navigate('/agenda/disponibilidad', { replace: true });
     }
   }, [navigate, organizationId]);
@@ -255,6 +256,19 @@ export function AvailabilityPage() {
               errors={formErrors}
               locations={activeLocations}
               memberships={activeMemberships}
+              membershipId={form.membershipId ?? ''}
+              membershipSearch={professionalSearch}
+              membershipPage={memberships.data?.page ?? 1}
+              membershipPageSize={memberships.data?.pageSize ?? 20}
+              membershipTotal={memberships.data?.total ?? 0}
+              membershipLoading={memberships.loading}
+              membershipError={memberships.error}
+              onMembershipSearchChange={(value) => {
+                setProfessionalSearch(value);
+                setProfessionalPage(1);
+              }}
+              onMembershipPageChange={setProfessionalPage}
+              onMembershipRetry={memberships.reload}
               saving={saving}
               onChange={update}
               onSubmit={submit}
@@ -300,7 +314,7 @@ export function AvailabilityPage() {
                         </div>
                         <p>
                           {rule.membershipId
-                            ? professionalName(rule, references.data?.memberships)
+                            ? professionalName(rule)
                             : 'Horario general de sede'}{' '}
                           · intervalo de {rule.slotMinutes} min
                         </p>
@@ -398,6 +412,16 @@ type AvailabilityFormProps = {
     status: string;
     user: { email: string; displayName: string | null };
   }>;
+  membershipId: string;
+  membershipSearch: string;
+  membershipPage: number;
+  membershipPageSize: number;
+  membershipTotal: number;
+  membershipLoading: boolean;
+  membershipError: unknown;
+  onMembershipSearchChange: (value: string) => void;
+  onMembershipPageChange: (page: number) => void;
+  onMembershipRetry: () => void;
   saving: boolean;
   onChange: (field: keyof AvailabilityFormState, value: string | number) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -408,6 +432,16 @@ function AvailabilityForm({
   errors,
   locations,
   memberships,
+  membershipId,
+  membershipSearch,
+  membershipPage,
+  membershipPageSize,
+  membershipTotal,
+  membershipLoading,
+  membershipError,
+  onMembershipSearchChange,
+  onMembershipPageChange,
+  onMembershipRetry,
   saving,
   onChange,
   onSubmit,
@@ -431,23 +465,47 @@ function AvailabilityForm({
           <span className="form-field__error">{errors.clinicLocationId}</span>
         ) : null}
       </FormField>
-      <FormField
-        label="Profesional"
-        htmlFor="availability-membership"
-        hint="Vacío significa horario general de sede."
-      >
+      <FormField label="Buscar profesional" htmlFor="availability-membership-search">
+        <SearchInput
+          id="availability-membership-search"
+          value={membershipSearch}
+          onChange={onMembershipSearchChange}
+          placeholder="Nombre o correo del profesional"
+        />
+      </FormField>
+      <FormField label="Profesional" htmlFor="availability-membership" hint="Vacío significa horario general de sede.">
         <Select
           id="availability-membership"
           value={form.membershipId ?? ''}
           onChange={(event) => onChange('membershipId', event.target.value)}
         >
           <option value="">Horario general de sede</option>
+          {membershipId && !memberships.some(({ id }) => id === membershipId) ? (
+            <option value={membershipId}>Profesional específico guardado</option>
+          ) : null}
           {memberships.map((membership) => (
             <option key={membership.id} value={membership.id}>
               {membership.user.email} · {membership.role}
             </option>
           ))}
         </Select>
+        <p role="status" aria-live="polite">
+          {membershipLoading ? 'Buscando profesionales…' : `${membershipTotal} profesionales activos`}
+        </p>
+        {membershipError ? (
+          <div role="alert">
+            <p>No fue posible cargar profesionales.</p>
+            <Button variant="secondary" type="button" onClick={onMembershipRetry}>
+              Reintentar carga de profesionales
+            </Button>
+          </div>
+        ) : null}
+        <PaginationControls
+          page={membershipPage}
+          totalPages={Math.ceil(membershipTotal / membershipPageSize)}
+          onChange={onMembershipPageChange}
+          ariaLabel="Paginación de profesionales"
+        />
       </FormField>
       <FormField label="Día de la semana" htmlFor="availability-day">
         <Select

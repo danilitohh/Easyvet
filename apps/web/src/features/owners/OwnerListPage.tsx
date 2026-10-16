@@ -115,6 +115,7 @@ export function OwnerListPage() {
       <Card className="resource-card">
         <div className="resource-toolbar">
           <SearchInput
+            id="owner-list-search"
             value={search}
             onChange={updateSearch}
             placeholder="Buscar por nombre, documento, correo o teléfono"

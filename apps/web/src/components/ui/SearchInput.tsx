@@ -4,20 +4,29 @@ type SearchInputProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  id?: string;
+  ariaLabel?: string;
 };
 
 // SearchInput is intentionally controlled so route modules can own filtering state.
-export function SearchInput({ value, onChange, placeholder = 'Buscar' }: SearchInputProps) {
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = 'Buscar',
+  id,
+  ariaLabel,
+}: SearchInputProps) {
   return (
-    <label className="search-input">
-      <span className="sr-only">Buscar</span>
+    <div className="search-input">
       <span className="search-input__icon" aria-hidden="true" />
       <TextInput
+        id={id}
         type="search"
         value={value}
+        aria-label={ariaLabel ?? placeholder}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
       />
-    </label>
+    </div>
   );
 }
