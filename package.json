@@ -67,6 +67,9 @@
     "@nestjs/config": "^4.0.4",
     "@prisma/client": "^6.16.2"
   },
+  "overrides": {
+    "deepmerge-ts": "^8.0.0"
+  },
   "engines": {
     "node": ">=20.19"
   }
