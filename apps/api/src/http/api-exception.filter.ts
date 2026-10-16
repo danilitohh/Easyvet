@@ -36,7 +36,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     }
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : undefined;
-    const message = this.readMessage(exceptionResponse, status);
+    const message =
+      status >= HttpStatus.INTERNAL_SERVER_ERROR
+        ? 'Internal server error'
+        : this.readMessage(exceptionResponse, status);
     const body: ErrorBody = {
       statusCode: status,
       code: this.readCode(exceptionResponse, status),

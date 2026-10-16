@@ -1,4 +1,4 @@
-import { ArgumentsHost, NotFoundException } from '@nestjs/common';
+import { ArgumentsHost, HttpException, NotFoundException } from '@nestjs/common';
 import { describe, expect, it, jest } from '@jest/globals';
 import type { Request, Response } from 'express';
 import { ApiExceptionFilter } from './api-exception.filter';
@@ -50,5 +50,36 @@ describe('ApiExceptionFilter', () => {
     expect(responseBody).toHaveBeenCalledWith(
       expect.objectContaining({ path: '/api/v1/patients/example-id' }),
     );
+  });
+
+  it('hides internal exception messages from 5xx responses', () => {
+    const responseBody = jest.fn();
+    const response = { status: jest.fn().mockReturnThis(), json: responseBody };
+    const request = {
+      method: 'GET',
+      originalUrl: '/api/v1/reports',
+      path: '/api/v1/reports',
+    };
+    const host = {
+      switchToHttp: () => ({
+        getResponse: () => response as unknown as Response,
+        getRequest: () => request as unknown as Request,
+      }),
+    } as unknown as ArgumentsHost;
+
+    new ApiExceptionFilter().catch(
+      new HttpException('DATABASE_URL=postgres://private connection failed', 500),
+      host,
+    );
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(responseBody).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'HTTP_500',
+        message: 'Internal server error',
+      }),
+    );
+    expect(JSON.stringify(responseBody.mock.calls)).not.toContain('private connection');
+    expect(JSON.stringify(responseBody.mock.calls)).not.toContain('DATABASE_URL');
   });
 });
