@@ -170,7 +170,7 @@ export function LandingPage() {
                 </span>
                 <strong>Easyvet</strong>
               </div>
-              <span className="landing-preview-date">Hoy, 12 de octubre</span>
+              <span className="landing-preview-date">Clínica de ejemplo</span>
               <span className="landing-preview-avatar" aria-hidden="true">AM</span>
             </div>
             <div className="landing-dashboard-preview__body">
