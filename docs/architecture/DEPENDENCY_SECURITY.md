@@ -1,58 +1,57 @@
 # Seguridad y dependencias del stack
 
-## Alcance
+## Revisión vigente
 
-Checkpoint 2.6, Fases 3B–5D y núcleo clínico 6B.1–6B.2 (septiembre de 2026). Se
-revisó el stack base antes de incorporar autenticación, Owners/Patients, Agenda
-y el schema y API clínicos. No se añadieron uploads ni dependencias de runtime
-para archivos.
+Actualizado el 16 de octubre de 2026 contra el lockfile del monorepo. Los
+resultados describen advisories conocidos por npm para ese árbol; no sustituyen
+la revisión de licencias, procedencia ni una prueba dinámica de alcanzabilidad.
 
-## Versiones y cambios
+| Área                | Versión resuelta                                                            | Alcance                           |
+| ------------------- | --------------------------------------------------------------------------- | --------------------------------- |
+| NestJS runtime      | `@nestjs/common`, `core`, `platform-express` 11.2.7; `@nestjs/config` 4.0.4 | API                               |
+| TypeScript          | 6.0.3                                                                       | Build y tipos del monorepo        |
+| Prisma              | CLI y client 6.19.3                                                         | CLI en tooling; client en API     |
+| Hash de contraseñas | `argon2@0.44.0`                                                             | API runtime; Argon2id             |
+| Jest / ts-jest      | 30.5.2 / 29.4.15                                                            | Pruebas de API                    |
+| Vitest              | 5.0.5                                                                       | Pruebas de web                    |
+| Supabase JS         | 2.118.0 en el workspace API                                                 | Integración server-side           |
+| Luxon               | 3.7.2                                                                       | API runtime; fechas civiles y DST |
 
-| Área           | Antes                       | Después                                                               | Motivo                                                                    |
-| -------------- | --------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| NestJS runtime | 11.x                        | 12.0.3 (`@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`) | Actualización coordinada mientras el backend solo expone health.          |
-| NestJS config  | 4.0.2                       | 12.0.0                                                                | Compatibilidad con NestJS 12.                                             |
-| NestJS tooling | CLI/schematics/testing 11.x | 12.0.3                                                                | Versiones oficiales alineadas.                                            |
-| TypeScript     | 5.9.2                       | 6.0.3                                                                 | `@nestjs/schematics@12` requiere TypeScript 6.                            |
-| Prisma         | 6.19.3 instalado            | 6.19.3                                                                | Se conserva la misma major; no se aplicó el downgrade sugerido por audit. |
-| Prisma CLI     | `dependencies`              | `devDependencies`                                                     | Es tooling; `@prisma/client` permanece en runtime.                        |
-| Password hash  | No implementado             | `argon2@0.44.0` en API runtime                                        | Argon2id explícito para login y sesiones de Fase 3B.                      |
-| Jest           | 29.7.0                      | 30.5.2                                                                | Runner compatible con la configuración ESM requerida por NestJS 12.       |
-| Vitest         | 3.2.7                       | 3.2.7                                                                 | Se mantiene; la corrección disponible exige Vitest 5 (major).             |
-| Luxon          | No usado                    | 3.7.x en API runtime                                                  | Conversión DST segura para horas civiles de AvailabilityRule.             |
+## Resultados de `npm audit`
 
-NestJS 12 mantiene la aplicación CommonJS sobre el Node actual. Para los tests
-se añadió una configuración ESM acotada (`apps/api/tsconfig.test.json` y
-`jest.config.cjs`); no se modificó el código de la API.
+| Comando (16 oct 2026)                         | Resultado             | Interpretación                                                                       |
+| --------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
+| `npm audit --omit=dev --audit-level=moderate` | 0 vulnerabilidades    | npm no reportó advisories en las dependencias de producción del lockfile.            |
+| `npm audit --audit-level=moderate`            | 20 entradas moderadas | Son rutas transitivas repetidas de un solo advisory, no veinte advisories distintos. |
 
-## Auditoría antes y después
+La cadena afectada está en tooling de pruebas:
+`ts-jest@29.4.15` → `@jest/transform@30.5.2` → `babel-plugin-istanbul` →
+`@istanbuljs/load-nyc-config` → `js-yaml@3.15.2` → `argparse@1.0.10` →
+`sprintf-js@1.0.3`.
 
-| Paquete                                      | Antes                                                                  | Después                                            | Severidad restante              | Runtime/Dev        | Acción                                                                                                                           |
-| -------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| NestJS / `multer` transitivo                 | 9 vulnerabilidades totales; incluía 4 avisos altos asociados a uploads | Sin avisos de `multer`; Nest 12 usa `multer@2.4.0` | Ninguna conocida en este camino | Runtime transitivo | Actualización coordinada de NestJS; no se instaló `multer` directamente.                                                         |
-| `prisma` → `@prisma/config` → `deepmerge-ts` | Alta                                                                   | Alta                                               | Alta                            | Dev/tooling        | Mantener Prisma 6.19.3; el fix propuesto por audit es un downgrade incompatible. Revisar cuando exista patch oficial compatible. |
-| `vitest` → `@vitest/mocker`                  | Moderada                                                               | Moderada                                           | Moderada                        | Dev/tooling        | Mantener Vitest 3.2.7; el fix requiere Vitest 5 y no es necesario para el runtime actual.                                        |
+El [advisory GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c)
+afecta `sprintf-js` hasta 1.1.3 inclusive y no lista versión corregida al
+momento de la revisión. npm propone downgrades incompatibles de Jest/ts-jest;
+no se ejecutó `npm audit fix --force` ni se agregó un override para ocultar la
+alerta. No se encontró una ruta desde una petición del API al código afectado;
+esto es una evaluación estática, no una demostración de seguridad dinámica.
 
-El resultado de `npm audit` en el cierre de Fase 6B.2 es **5 vulnerabilidades: 2
-moderadas y 3 altas**. Las entradas repetidas corresponden a los paquetes
-afectados y sus cadenas transitivas. No se ejecutó `npm audit fix --force` ni se
-aplicaron upgrades mayores.
+## Estado de la instalación local
 
-La incorporación de `argon2@0.44.0` y `luxon@3.7.x` no añadió avisos al resultado
-del audit.
+`npm ls --depth=0` detectó que el `node_modules` presente no coincide por
+completo con los manifiestos: entre otros, la copia raíz de
+`@supabase/supabase-js` era 2.117.3 aunque el rango declarado es `^2.118.0`, y
+había paquetes extraneous. Esto no demuestra un problema del lockfile ni del
+deployment, pero sí significa que las pruebas locales que dependan de esa copia
+no validan exactamente una instalación limpia. La configuración de Vercel usa
+`npm ci`; para una verificación reproducible local, preparar una instalación
+limpia en un worktree/checkout aislado antes de reemplazar dependencias locales.
 
-## Riesgo para el runtime actual
+## Seguimiento
 
-- La vulnerabilidad de `multer` quedó resuelta al actualizar
-  `@nestjs/platform-express`; Easyvet no tiene endpoints de archivos.
-- Las vulnerabilidades restantes pertenecen a Prisma CLI/configuración y al
-  runner Vitest, ambos tooling de desarrollo. No se observó una vulnerabilidad
-  pendiente en el camino runtime de la API de health.
-- PostgreSQL, Docker Compose y el schema Prisma no se modificaron.
-
-## Criterio de seguimiento
-
-Mantener Prisma 6.19.3 y Vitest 3.2.7 hasta disponer de una corrección patch o
-minor compatible. Evaluar nuevamente antes de incorporar dominio, uploads o
-ejecución de tooling en producción.
+- Repetir ambos comandos de `npm audit` al cambiar paquetes y antes de release.
+- Mantener tooling de pruebas fuera de rutas que procesen contenido no confiable.
+- Revisar de nuevo el advisory cuando exista una versión corregida o cambie la
+  cadena transitiva; no forzar downgrades incompatibles.
+- Revisar licencias, procedencia y mantenimiento de dependencias por separado:
+  `npm audit` no certifica esos aspectos.
