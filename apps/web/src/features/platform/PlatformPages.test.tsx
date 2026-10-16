@@ -211,7 +211,8 @@ describe('PlatformOrganizationDetailPage', () => {
         },
       ],
       total: 1,
-      limit: 100,
+      page: 1,
+      pageSize: 20,
     });
     vi.mocked(platformApi.assignSubscription).mockResolvedValue({
       id: 'db9396a8-f59e-4be8-bf3e-8aa55c5b3525',

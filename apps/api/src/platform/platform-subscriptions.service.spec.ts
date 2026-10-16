@@ -10,6 +10,8 @@ describe('PlatformService subscriptions', () => {
   const actorUserId = '1420dc8d-cc6d-4509-ae6b-611a667cb267';
   const plan = { id: '7a9e751a-3238-40d8-9318-9a7cfb8bcf37', code: 'GROWTH', name: 'Crecimiento' };
   const organizationFindUnique = jest.fn<(args: unknown) => Promise<unknown>>();
+  const organizationCount = jest.fn<(args: unknown) => Promise<number>>();
+  const organizationFindMany = jest.fn<(args: unknown) => Promise<unknown[]>>();
   const planFindUnique = jest.fn<(args: unknown) => Promise<unknown>>();
   const subscriptionFindUnique = jest.fn<(args: unknown) => Promise<unknown>>();
   const subscriptionUpsert = jest.fn<(args: unknown) => Promise<unknown>>();
@@ -23,7 +25,11 @@ describe('PlatformService subscriptions', () => {
   };
   const transaction = jest.fn((callback: (client: typeof tx) => unknown) => callback(tx));
   const prisma = {
-    organization: { findUnique: organizationFindUnique },
+    organization: {
+      findUnique: organizationFindUnique,
+      count: organizationCount,
+      findMany: organizationFindMany,
+    },
     subscriptionPlan: { findUnique: planFindUnique },
     $transaction: transaction,
   } as unknown as PrismaService;
@@ -32,6 +38,8 @@ describe('PlatformService subscriptions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     organizationFindUnique.mockResolvedValue({ id: organizationId, name: 'Clínica Central' });
+    organizationCount.mockResolvedValue(45);
+    organizationFindMany.mockResolvedValue([]);
     planFindUnique.mockResolvedValue(plan);
     subscriptionFindUnique.mockResolvedValue(null);
     subscriptionUpsert.mockResolvedValue({
@@ -44,6 +52,49 @@ describe('PlatformService subscriptions', () => {
       plan,
     });
     auditCreate.mockResolvedValue({ id: 'f5e9db99-9d83-462a-bf02-95c5e66ade6e' });
+  });
+
+  it('paginates subscription management organizations in the database', async () => {
+    const organization = {
+      id: organizationId,
+      name: 'Clínica Central',
+      slug: 'clinica-central',
+      status: 'ACTIVE',
+      subscription: null,
+    };
+    organizationFindMany.mockResolvedValue([organization]);
+
+    await expect(
+      service.subscriptions({ search: 'central', page: 2, pageSize: 20 }),
+    ).resolves.toEqual({
+      data: [
+        {
+          id: organization.id,
+          name: organization.name,
+          slug: organization.slug,
+          organizationStatus: organization.status,
+          subscription: null,
+        },
+      ],
+      total: 45,
+      page: 2,
+      pageSize: 20,
+    });
+
+    expect(organizationCount).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { name: { contains: 'central', mode: 'insensitive' } },
+          { slug: { contains: 'central', mode: 'insensitive' } },
+        ],
+      },
+    });
+    expect(organizationFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 20,
+        take: 20,
+      }),
+    );
   });
 
   it('assigns the selected plan and records the change and reason atomically', async () => {

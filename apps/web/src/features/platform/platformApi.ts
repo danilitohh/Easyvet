@@ -110,11 +110,13 @@ export const platformApi = {
     );
   },
   async subscriptions(
-    params: { search?: string } = {},
+    params: { search?: string; page?: number; pageSize?: number } = {},
     signal?: AbortSignal,
   ): Promise<PlatformSubscriptionsResponse> {
     const query = new URLSearchParams();
     if (params.search?.trim()) query.set('search', params.search.trim());
+    if (params.page && params.page !== 1) query.set('page', String(params.page));
+    if (params.pageSize && params.pageSize !== 20) query.set('pageSize', String(params.pageSize));
     const suffix = query.size ? `?${query.toString()}` : '';
     return platformSubscriptionsResponseSchema.parse(
       await apiClient(`/platform/subscriptions${suffix}`, signal ? { signal } : {}),

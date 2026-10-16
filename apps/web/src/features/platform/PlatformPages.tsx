@@ -1096,6 +1096,9 @@ export function PlatformSubscriptionsPage() {
   const [plans, setPlans] = useState<PlatformSubscriptionPlan[]>([]);
   const [organizations, setOrganizations] = useState<PlatformSubscriptionEntry[]>([]);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<PlatformSubscriptionEntry | null>(null);
   const [planCode, setPlanCode] = useState('ESSENTIAL');
   const [status, setStatus] = useState('ACTIVE');
@@ -1115,11 +1118,14 @@ export function PlatformSubscriptionsPage() {
     setError('');
     Promise.all([
       platformApi.subscriptionPlans(controller.signal),
-      platformApi.subscriptions({ search }, controller.signal),
+      platformApi.subscriptions({ search, page, pageSize }, controller.signal),
     ])
       .then(([planResponse, subscriptionResponse]) => {
         setPlans(planResponse.data);
         setOrganizations(subscriptionResponse.data);
+        setTotal(subscriptionResponse.total);
+        const nextPageCount = Math.max(1, Math.ceil(subscriptionResponse.total / pageSize));
+        if (page > nextPageCount) setPage(nextPageCount);
       })
       .catch(() => {
         if (!controller.signal.aborted) setError('No fue posible cargar planes y suscripciones.');
@@ -1128,7 +1134,9 @@ export function PlatformSubscriptionsPage() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [search, reloadKey]);
+  }, [search, page, pageSize, reloadKey]);
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   function openAssignment(organization: PlatformSubscriptionEntry) {
     setSelected(organization);
@@ -1352,11 +1360,14 @@ export function PlatformSubscriptionsPage() {
               type="search"
               placeholder="Nombre o identificador"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
             />
           </FormField>
           <p className="platform-result-count">
-            {organizations.length} clínicas{organizations.length === 100 ? ' · máximo 100' : ''}
+            {total} {total === 1 ? 'clínica' : 'clínicas'}
           </p>
         </div>
         <div className="platform-table-wrap">
@@ -1433,9 +1444,15 @@ export function PlatformSubscriptionsPage() {
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          page={page}
+          totalPages={pageCount}
+          onChange={setPage}
+          ariaLabel="Paginación de suscripciones"
+        />
         <p className="platform-table__note">
-          La lista consulta como máximo 100 clínicas. La gestión de pagos y los límites de uso aún
-          no están habilitados.
+          Mostrando {organizations.length} de {total} clínicas. La gestión de pagos y los límites de
+          uso aún no están habilitados.
         </p>
       </Card>
     </div>

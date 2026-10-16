@@ -96,6 +96,19 @@ export class PlatformSubscriptionsQueryDto {
   @IsString()
   @MaxLength(160)
   search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([10, 20, 50])
+  pageSize = 20;
 }
 
 export class PlatformAccountsQueryDto {

@@ -541,37 +541,40 @@ export class PlatformService {
 
   async subscriptions(query: PlatformSubscriptionsQueryDto) {
     const search = query.search?.trim();
-    const organizations = await this.prisma.organization.findMany({
-      ...(search
-        ? {
-            where: {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' } },
-                { slug: { contains: search, mode: 'insensitive' } },
-              ],
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { slug: { contains: search, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+    const [total, organizations] = await Promise.all([
+      this.prisma.organization.count({ where }),
+      this.prisma.organization.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { name: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          subscription: {
+            select: {
+              id: true,
+              status: true,
+              interval: true,
+              startsAt: true,
+              trialEndsAt: true,
+              endsAt: true,
+              plan: { select: { code: true, name: true } },
             },
-          }
-        : {}),
-      orderBy: [{ createdAt: 'desc' }, { name: 'asc' }],
-      take: 100,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        status: true,
-        subscription: {
-          select: {
-            id: true,
-            status: true,
-            interval: true,
-            startsAt: true,
-            trialEndsAt: true,
-            endsAt: true,
-            plan: { select: { code: true, name: true } },
           },
         },
-      },
-    });
+      }),
+    ]);
     return {
       data: organizations.map((organization) => ({
         id: organization.id,
@@ -591,8 +594,9 @@ export class PlatformService {
             }
           : null,
       })),
-      total: organizations.length,
-      limit: 100,
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
     };
   }
 

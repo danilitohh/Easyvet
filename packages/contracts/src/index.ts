@@ -421,7 +421,8 @@ export const platformSubscriptionEntrySchema = z.object({
 export const platformSubscriptionsResponseSchema = z.object({
   data: z.array(platformSubscriptionEntrySchema),
   total: z.number().int().nonnegative(),
-  limit: z.number().int().positive(),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
 });
 export const assignPlatformSubscriptionSchema = z.object({
   planCode: z.enum(['ESSENTIAL', 'GROWTH', 'CLINIC_PRO']),
