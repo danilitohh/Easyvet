@@ -92,14 +92,46 @@ jobs:
           CREATE ROLE anon NOLOGIN;
           CREATE ROLE authenticated NOLOGIN;
           CREATE ROLE service_role NOLOGIN BYPASSRLS;
-          CREATE ROLE veterinary LOGIN SUPERUSER PASSWORD 'veterinary_dev_only';
+          CREATE ROLE veterinary LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'veterinary_dev_only';
           CREATE SCHEMA extensions;
+          SQL
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
+
+      - name: Verify the integration runtime role cannot bypass RLS
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            role_is_superuser boolean;
+            role_bypasses_rls boolean;
+          BEGIN
+            SELECT rolsuper, rolbypassrls
+              INTO role_is_superuser, role_bypasses_rls
+            FROM pg_roles
+            WHERE rolname = 'veterinary';
+
+            IF role_is_superuser OR role_bypasses_rls THEN
+              RAISE EXCEPTION 'The integration runtime role must not be superuser or bypass RLS';
+            END IF;
+          END;
+          $$;
           SQL
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
 
       - name: Apply migrations to ephemeral test database
         run: npx --no-install prisma migrate deploy --schema prisma/schema.prisma --config prisma.config.ts
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
+
+      - name: Grant the runtime role only migrated application data access
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT USAGE ON SCHEMA public, extensions TO veterinary;
+          GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO veterinary;
+          GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO veterinary;
+          SQL
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
 
