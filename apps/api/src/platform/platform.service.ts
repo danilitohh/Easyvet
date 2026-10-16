@@ -241,10 +241,14 @@ export class PlatformService {
     >`
       SELECT
         current_user AS role,
-        COALESCE(role_info.rolbypassrls, false) AS "bypassesRowLevelSecurity",
-        COALESCE(role_info.rolsuper, false) AS superuser
-      FROM (SELECT current_user AS role_name) AS current_role
-      LEFT JOIN pg_roles AS role_info ON role_info.rolname = current_role.role_name
+        COALESCE(
+          (SELECT role_info.rolbypassrls FROM pg_roles AS role_info WHERE role_info.rolname = current_user),
+          false
+        ) AS "bypassesRowLevelSecurity",
+        COALESCE(
+          (SELECT role_info.rolsuper FROM pg_roles AS role_info WHERE role_info.rolname = current_user),
+          false
+        ) AS superuser
     `;
     const posture = rows[0];
     if (!posture) {
