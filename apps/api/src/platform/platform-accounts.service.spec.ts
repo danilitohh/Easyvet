@@ -11,16 +11,16 @@ describe('PlatformService platform accounts', () => {
   const targetId = 'c2d02a42-e03a-4f78-99e9-78186c2a7851';
   const createdAt = new Date('2026-10-15T10:00:00.000Z');
   const normalizeEmail = jest.fn((email: string) => email.trim().toLowerCase());
-  const hash = jest.fn(async () => 'argon-hash');
-  const count = jest.fn<(...args: never[]) => Promise<number>>();
-  const findMany = jest.fn<(...args: never[]) => Promise<unknown[]>>();
-  const createMany = jest.fn<(...args: never[]) => Promise<{ count: number }>>();
-  const findUnique = jest.fn<(...args: never[]) => Promise<unknown>>();
-  const findUniqueOrThrow = jest.fn<(...args: never[]) => Promise<unknown>>();
-  const update = jest.fn<(...args: never[]) => Promise<unknown>>();
-  const sessionUpdateMany = jest.fn<(...args: never[]) => Promise<{ count: number }>>();
-  const auditCreate = jest.fn<(...args: never[]) => Promise<unknown>>();
-  const queryRaw = jest.fn<(...args: never[]) => Promise<unknown>>();
+  const hash = jest.fn<(password: string) => Promise<string>>(async () => 'argon-hash');
+  const count = jest.fn<(args: unknown) => Promise<number>>();
+  const findMany = jest.fn<(args: unknown) => Promise<unknown[]>>();
+  const createMany = jest.fn<(args: unknown) => Promise<{ count: number }>>();
+  const findUnique = jest.fn<(args: unknown) => Promise<unknown>>();
+  const findUniqueOrThrow = jest.fn<(args: unknown) => Promise<unknown>>();
+  const update = jest.fn<(args: unknown) => Promise<unknown>>();
+  const sessionUpdateMany = jest.fn<(args: unknown) => Promise<{ count: number }>>();
+  const auditCreate = jest.fn<(args: unknown) => Promise<unknown>>();
+  const queryRaw = jest.fn<(...args: unknown[]) => Promise<unknown>>();
   const tx = {
     user: { count, findMany, createMany, findUnique, findUniqueOrThrow, update },
     session: { updateMany: sessionUpdateMany },

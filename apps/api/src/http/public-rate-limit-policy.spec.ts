@@ -12,7 +12,7 @@ describe('public route rate-limit policies', () => {
 
     for (const controller of controllers) {
       for (const methodName of Object.getOwnPropertyNames(controller.prototype)) {
-        const handler = controller.prototype[methodName];
+        const handler = (controller.prototype as unknown as Record<string, unknown>)[methodName];
         if (typeof handler !== 'function' || !Reflect.getMetadata(IS_PUBLIC_KEY, handler)) continue;
         if (controller === HealthController && methodName === 'getHealth') continue;
 

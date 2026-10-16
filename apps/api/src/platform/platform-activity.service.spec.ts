@@ -59,7 +59,13 @@ describe('PlatformService activity', () => {
 
   it('rejects an inverted date range before querying the database', async () => {
     await expect(
-      service.activity({ from: '2026-10-20', to: '2026-10-01', page: 1, pageSize: 20 }),
+      service.activity({
+        action: 'ORGANIZATION_STATUS_CHANGED',
+        from: '2026-10-20',
+        to: '2026-10-01',
+        page: 1,
+        pageSize: 20,
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(count).not.toHaveBeenCalled();
     expect(findMany).not.toHaveBeenCalled();

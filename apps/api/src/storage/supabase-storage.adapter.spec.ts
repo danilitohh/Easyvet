@@ -5,16 +5,27 @@ import { SupabaseStorageAdapter } from './supabase-storage.adapter';
 describe('private Supabase document storage', () => {
   function makeAdapter() {
     const bucket = {
-      upload: jest.fn(async () => ({ data: { path: 'org/document.pdf' }, error: null })),
-      download: jest.fn(async () => ({
-        data: new Blob([Buffer.from('%PDF-1.7 test')]),
-        error: null,
-      })),
-      list: jest.fn(async () => ({ data: [{ name: 'document.pdf' }], error: null })),
-      remove: jest.fn(async () => ({ data: [{ name: 'document.pdf' }], error: null })),
+      upload: jest
+        .fn<
+          (...args: unknown[]) => Promise<{ data: { path: string } | null; error: Error | null }>
+        >()
+        .mockResolvedValue({ data: { path: 'org/document.pdf' }, error: null }),
+      download: jest
+        .fn<(...args: unknown[]) => Promise<{ data: Blob | null; error: Error | null }>>()
+        .mockResolvedValue({ data: new Blob([Buffer.from('%PDF-1.7 test')]), error: null }),
+      list: jest
+        .fn<
+          (...args: unknown[]) => Promise<{ data: { name: string }[] | null; error: Error | null }>
+        >()
+        .mockResolvedValue({ data: [{ name: 'document.pdf' }], error: null }),
+      remove: jest
+        .fn<
+          (...args: unknown[]) => Promise<{ data: { name: string }[] | null; error: Error | null }>
+        >()
+        .mockResolvedValue({ data: [{ name: 'document.pdf' }], error: null }),
     };
     const client = {
-      storage: { from: jest.fn(() => bucket) },
+      storage: { from: jest.fn<(name: string) => typeof bucket>(() => bucket) },
     } as unknown as SupabaseClient;
     const adapter = new SupabaseStorageAdapter(
       {
@@ -54,9 +65,9 @@ describe('private Supabase document storage', () => {
   it('rejects unsafe keys and does not expose provider errors to callers', async () => {
     const { adapter, bucket } = makeAdapter();
 
-    await expect(adapter.put('../outside.pdf', Buffer.from('x'), 'application/pdf')).rejects.toThrow(
-      'Invalid internal storage key',
-    );
+    await expect(
+      adapter.put('../outside.pdf', Buffer.from('x'), 'application/pdf'),
+    ).rejects.toThrow('Invalid internal storage key');
     bucket.download.mockResolvedValue({ data: null, error: new Error('secret provider detail') });
     await expect(adapter.get('org/document.pdf')).rejects.toThrow(
       'Supabase Storage download failed',

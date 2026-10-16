@@ -1,5 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { InventoryItemStatus, InventoryItemType, ClinicLocationStatus, Prisma } from '@prisma/client';
+import {
+  InventoryItemStatus,
+  InventoryItemType,
+  ClinicLocationStatus,
+  Prisma,
+} from '@prisma/client';
 import type { PrismaService } from '../infrastructure/database/prisma.service';
 import { InventoryService } from './inventory.service';
 
@@ -8,7 +13,7 @@ describe('InventoryService stock pagination', () => {
     const organizationId = '40000000-0000-4000-8000-000000000001';
     const itemId = '40000000-0000-4000-8000-000000000002';
     const locationId = '40000000-0000-4000-8000-000000000003';
-    const itemFindMany = jest.fn().mockResolvedValue([
+    const itemFindMany = jest.fn<(...args: unknown[]) => Promise<unknown[]>>().mockResolvedValue([
       {
         id: itemId,
         organizationId,
@@ -25,18 +30,18 @@ describe('InventoryService stock pagination', () => {
         updatedAt: new Date('2035-01-01T00:00:00.000Z'),
       },
     ]);
-    const itemCount = jest.fn().mockResolvedValue(45);
+    const itemCount = jest.fn<(args: unknown) => Promise<number>>().mockResolvedValue(45);
     const prisma = {
       inventoryItem: { findMany: itemFindMany, count: itemCount },
       clinicLocation: {
         findMany: jest
-          .fn()
+          .fn<(...args: unknown[]) => Promise<unknown[]>>()
           .mockResolvedValue([
             { id: locationId, name: 'Sede de prueba', status: ClinicLocationStatus.ACTIVE },
           ]),
       },
       $queryRaw: jest
-        .fn()
+        .fn<(...args: unknown[]) => Promise<unknown[]>>()
         .mockResolvedValue([
           { inventoryItemId: itemId, clinicLocationId: locationId, stock: new Prisma.Decimal('4') },
         ]),
@@ -62,7 +67,7 @@ describe('InventoryService stock pagination', () => {
   it('uses the SQL-filtered page and its full matching count for low-stock results', async () => {
     const organizationId = '40000000-0000-4000-8000-000000000011';
     const itemId = '40000000-0000-4000-8000-000000000012';
-    const itemFindMany = jest.fn().mockResolvedValue([
+    const itemFindMany = jest.fn<(...args: unknown[]) => Promise<unknown[]>>().mockResolvedValue([
       {
         id: itemId,
         organizationId,
@@ -79,7 +84,7 @@ describe('InventoryService stock pagination', () => {
         updatedAt: new Date('2035-01-01T00:00:00.000Z'),
       },
     ]);
-    const queryRaw = jest.fn().mockResolvedValue([
+    const queryRaw = jest.fn<(...args: unknown[]) => Promise<unknown[]>>().mockResolvedValue([
       {
         inventoryItemId: itemId,
         stock: new Prisma.Decimal('0'),
