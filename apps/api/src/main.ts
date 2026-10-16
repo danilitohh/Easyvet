@@ -14,6 +14,7 @@ let vercelHandler: ExpressHandler | undefined;
 
 async function createApplication() {
   const app = await NestFactory.create(AppModule);
+  app.getHttpAdapter().getInstance().disable('x-powered-by');
   const config = app.get(ConfigService<Environment, true>);
   const origin = config.get('APP_ORIGIN', { infer: true });
 
