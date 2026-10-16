@@ -10,13 +10,13 @@ import { PlatformAdminBootstrapService } from './platform-admin-bootstrap.servic
 describe('PlatformAdminBootstrapService', () => {
   const secret = 'a-very-long-one-time-bootstrap-secret-for-tests';
   const tx = {
-    $queryRaw: jest.fn(),
+    $queryRaw: jest.fn<() => Promise<Array<{ acquired: number }>>>(),
     user: {
-      count: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
+      count: jest.fn<(args: unknown) => Promise<number>>(),
+      findUnique: jest.fn<(args: unknown) => Promise<{ id: string } | null>>(),
+      create: jest.fn<(args: unknown) => Promise<{ id: string; email: string }>>(),
     },
-    platformAuditEvent: { create: jest.fn() },
+    platformAuditEvent: { create: jest.fn<(args: unknown) => Promise<{ id: string }>>() },
   };
   const prisma = {
     $transaction: jest.fn((callback: (transaction: typeof tx) => unknown) => callback(tx)),
@@ -25,7 +25,7 @@ describe('PlatformAdminBootstrapService', () => {
     normalizeEmail: jest.fn((email: string) => email.trim().toLowerCase()),
   } as unknown as UsersService;
   const passwords = {
-    hash: jest.fn().mockResolvedValue('argon-hash'),
+    hash: jest.fn<() => Promise<string>>().mockResolvedValue('argon-hash'),
   } as unknown as PasswordService;
   const config = {
     get: jest.fn().mockReturnValue(secret),

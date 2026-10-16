@@ -2,13 +2,13 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, it } from '@jest/globals';
 import request from 'supertest';
-import { AppModule } from '../app.module';
+import { HealthModule } from './health.module';
 
 describe('GET /api/v1/health', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({ imports: [HealthModule] }).compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
     await app.init();
