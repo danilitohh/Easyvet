@@ -9,7 +9,6 @@ vi.mock('../../services/apiClient', () => ({
 // API tests focus on URL construction and forwarding; contract parsing is covered by shared schemas.
 vi.mock('@veterinary-saas/contracts', () => {
   const passthrough = { parse: (value: unknown) => value };
-  const arrayPassthrough = { array: () => passthrough };
   return {
     appointmentListResponseSchema: passthrough,
     appointmentResponseSchema: passthrough,
@@ -18,7 +17,7 @@ vi.mock('@veterinary-saas/contracts', () => {
     availabilityRuleResponseSchema: { ...passthrough, array: () => passthrough },
     cancelAppointmentRequestSchema: { parse: (value: unknown) => value },
     createAppointmentRequestSchema: { parse: (value: unknown) => value },
-    locationResponseSchema: arrayPassthrough,
+    locationListResponseSchema: passthrough,
     paginatedMembershipResponseSchema: passthrough,
     organizationCurrentResponseSchema: passthrough,
     patientsListResponseSchema: passthrough,
@@ -84,9 +83,12 @@ describe('agendaApi', () => {
   });
 
   it('loads locations without hardcoded demo values', async () => {
-    apiClientMock.mockResolvedValue([{ id: 'location' }]);
+    apiClientMock.mockResolvedValue({
+      data: [{ id: 'location' }],
+      pagination: { page: 1, pageSize: 100, total: 1, totalPages: 1 },
+    });
     await agendaApi.listLocations();
-    expect(apiClientMock).toHaveBeenCalledWith('/organization/locations', {});
+    expect(apiClientMock).toHaveBeenCalledWith('/organization/locations?page=1&pageSize=100', {});
   });
 
   it('loads one searchable page of active memberships through the tenant lookup', async () => {

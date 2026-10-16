@@ -498,6 +498,21 @@ export const locationResponseSchema = z.object({
   address: z.string().nullable(),
   city: z.string().nullable(),
 });
+export const locationListResponseSchema = z.object({
+  data: z.array(locationResponseSchema),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }),
+});
+export const locationListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).max(10_000).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(100),
+  })
+  .strict();
 
 export const createLocationRequestSchema = z
   .object({
@@ -557,6 +572,8 @@ export type UpdateOrganizationRequest = z.infer<typeof updateOrganizationRequest
 export type CommercialSettingsResponse = z.infer<typeof commercialSettingsResponseSchema>;
 export type UpdateCommercialSettingsRequest = z.infer<typeof updateCommercialSettingsRequestSchema>;
 export type LocationResponse = z.infer<typeof locationResponseSchema>;
+export type LocationListResponse = z.infer<typeof locationListResponseSchema>;
+export type LocationListQuery = z.infer<typeof locationListQuerySchema>;
 export type CreateStaffRequest = z.infer<typeof createStaffRequestSchema>;
 export type UpdateMembershipRequest = z.infer<typeof updateMembershipRequestSchema>;
 export type CreateLocationRequest = z.infer<typeof createLocationRequestSchema>;

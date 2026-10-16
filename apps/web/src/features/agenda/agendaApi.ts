@@ -6,7 +6,7 @@ import {
   availabilityRuleResponseSchema,
   cancelAppointmentRequestSchema,
   createAppointmentRequestSchema,
-  locationResponseSchema,
+  locationListResponseSchema,
   paginatedMembershipResponseSchema,
   organizationCurrentResponseSchema,
   patientsListResponseSchema,
@@ -224,8 +224,18 @@ export const agendaApi = {
   },
 
   async listLocations(signal?: AbortSignal): Promise<LocationResponse[]> {
-    const response = await apiClient('/organization/locations', signalInit(signal));
-    return locationResponseSchema.array().parse(response);
+    const locations: LocationResponse[] = [];
+    let page = 1;
+    let totalPages = 1;
+    do {
+      const response = locationListResponseSchema.parse(
+        await apiClient(`/organization/locations?page=${page}&pageSize=100`, signalInit(signal)),
+      );
+      locations.push(...response.data);
+      totalPages = response.pagination.totalPages;
+      page += 1;
+    } while (page <= totalPages);
+    return locations;
   },
 
   async listMemberships({

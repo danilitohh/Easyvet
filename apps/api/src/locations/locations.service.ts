@@ -7,6 +7,7 @@ import {
   OrganizationAuditAction,
   Prisma,
 } from '@prisma/client';
+import type { LocationListQuery, LocationListResponse } from '@veterinary-saas/contracts';
 import { PrismaService } from '../infrastructure/database/prisma.service';
 
 export type CreateLocationInput = {
@@ -48,11 +49,35 @@ export class LocationsService {
     });
   }
 
-  findForOrganization(organizationId: string) {
-    return this.prisma.clinicLocation.findMany({
-      where: { organizationId },
-      orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
-    });
+  async findForOrganization(
+    organizationId: string,
+    query: LocationListQuery,
+  ): Promise<LocationListResponse> {
+    const where = { organizationId };
+    const [locations, total] = await this.prisma.$transaction([
+      this.prisma.clinicLocation.findMany({
+        where,
+        orderBy: [{ status: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.clinicLocation.count({ where }),
+    ]);
+    return {
+      data: locations.map((location) => ({
+        id: location.id,
+        name: location.name,
+        status: location.status,
+        address: location.address,
+        city: location.city,
+      })),
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / query.pageSize),
+      },
+    };
   }
 
   // Filters by both resource id and tenant id so cross-tenant ids resolve as not found.

@@ -462,8 +462,9 @@ describeDatabase('real authentication and sessions', () => {
     const list = await agent
       .get(`/api/v1/organization/locations?organizationId=${organizationSouthId}`)
       .expect(200);
-    expect(list.body).toHaveLength(1);
-    expect(list.body[0].id).toBe(locationNorthId);
+    expect(list.body.data).toHaveLength(1);
+    expect(list.body.data[0].id).toBe(locationNorthId);
+    expect(list.body.pagination).toMatchObject({ page: 1, pageSize: 100, total: 1, totalPages: 1 });
     await agent.get(`/api/v1/organization/locations/${locationSouthId}`).expect(404);
   });
 
@@ -476,7 +477,9 @@ describeDatabase('real authentication and sessions', () => {
     expect(response.body.total).toBe(4);
     expect(response.body.data).toHaveLength(4);
     expect(
-      response.body.data.some((membership: { id: string }) => membership.id === foreignMembershipId),
+      response.body.data.some(
+        (membership: { id: string }) => membership.id === foreignMembershipId,
+      ),
     ).toBe(false);
     expect(
       response.body.data.some(

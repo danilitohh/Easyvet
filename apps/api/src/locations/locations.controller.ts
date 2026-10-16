@@ -7,9 +7,14 @@ import {
   NotFoundException,
   Param,
   ParseUUIDPipe,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import type { LocationResponse } from '@veterinary-saas/contracts';
+import type {
+  LocationListQuery,
+  LocationListResponse,
+  LocationResponse,
+} from '@veterinary-saas/contracts';
 import { CurrentTenant } from '../authorization/current-tenant.decorator';
 import { RequirePermissions } from '../authorization/require-permissions.decorator';
 import { PERMISSIONS } from '../authorization/permissions';
@@ -17,7 +22,7 @@ import type { TenantContext } from '../authorization/authorization.types';
 import { PermissionGuard } from '../authorization/permission.guard';
 import { TenantContextGuard } from '../authorization/tenant-context.guard';
 import { LocationsService } from './locations.service';
-import { CreateLocationDto, UpdateLocationDto } from './locations.dto';
+import { CreateLocationDto, LocationListQueryDto, UpdateLocationDto } from './locations.dto';
 
 function resourceNotFound(): NotFoundException {
   return new NotFoundException({ code: 'RESOURCE_NOT_FOUND', message: 'Resource not found' });
@@ -44,15 +49,11 @@ export class LocationsController {
 
   @Get()
   @RequirePermissions(PERMISSIONS.LOCATIONS.READ)
-  async list(@CurrentTenant() tenant: TenantContext): Promise<LocationResponse[]> {
-    const locations = await this.locations.findForOrganization(tenant.organizationId);
-    return locations.map((location) => ({
-      id: location.id,
-      name: location.name,
-      status: location.status,
-      address: location.address,
-      city: location.city,
-    }));
+  async list(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query: LocationListQueryDto,
+  ): Promise<LocationListResponse> {
+    return this.locations.findForOrganization(tenant.organizationId, query as LocationListQuery);
   }
 
   @Get(':locationId')

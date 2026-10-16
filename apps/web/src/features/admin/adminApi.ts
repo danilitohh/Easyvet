@@ -6,6 +6,7 @@ import {
   createStaffRequestSchema,
   clinicalReportResponseSchema,
   inventoryReportResponseSchema,
+  locationListResponseSchema,
   locationResponseSchema,
   membershipResponseSchema,
   operationalReportResponseSchema,
@@ -161,9 +162,18 @@ export const adminApi = {
     );
   },
   async listLocations(signal?: AbortSignal): Promise<LocationResponse[]> {
-    return locationResponseSchema
-      .array()
-      .parse(await apiClient('/organization/locations', signalInit(signal)));
+    const locations: LocationResponse[] = [];
+    let page = 1;
+    let totalPages = 1;
+    do {
+      const response = locationListResponseSchema.parse(
+        await apiClient(`/organization/locations?page=${page}&pageSize=100`, signalInit(signal)),
+      );
+      locations.push(...response.data);
+      totalPages = response.pagination.totalPages;
+      page += 1;
+    } while (page <= totalPages);
+    return locations;
   },
   async createLocation(
     input: CreateLocationRequest,
