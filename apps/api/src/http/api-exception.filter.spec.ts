@@ -6,7 +6,11 @@ import { ApiExceptionFilter } from './api-exception.filter';
 describe('ApiExceptionFilter', () => {
   it('redacts public signature tokens and query values from error paths', () => {
     const responseBody = jest.fn();
-    const response = { status: jest.fn().mockReturnThis(), json: responseBody };
+    const response = {
+      status: jest.fn().mockReturnThis(),
+      json: responseBody,
+      getHeader: jest.fn().mockReturnValue('request-123'),
+    };
     const request = {
       originalUrl: '/api/v1/public/signatures/sample-token/sign?otp=sample-code',
       path: '/api/v1/public/signatures/sample-token/sign',
@@ -25,6 +29,7 @@ describe('ApiExceptionFilter', () => {
       expect.objectContaining({
         message: 'Signature unavailable',
         path: '/api/v1/public/signatures/[redacted]/sign',
+        requestId: 'request-123',
       }),
     );
     expect(JSON.stringify(responseBody.mock.calls)).not.toContain('sample-token');
@@ -33,7 +38,11 @@ describe('ApiExceptionFilter', () => {
 
   it('preserves ordinary route paths', () => {
     const responseBody = jest.fn();
-    const response = { status: jest.fn().mockReturnThis(), json: responseBody };
+    const response = {
+      status: jest.fn().mockReturnThis(),
+      json: responseBody,
+      getHeader: jest.fn().mockReturnValue('request-456'),
+    };
     const request = {
       originalUrl: '/api/v1/patients/example-id?include=summary',
       path: '/api/v1/patients/example-id',
@@ -54,7 +63,11 @@ describe('ApiExceptionFilter', () => {
 
   it('hides internal exception messages from 5xx responses', () => {
     const responseBody = jest.fn();
-    const response = { status: jest.fn().mockReturnThis(), json: responseBody };
+    const response = {
+      status: jest.fn().mockReturnThis(),
+      json: responseBody,
+      getHeader: jest.fn().mockReturnValue('request-789'),
+    };
     const request = {
       method: 'GET',
       originalUrl: '/api/v1/reports',
@@ -83,6 +96,7 @@ describe('ApiExceptionFilter', () => {
       expect.objectContaining({
         code: 'HTTP_500',
         message: 'Internal server error',
+        requestId: 'request-789',
       }),
     );
     expect(JSON.stringify(responseBody.mock.calls)).not.toContain('private connection');

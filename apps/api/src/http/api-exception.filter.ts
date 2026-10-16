@@ -7,11 +7,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { REQUEST_ID_HEADER, validRequestId } from './request-id.middleware';
 
 interface ErrorBody {
   statusCode: number;
   code: string;
   message: string | string[];
+  requestId: string;
 }
 
 // Error responses omit query values and redact the bearer token used by public signing routes.
@@ -29,10 +31,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
+    const requestId = this.requestId(request, response);
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logInternalError(exception, request);
+      this.logInternalError(exception, request, requestId);
     }
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : undefined;
@@ -47,12 +50,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
           ? `HTTP_${status}`
           : this.readCode(exceptionResponse, status),
       message,
+      requestId,
     };
 
     response.status(status).json({ ...body, path: responsePath(request) });
   }
 
-  private logInternalError(exception: unknown, request: Request): void {
+  private logInternalError(exception: unknown, request: Request, requestId: string): void {
     const error = exception instanceof Error ? exception : undefined;
     const prismaCode =
       typeof exception === 'object' &&
@@ -66,12 +70,22 @@ export class ApiExceptionFilter implements ExceptionFilter {
       .replace(/(password|secret|token)=\S+/gi, '$1=[redacted]');
 
     this.logger.error({
+      requestId,
       method: request.method,
       path: responsePath(request),
       errorName: error?.name ?? 'UnknownError',
       ...(prismaCode ? { prismaCode } : {}),
       ...(message ? { message } : {}),
     });
+  }
+
+  private requestId(request: Request, response: Response): string {
+    const responseId =
+      typeof response.getHeader === 'function' ? response.getHeader(REQUEST_ID_HEADER) : undefined;
+    if (validRequestId(responseId)) return responseId;
+    const incoming = typeof request.header === 'function' ? request.header('x-request-id') : null;
+    if (validRequestId(incoming)) return incoming;
+    return 'unassigned';
   }
 
   private readCode(payload: unknown, status: number): string {

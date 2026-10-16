@@ -12,6 +12,7 @@ import { MembershipsModule } from './memberships/memberships.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { UsersModule } from './users/users.module';
 import { CsrfOriginMiddleware } from './http/csrf-origin.middleware';
+import { RequestIdMiddleware } from './http/request-id.middleware';
 import { SecurityHeadersMiddleware } from './http/security-headers.middleware';
 import { OwnersModule } from './owners/owners.module';
 import { PatientsModule } from './patients/patients.module';
@@ -72,7 +73,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     // Use path-to-regexp's named wildcard syntax so Nest avoids a legacy route conversion warning.
     consumer
-      .apply(SecurityHeadersMiddleware, cookieParser(), CsrfOriginMiddleware)
+      .apply(RequestIdMiddleware, SecurityHeadersMiddleware, cookieParser(), CsrfOriginMiddleware)
       .forRoutes('{*path}');
   }
 }
