@@ -44,7 +44,7 @@ export class PlatformActivityQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(1000000)
+  @Max(10_000)
   page = 1;
 
   @IsOptional()

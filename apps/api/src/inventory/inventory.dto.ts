@@ -28,6 +28,7 @@ export class InventoryItemListQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(10_000)
   page = 1;
 
   @IsOptional()
@@ -238,6 +239,7 @@ export class InventoryStockQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(10_000)
   page = 1;
 
   @IsOptional()
@@ -272,6 +274,7 @@ export class InventoryMovementListQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(10_000)
   page = 1;
 
   @IsOptional()
