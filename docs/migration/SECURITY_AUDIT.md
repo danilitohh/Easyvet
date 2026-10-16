@@ -209,7 +209,11 @@ Una sola configuración global envía recordatorios, firmas, facturas y document
 
 ### Supabase/PostgreSQL
 
-El backend usa conexión server-side; el navegador no debería tocar tablas directamente. El RLS existente pretende revocar roles cliente, pero no cubre de forma demostrable el esquema actual. En el SaaS, la defensa debe combinar filtro obligatorio por organización, constraints/índices compuestos, políticas DB verificables y pruebas de aislamiento.
+El backend usa conexión server-side; el navegador no debería tocar tablas directamente. Una revisión de solo lectura del catálogo de producción (2026-10-16) encontró que `anon` y `authenticated` no tienen `USAGE` en `public` ni privilegios directos de lectura/escritura sobre las tablas de aplicación consultadas. Esto reduce el riesgo de acceso directo por la Data API, pero no reemplaza el aislamiento del backend.
+
+La misma revisión encontró RLS desactivado en las tablas de aplicación; `public.api_rate_limit_buckets` es la excepción (RLS habilitado y forzado, sin políticas, y privilegios directos revocados). El asesor de seguridad de Supabase reportó únicamente esa tabla interna como `rls_enabled_no_policy` (nivel informativo). La política de lectura de `realtime.messages` limita los broadcasts a `easyvet:org:<organization_id>` según el JWT. No se modificó la base de datos.
+
+Quedó sin confirmar el rol efectivo de Prisma en producción: `pg_stat_activity` no mostró una conexión identificable de la API y no se obtuvo acceso de lectura a los metadatos de variables de Vercel. El rol `postgres` observado en SQL Editor no demuestra cuál usa el runtime. Antes de diseñar políticas RLS para las tablas de negocio hay que verificar el usuario efectivo de la conexión Prisma; habilitar RLS sin esa información puede romper la API o crear una falsa sensación de aislamiento. La defensa debe combinar filtros obligatorios por organización, constraints/índices compuestos, políticas DB verificables cuando la arquitectura las soporte y pruebas de aislamiento entre tenants.
 
 ## Riesgos específicos para el SaaS multi-tenant
 
