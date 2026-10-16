@@ -22,6 +22,22 @@
       "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then DATABASE_URL=\"${POSTGRES_URL_NON_POOLING:-${DATABASE_URL:-$POSTGRES_PRISMA_URL}}\" npx --no-install prisma migrate deploy --schema ../../prisma/schema.prisma --config ../../prisma.config.ts; fi && npx --no-install prisma generate --schema ../../prisma/schema.prisma --config ../../prisma.config.ts && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api"
     }
   },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
