@@ -362,6 +362,16 @@
   background: linear-gradient(135deg, #ffffff 0%, #f7f8fa 100%);
 }
 
+.landing-preview-disclaimer {
+  position: relative;
+  z-index: 1;
+  margin: 12px 0 0;
+  color: var(--landing-muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .landing-preview-heading,
 .landing-preview-card-heading {
   display: flex;

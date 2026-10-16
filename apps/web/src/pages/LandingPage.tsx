@@ -237,6 +237,9 @@ export function LandingPage() {
               </div>
             </div>
           </div>
+          <p className="landing-preview-disclaimer">
+            Vista demostrativa · Los nombres y las cifras son ilustrativos.
+          </p>
         </AnimatedContent>
       </section>
 
