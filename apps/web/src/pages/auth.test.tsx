@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LoginPage } from './LoginPage';
 import { OrganizationSelectorPage } from './OrganizationSelectorPage';
+import { RegistrationPage } from './RegistrationPage';
 import { useAuth } from '../contexts/useAuth';
 import { AuthBoundary } from '../app/AuthBoundary';
 import { AppHeader } from '../components/layout/AppHeader';
@@ -69,6 +70,20 @@ describe('authentication screens', () => {
       'href',
       '/registro',
     );
+    expect(screen.queryByText('¿Administras Easyvet?')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Configurar acceso de plataforma' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not expose the one-time platform-admin bootstrap from clinic registration', () => {
+    render(
+      <MemoryRouter initialEntries={['/registro']}>
+        <RegistrationPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Registra tu clínica' })).toBeInTheDocument();
     expect(screen.queryByText('¿Administras Easyvet?')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Configurar acceso de plataforma' }),
