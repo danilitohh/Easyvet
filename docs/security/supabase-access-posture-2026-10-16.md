@@ -29,3 +29,10 @@ No crear los 137 índices en bloque. Revisar primero estadísticas de uso, consu
 ## Nota de consulta
 
 La vista `information_schema.schema_privileges` no existe en la instancia consultada. El acceso al esquema se verificó con `has_schema_privilege` sobre `pg_roles`; el resto de resultados de catálogo se obtuvo con `pg_class`, `pg_namespace`, `pg_roles`, `pg_policies` e `information_schema`.
+
+## Referencias legales para preparar los avisos (no son concepto jurídico)
+
+- La [Ley Estatutaria 1581 de 2012](https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php/norma.php?i=49981) regula el tratamiento de datos personales y los derechos de conocer, actualizar y rectificar la información. El aviso final requiere confirmar responsable, finalidades, canales de atención, encargados y retención real.
+- La [Ley 1480 de 2011](https://www1.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=44306), modificada para comercio electrónico por la [Ley 2439 de 2024](https://www.funcionpublica.gov.co/eva/gestornormativo/norma_pdf.php?i=257116), contempla información precontractual y reglas de retracto/devolución que dependen del contrato y del momento de inicio del servicio. La regla comercial indicada por el propietario (“sin reembolsos, sujeto a ley”) no debe convertirse en una exclusión absoluta: condiciones y excepciones requieren revisión jurídica colombiana.
+
+La publicación de política de privacidad, términos, cookies y condiciones de cancelación/reembolso sigue pendiente de los datos del responsable y revisión profesional; estas referencias no constituyen una determinación de cumplimiento.
