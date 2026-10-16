@@ -93,6 +93,7 @@ jobs:
           CREATE ROLE authenticated NOLOGIN;
           CREATE ROLE service_role NOLOGIN BYPASSRLS;
           CREATE ROLE veterinary LOGIN SUPERUSER PASSWORD 'veterinary_dev_only';
+          CREATE SCHEMA extensions;
           SQL
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
