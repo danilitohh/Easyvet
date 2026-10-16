@@ -77,10 +77,10 @@ export function ConsentsPage() {
     }
     setLoading(true);
     void documentsApi
-      .listConsents(patientId, controller.signal)
+      .listConsents(patientId, { page: 1, pageSize: 100 }, controller.signal)
       .then((result) => {
         if (!controller.signal.aborted) {
-          setItems(result);
+          setItems(result.data);
           setItemsOrganizationId(organizationId);
         }
       })
@@ -158,9 +158,13 @@ export function ConsentEncounterSection({
     setError(null);
     try {
       setItems(
-        (await documentsApi.listConsents(patientId)).filter(
-          (item) => item.clinicalEncounterId === encounterId,
-        ),
+        (
+          await documentsApi.listConsents(patientId, {
+            page: 1,
+            pageSize: 100,
+            clinicalEncounterId: encounterId,
+          })
+        ).data.filter((item) => item.clinicalEncounterId === encounterId),
       );
     } catch (requestError: unknown) {
       setError(requestError);

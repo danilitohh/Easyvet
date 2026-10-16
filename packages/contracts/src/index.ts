@@ -2332,6 +2332,14 @@ export const consentDetailSchema = z.object({
   signatureMethod: consentSignatureMethodSchema.nullable(),
   signedDocumentId: z.string().uuid().nullable(),
 });
+export const consentListResponseSchema = z.object({
+  data: z.array(consentDetailSchema),
+  pagination: z.object({
+    page: z.number().int(),
+    pageSize: z.number().int(),
+    total: z.number().int(),
+  }),
+});
 export const consentCreateRequestSchema = z.object({
   title: z.string().trim().max(300).optional(),
   purposeText: optionalText(10000),
@@ -2383,6 +2391,7 @@ export type ClinicalDocumentMetadata = z.infer<typeof clinicalDocumentMetadataSc
 export type ClinicalDocumentType = z.infer<typeof clinicalDocumentTypeSchema>;
 export type ClinicalDocumentSourceType = z.infer<typeof clinicalDocumentSourceTypeSchema>;
 export type ConsentDetail = z.infer<typeof consentDetailSchema>;
+export type ConsentListResponse = z.infer<typeof consentListResponseSchema>;
 export type PublicConsent = z.infer<typeof publicConsentSchema>;
 
 // Follow-up contracts keep civil due dates distinct from organization-local reminder instants.

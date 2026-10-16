@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentTenant } from '../authorization/current-tenant.decorator';
@@ -17,6 +18,7 @@ import { TenantContextGuard } from '../authorization/tenant-context.guard';
 import { ConsentsService } from './consents.service';
 import {
   CreateConsentDto,
+  ConsentListQueryDto,
   ExpectedVersionDto,
   UpdateConsentDraftDto,
   VoidConsentDto,
@@ -33,8 +35,9 @@ export class ConsentsController {
   listByPatient(
     @CurrentTenant() tenant: TenantContext,
     @Param('patientId', new ParseUUIDPipe()) patientId: string,
+    @Query() query: ConsentListQueryDto,
   ) {
-    return this.consents.listByPatient(tenant, patientId);
+    return this.consents.listByPatient(tenant, patientId, query);
   }
 
   @Get('consents/:consentId')

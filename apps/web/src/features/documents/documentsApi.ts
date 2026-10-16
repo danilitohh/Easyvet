@@ -1,6 +1,7 @@
 import {
   clinicalDocumentListResponseSchema,
   clinicalDocumentMetadataSchema,
+  consentListResponseSchema,
   consentCreateRequestSchema,
   consentDetailSchema,
   consentExpectedVersionRequestSchema,
@@ -49,10 +50,22 @@ export const documentsApi = {
       await apiClient(`/documents/${id}/void`, { method: 'POST', body: { reason } }),
     );
   },
-  async listConsents(patientId: string, signal?: AbortSignal): Promise<ConsentDetail[]> {
-    return consentDetailSchema
-      .array()
-      .parse(await apiClient(`/patients/${patientId}/consents`, signal ? { signal } : {}));
+  async listConsents(
+    patientId: string,
+    query: { page?: number; pageSize?: number; clinicalEncounterId?: string } = {},
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({
+      page: String(query.page ?? 1),
+      pageSize: String(query.pageSize ?? 20),
+    });
+    if (query.clinicalEncounterId) params.set('clinicalEncounterId', query.clinicalEncounterId);
+    return consentListResponseSchema.parse(
+      await apiClient(
+        `/patients/${patientId}/consents?${params.toString()}`,
+        signal ? { signal } : {},
+      ),
+    );
   },
   async consent(id: string, signal?: AbortSignal): Promise<ConsentDetail> {
     return consentDetailSchema.parse(await apiClient(`/consents/${id}`, signal ? { signal } : {}));

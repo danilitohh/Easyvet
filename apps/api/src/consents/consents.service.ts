@@ -33,7 +33,11 @@ import { PrismaService } from '../infrastructure/database/prisma.service';
 import { PASSWORD_HASH_OPTIONS } from '../auth/password.service';
 import { createStorageKey, STORAGE_SERVICE, type StorageService } from '../storage/storage.service';
 import { renderClinicalPdf } from '../documents/pdf-renderer';
-import { CreateConsentDto, UpdateConsentDraftDto } from '../documents/documents.dto';
+import {
+  ConsentListQueryDto,
+  CreateConsentDto,
+  UpdateConsentDraftDto,
+} from '../documents/documents.dto';
 
 const SAFE_PUBLIC_ERROR = {
   code: 'SIGNATURE_UNAVAILABLE',
@@ -110,28 +114,48 @@ export class ConsentsService {
     private readonly config: ConfigService<Environment, true>,
   ) {}
 
-  async listByPatient(tenant: TenantContext, patientId: string): Promise<ConsentDetail[]> {
+  async listByPatient(
+    tenant: TenantContext,
+    patientId: string,
+    query: ConsentListQueryDto,
+  ): Promise<{
+    data: ConsentDetail[];
+    pagination: { page: number; pageSize: number; total: number };
+  }> {
     this.requirePermission(tenant, 'consents.read');
     const patient = await this.prisma.patient.findFirst({
       where: { id: patientId, organizationId: tenant.organizationId },
       select: { id: true },
     });
     if (!patient) throw notFound('PATIENT_NOT_FOUND', 'Patient not found');
-    const rows = await this.prisma.consent.findMany({
-      where: { organizationId: tenant.organizationId, patientId },
-      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-      include: {
-        patient: { select: { status: true } },
-        clinicalEncounter: { select: { status: true } },
-        clinicalProcedure: { select: { status: true } },
-        signatureRequests: {
-          where: { status: ConsentSignatureRequestStatus.SIGNED },
-          orderBy: { signedAt: 'desc' },
-          take: 1,
+    const where = {
+      organizationId: tenant.organizationId,
+      patientId,
+      ...(query.clinicalEncounterId ? { clinicalEncounterId: query.clinicalEncounterId } : {}),
+    };
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.consent.count({ where }),
+      this.prisma.consent.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        include: {
+          patient: { select: { status: true } },
+          clinicalEncounter: { select: { status: true } },
+          clinicalProcedure: { select: { status: true } },
+          signatureRequests: {
+            where: { status: ConsentSignatureRequestStatus.SIGNED },
+            orderBy: { signedAt: 'desc' },
+            take: 1,
+          },
         },
-      },
-    });
-    return Promise.all(rows.map((row) => this.toDetail(row, tenant.organizationId)));
+      }),
+    ]);
+    return {
+      data: await Promise.all(rows.map((row) => this.toDetail(row, tenant.organizationId))),
+      pagination: { page: query.page, pageSize: query.pageSize, total },
+    };
   }
 
   async findOne(tenant: TenantContext, consentId: string): Promise<ConsentDetail> {
