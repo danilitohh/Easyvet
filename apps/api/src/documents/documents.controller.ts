@@ -31,6 +31,14 @@ import {
   VoidDocumentDto,
 } from './documents.dto';
 
+export const CLINICAL_DOCUMENT_UPLOAD_LIMITS = {
+  fileSize: 10 * 1024 * 1024,
+  files: 1,
+  fields: 4,
+  fieldSize: 16 * 1024,
+  fieldNameSize: 100,
+} as const;
+
 // Routes expose metadata and authenticated file streams without ever returning internal storage keys.
 @Controller()
 @UseGuards(TenantContextGuard, PermissionGuard)
@@ -65,7 +73,7 @@ export class DocumentsController {
   @Post('patients/:patientId/documents')
   @RequirePermissions(PERMISSIONS.CLINICAL.DOCUMENTS_UPLOAD)
   @RateLimit({ name: 'documents.upload.ip', identity: 'ip', limit: 20, windowMs: 15 * 60_000 })
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { limits: CLINICAL_DOCUMENT_UPLOAD_LIMITS }))
   upload(
     @CurrentTenant() tenant: TenantContext,
     @Param('patientId', new ParseUUIDPipe()) patientId: string,

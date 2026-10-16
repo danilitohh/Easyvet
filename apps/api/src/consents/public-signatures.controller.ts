@@ -18,6 +18,14 @@ import { PublicSignatureDto } from '../documents/documents.dto';
 import { RateLimit } from '../http/rate-limit.decorator';
 import { ConsentsService } from './consents.service';
 
+export const PUBLIC_SIGNATURE_UPLOAD_LIMITS = {
+  fileSize: 1024 * 1024,
+  files: 1,
+  fields: 4,
+  fieldSize: 16 * 1024,
+  fieldNameSize: 100,
+} as const;
+
 // Public token routes return only consent-signing data and explicitly prohibit caching or referrer leakage.
 @Controller('public/signatures')
 export class PublicSignaturesController {
@@ -43,7 +51,7 @@ export class PublicSignaturesController {
   )
   @Header('Cache-Control', 'no-store, max-age=0')
   @Header('Referrer-Policy', 'no-referrer')
-  @UseInterceptors(FileInterceptor('signature', { limits: { fileSize: 1024 * 1024, files: 1 } }))
+  @UseInterceptors(FileInterceptor('signature', { limits: PUBLIC_SIGNATURE_UPLOAD_LIMITS }))
   sign(
     @Param('token') token: string,
     @Body() body: PublicSignatureDto,

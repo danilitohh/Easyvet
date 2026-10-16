@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 import { RATE_LIMIT_POLICY_KEY } from '../http/rate-limit.decorator';
-import { PublicSignaturesController } from './public-signatures.controller';
+import {
+  PUBLIC_SIGNATURE_UPLOAD_LIMITS,
+  PublicSignaturesController,
+} from './public-signatures.controller';
 
 describe('PublicSignaturesController rate limits', () => {
   it('limits public consent reads and signatures by IP and token', () => {
@@ -17,5 +20,15 @@ describe('PublicSignaturesController rate limits', () => {
       { name: 'public-signature.sign.ip', identity: 'ip', limit: 10, windowMs: 60 * 60_000 },
       { name: 'public-signature.sign.token', identity: 'token', limit: 5, windowMs: 60 * 60_000 },
     ]);
+  });
+
+  it('bounds the signature file and multipart fields', () => {
+    expect(PUBLIC_SIGNATURE_UPLOAD_LIMITS).toEqual({
+      fileSize: 1024 * 1024,
+      files: 1,
+      fields: 4,
+      fieldSize: 16 * 1024,
+      fieldNameSize: 100,
+    });
   });
 });
