@@ -11,8 +11,12 @@ type ModalProps = {
 
 // Modal handles Escape, focus return, overlay dismissal and body scroll locking.
 export function Modal({ open, title, description, eyebrow, onClose, children }: ModalProps) {
+  const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) {
@@ -23,7 +27,35 @@ export function Modal({ open, title, description, eyebrow, onClose, children }: 
     closeButtonRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const focusIsInsideDialog = dialogRef.current.contains(document.activeElement);
+
+      if (!firstElement || !lastElement) {
+        event.preventDefault();
+      } else if (!focusIsInsideDialog) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
+      } else if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -35,7 +67,7 @@ export function Modal({ open, title, description, eyebrow, onClose, children }: 
       document.body.style.overflow = originalOverflow;
       previousFocusRef.current?.focus();
     };
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) {
     return null;
@@ -49,12 +81,19 @@ export function Modal({ open, title, description, eyebrow, onClose, children }: 
         aria-label="Cerrar modal"
         onClick={onClose}
       />
-      <section className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <section
+        ref={dialogRef}
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        aria-describedby={description ? 'modal-description' : undefined}
+      >
         <div className="modal__header">
           <div>
             {eyebrow ? <p className="section-kicker">{eyebrow}</p> : null}
             <h2 id="modal-title">{title}</h2>
-            {description ? <p>{description}</p> : null}
+            {description ? <p id="modal-description">{description}</p> : null}
           </div>
           <button
             ref={closeButtonRef}
