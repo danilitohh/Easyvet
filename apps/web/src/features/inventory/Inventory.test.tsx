@@ -13,6 +13,7 @@ import { InventoryPage } from './InventoryPage';
 import { InventoryItemDetailPage } from './InventoryItemDetailPage';
 import { InventoryItemFormPage } from './InventoryItemFormPage';
 import { InventoryOperationDialog } from './InventoryOperationDialog';
+import { findUnnamedActions, findUnlabeledFormControls } from '../../test/accessibility';
 
 const mocks = vi.hoisted(() => ({
   organizationId: '40000000-0000-4000-8000-000000000001',
@@ -309,6 +310,12 @@ describe('inventory frontend', () => {
       ),
     );
     expect(mocks.createMovement).not.toHaveBeenCalled();
+  });
+
+  it('keeps the item form controls accessible', () => {
+    const view = renderItemForm('/inventario/nuevo');
+    expect(findUnlabeledFormControls(view.container)).toEqual([]);
+    expect(findUnnamedActions(view.container)).toEqual([]);
   });
 
   it('updates item metadata and locks lot tracking after the first movement', async () => {

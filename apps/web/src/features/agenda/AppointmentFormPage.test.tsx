@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppointmentResponse } from '@veterinary-saas/contracts';
 import { ApiError } from '../../services/apiClient';
 import { AppointmentFormPage } from './AppointmentFormPage';
+import { findUnnamedActions, findUnlabeledFormControls } from '../../test/accessibility';
 
 const mocks = vi.hoisted(() => ({
   createAppointment: vi.fn(),
@@ -230,6 +231,13 @@ describe('AppointmentFormPage', () => {
         endsAt: '2030-01-08T14:30:00Z',
       }),
     );
+  });
+
+  it('keeps the appointment form controls accessible', async () => {
+    const view = renderForm('create', '/agenda/nueva?date=2030-01-08&time=09:00');
+    await screen.findByLabelText('Patient *');
+    expect(findUnlabeledFormControls(view.container)).toEqual([]);
+    expect(findUnnamedActions(view.container)).toEqual([]);
   });
 
   it('keeps an unrestricted scheduling flow manual and maps 409 to a friendly error', async () => {

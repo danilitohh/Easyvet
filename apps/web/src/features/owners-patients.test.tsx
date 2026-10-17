@@ -16,6 +16,7 @@ import { PatientFormPage } from './patients/PatientFormPage';
 import { PermissionRoute } from './shared/ResourceFeedback';
 import { ownersApi } from './owners/ownersApi';
 import { patientsApi } from './patients/patientsApi';
+import { findUnnamedActions, findUnlabeledFormControls } from '../test/accessibility';
 
 vi.mock('../contexts/useAuth', () => ({ useAuth: vi.fn() }));
 vi.mock('../auth/useCan', () => ({ useCan: vi.fn() }));
@@ -133,28 +134,6 @@ function renderWithParams(path: string, route: string, element: ReactElement) {
   );
 }
 
-function expectAccessibleFormControls(container: HTMLElement) {
-  const labels = Array.from(container.querySelectorAll('label'));
-  const unlabeledControls = Array.from(
-    container.querySelectorAll('input:not([type="hidden"]), select, textarea'),
-  ).filter((control) => {
-    if (control.getAttribute('aria-label')?.trim()) return false;
-    if (control.getAttribute('aria-labelledby')?.trim()) return false;
-    if (control.closest('label')) return false;
-    const id = control.getAttribute('id');
-    return !id || !labels.some((label) => label.htmlFor === id);
-  });
-  expect(unlabeledControls).toEqual([]);
-
-  const unnamedActions = Array.from(container.querySelectorAll('button, a')).filter(
-    (action) =>
-      !action.getAttribute('aria-label')?.trim() &&
-      !action.getAttribute('aria-labelledby')?.trim() &&
-      !action.textContent?.trim(),
-  );
-  expect(unnamedActions).toEqual([]);
-}
-
 const mockedUseAuth = vi.mocked(useAuth);
 const mockedUseCan = vi.mocked(useCan);
 
@@ -248,7 +227,8 @@ describe('owners frontend', () => {
 
   it('keeps Owner and Patient create controls accessible', async () => {
     const ownerView = renderRoute('/propietarios/nuevo', <OwnerFormPage mode="create" />);
-    expectAccessibleFormControls(ownerView.container);
+    expect(findUnlabeledFormControls(ownerView.container)).toEqual([]);
+    expect(findUnnamedActions(ownerView.container)).toEqual([]);
     ownerView.unmount();
 
     vi.mocked(ownersApi.list).mockResolvedValue({
@@ -257,7 +237,8 @@ describe('owners frontend', () => {
     });
     const patientView = renderRoute('/pacientes/nuevo', <PatientFormPage mode="create" />);
     await screen.findByLabelText('Propietario *');
-    expectAccessibleFormControls(patientView.container);
+    expect(findUnlabeledFormControls(patientView.container)).toEqual([]);
+    expect(findUnnamedActions(patientView.container)).toEqual([]);
   });
 
   it('disables Owner submit while the create request is pending', async () => {
