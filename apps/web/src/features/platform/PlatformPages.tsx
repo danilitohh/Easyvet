@@ -456,7 +456,16 @@ export function PlatformOrganizationDetailPage() {
         ← Volver a clínicas
       </Link>
       {error ? (
-        <Alert tone="error">No fue posible cargar esta clínica o no tienes acceso.</Alert>
+        <>
+          <PageHeader
+            eyebrow="Administración · clínicas"
+            title="Clínica no disponible"
+            description="No fue posible cargar esta clínica o no tienes acceso a su información administrativa."
+          />
+          <Alert tone="error" role="alert">
+            No fue posible cargar esta clínica o no tienes acceso.
+          </Alert>
+        </>
       ) : null}
       {!data && !error ? <p className="platform-empty">Cargando clínica…</p> : null}
       {data ? (
