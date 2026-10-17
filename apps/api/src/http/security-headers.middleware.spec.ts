@@ -25,6 +25,11 @@ describe('SecurityHeadersMiddleware', () => {
     expect(setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
     expect(setHeader).toHaveBeenCalledWith('Referrer-Policy', 'strict-origin-when-cross-origin');
     expect(setHeader).toHaveBeenCalledWith(
+      'Content-Security-Policy',
+      "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'",
+    );
+    expect(setHeader).toHaveBeenCalledWith('Cache-Control', 'no-store');
+    expect(setHeader).toHaveBeenCalledWith(
       'Permissions-Policy',
       'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
     );

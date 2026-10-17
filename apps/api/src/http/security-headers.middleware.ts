@@ -17,6 +17,11 @@ export class SecurityHeadersMiddleware {
     response.setHeader('X-Frame-Options', 'DENY');
     response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     response.setHeader(
+      'Content-Security-Policy',
+      "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'",
+    );
+    response.setHeader('Cache-Control', 'no-store');
+    response.setHeader(
       'Permissions-Policy',
       'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
     );
