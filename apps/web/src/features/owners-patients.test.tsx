@@ -133,6 +133,28 @@ function renderWithParams(path: string, route: string, element: ReactElement) {
   );
 }
 
+function expectAccessibleFormControls(container: HTMLElement) {
+  const labels = Array.from(container.querySelectorAll('label'));
+  const unlabeledControls = Array.from(
+    container.querySelectorAll('input:not([type="hidden"]), select, textarea'),
+  ).filter((control) => {
+    if (control.getAttribute('aria-label')?.trim()) return false;
+    if (control.getAttribute('aria-labelledby')?.trim()) return false;
+    if (control.closest('label')) return false;
+    const id = control.getAttribute('id');
+    return !id || !labels.some((label) => label.htmlFor === id);
+  });
+  expect(unlabeledControls).toEqual([]);
+
+  const unnamedActions = Array.from(container.querySelectorAll('button, a')).filter(
+    (action) =>
+      !action.getAttribute('aria-label')?.trim() &&
+      !action.getAttribute('aria-labelledby')?.trim() &&
+      !action.textContent?.trim(),
+  );
+  expect(unnamedActions).toEqual([]);
+}
+
 const mockedUseAuth = vi.mocked(useAuth);
 const mockedUseCan = vi.mocked(useCan);
 
@@ -222,6 +244,20 @@ describe('owners frontend', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar propietario' }));
     expect(await screen.findAllByRole('alert')).not.toHaveLength(0);
     expect(ownersApi.create).not.toHaveBeenCalled();
+  });
+
+  it('keeps Owner and Patient create controls accessible', async () => {
+    const ownerView = renderRoute('/propietarios/nuevo', <OwnerFormPage mode="create" />);
+    expectAccessibleFormControls(ownerView.container);
+    ownerView.unmount();
+
+    vi.mocked(ownersApi.list).mockResolvedValue({
+      data: [owner],
+      pagination: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
+    });
+    const patientView = renderRoute('/pacientes/nuevo', <PatientFormPage mode="create" />);
+    await screen.findByLabelText('Propietario *');
+    expectAccessibleFormControls(patientView.container);
   });
 
   it('disables Owner submit while the create request is pending', async () => {
