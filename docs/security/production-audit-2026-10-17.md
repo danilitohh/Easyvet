@@ -12,6 +12,23 @@ de infraestructura o datos sensibles.
 | Consentimiento de analítica | El cliente solo monta `@vercel/analytics` cuando la aplicación está en producción y la persona ha aceptado la analítica opcional. La sanitización elimina query strings, hashes, IDs UUID y rutas públicas de firma. | Verificado en `42c815c` |
 | Despliegue | El último despliegue asociado a `42c815c` está en estado Ready y la URL canónica responde `200`. | Verificado previamente |
 
+## Actualización posterior: rol runtime corregido
+
+La remediación autorizada se completó y verificó en producción. El rol
+runtime dedicado `veterinary` quedó configurado sin superusuario ni
+`BYPASSRLS`; la variable `DATABASE_URL` cifrada se configuró únicamente para
+Production en Vercel. La conexión administrativa de migraciones continúa
+separada en `POSTGRES_URL_NON_POOLING`.
+
+La verificación posterior confirmó 48 tablas públicas de aplicación con RLS
+habilitado y forzado, y el endpoint protegido de postura respondió
+`role=veterinary`, `bypassesRowLevelSecurity=false` y `superuser=false`. El
+health check de producción también confirmó la conexión de base de datos.
+
+La evidencia completa, incluidos el despliegue corregido y el límite de la
+política server-side actual, está en
+`docs/security/runtime-role-remediation-2026-10-17.md`.
+
 ## Auditoría de catálogo Supabase
 
 La consulta de solo lectura ejecutada el 2026-10-17 devolvió 48 tablas
@@ -20,19 +37,22 @@ públicas de aplicación; las 48 tienen RLS habilitado y forzado. Los roles
 tablas. Esto confirma que el acceso directo de clientes está cerrado en la
 base de datos.
 
-La misma auditoría confirmó que `postgres` no es superusuario, pero sí tiene
-`rolbypassrls = true`, y que el rol runtime dedicado `veterinary` aún no existe.
+La consulta histórica confirmó que el editor SQL usa `postgres`, que no es
+superusuario pero sí tiene `rolbypassrls = true`. Ese dato no representa el
+runtime actual de Vercel: la verificación posterior confirmó que Prisma usa
+`veterinary` sin bypass.
 
-## Riesgo crítico aún abierto
+## Riesgo crítico ya cerrado en esta fase
 
-El endpoint protegido de postura de base de datos reportó el rol `postgres` con
-`bypassesRowLevelSecurity: true`. La API aplica autorización y filtros por
-tenant, pero esto deja a Prisma sin una segunda barrera de RLS en producción.
+El riesgo de que el runtime de Prisma usara `postgres` con
+`bypassesRowLevelSecurity: true` quedó corregido. La conexión runtime ahora usa
+`veterinary`, sin superusuario ni bypass. La contraseña no se registra en el
+repositorio ni en esta auditoría.
 
-La corrección requiere crear un rol runtime dedicado sin superusuario ni
-`BYPASSRLS` en Supabase y configurar una conexión `DATABASE_URL` de Production
-en Vercel. No se ejecutó esa mutación ni se generó/transmitió la contraseña sin
-autorización explícita.
+Permanece como riesgo separado el aislamiento RLS por tenant: la política
+server-side actual es amplia y la API sigue siendo la frontera principal. Debe
+probarse un contexto de organización por transacción antes de convertir esa
+política en predicados RLS tenant-aware.
 
 Las migraciones deben continuar usando `POSTGRES_URL_NON_POOLING`, separado de
 la conexión runtime.
