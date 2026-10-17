@@ -30,12 +30,12 @@ decisiones del propietario ni del proveedor.
 | OBS-01  | Media     | Métricas y alertas del proveedor                | Bloqueado por configuración externa | Vercel/Supabase y retención operativa aún no confirmados                                                                              | Alertas probadas, sin secretos en eventos y runbook actualizado         |
 | A11Y-01 | Media     | Revisión visual por viewport                    | En curso                            | Las ocho rutas públicas ya tienen evidencia responsive móvil; falta recorrido manual completo de rutas autenticadas, contraste y foco | Checklist por ruta/viewport, contraste y foco documentados              |
 | EXT-01  | Media     | Revisión contractual de servicios externos      | Recurrente                          | Cambia con proveedores, subprocesadores, regiones y licencias                                                                         | Inventario actualizado y revisión fechada antes de cada release         |
-| CI-01   | Baja      | Confirmar evidencia del run remoto más reciente | Cerrado en `f51309c`                | Reabrir después de cada cambio publicado si el run más reciente no termina correctamente                                              | Run #142 exitoso sobre `main` y matriz actualizada                      |
+| CI-01   | Baja      | Confirmar evidencia del run remoto más reciente | Cerrado en `62652ff`                | Reabrir después de cada cambio publicado si el run más reciente no termina correctamente                                              | Run #143 exitoso sobre `main` y matriz actualizada                      |
 
 ## Fases cerradas recientes
 
 - Hardening de observabilidad — `RequestTelemetryMiddleware` solo registra IDs de solicitud validados y tiene regresión contra headers arbitrarios.
-- CI-01 — el run remoto #142 pasó los tres jobs sobre `f51309c` después de corregir el formato de la documentación.
+- CI-01 — el run remoto #143 pasó los tres jobs sobre `62652ff` después de actualizar la evidencia de deployment.
 - Revisión responsive pública 2026-10-17 — ocho rutas móviles auditadas; el orbe decorativo overflow quedó identificado y marcado como `aria-hidden`.
 - `f661fc8` — evidencia visual de producción y trazabilidad del deployment final.
 - `3cf573a` — corrección del solapamiento entre acceso y consentimiento de privacidad.
