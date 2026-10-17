@@ -4,7 +4,9 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PERMISSION } from '../../auth/permissions';
 import { ClinicalEncounterDetailPage } from './ClinicalEncounterDetailPage';
+import { ClinicalEncounterFormPage } from './ClinicalEncounterFormPage';
 import { ClinicalEvolutionFormPage } from './ClinicalEvolutionFormPage';
+import { findUnnamedActions, findUnlabeledFormControls } from '../../test/accessibility';
 
 const ids = vi.hoisted(() => ({
   patient: '11111111-1111-4111-8111-111111111111',
@@ -17,11 +19,17 @@ const ids = vi.hoisted(() => ({
 
 const mocks = vi.hoisted(() => ({
   permissions: {} as Record<string, boolean>,
-  activeMembership: { id: ids.membership, clinicalRole: 'PRACTITIONER' },
+  activeMembership: {
+    id: ids.membership,
+    clinicalRole: 'PRACTITIONER',
+    organization: { id: '77777777-7777-4777-8777-777777777777' },
+  },
   encounter: null as ClinicalEncounterResponse | null,
+  organization: { timezone: 'America/Bogota' },
   finalizeEncounter: vi.fn(),
   voidEncounter: vi.fn(),
   createEvolution: vi.fn(),
+  createEncounter: vi.fn(),
 }));
 
 vi.mock('../../auth/useCan', () => ({
@@ -41,7 +49,7 @@ vi.mock('../patients/usePatients', () => ({
 }));
 vi.mock('./useClinical', () => ({
   useClinicalOrganization: () => ({
-    data: { timezone: 'America/Bogota' },
+    data: mocks.organization,
     loading: false,
     error: null,
     reload: vi.fn(),
@@ -72,6 +80,23 @@ vi.mock('./useClinical', () => ({
     error: null,
     reload: vi.fn(),
   }),
+  useClinicalPractitioners: () => ({
+    data: {
+      data: [
+        {
+          membershipId: ids.membership,
+          displayName: 'Dra. Demo',
+          profileConfigured: true,
+        },
+      ],
+      page: 1,
+      pageSize: 50,
+      total: 1,
+    },
+    loading: false,
+    error: null,
+    reload: vi.fn(),
+  }),
   useProfessionalProfile: () => ({
     data: { membershipId: ids.membership, displayName: 'Dra. Demo', licenseNumber: 'LIC-123' },
     loading: false,
@@ -84,6 +109,17 @@ vi.mock('./clinicalApi', () => ({
     finalizeEncounter: mocks.finalizeEncounter,
     voidEncounter: mocks.voidEncounter,
     createEvolution: mocks.createEvolution,
+    createEncounter: mocks.createEncounter,
+  },
+}));
+
+vi.mock('../agenda/agendaApi', () => ({
+  agendaApi: {
+    listLocations: vi.fn().mockResolvedValue([]),
+    listAppointments: vi.fn().mockResolvedValue({
+      data: [],
+      pagination: { page: 1, pageSize: 50, total: 0, totalPages: 0 },
+    }),
   },
 }));
 
@@ -178,10 +214,27 @@ function renderEvolution(path: string) {
   );
 }
 
+function renderEncounterForm() {
+  return render(
+    <MemoryRouter initialEntries={[`/pacientes/${ids.patient}/historia/nueva`]}>
+      <Routes>
+        <Route
+          path="/pacientes/:patientId/historia/nueva"
+          element={<ClinicalEncounterFormPage mode="create" />}
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe('clinical finalize, evolution and void operations', () => {
   beforeEach(() => {
     mocks.encounter = { ...baseEncounter };
-    mocks.activeMembership = { id: ids.membership, clinicalRole: 'PRACTITIONER' };
+    mocks.activeMembership = {
+      id: ids.membership,
+      clinicalRole: 'PRACTITIONER',
+      organization: { id: '77777777-7777-4777-8777-777777777777' },
+    };
     mocks.permissions = {
       [PERMISSION.CLINICAL_ENCOUNTERS_READ]: true,
       [PERMISSION.CLINICAL_ENCOUNTERS_UPDATE_DRAFT]: true,
@@ -197,6 +250,7 @@ describe('clinical finalize, evolution and void operations', () => {
       .mockResolvedValue({ ...baseEncounter, status: 'FINALIZED' });
     mocks.voidEncounter.mockReset().mockResolvedValue({ ...baseEncounter, status: 'VOIDED' });
     mocks.createEvolution.mockReset().mockResolvedValue({});
+    mocks.createEncounter.mockReset();
   });
 
   it('shows finalize only to the responsible practitioner and sends expectedVersion', async () => {
@@ -215,6 +269,7 @@ describe('clinical finalize, evolution and void operations', () => {
     mocks.activeMembership = {
       id: '88888888-8888-4888-8888-888888888888',
       clinicalRole: 'PRACTITIONER',
+      organization: { id: '77777777-7777-4777-8777-777777777777' },
     };
     renderDetail();
     expect(screen.queryByRole('button', { name: 'Finalizar consulta' })).not.toBeInTheDocument();
@@ -226,6 +281,7 @@ describe('clinical finalize, evolution and void operations', () => {
     mocks.activeMembership = {
       id: '88888888-8888-4888-8888-888888888888',
       clinicalRole: 'CLINICAL_ASSISTANT',
+      organization: { id: '77777777-7777-4777-8777-777777777777' },
     };
     renderDetail();
     expect(screen.queryByRole('button', { name: 'Finalizar consulta' })).not.toBeInTheDocument();
@@ -327,6 +383,22 @@ describe('clinical finalize, evolution and void operations', () => {
         }),
       ),
     );
+  });
+
+  it('keeps clinical encounter and evolution form controls accessible', async () => {
+    const encounterView = renderEncounterForm();
+    await screen.findByLabelText('Motivo *');
+    expect(findUnlabeledFormControls(encounterView.container)).toEqual([]);
+    expect(findUnnamedActions(encounterView.container)).toEqual([]);
+    encounterView.unmount();
+
+    mocks.encounter = { ...baseEncounter, status: 'FINALIZED' };
+    const evolutionView = renderEvolution(
+      `/pacientes/${ids.patient}/historia/encuentros/${ids.encounter}/evoluciones/nueva`,
+    );
+    await screen.findByLabelText('Subjetivo');
+    expect(findUnlabeledFormControls(evolutionView.container)).toEqual([]);
+    expect(findUnnamedActions(evolutionView.container)).toEqual([]);
   });
 
   it('blocks an empty evolution and submits a record-level evolution without author IDs', async () => {
