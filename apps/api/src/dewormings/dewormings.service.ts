@@ -227,7 +227,7 @@ export class DewormingsService {
       await requireEncounter(tx, tenant.organizationId, current.clinicalEncounterId);
       await requireActivePatient(tx, tenant.organizationId, current.patientId);
       const has = (field: (typeof editableFields)[number]) =>
-        Object.prototype.hasOwnProperty.call(input, field);
+        Object.prototype.hasOwnProperty.call(input, field) && input[field] !== undefined;
       const nextAdmin = has('administeredOn')
         ? input.administeredOn
         : formatCivilDate(current.administeredOn);
