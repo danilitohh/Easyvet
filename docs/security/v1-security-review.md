@@ -19,8 +19,8 @@ Revisión de código y configuración en el cierre V1, con suites unitarias/de i
 
 ## Avisos de dependencias al 2026-10-16
 
-Después de sustituir `ts-jest` por `@swc/jest`, `npm audit` reporta 19 vulnerabilidades
-moderadas y ninguna alta o crítica; `npm audit --omit=dev --audit-level=high` reporta
+Después de sustituir `ts-jest` por `@swc/jest`, la comprobación actual reporta 19
+vulnerabilidades moderadas y ninguna alta o crítica; `npm audit --omit=dev` reporta
 0 vulnerabilidades. Las 19 moderadas pertenecen a la cadena de pruebas de Jest/Istanbul
 (`sprintf-js` → `argparse`/`js-yaml`/`babel-plugin-istanbul`) y no están en el árbol de
 producción. `ts-jest` ya no forma parte de las dependencias.

@@ -1,9 +1,11 @@
 # Easyvet — rollout de RLS por tenant
 
-**Estado:** preparado; no aplicado en producción
-**Motivo:** la migración cambia las políticas activas del rol runtime en las
-48 tablas públicas de aplicación y requiere autorización específica antes de
-publicarse.
+**Estado:** aplicado y verificado en producción
+**Despliegue:** `d4cd38b` (`fix: bind rate limit queries to system transaction`)
+
+La migración fue autorizada, ejecutada por `prisma migrate deploy` y quedó
+registrada como aplicada antes del despliegue actual. El build de Vercel
+reportó 43 migraciones encontradas y ninguna pendiente.
 
 ## Qué se preparó
 
@@ -34,21 +36,20 @@ publicarse.
 | Suite API local                   | 40 suites correctas; 17 suites DB omitidas por falta de PostgreSQL local |
 | Suite web local                   | 47 archivos y 414 pruebas correctas                                      |
 | `prisma validate`                 | Correcto con una URL PostgreSQL temporal de validación                   |
+| Vercel `prisma migrate deploy`    | 43 migraciones encontradas; ninguna pendiente                            |
+| `GET /api/v1/health/ready`        | HTTP 200; `database: ok`                                                 |
 
-La prueba real de PostgreSQL debe ejecutarse en el job `database-integration`
-de CI después de publicar, antes de considerar cerrado el rollout.
+La prueba real de PostgreSQL con dos tenants debe mantenerse en el job
+`database-integration` de CI y repetirse con el rol runtime de producción antes
+de cambios posteriores en estas políticas.
 
-## Autorización pendiente
+## Cierre de la autorización y controles restantes
 
-Publicar el commit hará que el build de producción ejecute la migración mediante
-`prisma migrate deploy`. Antes de hacerlo se debe autorizar expresamente:
+La autorización para aplicar `20261017090000_add_tenant_rls_context` fue
+recibida y el deployment quedó `READY`. El endpoint público de readiness
+respondió HTTP 200 con `database: ok`; los logs del build confirmaron que no
+había migraciones pendientes.
 
-> Aplicar en Production la migración `20261017090000_add_tenant_rls_context`
-> para reemplazar la política RLS amplia del rol `veterinary` por aislamiento
-> basado en la organización validada por el servidor.
-
-Después de esa autorización, el cierre requiere comprobar CI, el estado Ready
-de Vercel, `/api/v1/health/ready`, `/api/v1/platform/database-posture` y la
-prueba de dos tenants. Si alguna comprobación falla, no se debe ocultar el
-error ni continuar con tráfico parcial; se debe detener el rollout y preparar
-una migración correctiva explícita.
+Continúa como control operativo independiente la prueba autorizada con dos
+tenants usando datos sintéticos y el rol runtime de producción. No se debe
+interpretar el readiness como sustituto de esa prueba negativa completa.

@@ -22,19 +22,19 @@ grants, índices ni lecturas de filas clínicas.
 
 ## Decisiones de seguridad
 
-No se habilita RLS de forma masiva desde este informe. La revisión del runtime de
-Easyvet confirmó que Prisma usa un rol con `rolbypassrls`, por lo que activar RLS sin
-políticas compatibles no mejoraría el aislamiento de las peticiones actuales y podría
-romper operaciones. El aislamiento vigente depende de guards, contexto de tenant,
-permisos server-side, filtros obligatorios por `organizationId` y restricciones
-compuestas.
+El rollout de RLS por tenant ya fue aplicado mediante la migración
+`20261017090000_add_tenant_rls_context`. La verificación protegida de producción
+confirmó que Prisma usa el rol `veterinary` sin `rolbypassrls`; el contexto de
+organización se establece por transacción y las operaciones globales de rate
+limit usan scope `system`. La API continúa siendo la frontera principal y las
+políticas RLS funcionan como defensa adicional.
 
-## Siguiente trabajo aprobado antes de tocar la base
+## Siguiente trabajo, sin cambios automáticos en la base
 
-1. Definir si Supabase será también una frontera de acceso directo para clientes
-   `authenticated`, o si seguirá siendo solo la base detrás de NestJS.
-2. Si se decide RLS para clientes directos, diseñar políticas por tabla y probarlas
-   con roles anon/authenticated y tenants ficticios en una rama o entorno aislado.
+1. Mantener Supabase como base detrás de NestJS; no se concede acceso directo de
+   clientes a las tablas de aplicación.
+2. Ejecutar la prueba autorizada de dos tenants con datos sintéticos contra el
+   rol runtime, sin usar datos clínicos reales.
 3. Para índices, seleccionar primero las consultas Easyvet con mayor latencia o
    frecuencia y comparar `EXPLAIN (ANALYZE, BUFFERS)` antes y después; no aplicar los
    137 avisos como una migración automática.

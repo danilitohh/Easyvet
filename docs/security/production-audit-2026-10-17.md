@@ -6,11 +6,11 @@ de infraestructura o datos sensibles.
 
 ## Controles verificados
 
-| Control | Evidencia | Estado |
-| --- | --- | --- |
-| Web Analytics | Vercel Dashboard → Analytics muestra Web Analytics habilitado para el plan Hobby. La consulta de pageviews para producción respondió correctamente con `visitors: 0` y `pageviews: 0` para 2026-10-15 a 2026-10-17. | Verificado |
+| Control                     | Evidencia                                                                                                                                                                                                            | Estado                  |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Web Analytics               | Vercel Dashboard → Analytics muestra Web Analytics habilitado para el plan Hobby. La consulta de pageviews para producción respondió correctamente con `visitors: 0` y `pageviews: 0` para 2026-10-15 a 2026-10-17.  | Verificado              |
 | Consentimiento de analítica | El cliente solo monta `@vercel/analytics` cuando la aplicación está en producción y la persona ha aceptado la analítica opcional. La sanitización elimina query strings, hashes, IDs UUID y rutas públicas de firma. | Verificado en `42c815c` |
-| Despliegue | El último despliegue asociado a `42c815c` está en estado Ready y la URL canónica responde `200`. | Verificado previamente |
+| Despliegue                  | El deployment asociado a `d4cd38b` está en estado Ready y la URL canónica responde `200`.                                                                                                                            | Verificado              |
 
 ## Actualización posterior: rol runtime corregido
 
@@ -56,6 +56,15 @@ política en predicados RLS tenant-aware.
 
 Las migraciones deben continuar usando `POSTGRES_URL_NON_POOLING`, separado de
 la conexión runtime.
+
+## Verificación posterior del despliegue actual
+
+El deployment asociado a `d4cd38b` quedó en estado `READY`. Los logs de Vercel
+confirmaron que `prisma migrate deploy` encontró 43 migraciones y no tenía
+ninguna pendiente. Después de publicar la corrección de contexto `system`,
+`GET /api/v1/health/ready` respondió HTTP 200 con
+`{"status":"ok","dependencies":{"database":"ok"}}`. El error RLS previo de
+`api_rate_limit_buckets` no reapareció en la comprobación posterior.
 
 ## Pendientes fuera de este control
 
