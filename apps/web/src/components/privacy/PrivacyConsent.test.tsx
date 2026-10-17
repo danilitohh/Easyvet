@@ -36,6 +36,14 @@ describe('PrivacyConsent', () => {
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
   });
 
+  it('offers a clear accept action for optional analytics', () => {
+    renderConsent();
+    fireEvent.click(screen.getByRole('button', { name: 'Aceptar analítica' }));
+
+    expect(window.localStorage.getItem('easyvet.analytics-consent')).toBe('granted');
+    expect(screen.getByRole('button', { name: 'Privacidad' })).toBeInTheDocument();
+  });
+
   it('moves focus into preferences and restores it when closed with Escape', async () => {
     renderConsent();
     fireEvent.click(screen.getByRole('button', { name: 'Guardar preferencias' }));

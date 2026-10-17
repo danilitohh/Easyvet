@@ -143,9 +143,14 @@ export function PrivacyConsent() {
         </label>
         <div className="privacy-consent__actions">
           {analyticsConsent === 'unknown' && (
-            <Button variant="ghost" type="button" onClick={() => saveAnalyticsConsent('denied')}>
-              Rechazar
-            </Button>
+            <>
+              <Button variant="ghost" type="button" onClick={() => saveAnalyticsConsent('denied')}>
+                Rechazar
+              </Button>
+              <Button type="button" onClick={() => saveAnalyticsConsent('granted')}>
+                Aceptar analítica
+              </Button>
+            </>
           )}
           {preferencesOpen && (
             <Button variant="ghost" type="button" onClick={closePreferences}>
