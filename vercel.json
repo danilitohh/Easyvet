@@ -19,7 +19,7 @@
       "framework": "nestjs",
       "entrypoint": "src/main.ts",
       "installCommand": "npm ci",
-      "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then DATABASE_URL=\"${POSTGRES_URL_NON_POOLING:-${DATABASE_URL:-$POSTGRES_PRISMA_URL}}\" npx --no-install prisma migrate deploy --schema ../../prisma/schema.prisma --config ../../prisma.config.ts; fi && npx --no-install prisma generate --schema ../../prisma/schema.prisma --config ../../prisma.config.ts && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api"
+      "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then export DATABASE_URL=\"${POSTGRES_URL_NON_POOLING:-${DATABASE_URL:-$POSTGRES_PRISMA_URL}}\"; npx --no-install prisma migrate resolve --rolled-back 20261016230000_create_runtime_veterinary_role --schema ../../prisma/schema.prisma --config ../../prisma.config.ts || true; npx --no-install prisma migrate deploy --schema ../../prisma/schema.prisma --config ../../prisma.config.ts; fi && npx --no-install prisma generate --schema ../../prisma/schema.prisma --config ../../prisma.config.ts && npm run build --workspace @veterinary-saas/contracts && npm run build --workspace @veterinary-saas/api"
     }
   },
   "headers": [

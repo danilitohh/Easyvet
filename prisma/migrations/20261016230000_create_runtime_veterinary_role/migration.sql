@@ -6,16 +6,7 @@
 -- posture reproducible in every database.
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'veterinary') THEN
-    ALTER ROLE veterinary
-      WITH LOGIN
-        NOSUPERUSER
-        NOCREATEDB
-        NOCREATEROLE
-        NOINHERIT
-        NOREPLICATION
-        NOBYPASSRLS;
-  ELSE
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'veterinary') THEN
     CREATE ROLE veterinary
       LOGIN
         NOSUPERUSER
@@ -24,6 +15,26 @@ BEGIN
         NOINHERIT
         NOREPLICATION
         NOBYPASSRLS;
+  END IF;
+END
+$$;
+
+DO $$
+DECLARE
+  role_record record;
+BEGIN
+  SELECT rolsuper, rolbypassrls, rolcanlogin, rolcreaterole, rolcreatedb
+  INTO role_record
+  FROM pg_roles
+  WHERE rolname = 'veterinary';
+
+  IF role_record.rolsuper
+    OR role_record.rolbypassrls
+    OR NOT role_record.rolcanlogin
+    OR role_record.rolcreaterole
+    OR role_record.rolcreatedb
+  THEN
+    RAISE EXCEPTION 'runtime role veterinary has unsafe attributes';
   END IF;
 END
 $$;
