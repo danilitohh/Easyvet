@@ -135,5 +135,53 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
 
+      - name: Verify RLS blocks direct client roles
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            missing_rls integer;
+          BEGIN
+            SELECT count(*)
+              INTO missing_rls
+            FROM pg_class AS c
+            JOIN pg_namespace AS n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'public'
+              AND c.relkind IN ('r', 'p')
+              AND c.relname <> '_prisma_migrations'
+              AND (NOT c.relrowsecurity OR NOT c.relforcerowsecurity);
+
+            IF missing_rls <> 0 THEN
+              RAISE EXCEPTION 'Expected forced RLS on every public application table; missing=%', missing_rls;
+            END IF;
+          END;
+          $$;
+
+          GRANT USAGE ON SCHEMA public TO anon, authenticated;
+          GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+
+          SET ROLE anon;
+          DO $$
+          BEGIN
+            IF (SELECT count(*) FROM public.subscription_plans) <> 0 THEN
+              RAISE EXCEPTION 'anon can read public application rows despite RLS';
+            END IF;
+          END;
+          $$;
+          RESET ROLE;
+
+          SET ROLE authenticated;
+          DO $$
+          BEGIN
+            IF (SELECT count(*) FROM public.subscription_plans) <> 0 THEN
+              RAISE EXCEPTION 'authenticated can read public application rows despite RLS';
+            END IF;
+          END;
+          $$;
+          RESET ROLE;
+          SQL
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
+
       - name: Run database integration tests
         run: npm run test:db

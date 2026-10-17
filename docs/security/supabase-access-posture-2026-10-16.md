@@ -1,6 +1,6 @@
 # Supabase — postura de acceso (2026-10-16)
 
-**Alcance:** revisión de solo lectura del proyecto Easyvet `iykzaqtcewnxgrmlbinz`. No se ejecutaron `GRANT`, `REVOKE`, cambios de RLS, DDL ni escrituras de datos.
+**Alcance:** revisión de solo lectura del proyecto Easyvet `iykzaqtcewnxgrmlbinz` realizada antes de la migración de defensa en profundidad. La revisión no ejecutó `GRANT`, `REVOKE`, cambios de RLS, DDL ni escrituras de datos.
 
 ## Resultado observado
 
@@ -20,11 +20,13 @@ La consulta SQL administrativa se ejecutó como `postgres`: `rolsuper = false`, 
 
 El panel de superadmin incluye la ruta autenticada `GET /api/platform/database-posture`, que devuelve únicamente el nombre del rol runtime y los booleanos de `BYPASSRLS` y superusuario. La tarjeta aparece en `/plataforma`, bajo “Seguridad de infraestructura”. La sesión de navegador consultada durante esta auditoría no estaba autenticada, así que no se pudo leer ese dato.
 
-El pipeline de CI ejecuta la suite PostgreSQL en una instancia efímera y aislada. El workflow aplica las migraciones con el rol administrativo local `postgres`, pero crea `veterinary` como `LOGIN NOSUPERUSER NOBYPASSRLS`, le concede acceso a las tablas y secuencias migradas y usa ese rol para `test:db`. Esto mejora la representatividad del runtime frente a un superusuario y verifica explícitamente que el rol de aplicación no pueda omitir RLS. La suite demuestra reglas de negocio y aislamiento explícito de Prisma en escenarios de integración, pero las tablas de negocio de la base desplegada siguen sin políticas RLS; por tanto, no es una prueba de políticas RLS en producción ni sustituye separar los permisos administrativos de migración.
+El pipeline de CI ejecuta la suite PostgreSQL en una instancia efímera y aislada. El workflow aplica las migraciones con el rol administrativo local `postgres`, crea `veterinary` como `LOGIN NOSUPERUSER NOBYPASSRLS`, le concede acceso a las tablas y secuencias migradas y usa ese rol para `test:db`. La migración de defensa en profundidad fuerza RLS en las tablas públicas de aplicación, permite el rol efímero `veterinary` para esas pruebas y deniega explícitamente `anon` y `authenticated`; el workflow también verifica esas tres condiciones antes de ejecutar la suite. Esto mejora la representatividad del runtime y prueba el bloqueo de roles cliente en una base efímera, pero no convierte al runtime productivo `postgres/BYPASSRLS` en un rol sin bypass.
 
-## Decisión pendiente
+## Estado posterior a la migración de defensa en profundidad
 
-No habilitar RLS en las tablas restantes hasta confirmar el rol runtime y verificar el efecto en una base efímera usando exactamente los roles de aplicación. No conceder acceso a `anon` ni `authenticated` por conveniencia: el backend NestJS es quien aplica sesión, permisos y aislamiento multi-tenant. Después de cualquier cambio aprobado, volver a ejecutar la auditoría de roles cliente y las pruebas de autorización por tenant.
+La migración `20261016220000_enable_defense_in_depth_rls` fuerza RLS en las tablas públicas de aplicación. No concede acceso de tablas a `anon` ni `authenticated` en Supabase; cuando esos roles existen, sus políticas son explícitamente denegatorias. El backend NestJS sigue siendo quien aplica sesión, permisos y aislamiento multi-tenant, y la conexión Prisma productiva observada como `postgres/BYPASSRLS` sigue siendo un riesgo de mínimo privilegio que requiere una arquitectura posterior de contexto por transacción antes de eliminar el bypass.
+
+La verificación de producción debe repetirse después de que Vercel aplique la migración: confirmar `relrowsecurity`, `relforcerowsecurity`, políticas y privilegios efectivos sin consultar ni compartir secretos o filas clínicas.
 
 Revisar además la ruta de creación futura de objetos. Los privilegios predeterminados permisivos pertenecen a `supabase_admin`; el `postgres` observado no puede alterarlos. No convertirlos en un cambio de seguridad automatizado hasta verificar con Supabase el mecanismo soportado para administrarlos y confirmar qué rol ejecuta cada tipo de migración.
 
