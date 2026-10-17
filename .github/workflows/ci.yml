@@ -131,6 +131,23 @@ jobs:
           GRANT USAGE ON SCHEMA public, extensions TO veterinary;
           GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO veterinary;
           GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO veterinary;
+
+          DO $$
+          DECLARE
+            table_record record;
+          BEGIN
+            FOR table_record IN
+              SELECT c.relname
+              FROM pg_class AS c
+              JOIN pg_namespace AS n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public'
+                AND c.relkind IN ('r', 'p')
+                AND c.relname <> '_prisma_migrations'
+            LOOP
+              EXECUTE format('ALTER TABLE public.%I OWNER TO veterinary', table_record.relname);
+            END LOOP;
+          END;
+          $$;
           SQL
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/easyvet_test
