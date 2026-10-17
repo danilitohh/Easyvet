@@ -17,6 +17,10 @@ export class DatabaseSecurityContext {
     return this.storage.run({ mode: 'deny', organizationId: null }, callback);
   }
 
+  runSystem<T>(callback: () => T): T {
+    return this.storage.run({ mode: 'system', organizationId: null }, callback);
+  }
+
   enterSystem(): void {
     const scope = this.storage.getStore();
     if (!scope) {
