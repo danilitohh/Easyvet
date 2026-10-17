@@ -27,7 +27,8 @@
     "db:seed": "prisma db seed --schema prisma/schema.prisma",
     "db:reset": "prisma migrate reset --schema prisma/schema.prisma",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "format:check:changed": "node scripts/format-check-changed.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
