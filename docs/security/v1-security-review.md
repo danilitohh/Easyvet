@@ -31,6 +31,20 @@ datos locales controlados, y no se aplicó `npm audit fix --force` porque propon
 cambios incompatibles de versiones. Debe reevaluarse cuando exista una actualización
 compatible de Jest/Istanbul o un reemplazo seguro de esa cadena transitiva.
 
+## Actualización verificable — 2026-10-17
+
+La comprobación repetida en el checkout actual confirmó:
+
+- `npm audit --omit=dev`: **0 vulnerabilidades** en las dependencias de producción;
+- `npm audit`: **19 moderadas**, todas dentro del árbol de pruebas Jest/Istanbul;
+- no hay hallazgos `high` o `critical` en el árbol completo;
+- el workflow de CI mantiene ambas barreras: bloquea producción desde `moderate` y
+  reporta cualquier advisory `high` o superior del árbol completo.
+
+No se modificó el lockfile ni se ejecutó un downgrade mayor para eliminar avisos
+exclusivos de desarrollo. Esta evidencia no sustituye la reevaluación periódica de
+dependencias.
+
 ## Límites de la revisión
 
 - No hubo pentest independiente ni escaneo profundo ejecutable en este entorno.
