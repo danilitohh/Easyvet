@@ -2,7 +2,7 @@
 
 ## Resultado
 
-El comando `npm run test:production:smoke` pasó contra `https://easyvet.vercel.app` el 2026-10-17. El deployment observado antes de la ejecución, `dpl_2TaG61vWFcnwLWtQXC1cskTeuY5R` (commit `c481ed3`), estaba en estado `READY`.
+El comando `npm run test:production:smoke` pasó contra `https://easyvet.vercel.app` el 2026-10-17. El deployment observado antes de la ejecución, `dpl_B8Dwix4NXZcmih323usL9YhYckfU` (commit `dd06a5d`), estaba en estado `READY`.
 
 Se verificaron mediante solicitudes `GET`, sin escribir datos:
 
