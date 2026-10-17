@@ -48,4 +48,20 @@ describe('PrivacyConsent', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Privacidad' })).toHaveFocus());
   });
+
+  it('keeps keyboard focus inside the preferences dialog', () => {
+    renderConsent();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar preferencias' }));
+    const preferencesButton = screen.getByRole('button', { name: 'Privacidad' });
+    fireEvent.click(preferencesButton);
+
+    const dialog = screen.getByRole('dialog');
+    const first = screen.getByRole('link', { name: 'Leer la política de cookies' });
+    const last = screen.getByRole('button', { name: 'Guardar preferencias' });
+    first.focus();
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+    expect(last).toHaveFocus();
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(first).toHaveFocus();
+  });
 });

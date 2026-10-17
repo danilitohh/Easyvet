@@ -35,6 +35,7 @@ describe('Modal', () => {
   it('keeps keyboard focus inside the dialog when tabbing in either direction', () => {
     render(<ModalHarness />);
     const trigger = screen.getByRole('button', { name: 'Open' });
+    trigger.focus();
     fireEvent.click(trigger);
     const closeButton = screen.getByRole('button', { name: 'Cerrar diálogo' });
     const lastAction = screen.getByRole('button', { name: 'Last action' });
@@ -48,6 +49,24 @@ describe('Modal', () => {
     trigger.focus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(closeButton).toHaveFocus();
+  });
+
+  it('wraps focus from the last action and restores body scrolling after dismissal', () => {
+    render(<ModalHarness />);
+    const trigger = screen.getByRole('button', { name: 'Open' });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const closeButton = screen.getByRole('button', { name: 'Cerrar diálogo' });
+    const lastAction = screen.getByRole('button', { name: 'Last action' });
+
+    expect(document.body.style.overflow).toBe('hidden');
+    lastAction.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(closeButton).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar modal' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe('');
   });
 
   it('gives each mounted dialog unique labelled-by and described-by references', () => {
