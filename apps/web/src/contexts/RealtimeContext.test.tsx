@@ -6,6 +6,8 @@ import { useRealtimeConnectionStatus } from './useRealtime';
 const mocks = vi.hoisted(() => ({
   auth: { status: 'unauthenticated' as string, activeMembership: null as unknown },
   createClient: vi.fn(),
+  fetch: vi.fn(),
+  channelFactory: vi.fn(),
   channel: {
     on: vi.fn(),
     subscribe: vi.fn(),
@@ -30,15 +32,17 @@ function ConnectionStatus() {
 describe('RealtimeProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal('fetch', mocks.fetch);
     mocks.auth.status = 'unauthenticated';
     mocks.auth.activeMembership = null;
+    mocks.channelFactory.mockReturnValue(mocks.channel);
     mocks.channel.on.mockReturnValue(mocks.channel);
     mocks.channel.subscribe.mockImplementation((callback: (status: string) => void) => {
       callback('SUBSCRIBED');
       return mocks.channel;
     });
     mocks.createClient.mockReturnValue({
-      channel: vi.fn(() => mocks.channel),
+      channel: mocks.channelFactory,
       removeChannel: mocks.removeChannel,
     });
   });
@@ -79,5 +83,68 @@ describe('RealtimeProvider', () => {
       { event: 'tenant_data_changed' },
       expect.any(Function),
     );
+    expect(mocks.createClient.mock.calls[0]?.[2]).toEqual(
+      expect.objectContaining({
+        accessToken: expect.any(Function),
+      }),
+    );
+    expect(mocks.createClient).toHaveBeenCalledWith(
+      'https://project.supabase.co',
+      'test-publishable-key',
+      expect.any(Object),
+    );
+  });
+
+  it('requests the short-lived token through the authenticated API session', async () => {
+    mocks.auth.status = 'authenticated';
+    mocks.auth.activeMembership = { organization: { id: 'org-1' } };
+    mocks.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ accessToken: 'signed-token' }),
+    });
+
+    render(
+      <RealtimeProvider>
+        <ConnectionStatus />
+      </RealtimeProvider>,
+    );
+
+    await waitFor(() => expect(mocks.createClient).toHaveBeenCalledTimes(1));
+    const options = mocks.createClient.mock.calls[0]?.[2] as {
+      accessToken?: () => Promise<string>;
+    };
+    await expect(options.accessToken?.()).resolves.toBe('signed-token');
+    expect(mocks.fetch).toHaveBeenCalledWith('https://easyvet.example/api/v1/auth/realtime-token', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+  });
+
+  it('removes the previous private channel when the active organization changes', async () => {
+    mocks.auth.status = 'authenticated';
+    mocks.auth.activeMembership = { organization: { id: 'org-1' } };
+
+    const view = render(
+      <RealtimeProvider>
+        <ConnectionStatus />
+      </RealtimeProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('connected'));
+    mocks.auth.activeMembership = { organization: { id: 'org-2' } };
+    view.rerender(
+      <RealtimeProvider>
+        <ConnectionStatus />
+      </RealtimeProvider>,
+    );
+
+    await waitFor(() => expect(mocks.channelFactory).toHaveBeenCalledTimes(2));
+    expect(mocks.channelFactory).toHaveBeenNthCalledWith(1, 'easyvet:org:org-1', {
+      config: { private: true },
+    });
+    expect(mocks.channelFactory).toHaveBeenNthCalledWith(2, 'easyvet:org:org-2', {
+      config: { private: true },
+    });
+    expect(mocks.removeChannel).toHaveBeenCalledTimes(1);
   });
 });
