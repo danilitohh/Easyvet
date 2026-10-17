@@ -11,9 +11,9 @@ La prueba verifica:
 
 - que `total` representa el número real de filas de la organización;
 - que la respuesta nunca supera `pageSize = 20`;
-- que una consulta de lista ejecuta tres operaciones constantes de base de
-  datos: página, relación agrupada de propietarios y total, sin consultas
-  N+1;
+- que una consulta de lista ejecuta entre dos y tres operaciones constantes de
+  base de datos: página, total y, según el plan de Prisma/PostgreSQL, la
+  relación agrupada de propietarios, sin consultas N+1;
 - el tiempo transcurrido local como evidencia de referencia, sin convertirlo
   en una métrica de producción.
 
