@@ -8,6 +8,12 @@ if (!['http:', 'https:'].includes(origin.protocol)) {
 const checks = [
   { path: '/', kind: 'page' },
   { path: '/login', kind: 'page' },
+  { path: '/registro', kind: 'page' },
+  { path: '/recuperar-contrasena', kind: 'page' },
+  { path: '/privacidad', kind: 'page' },
+  { path: '/terminos', kind: 'page' },
+  { path: '/cookies', kind: 'page' },
+  { path: '/reembolsos', kind: 'page' },
   { path: '/api/v1/health', kind: 'health' },
   { path: '/api/v1/health/ready', kind: 'ready' },
 ];
