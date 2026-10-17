@@ -51,21 +51,21 @@ La base local contiene datos ficticios de demo/QA, incluida la organización Nor
 
 ## Comandos y resultados
 
-| Comando                                         | Resultado final                                                                                                         |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `npm run format:check`                          | PASS                                                                                                                    |
-| `npm run lint`                                  | PASS                                                                                                                    |
-| `npm run typecheck`                             | PASS                                                                                                                    |
-| `npm test` / etapa sin DB de `test:all`         | 381 frontend PASS; 36 API PASS; 194 pruebas DB-gated omitidas en esta etapa                                             |
-| `npm run test:db` / `test:all` etapa PostgreSQL | 230 DB/API PostgreSQL PASS; suites de concurrencia habilitadas                                                          |
-| `npm run test:all`                              | PASS; 611 resultados distintos (381 frontend + 230 API/DB), sin sumar de nuevo sus invocaciones                         |
-| `npm run build`                                 | PASS; entry actual 548.60 kB min / 160.65 kB gzip                                                                       |
-| `npm run prisma:generate`                       | PASS con watcher/API detenido                                                                                           |
-| `npm run prisma:validate`                       | PASS                                                                                                                    |
-| `npx prisma migrate status`                     | PASS: dev y test al día, 27 migraciones                                                                                 |
-| `npm audit`                                     | 5 hallazgos (3 HIGH, 2 MODERATE); sin fix compatible seguro                                                             |
-| `npm audit --omit=dev`                          | 3 HIGH, 0 MODERATE; Prisma/config/deepmerge reportados en el árbol omit-dev; reachability de request HTTP no encontrada |
-| `git diff --check`                              | PASS; solo avisos de conversión de finales LF/CRLF de Git en Windows                                                    |
+| Comando                                         | Resultado final                                                                                                                                                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run format:check`                          | HISTÓRICO: PASS en el cierre V1; en el checkout actual el gate global aún reporta archivos heredados/artefactos sin formatear. El CI vigente verifica los archivos modificados con `npm run format:check:changed`. |
+| `npm run lint`                                  | PASS                                                                                                                                                                                                               |
+| `npm run typecheck`                             | PASS                                                                                                                                                                                                               |
+| `npm test` / etapa sin DB de `test:all`         | 381 frontend PASS; 36 API PASS; 194 pruebas DB-gated omitidas en esta etapa                                                                                                                                        |
+| `npm run test:db` / `test:all` etapa PostgreSQL | 230 DB/API PostgreSQL PASS; suites de concurrencia habilitadas                                                                                                                                                     |
+| `npm run test:all`                              | PASS; 611 resultados distintos (381 frontend + 230 API/DB), sin sumar de nuevo sus invocaciones                                                                                                                    |
+| `npm run build`                                 | PASS; entry actual 548.60 kB min / 160.65 kB gzip                                                                                                                                                                  |
+| `npm run prisma:generate`                       | PASS con watcher/API detenido                                                                                                                                                                                      |
+| `npm run prisma:validate`                       | PASS                                                                                                                                                                                                               |
+| `npx prisma migrate status`                     | PASS: dev y test al día, 27 migraciones                                                                                                                                                                            |
+| `npm audit`                                     | 5 hallazgos (3 HIGH, 2 MODERATE); sin fix compatible seguro                                                                                                                                                        |
+| `npm audit --omit=dev`                          | 3 HIGH, 0 MODERATE; Prisma/config/deepmerge reportados en el árbol omit-dev; reachability de request HTTP no encontrada                                                                                            |
+| `git diff --check`                              | PASS; solo avisos de conversión de finales LF/CRLF de Git en Windows                                                                                                                                               |
 
 No hubo una prueba que fallara y luego pasara sin investigar. La primera suite DB señaló que el test de seed no heredaba el password temporal requerido; se corrigió el fixture usando secreto efímero en el entorno del proceso y la suite completa pasó. Una ejecución inicial de Prisma generate coincidió con watcher activo (EPERM); se repitió después de detenerlo y pasó. No se hicieron upgrades ni cambios de lockfile.
 
