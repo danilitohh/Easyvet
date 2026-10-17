@@ -20,6 +20,12 @@ export function RegistrationPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    if (!legalConsent) {
+      setError(
+        'Debes aceptar la Política de privacidad y los Términos y condiciones para crear la cuenta.',
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       await authApi.register({
@@ -27,8 +33,8 @@ export function RegistrationPage() {
         clinicName,
         email,
         password,
-        privacyConsent: true,
-        termsConsent: true,
+        privacyConsent: legalConsent,
+        termsConsent: legalConsent,
       });
       setRegistered(true);
     } catch (caught) {

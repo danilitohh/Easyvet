@@ -136,6 +136,22 @@ describe('authentication screens', () => {
     );
   });
 
+  it('does not submit registration without explicit legal consent', async () => {
+    render(
+      <MemoryRouter initialEntries={['/registro']}>
+        <RegistrationPage />
+      </MemoryRouter>,
+    );
+
+    const submit = screen.getByRole('button', { name: 'Crear mi cuenta' });
+    fireEvent.submit(submit.closest('form')!);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Debes aceptar la Política de privacidad y los Términos y condiciones',
+    );
+    expect(mockedRegister).not.toHaveBeenCalled();
+  });
+
   it('submits credentials and navigates to the dashboard', async () => {
     const login = vi.fn().mockResolvedValue({
       organizationSelectionRequired: false,
