@@ -48,6 +48,11 @@ permisos en el guard; eso corresponde a Fase 3C.
 `PLATFORM_ADMIN` puede iniciar sesión sin memberships, pero no obtiene bypass de
 tenant ni acceso a datos de una organización.
 
+Para proteger el inicio de sesión y el tamaño del contexto enviado al cliente,
+una identidad puede tener hasta 100 memberships activas de organizaciones. La
+consulta solicita una fila adicional y rechaza explícitamente el contexto si se
+supera el límite; no se trunca silenciosamente la lista de organizaciones.
+
 ## CSRF y navegador
 
 Las mutaciones aceptan JSON, CORS exige credenciales explícitas y el middleware

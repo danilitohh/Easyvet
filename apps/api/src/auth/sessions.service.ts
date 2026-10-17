@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { MembershipStatus, OrganizationStatus, Prisma, UserStatus } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../infrastructure/database/prisma.service';
@@ -8,6 +8,8 @@ import {
   AuthenticatedUser,
 } from './auth.types';
 import { permissionsForRole } from '../authorization/permissions';
+
+export const MAX_ACTIVE_MEMBERSHIPS = 100;
 
 const membershipContextSelect = {
   id: true,
@@ -84,7 +86,17 @@ export class SessionsService {
       },
       select: membershipContextSelect,
       orderBy: { createdAt: 'asc' },
+      // Fetch one extra row so an oversized context is rejected instead of
+      // silently hiding organizations from the selector.
+      take: MAX_ACTIVE_MEMBERSHIPS + 1,
     });
+
+    if (memberships.length > MAX_ACTIVE_MEMBERSHIPS) {
+      throw new BadRequestException({
+        code: 'ORGANIZATION_MEMBERSHIP_LIMIT_REACHED',
+        message: 'Organization membership limit reached. Contact support before signing in.',
+      });
+    }
 
     return memberships.map((membership) => this.toMembership(membership));
   }

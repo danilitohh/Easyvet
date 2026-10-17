@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MembershipStatus, OrganizationStatus, PlatformRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../infrastructure/database/prisma.service';
-import { SessionsService } from './sessions.service';
+import { MAX_ACTIVE_MEMBERSHIPS, SessionsService } from './sessions.service';
 
 describe('SessionsService projections', () => {
   it('loads only the fields needed to build the authenticated context', async () => {
@@ -73,7 +73,11 @@ describe('SessionsService projections', () => {
   });
 
   it('returns only active memberships from active organizations with a bounded projection', async () => {
-    type MembershipQuery = { where: Record<string, unknown>; select: Record<string, unknown> };
+    type MembershipQuery = {
+      where: Record<string, unknown>;
+      select: Record<string, unknown>;
+      take: number;
+    };
     type MembershipResult = {
       id: string;
       role: 'OWNER';
@@ -122,7 +126,21 @@ describe('SessionsService projections', () => {
             select: { id: true, name: true, slug: true, status: true },
           }),
         }),
+        take: MAX_ACTIVE_MEMBERSHIPS + 1,
       }),
     );
+  });
+
+  it('rejects an oversized organization context instead of truncating it', async () => {
+    type MembershipQuery = { take?: number };
+    const findMany = jest.fn<(query: MembershipQuery) => Promise<unknown[]>>();
+    findMany.mockImplementation(async ({ take }) => Array.from({ length: take ?? 0 }));
+    const prisma = { membership: { findMany } } as unknown as PrismaService;
+    const service = new SessionsService(prisma);
+
+    await expect(service.getActiveMemberships('user-id')).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'ORGANIZATION_MEMBERSHIP_LIMIT_REACHED' }),
+    });
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 101 }));
   });
 });
