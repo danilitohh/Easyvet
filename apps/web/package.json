@@ -16,6 +16,7 @@
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
     "@supabase/supabase-js": "^2.117.3",
+    "@vercel/analytics": "^2.0.1",
     "@veterinary-saas/contracts": "0.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

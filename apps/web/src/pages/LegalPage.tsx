@@ -32,6 +32,7 @@ const documents = {
         paragraphs: [
           'Usamos los datos para crear y proteger cuentas, prestar las funciones solicitadas, mantener la seguridad, enviar comunicaciones operativas y atender solicitudes de soporte. El acceso debe limitarse a la operación autorizada de cada clínica y a las obligaciones técnicas necesarias para prestar el servicio.',
           'La versión actual no activa analítica no esencial ni publicidad comportamental. Si se incorporan tecnologías no esenciales, se informarán y se solicitará el consentimiento correspondiente cuando aplique.',
+          'Si la persona acepta la analítica opcional, Easyvet puede recibir métricas agregadas de rutas y navegación mediante Vercel Web Analytics. No se envían identificadores de pacientes, tokens, datos clínicos ni parámetros de consulta.',
         ],
       },
       {
@@ -91,7 +92,7 @@ const documents = {
       {
         title: 'Tecnologías no esenciales',
         paragraphs: [
-          'La versión actual no activa cookies de publicidad ni analítica no esencial. No se debe incorporar un SDK, píxel, widget o script de seguimiento sin revisar su privacidad, seguridad, rendimiento y transferencia de datos.',
+          'La versión actual no activa cookies de publicidad ni analítica no esencial sin consentimiento. Cuando se acepta la analítica opcional, Vercel Web Analytics registra métricas agregadas sin cookies de terceros; la preferencia se guarda localmente en el navegador.',
           'Si en el futuro se habilitan tecnologías no esenciales, Easyvet deberá informar su finalidad y ofrecer aceptar, rechazar y gestionar preferencias antes de activarlas cuando corresponda.',
         ],
       },

@@ -1,12 +1,15 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+import { PrivacyConsentProvider } from '../contexts/PrivacyConsentContext';
 import { App } from './App';
 
 function renderApp(initialEntry: string) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <App />
+      <PrivacyConsentProvider>
+        <App />
+      </PrivacyConsentProvider>
     </MemoryRouter>,
   );
 }

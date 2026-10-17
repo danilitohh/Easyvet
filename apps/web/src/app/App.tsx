@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { Route, Routes } from 'react-router-dom';
 import { AuthBoundary } from './AuthBoundary';
 import { PlatformAdminBoundary } from './PlatformAdminBoundary';
@@ -6,6 +7,8 @@ import { AppErrorBoundary } from './AppErrorBoundary';
 import { PERMISSION } from '../auth/permissions';
 import { AnyPermissionRoute, PermissionRoute } from '../features/shared/ResourceFeedback';
 import { AccessDeniedPage } from '../pages/AccessDeniedPage';
+import { usePrivacyConsent } from '../contexts/PrivacyConsentContext';
+import { sanitizeAnalyticsEvent } from '../services/analytics';
 
 const AppShell = lazy(() =>
   import('../components/layout/AppShell').then((module) => ({ default: module.AppShell })),
@@ -387,8 +390,14 @@ function LazyRoute({ children }: { children: ReactNode }) {
 
 // Route declarations keep every product area addressable without hiding sections in the DOM.
 export function App() {
+  const { analyticsConsent } = usePrivacyConsent();
+
   return (
-    <AppErrorBoundary>
+    <>
+      {import.meta.env.PROD && analyticsConsent === 'granted' && (
+        <Analytics beforeSend={sanitizeAnalyticsEvent} />
+      )}
+      <AppErrorBoundary>
       <Routes>
         <Route
           path="/"
@@ -1374,7 +1383,8 @@ export function App() {
             />
           </Route>
         </Route>
-      </Routes>
-    </AppErrorBoundary>
+        </Routes>
+      </AppErrorBoundary>
+    </>
   );
 }

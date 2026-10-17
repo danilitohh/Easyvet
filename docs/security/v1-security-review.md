@@ -14,6 +14,7 @@ Revisión de código y configuración en el cierre V1, con suites unitarias/de i
 - **Firma pública:** límites separados, rutas dedicadas sin AppShell/sesión tenant. Tokens por ruta son parte deliberada del flujo; no se persisten en almacenamiento web. El acceso autenticado normal no se solicita en `/firmar/*`.
 - **Archivos:** la API requiere sesión, permiso y tenant; valida límites de tamaño/tipo/firma mágica, mantiene la clave de almacenamiento interna, y la respuesta inspeccionada incluyó `Content-Type`, `Content-Disposition`, `nosniff` y caché privada/no-store.
 - **Datos sensibles:** no se encontraron `localStorage`, `sessionStorage`, `innerHTML` ni `dangerouslySetInnerHTML` en los fuentes revisados. Texto clínico y nombres se renderizan como texto React. El seed es ficticio, requiere una contraseña local provista por entorno y se niega en producción.
+- **Analítica y consentimiento:** Vercel Web Analytics solo se monta en producción después de una elección explícita del usuario; la preferencia se guarda localmente. Un filtro `beforeSend` elimina query/hash, neutraliza UUIDs y descarta rutas públicas de firma para no enviar tokens o identificadores de recursos.
 - **Integridad:** auditorías, movimientos de inventario y caja, pagos, facturas e históricos comerciales tienen triggers append-only/no-truncate o ciclos de vida compensatorios según dominio.
 
 ## Avisos de dependencias al 2026-10-16
