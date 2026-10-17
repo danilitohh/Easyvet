@@ -13,6 +13,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { UsersModule } from './users/users.module';
 import { CsrfOriginMiddleware } from './http/csrf-origin.middleware';
 import { RequestIdMiddleware } from './http/request-id.middleware';
+import { RequestTelemetryMiddleware } from './http/request-telemetry.middleware';
 import { SecurityHeadersMiddleware } from './http/security-headers.middleware';
 import { OwnersModule } from './owners/owners.module';
 import { PatientsModule } from './patients/patients.module';
@@ -77,6 +78,7 @@ export class AppModule implements NestModule {
       .apply(
         DatabaseSecurityMiddleware,
         RequestIdMiddleware,
+        RequestTelemetryMiddleware,
         SecurityHeadersMiddleware,
         cookieParser(),
         CsrfOriginMiddleware,

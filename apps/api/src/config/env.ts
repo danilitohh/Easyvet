@@ -38,6 +38,7 @@ export const environmentSchema = z
       .min(1)
       .max(24 * 30)
       .default(168),
+    SLOW_REQUEST_LOG_MS: z.coerce.number().int().min(100).max(60_000).default(1_000),
     STORAGE_DRIVER: z.enum(['local', 's3', 'supabase']).default('local'),
     STORAGE_LOCAL_ROOT: z.string().trim().min(1).default('.easyvet-storage'),
     STORAGE_S3_ENDPOINT: z.string().url().optional(),
@@ -114,7 +115,9 @@ export function validateEnvironment(raw: Record<string, unknown>): Environment {
   const storageDriver = raw.STORAGE_DRIVER ?? (isVercelRuntime ? 'supabase' : 'local');
 
   if (isVercelRuntime && storageDriver === 'local') {
-    throw new Error('Local file storage is not persistent or writable on Vercel; configure object storage');
+    throw new Error(
+      'Local file storage is not persistent or writable on Vercel; configure object storage',
+    );
   }
 
   if (typeof databaseUrl === 'string') {
