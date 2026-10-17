@@ -92,18 +92,32 @@ type GroomingOptions = {
   patients: PatientsListResponse;
   locations: LocationResponse[];
   groomers: GroomingGroomerOption[];
+  groomerPagination: { page: number; pageSize: number; total: number; totalPages: number };
 };
 
 // Assignment options never include raw member emails or personal contact details.
-export function useGroomingOptions(enabled: boolean) {
-  return useGroomingResource<GroomingOptions>('options', enabled, async (signal) => {
-    const [patients, locations, groomers] = await Promise.all([
-      agendaApi.listPatients({ page: 1, pageSize: 100, signal }),
-      agendaApi.listLocations(signal),
-      groomingApi.groomers(signal),
-    ]);
-    return { patients, locations, groomers };
-  });
+export function useGroomingOptions(enabled: boolean, groomerSearch = '') {
+  const normalizedSearch = groomerSearch.trim();
+  return useGroomingResource<GroomingOptions>(
+    `options:${normalizedSearch}`,
+    enabled,
+    async (signal) => {
+      const [patients, locations, groomers] = await Promise.all([
+        agendaApi.listPatients({ page: 1, pageSize: 100, signal }),
+        agendaApi.listLocations(signal),
+        groomingApi.groomers(
+          { page: 1, pageSize: 50, ...(normalizedSearch ? { search: normalizedSearch } : {}) },
+          signal,
+        ),
+      ]);
+      return {
+        patients,
+        locations,
+        groomers: groomers.data,
+        groomerPagination: groomers.pagination,
+      };
+    },
+  );
 }
 
 export function useGroomingAppointments(

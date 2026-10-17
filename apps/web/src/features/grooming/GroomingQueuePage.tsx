@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { Select } from '../../components/ui/Select';
 import { formatDateTime } from '../clinical/clinicalUtils';
 import { useClinicalOrganization } from '../clinical/useClinical';
@@ -26,12 +27,13 @@ export function GroomingQueuePage() {
   const canRead = useCan(PERMISSION.GROOMING_READ);
   const canCreate = useCan(PERMISSION.GROOMING_CREATE);
   const organization = useClinicalOrganization();
-  const options = useGroomingOptions(canRead);
   const [status, setStatus] = useState<GroomingVisitStatus | ''>('');
   const [locationId, setLocationId] = useState('');
   const [groomerId, setGroomerId] = useState('');
+  const [groomerSearch, setGroomerSearch] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const options = useGroomingOptions(canRead, groomerSearch);
   const timezone = organization.data?.timezone ?? 'America/Bogota';
   const query = useMemo<GroomingVisitListQuery>(
     () => ({
@@ -64,6 +66,7 @@ export function GroomingQueuePage() {
     setStatus('');
     setLocationId('');
     setGroomerId('');
+    setGroomerSearch('');
     setFromDate('');
     setToDate('');
   }, []);
@@ -129,6 +132,15 @@ export function GroomingQueuePage() {
                   </option>
                 ))}
               </Select>
+            </label>
+            <label className="grooming-filter">
+              <span>Buscar peluquero</span>
+              <SearchInput
+                value={groomerSearch}
+                onChange={setGroomerSearch}
+                placeholder="Nombre del profesional"
+                ariaLabel="Buscar peluquero"
+              />
             </label>
             <label className="grooming-filter">
               <span>Desde</span>

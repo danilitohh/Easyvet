@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type {
-  GroomingGroomerOption,
+  GroomingGroomerListResponse,
   GroomingVisit,
   GroomingVisitListResponse,
 } from '@veterinary-saas/contracts';
@@ -23,6 +23,7 @@ import { TenantContextGuard } from '../authorization/tenant-context.guard';
 import {
   CompleteGroomingVisitDto,
   CreateGroomingVisitDto,
+  GroomingGroomerListQueryDto,
   GroomingVisitListQueryDto,
   StartGroomingVisitDto,
   UpdateGroomingVisitDto,
@@ -39,8 +40,11 @@ export class GroomingController {
   // Assignment search reveals only active eligible memberships and uses the grooming capability.
   @Get('grooming/groomers')
   @RequirePermissions(PERMISSIONS.GROOMING.READ)
-  groomers(@CurrentTenant() tenant: TenantContext): Promise<GroomingGroomerOption[]> {
-    return this.grooming.groomers(tenant.organizationId);
+  groomers(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query: GroomingGroomerListQueryDto,
+  ): Promise<GroomingGroomerListResponse> {
+    return this.grooming.groomers(tenant.organizationId, query);
   }
 
   // Global queue is bounded and filtered within the active Organization.

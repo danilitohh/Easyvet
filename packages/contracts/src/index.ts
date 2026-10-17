@@ -2670,6 +2670,17 @@ export const groomingVisitListResponseSchema = z.object({
   }),
 });
 export const groomingGroomerOptionSchema = groomingVisitMemberSchema;
+export const groomingGroomerListResponseSchema = z.object({
+  data: z.array(groomingGroomerOptionSchema),
+  pagination: paginationSchema,
+});
+export const groomingGroomerListQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().max(160).optional(),
+  })
+  .strict();
 export const createGroomingVisitRequestSchema = z
   .object({
     clinicLocationId: z.string().uuid(),
@@ -2726,6 +2737,8 @@ export type GroomingVisitStatus = z.infer<typeof groomingVisitStatusSchema>;
 export type GroomingVisit = z.infer<typeof groomingVisitSchema>;
 export type GroomingVisitListResponse = z.infer<typeof groomingVisitListResponseSchema>;
 export type GroomingGroomerOption = z.infer<typeof groomingGroomerOptionSchema>;
+export type GroomingGroomerListResponse = z.infer<typeof groomingGroomerListResponseSchema>;
+export type GroomingGroomerListQuery = z.infer<typeof groomingGroomerListQuerySchema>;
 export type CreateGroomingVisitRequest = z.infer<typeof createGroomingVisitRequestSchema>;
 export type UpdateGroomingVisitRequest = z.infer<typeof updateGroomingVisitRequestSchema>;
 export type StartGroomingVisitRequest = z.infer<typeof startGroomingVisitRequestSchema>;

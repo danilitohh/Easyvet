@@ -282,12 +282,12 @@ describeDatabase('grooming service', () => {
       }),
     ).toBe(1);
     expect(await prisma.clinicalAuditEvent.count({ where: { entityId: draft.id } })).toBe(0);
-    expect((await grooming.groomers(organizationId)).map((member) => member.id)).toContain(
+    expect((await grooming.groomers(organizationId)).data.map((member) => member.id)).toContain(
       groomer.membershipId,
     );
-    expect((await grooming.groomers(organizationId)).every((member) => !('email' in member))).toBe(
-      true,
-    );
+    expect(
+      (await grooming.groomers(organizationId)).data.every((member) => !('email' in member)),
+    ).toBe(true);
   });
 
   it('requires service and an active eligible Groomer before start; stale writes return 409', async () => {

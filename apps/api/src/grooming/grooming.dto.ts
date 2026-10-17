@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsEnum,
   IsISO8601,
@@ -61,6 +61,29 @@ export class GroomingVisitListQueryDto {
   @IsISO8601({ strict: true })
   @Matches(OFFSET_DATE_TIME)
   to?: string;
+}
+
+// Groomer options are a searchable, bounded tenant-local reference list.
+export class GroomingGroomerListQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize = 20;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  search?: string;
 }
 
 // Tenant, owner, status, version, snapshots and audit fields are always server controlled.

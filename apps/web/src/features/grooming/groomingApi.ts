@@ -1,7 +1,8 @@
 import {
   appointmentListResponseSchema,
   createGroomingVisitRequestSchema,
-  groomingGroomerOptionSchema,
+  groomingGroomerListQuerySchema,
+  groomingGroomerListResponseSchema,
   groomingVisitListQuerySchema,
   groomingVisitListResponseSchema,
   groomingVisitSchema,
@@ -11,7 +12,8 @@ import {
   voidGroomingVisitRequestSchema,
   type AppointmentListResponse,
   type CreateGroomingVisitRequest,
-  type GroomingGroomerOption,
+  type GroomingGroomerListQuery,
+  type GroomingGroomerListResponse,
   type GroomingVisit,
   type GroomingVisitListQuery,
   type GroomingVisitListResponse,
@@ -61,10 +63,19 @@ export const groomingApi = {
     return groomingVisitSchema.parse(await apiClient(`/grooming-visits/${id}`, signalInit(signal)));
   },
 
-  async groomers(signal?: AbortSignal): Promise<GroomingGroomerOption[]> {
-    return groomingGroomerOptionSchema
-      .array()
-      .parse(await apiClient('/grooming/groomers', signalInit(signal)));
+  async groomers(
+    input: GroomingGroomerListQuery = { page: 1, pageSize: 20 },
+    signal?: AbortSignal,
+  ): Promise<GroomingGroomerListResponse> {
+    const parsed = groomingGroomerListQuerySchema.parse(input);
+    const query = new URLSearchParams({
+      page: String(parsed.page),
+      pageSize: String(parsed.pageSize),
+      ...(parsed.search ? { search: parsed.search } : {}),
+    });
+    return groomingGroomerListResponseSchema.parse(
+      await apiClient(`/grooming/groomers?${query.toString()}`, signalInit(signal)),
+    );
   },
 
   async create(

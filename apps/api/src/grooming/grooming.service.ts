@@ -16,7 +16,7 @@ import {
   UserStatus,
 } from '@prisma/client';
 import type {
-  GroomingGroomerOption,
+  GroomingGroomerListResponse,
   GroomingVisit,
   GroomingVisitListResponse,
 } from '@veterinary-saas/contracts';
@@ -27,6 +27,7 @@ import {
   CompleteGroomingVisitDto,
   CreateGroomingVisitDto,
   GroomingVisitListQueryDto,
+  GroomingGroomerListQueryDto,
   UpdateGroomingVisitDto,
   VoidGroomingVisitDto,
 } from './grooming.dto';
@@ -139,29 +140,54 @@ export class GroomingService {
     return this.toList(tenant, records, query.page, query.pageSize, total);
   }
 
-  // Groomer lookup returns only identity fields required for assignment, never email or account data.
-  async groomers(organizationId: string): Promise<GroomingGroomerOption[]> {
-    const memberships = await this.prisma.membership.findMany({
-      where: {
-        organizationId,
-        status: MembershipStatus.ACTIVE,
-        user: { status: UserStatus.ACTIVE },
-        role: { in: [MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.GROOMER] },
-      },
-      select: {
-        id: true,
-        role: true,
-        professionalProfile: { select: { displayName: true } },
-      },
-      orderBy: [{ role: 'asc' }, { id: 'asc' }],
-    });
-    return memberships
+  // Groomer lookup returns only identity fields and never loads an unbounded membership list.
+  async groomers(
+    organizationId: string,
+    query: GroomingGroomerListQueryDto = new GroomingGroomerListQueryDto(),
+  ): Promise<GroomingGroomerListResponse> {
+    const where: Prisma.MembershipWhereInput = {
+      organizationId,
+      status: MembershipStatus.ACTIVE,
+      user: { status: UserStatus.ACTIVE },
+      role: { in: [MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.GROOMER] },
+      ...(query.search
+        ? {
+            professionalProfile: {
+              displayName: { contains: query.search, mode: 'insensitive' },
+            },
+          }
+        : {}),
+    };
+    const [memberships, total] = await Promise.all([
+      this.prisma.membership.findMany({
+        where,
+        select: {
+          id: true,
+          role: true,
+          professionalProfile: { select: { displayName: true } },
+        },
+        orderBy: [{ role: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.membership.count({ where }),
+    ]);
+    const data = memberships
       .filter((membership) => hasPermissions(membership.role, null, ['grooming.perform']))
       .map((membership) => ({
         id: membership.id,
         role: membership.role,
         displayName: this.memberName(membership.professionalProfile?.displayName, membership.role),
       }));
+    return {
+      data,
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / query.pageSize),
+      },
+    };
   }
 
   // A cross-tenant resource is indistinguishable from a missing resource.

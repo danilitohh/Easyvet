@@ -13,6 +13,7 @@ import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { Select } from '../../components/ui/Select';
 import { ApiError } from '../../services/apiClient';
 import { useActiveOrganizationId } from '../shared/hooks';
@@ -67,12 +68,14 @@ export function GroomingFormPage({ mode }: { mode: 'create' | 'edit' }) {
   const canUpdate = useCan(PERMISSION.GROOMING_UPDATE_DRAFT);
   const canPerform = useCan(PERMISSION.GROOMING_PERFORM);
   const canReadAppointments = useCan(PERMISSION.APPOINTMENTS_READ);
+  const [groomerSearch, setGroomerSearch] = useState('');
   const detail = useGroomingVisitResource(
     mode === 'edit' ? groomingVisitId : undefined,
     mode === 'edit',
   );
   const options = useGroomingOptions(
     mode === 'create' || (mode === 'edit' && detail.data?.status === 'DRAFT'),
+    groomerSearch,
   );
   const patientIdForAppointments = mode === 'edit' ? detail.data?.patientId : undefined;
   const [form, setForm] = useState<GroomingFormState>(() =>
@@ -117,6 +120,7 @@ export function GroomingFormPage({ mode }: { mode: 'create' | 'edit' }) {
   useEffect(() => {
     setForm(blankForm(searchParams.get('patientId') ?? ''));
     setLoadedVisitId('');
+    setGroomerSearch('');
     setError(null);
     setAppointmentsError(null);
   }, [organizationId, mode, groomingVisitId, searchParams]);
@@ -137,6 +141,7 @@ export function GroomingFormPage({ mode }: { mode: 'create' | 'edit' }) {
       postServiceNotes: detail.data.postServiceNotes ?? '',
       incidentNotes: detail.data.incidentNotes ?? '',
     });
+    setGroomerSearch(detail.data.assignedGroomer?.displayName ?? '');
     setLoadedVisitId(detail.data.id);
   }, [detail.data, loadedVisitId, mode]);
 
@@ -389,29 +394,40 @@ export function GroomingFormPage({ mode }: { mode: 'create' | 'edit' }) {
               </strong>
             </div>
           ) : (
-            <FormField
-              label="Peluquero responsable"
-              htmlFor="grooming-groomer"
-              hint="Se requiere un miembro activo con permiso para realizar peluquería antes de iniciar."
-            >
-              <Select
-                id="grooming-groomer"
-                value={form.assignedGroomerMembershipId}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    assignedGroomerMembershipId: event.target.value,
-                  }))
-                }
+            <>
+              <FormField label="Buscar peluquero" htmlFor="grooming-groomer-search">
+                <SearchInput
+                  id="grooming-groomer-search"
+                  value={groomerSearch}
+                  onChange={setGroomerSearch}
+                  placeholder="Nombre del profesional"
+                  ariaLabel="Buscar peluquero"
+                />
+              </FormField>
+              <FormField
+                label="Peluquero responsable"
+                htmlFor="grooming-groomer"
+                hint="Se requiere un miembro activo con permiso para realizar peluquería antes de iniciar."
               >
-                <option value="">Sin asignar</option>
-                {options.data?.groomers.map((member) => (
-                  <option value={member.id} key={member.id}>
-                    {member.displayName}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
+                <Select
+                  id="grooming-groomer"
+                  value={form.assignedGroomerMembershipId}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      assignedGroomerMembershipId: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="">Sin asignar</option>
+                  {options.data?.groomers.map((member) => (
+                    <option value={member.id} key={member.id}>
+                      {member.displayName}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            </>
           )}
           <FormField
             label="Servicio solicitado"
