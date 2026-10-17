@@ -1716,12 +1716,14 @@ select.input {
 
 @media (min-width: 901px) and (max-height: 1000px) {
   .auth-page {
+    align-content: start;
     padding-bottom: 280px;
   }
 }
 
 @media (max-width: 900px) {
   .auth-page {
+    align-content: start;
     padding-bottom: 280px;
   }
 
