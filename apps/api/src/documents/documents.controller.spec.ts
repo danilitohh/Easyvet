@@ -11,12 +11,26 @@ describe('DocumentsController rate limits', () => {
     ) as RateLimitRule[];
 
     expect(rules).toEqual([
-      {
-        name: 'documents.upload.ip',
-        identity: 'ip',
-        limit: 20,
-        windowMs: 15 * 60_000,
-      },
+      { name: 'documents.upload.ip', identity: 'ip', limit: 20, windowMs: 15 * 60_000 },
+      { name: 'documents.upload.user', identity: 'user', limit: 20, windowMs: 15 * 60_000 },
+    ]);
+  });
+
+  it('limits expensive document operations for the authenticated user', () => {
+    const generateRules = Reflect.getMetadata(
+      RATE_LIMIT_POLICY_KEY,
+      DocumentsController.prototype.generate,
+    ) as RateLimitRule[];
+    const downloadRules = Reflect.getMetadata(
+      RATE_LIMIT_POLICY_KEY,
+      DocumentsController.prototype.download,
+    ) as RateLimitRule[];
+
+    expect(generateRules).toEqual([
+      { name: 'documents.generate.user', identity: 'user', limit: 30, windowMs: 15 * 60_000 },
+    ]);
+    expect(downloadRules).toEqual([
+      { name: 'documents.download.user', identity: 'user', limit: 120, windowMs: 15 * 60_000 },
     ]);
   });
 

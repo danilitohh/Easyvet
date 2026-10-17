@@ -19,6 +19,12 @@ Upload máximo 10 MiB, firma mágica y MIME deben coincidir. Generación rechaza
 no finalizada, anulada, cruzada de Patient/tenant o bloqueada por Encounter/Patient.
 La API no sirve rutas locales ni crea URL pública.
 
+Las operaciones de archivos tienen límites server-side por ventana: carga (20 por IP
+y 20 por usuario cada 15 minutos), generación de PDF (30 por usuario cada 15 minutos)
+y descarga (120 por usuario cada 15 minutos). Estos límites complementan el límite
+general de solicitudes autenticadas y deben ajustarse con métricas reales antes de
+ofrecer compromisos de capacidad.
+
 ## Consentimientos
 
 | Método y ruta                                                         | Permiso                  | Uso                                                                 |

@@ -66,13 +66,22 @@ export class DocumentsController {
 
   @Post('documents/generate')
   @RequirePermissions(PERMISSIONS.CLINICAL.DOCUMENTS_GENERATE)
+  @RateLimit({
+    name: 'documents.generate.user',
+    identity: 'user',
+    limit: 30,
+    windowMs: 15 * 60_000,
+  })
   generate(@CurrentTenant() tenant: TenantContext, @Body() body: GenerateDocumentDto) {
     return this.documents.generate(tenant, body.documentType, body.sourceId);
   }
 
   @Post('patients/:patientId/documents')
   @RequirePermissions(PERMISSIONS.CLINICAL.DOCUMENTS_UPLOAD)
-  @RateLimit({ name: 'documents.upload.ip', identity: 'ip', limit: 20, windowMs: 15 * 60_000 })
+  @RateLimit(
+    { name: 'documents.upload.ip', identity: 'ip', limit: 20, windowMs: 15 * 60_000 },
+    { name: 'documents.upload.user', identity: 'user', limit: 20, windowMs: 15 * 60_000 },
+  )
   @UseInterceptors(FileInterceptor('file', { limits: CLINICAL_DOCUMENT_UPLOAD_LIMITS }))
   upload(
     @CurrentTenant() tenant: TenantContext,
@@ -90,6 +99,12 @@ export class DocumentsController {
 
   @Get('documents/:documentId/file')
   @RequirePermissions(PERMISSIONS.CLINICAL.DOCUMENTS_READ)
+  @RateLimit({
+    name: 'documents.download.user',
+    identity: 'user',
+    limit: 120,
+    windowMs: 15 * 60_000,
+  })
   async download(
     @CurrentTenant() tenant: TenantContext,
     @Param('documentId', new ParseUUIDPipe()) documentId: string,
