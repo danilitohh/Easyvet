@@ -6,7 +6,12 @@ type AnimatedContentProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 // Viewport reveals are progressive enhancement: content remains visible if observers are unavailable.
-export function AnimatedContent({ className = '', delay = 0, style, ...props }: AnimatedContentProps) {
+export function AnimatedContent({
+  className = '',
+  delay = 0,
+  style,
+  ...props
+}: AnimatedContentProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 

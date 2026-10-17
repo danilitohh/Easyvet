@@ -44,11 +44,7 @@ export function PillNav({ items, ariaLabel = 'Navegación', className = '' }: Pi
 
   return (
     <nav className={['rb-pill-nav', className].filter(Boolean).join(' ')} aria-label={ariaLabel}>
-      <span
-        className="rb-pill-nav__indicator"
-        aria-hidden="true"
-        style={indicator}
-      />
+      <span className="rb-pill-nav__indicator" aria-hidden="true" style={indicator} />
       {items.map((item) => (
         <a
           aria-current={item.href === activeHref ? 'page' : undefined}

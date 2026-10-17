@@ -180,11 +180,12 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
     () => references.data?.locations.filter((location) => location.status === 'ACTIVE') ?? [],
     [references.data],
   );
-  const activeMemberships = useMemo(
-    () => {
-      const options = memberships.data?.data ?? [];
-      const currentAppointmentMembership = appointmentState.data?.assignedMembership;
-      const fallback: MembershipResponse | null = selectedMembership ?? (currentAppointmentMembership
+  const activeMemberships = useMemo(() => {
+    const options = memberships.data?.data ?? [];
+    const currentAppointmentMembership = appointmentState.data?.assignedMembership;
+    const fallback: MembershipResponse | null =
+      selectedMembership ??
+      (currentAppointmentMembership
         ? {
             id: currentAppointmentMembership.id,
             role: currentAppointmentMembership.role,
@@ -194,13 +195,11 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
             professionalProfileConfigured: false,
           }
         : null);
-      return [
-        ...options,
-        ...(fallback && !options.some(({ id }) => id === fallback.id) ? [fallback] : []),
-      ].filter((membership) => membership.status === 'ACTIVE');
-    },
-    [appointmentState.data?.assignedMembership, memberships.data, selectedMembership],
-  );
+    return [
+      ...options,
+      ...(fallback && !options.some(({ id }) => id === fallback.id) ? [fallback] : []),
+    ].filter((membership) => membership.status === 'ACTIVE');
+  }, [appointmentState.data?.assignedMembership, memberships.data, selectedMembership]);
   const patientOptions = useMemo(
     () => patients.data?.data.filter((patient) => patient.status === 'ACTIVE') ?? [],
     [patients.data],

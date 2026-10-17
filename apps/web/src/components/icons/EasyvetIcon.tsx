@@ -25,11 +25,27 @@ function IconPaths({ name }: Pick<EasyvetIconProps, 'name'>) {
     case 'activity':
       return <path d="M3 12h4l2-5 4 10 2-5h6" />;
     case 'arrow-down':
-      return <><path d="M12 4v15" /><path d="m6 13 6 6 6-6" /></>;
+      return (
+        <>
+          <path d="M12 4v15" />
+          <path d="m6 13 6 6 6-6" />
+        </>
+      );
     case 'arrow-up-right':
-      return <><path d="M7 17 17 7" /><path d="M9 7h8v8" /></>;
+      return (
+        <>
+          <path d="M7 17 17 7" />
+          <path d="M9 7h8v8" />
+        </>
+      );
     case 'bar-chart':
-      return <><path d="M4 20V13h3v7" /><path d="M10.5 20V9h3v11" /><path d="M17 20V4h3v16" /></>;
+      return (
+        <>
+          <path d="M4 20V13h3v7" />
+          <path d="M10.5 20V9h3v11" />
+          <path d="M17 20V4h3v16" />
+        </>
+      );
     case 'calendar':
       return (
         <>

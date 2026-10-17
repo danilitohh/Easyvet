@@ -18,7 +18,7 @@ describe('MembershipsController paginated lookup', () => {
       (
         organizationId: string,
         query: ListStaffDto,
-      ) => Promise<{ data: typeof member[]; page: number; pageSize: number; total: number }>
+      ) => Promise<{ data: (typeof member)[]; page: number; pageSize: number; total: number }>
     >(async () => ({ data: [member], page: 2, pageSize: 20, total: 41 }));
     const controller = new MembershipsController({
       findPageForOrganization,

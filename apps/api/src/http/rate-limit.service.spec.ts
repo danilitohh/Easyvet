@@ -24,7 +24,9 @@ describe('RateLimitService', () => {
   });
 
   it('stores only a keyed digest of request identities in the shared database bucket', async () => {
-    await expect(service.consume('auth.login.email', 'client@example.test', 8, 60_000)).resolves.toEqual({
+    await expect(
+      service.consume('auth.login.email', 'client@example.test', 8, 60_000),
+    ).resolves.toEqual({
       limited: false,
       retryAfterSeconds: 0,
     });

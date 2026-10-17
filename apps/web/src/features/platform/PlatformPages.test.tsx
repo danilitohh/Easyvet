@@ -77,8 +77,12 @@ describe('PlatformOverviewPage database posture', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('No fue posible consultar el rol de base de datos del runtime.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Una vista clara de toda la plataforma.' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('No fue posible consultar el rol de base de datos del runtime.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Una vista clara de toda la plataforma.' }),
+    ).toBeInTheDocument();
   });
 });
 

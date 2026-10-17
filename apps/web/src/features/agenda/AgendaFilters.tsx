@@ -147,7 +147,11 @@ export function AgendaFilters({
           {professionalError ? (
             <div role="alert">
               <p>No fue posible cargar profesionales.</p>
-              <button className="button button--ghost button--compact" type="button" onClick={onProfessionalRetry}>
+              <button
+                className="button button--ghost button--compact"
+                type="button"
+                onClick={onProfessionalRetry}
+              >
                 Reintentar carga de profesionales
               </button>
             </div>

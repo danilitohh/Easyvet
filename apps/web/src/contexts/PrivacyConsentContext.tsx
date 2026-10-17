@@ -28,18 +28,15 @@ export function PrivacyConsentProvider({ children }: { children: ReactNode }) {
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent>(readConsent);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
-  const saveAnalyticsConsent = useCallback(
-    (consent: Exclude<AnalyticsConsent, 'unknown'>) => {
-      setAnalyticsConsent(consent);
-      setPreferencesOpen(false);
-      try {
-        window.localStorage.setItem(STORAGE_KEY, consent);
-      } catch {
-        // A privacy preference still applies for this session when storage is unavailable.
-      }
-    },
-    [],
-  );
+  const saveAnalyticsConsent = useCallback((consent: Exclude<AnalyticsConsent, 'unknown'>) => {
+    setAnalyticsConsent(consent);
+    setPreferencesOpen(false);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, consent);
+    } catch {
+      // A privacy preference still applies for this session when storage is unavailable.
+    }
+  }, []);
 
   const value = useMemo(
     () => ({

@@ -22,7 +22,10 @@ export class RateLimitService {
     this.hashingKey = config.get('DATABASE_URL', { infer: true });
   }
 
-  async check(name: string, identity: string): Promise<{ limited: boolean; retryAfterSeconds: number }> {
+  async check(
+    name: string,
+    identity: string,
+  ): Promise<{ limited: boolean; retryAfterSeconds: number }> {
     return this.withSystemScope(async (tx) => {
       const rows = await tx.$queryRaw<Array<{ blocked_until: Date | null }>>`
         SELECT blocked_until
@@ -122,8 +125,6 @@ export class RateLimitService {
   }
 
   private keyHash(name: string, identity: string): string {
-    return createHmac('sha256', this.hashingKey)
-      .update(`${name}\0${identity}`)
-      .digest('hex');
+    return createHmac('sha256', this.hashingKey).update(`${name}\0${identity}`).digest('hex');
   }
 }

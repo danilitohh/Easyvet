@@ -66,9 +66,9 @@ function OrganizationStatus({ status }: { status: PlatformOrganization['status']
 
 export function PlatformOverviewPage() {
   const [data, setData] = useState<Awaited<ReturnType<typeof platformApi.overview>> | null>(null);
-  const [databasePosture, setDatabasePosture] = useState<
-    Awaited<ReturnType<typeof platformApi.databasePosture>> | null
-  >(null);
+  const [databasePosture, setDatabasePosture] = useState<Awaited<
+    ReturnType<typeof platformApi.databasePosture>
+  > | null>(null);
   const [error, setError] = useState(false);
   const [databasePostureError, setDatabasePostureError] = useState(false);
 
@@ -127,7 +127,10 @@ export function PlatformOverviewPage() {
         </Card>
       </section>
 
-      <Card className="platform-panel platform-database-posture" aria-labelledby="database-posture-title">
+      <Card
+        className="platform-panel platform-database-posture"
+        aria-labelledby="database-posture-title"
+      >
         <div className="platform-panel__heading">
           <div>
             <p className="section-kicker">Seguridad de infraestructura</p>
@@ -147,9 +150,12 @@ export function PlatformOverviewPage() {
           <p role="status">No fue posible consultar el rol de base de datos del runtime.</p>
         ) : databasePosture ? (
           <>
-            <p>Rol conectado: <strong>{databasePosture.role}</strong></p>
+            <p>
+              Rol conectado: <strong>{databasePosture.role}</strong>
+            </p>
             <p className="platform-privacy-note">
-              Este dato describe el rol del runtime; no verifica las políticas RLS ni el aislamiento entre clínicas.
+              Este dato describe el rol del runtime; no verifica las políticas RLS ni el aislamiento
+              entre clínicas.
             </p>
           </>
         ) : (

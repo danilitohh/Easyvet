@@ -32,12 +32,14 @@ export function ParticleLink({ children, className = '', ...props }: ParticleLin
           <i
             className="kk-particle-link__particle"
             key={`${x}-${y}-${index}`}
-            style={{
-              '--particle-x': x,
-              '--particle-y': y,
-              '--particle-delay': delay,
-              '--particle-size': size,
-            } as ParticleStyle}
+            style={
+              {
+                '--particle-x': x,
+                '--particle-y': y,
+                '--particle-delay': delay,
+                '--particle-size': size,
+              } as ParticleStyle
+            }
           />
         ))}
       </span>

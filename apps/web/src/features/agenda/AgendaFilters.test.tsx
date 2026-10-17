@@ -177,7 +177,9 @@ describe('AgendaFilters', () => {
       />,
     );
     expect(screen.getByLabelText('Profesional')).toHaveValue(membership.id);
-    fireEvent.click(screen.getByRole('button', { name: 'Paginación de profesionales: página anterior' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Paginación de profesionales: página anterior' }),
+    );
     expect(onProfessionalPageChange).toHaveBeenCalledWith(1);
   });
 

@@ -1,3 +1,5 @@
 
 # Graphify emits large generated JSON artifacts that are not application source.
 apps/api/src/graphify-out/**
+graphify-out/**
+.impeccable/hook.cache.json

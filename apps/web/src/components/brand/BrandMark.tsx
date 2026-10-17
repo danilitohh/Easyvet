@@ -7,7 +7,13 @@ type BrandMarkProps = {
 export function BrandMark({ compact = false }: BrandMarkProps) {
   return (
     <span className={compact ? 'brand-mark brand-mark--compact' : 'brand-mark'} aria-hidden="true">
-      <img className="brand-mark__image" src="/brand/easyvet-mark.png" alt="" width="1030" height="820" />
+      <img
+        className="brand-mark__image"
+        src="/brand/easyvet-mark.png"
+        alt=""
+        width="1030"
+        height="820"
+      />
     </span>
   );
 }
