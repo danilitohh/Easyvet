@@ -16,24 +16,23 @@ Revisión de código y configuración en el cierre V1, con suites unitarias/de i
 - **Datos sensibles:** no se encontraron `localStorage`, `sessionStorage`, `innerHTML` ni `dangerouslySetInnerHTML` en los fuentes revisados. Texto clínico y nombres se renderizan como texto React. El seed es ficticio, requiere una contraseña local provista por entorno y se niega en producción.
 - **Integridad:** auditorías, movimientos de inventario y caja, pagos, facturas e históricos comerciales tienen triggers append-only/no-truncate o ciclos de vida compensatorios según dominio.
 
-## Avisos de dependencias al 2026-09-23
+## Avisos de dependencias al 2026-10-16
 
-`npm audit` reportó 5 vulnerabilidades: 3 altas y 2 moderadas. `npm audit --omit=dev` reportó 3 altas y 0 moderadas. Se conservaron las versiones porque npm solo ofrece remedios major/downgrade (`prisma` a 6.12.0 y `vitest` a 5.0.1); no se hicieron upgrades durante el cierre.
+Después de sustituir `ts-jest` por `@swc/jest`, `npm audit` reporta 19 vulnerabilidades
+moderadas y ninguna alta o crítica; `npm audit --omit=dev --audit-level=high` reporta
+0 vulnerabilidades. Las 19 moderadas pertenecen a la cadena de pruebas de Jest/Istanbul
+(`sprintf-js` → `argparse`/`js-yaml`/`babel-plugin-istanbul`) y no están en el árbol de
+producción. `ts-jest` ya no forma parte de las dependencias.
 
-| Paquete afectado | Severidad | Alcance y camino                                                                                                                                                                                                                         | Fix compatible seguro                                                   | Decisión                                                                                                |
-| ---------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `prisma`         | Alta      | Dependencia directa de desarrollo; audit también la resuelve como peer opcional de `@prisma/client` en el árbol `--omit=dev`. Hallazgo heredado de `@prisma/config`/`deepmerge-ts`; la API Nest no importa el CLI/config en solicitudes. | No; npm propone downgrade major a 6.12.0.                               | Mantener; no ejecutar CLI de migración/config en runtime. Revaluar con actualización Prisma compatible. |
-| `@prisma/config` | Alta      | Transitiva de Prisma CLI; su camino señalado usa `deepmerge-ts`. Presente en el árbol auditado `--omit=dev`, pero no en el camino de request de Nest revisado.                                                                           | No; solución propuesta fuerza Prisma 6.12.0.                            | Mantener temporalmente y limitar su uso a tooling local/CI controlado.                                  |
-| `deepmerge-ts`   | Alta      | Transitiva vía `@prisma/config`; advisory de agotamiento de pila al fusionar grafos recursivos. No se encontró entrada de datos HTTP al helper desde Easyvet runtime.                                                                    | No sin actualizar/downgradear Prisma fuera del rango compatible fijado. | Mantener con alcance explícito; no actualizar indirectamente durante V1 closure.                        |
-| `vitest`         | Moderada  | Dependencia directa de desarrollo; no aparece en `npm audit --omit=dev`.                                                                                                                                                                 | No; npm ofrece Vitest 5, major respecto a 3.                            | Mantener en tooling de pruebas.                                                                         |
-| `@vitest/mocker` | Moderada  | Transitiva de Vitest, dev-only; advisory de path traversal/arbitrary file read por redirect mocks.                                                                                                                                       | No sin Vitest 5 (major).                                                | Mantener en tooling local/CI confiable; no ejecutar fixtures no confiables.                             |
-
-Advisories: [GHSA-ggr8-5vv4-36mx](https://github.com/advisories/GHSA-ggr8-5vv4-36mx) y [GHSA-82fw-gwwq-j7x9](https://github.com/advisories/GHSA-82fw-gwwq-j7x9). La alerta alta está presente en el grafo de producción que npm reporta, aunque la función vulnerable de Prisma corresponde al camino de configuración/CLI y no fue encontrada en las importaciones del servidor HTTP. Por eso no se clasifica como explotable por una petición normal de Easyvet, pero tampoco se oculta como “solo dev”.
+La cadena de pruebas se mantiene aislada de runtime, se ejecuta solo con fixtures y
+datos locales controlados, y no se aplicó `npm audit fix --force` porque proponía
+cambios incompatibles de versiones. Debe reevaluarse cuando exista una actualización
+compatible de Jest/Istanbul o un reemplazo seguro de esa cadena transitiva.
 
 ## Límites de la revisión
 
 - No hubo pentest independiente ni escaneo profundo ejecutable en este entorno.
 - El adaptador remoto S3 no se conectó a un servicio real; almacenamiento local sí se usó en smoke.
 - El runtime compilado se probó localmente contra la base de desarrollo; no se probó despliegue productivo, proxy TLS, rotación externa de secretos ni infraestructura real.
-- Las vulnerabilidades de Prisma/tooling siguen abiertas; el riesgo de runtime actual parece bajo por reachability, no nulo para operaciones de CLI/configuración.
+- Las vulnerabilidades moderadas restantes están restringidas a tooling de pruebas; el árbol de producción no tiene hallazgos de severidad alta.
 - No se incluyeron secretos ni hashes de credenciales en este documento.

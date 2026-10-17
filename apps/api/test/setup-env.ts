@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 // Tests use safe local placeholders and never read production credentials.
 process.env.NODE_ENV = 'test';
 process.env.API_PORT = '3000';

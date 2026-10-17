@@ -1,19 +1,21 @@
 module.exports = {
-  // Nest 12 ships ESM packages; Jest runs the CommonJS API tests in Node's ESM VM.
-  preset: 'ts-jest/presets/default-esm',
+  // SWC keeps the TypeScript test transform fast and avoids the legacy ts-jest dependency tree.
   testEnvironment: 'node',
   rootDir: '.',
   setupFiles: ['<rootDir>/test/setup-env.ts'],
   testMatch: ['<rootDir>/src/**/*.spec.ts'],
   moduleFileExtensions: ['js', 'json', 'ts'],
-  extensionsToTreatAsEsm: ['.ts'],
-  // Transform TypeScript tests to native ESM so Nest 12's ESM packages load correctly.
+  // Transform TypeScript tests to CommonJS; the API package is CommonJS and Jest runs in Node.
   transform: {
     '^.+\\.tsx?$': [
-      'ts-jest',
+      '@swc/jest',
       {
-        useESM: true,
-        tsconfig: '<rootDir>/tsconfig.test.json',
+        jsc: {
+          parser: { syntax: 'typescript', decorators: true, dynamicImport: true },
+          target: 'es2022',
+          transform: { legacyDecorator: true, decoratorMetadata: true },
+        },
+        module: { type: 'commonjs' },
       },
     ],
   },
