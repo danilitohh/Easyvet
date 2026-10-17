@@ -1,8 +1,9 @@
 # Easyvet — evidencia de Supabase Advisors (2026-10-17)
 
 Esta nota registra consultas de solo lectura en el proyecto de producción
-`supabase-champagne-ball`, mediante el conector autorizado y sin ejecutar SQL,
-migraciones ni acciones del panel.
+`supabase-champagne-ball`, mediante el conector autorizado. No se ejecutaron
+migraciones, concesiones, cambios de políticas ni acciones destructivas del
+panel.
 
 ## Resultado observado
 
@@ -14,9 +15,11 @@ migraciones ni acciones del panel.
   podrían reevaluarse por fila. Los avisos de índices son señales para medir,
   no instrucciones para crear o eliminar índices en bloque.
 - Referencias oficiales: [claves foráneas sin índice](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys), [RLS initplan](https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan) e [índices sin uso](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index).
-- La consulta de metadatos del SQL Editor reportó 48 tablas públicas de
-  aplicación con RLS habilitado y forzado, sin lectura directa para los roles
-  `anon` y `authenticated`.
+- La consulta de metadatos de solo lectura del conector, observada el
+  2026-10-17, reportó 49 relaciones públicas: 48 con RLS habilitado, 48 con
+  RLS forzado y 0 lecturas directas para los roles `anon` y `authenticated`.
+  La relación adicional es `public._prisma_migrations`, usada por Prisma y
+  separada de las tablas de aplicación.
 
 ## Decisión operativa
 
