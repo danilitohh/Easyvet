@@ -7,6 +7,15 @@ export const healthResponseSchema = z.object({
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
+export const healthReadinessResponseSchema = z.object({
+  status: z.literal('ok'),
+  dependencies: z.object({
+    database: z.literal('ok'),
+  }),
+});
+
+export type HealthReadinessResponse = z.infer<typeof healthReadinessResponseSchema>;
+
 const platformRoleSchema = z.enum(['USER', 'PLATFORM_ADMIN']);
 const membershipRoleSchema = z.enum([
   'OWNER',

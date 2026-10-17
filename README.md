@@ -65,7 +65,11 @@ Inicie web y API juntas:
 npm run dev
 ```
 
-La web está en `http://localhost:5173`; la API, en `http://localhost:3000`. El endpoint de salud es `GET http://localhost:3000/api/v1/health`.
+La web está en `http://localhost:5173`; la API, en `http://localhost:3000`.
+Los endpoints técnicos son `GET http://localhost:3000/api/v1/health` (liveness)
+y `GET http://localhost:3000/api/v1/health/ready` (liveness más conexión a
+PostgreSQL). El segundo devuelve `503` sin detalles de infraestructura si la
+base de datos no está disponible.
 
 Para probar el artefacto compilado de la API localmente:
 
