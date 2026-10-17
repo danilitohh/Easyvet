@@ -14,7 +14,7 @@ externo que no debe inventarse.
 | Recursos visuales y marca    | PARCIAL    | La marca y los iconos se integran desde `apps/web/src/components/brand` y `apps/web/src/components/icons`; la dirección visual usa React Bits/Kokonut y HeroUI está declarado en `apps/web/package.json`. La revisión visual exhaustiva por viewport no se repite en esta fase. |
 | Centrado, foco y composición | PARCIAL    | Existen tokens y reglas de foco en `apps/web/src/styles`, además de componentes compartidos para botones, formularios, modales y navegación. No se afirma que cada ruta cumpla WCAG sin una auditoría visual completa.                                                          |
 | Separación por rutas         | VERIFICADO | `apps/web/src/app/App.tsx` define rutas SPA y `docs/release/v1-readiness.md` mantiene la matriz de módulos; la API conserva la autorización aunque se visite una URL manualmente.                                                                                               |
-| Seguimiento de trabajo       | PARCIAL    | Las fases y evidencias se registran en `docs/`, pero no hay un issue tracker externo conectado en este checkout.                                                                                                                                                                |
+| Seguimiento de trabajo       | VERIFICADO | `docs/operations/work-tracking.md` mantiene un backlog priorizado con dependencias, bloqueos, criterios de salida y commits de fases; documenta explícitamente que es el sistema local de seguimiento y no afirma una integración con Linear u otro tracker externo.            |
 
 ## Legalidad, consentimiento y confianza
 
