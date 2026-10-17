@@ -14,6 +14,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { Modal } from '../../components/ui/Modal';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import { agendaApi } from '../agenda/agendaApi';
 import { ResourceError } from '../shared/ResourceFeedback';
 import { useActiveOrganizationId } from '../shared/hooks';
@@ -204,7 +205,10 @@ function InventoryItemDetail({ itemId }: { itemId: string }) {
         }
       />
       <div className="inventory-back-link">
-        <Link to="/inventario">← Volver al inventario</Link>
+        <Link to="/inventario">
+          <EasyvetIcon name="arrow-left" size={16} />
+          <span>Volver al inventario</span>
+        </Link>
       </div>
       {isArchived ? (
         <Alert tone="warning" role="status">

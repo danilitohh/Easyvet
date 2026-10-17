@@ -3531,8 +3531,10 @@ select.input {
   text-underline-offset: 3px;
 }
 .preventive-list-row__arrow {
+  display: grid;
+  place-items: center;
   color: var(--color-brand-strong);
-  font-size: 1.1rem;
+  line-height: 1;
 }
 .preventive-list-row__notice {
   grid-column: 1 / -1;

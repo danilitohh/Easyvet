@@ -11,6 +11,7 @@ import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import { errorMessage } from '../shared/resourceUtils';
 import { documentsApi } from './documentsApi';
 import './documents.css';
@@ -50,7 +51,7 @@ function ConsentRow({ item, patientId }: { item: ConsentDetail; patientId: strin
         ) : null}
       </span>
       <span aria-hidden="true" className="consent-row__arrow">
-        ›
+        <EasyvetIcon name="chevron-right" size={16} />
       </span>
     </Link>
   );

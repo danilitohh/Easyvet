@@ -5,6 +5,7 @@ import { useCan } from '../../auth/useCan';
 import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import { Modal } from '../../components/ui/Modal';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../services/apiClient';
@@ -205,7 +206,9 @@ export function PatientDetailPage() {
                 {patient.owner.phone ?? patient.owner.email ?? 'Sin contacto registrado'}
               </small>
             </span>
-            <span aria-hidden="true">→</span>
+            <span aria-hidden="true">
+              <EasyvetIcon name="arrow-right" size={16} />
+            </span>
           </Link>
           <div className="detail-note">
             <span>Contacto</span>

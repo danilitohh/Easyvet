@@ -93,7 +93,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
             aria-label="Cerrar navegación"
             onClick={onClose}
           >
-            ×
+            <EasyvetIcon name="close" size={18} />
           </button>
         </div>
 
@@ -135,7 +135,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
             onClick={onToggleCollapse}
             aria-pressed={collapsed}
           >
-            <span aria-hidden="true">{collapsed ? '›' : '‹'}</span>
+            <EasyvetIcon name={collapsed ? 'chevron-right' : 'chevron-left'} size={16} />
             <span>{collapsed ? 'Expandir' : 'Colapsar'}</span>
           </button>
         </div>

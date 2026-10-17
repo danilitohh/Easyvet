@@ -93,8 +93,11 @@
 }
 
 .consent-row__arrow {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
   color: var(--color-brand);
-  font-size: 1.4rem;
 }
 
 .consent-form__textarea {

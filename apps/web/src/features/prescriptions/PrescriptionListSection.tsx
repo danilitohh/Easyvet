@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
 import { Badge } from '../../components/ui/Badge';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
@@ -59,7 +60,7 @@ function PrescriptionRow({ item, timezone }: { item: PrescriptionSummary; timezo
       <span className="prescription-list-row__aside">
         {parentVoided ? <Badge tone="warning">Consulta anulada</Badge> : null}
         <span aria-hidden="true" className="prescription-list-row__arrow">
-          →
+          <EasyvetIcon name="arrow-right" size={16} />
         </span>
       </span>
     </Link>

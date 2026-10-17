@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { FormField } from '../../components/ui/FormField';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { TextInput } from '../../components/ui/TextInput';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import { PaginationControls } from '../shared/ResourceFeedback';
 import type {
   PlatformAdminAccount,
@@ -170,7 +171,7 @@ export function PlatformOverviewPage() {
             <h2>Clínicas que se unieron a Easyvet</h2>
           </div>
           <Link to="/plataforma/clinicas">
-            Ver todas <span aria-hidden="true">↗</span>
+            Ver todas <EasyvetIcon name="arrow-up-right" size={15} />
           </Link>
         </div>
         {data?.recentOrganizations.length ? (
@@ -453,7 +454,8 @@ export function PlatformOrganizationDetailPage() {
   return (
     <div className="platform-page">
       <Link className="platform-back-link" to="/plataforma/clinicas">
-        ← Volver a clínicas
+        <EasyvetIcon name="arrow-left" size={16} />
+        <span>Volver a clínicas</span>
       </Link>
       {error ? (
         <>
@@ -714,7 +716,7 @@ export function PlatformActivityPage() {
               return (
                 <article className="platform-activity-row" key={event.id}>
                   <span className="platform-activity-row__marker" aria-hidden="true">
-                    ↗
+                    <EasyvetIcon name="arrow-up-right" size={16} />
                   </span>
                   <div className="platform-activity-row__content">
                     <strong>{platformActivityTitle(event)}</strong>

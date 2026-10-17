@@ -15,6 +15,7 @@ import '@fullcalendar/react/skeleton.css';
 import '@fullcalendar/react/themes/breezy/theme.css';
 import '@fullcalendar/react/themes/breezy/palettes/emerald.css';
 import type { AppointmentResponse } from '@veterinary-saas/contracts';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import {
   civilDateFromDate,
   STATUS_LABELS,
@@ -120,7 +121,7 @@ export function AgendaCalendar({
             aria-label="Período anterior"
             onClick={() => syncCalendar((api) => api.prev())}
           >
-            ‹
+            <EasyvetIcon name="chevron-left" size={18} />
           </button>
           <button
             className="button button--secondary button--compact"
@@ -135,7 +136,7 @@ export function AgendaCalendar({
             aria-label="Período siguiente"
             onClick={() => syncCalendar((api) => api.next())}
           >
-            ›
+            <EasyvetIcon name="chevron-right" size={18} />
           </button>
         </div>
         <h2 className="agenda-calendar-toolbar__title" aria-live="polite">

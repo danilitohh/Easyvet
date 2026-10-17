@@ -442,6 +442,9 @@
   text-underline-offset: 0.18em;
 }
 .platform-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   width: fit-content;
   color: var(--platform-accent);
   font-size: 0.82rem;

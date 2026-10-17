@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { Select } from '../../components/ui/Select';
 import { formatDateTime } from '../clinical/clinicalUtils';
@@ -231,7 +232,7 @@ export function GroomingQueuePage() {
                     </small>
                   </span>
                   <span className="grooming-visit-card__arrow" aria-hidden="true">
-                    →
+                    <EasyvetIcon name="arrow-right" size={16} />
                   </span>
                 </Link>
               ))}

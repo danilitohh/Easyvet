@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { BrandMark } from '../brand/BrandMark';
+import { EasyvetIcon } from '../icons/EasyvetIcon';
 import { Button } from '../ui/Button';
 import { appConfig } from '../../config/app';
 import type { NavigationItem } from '../../data/navigation';
@@ -50,7 +51,7 @@ export function AppHeader({ route, onOpenMenu }: AppHeaderProps) {
           aria-label="Abrir navegación"
           onClick={onOpenMenu}
         >
-          ☰
+          <EasyvetIcon name="menu" size={18} />
         </button>
         <div className="breadcrumb">
           <span className="breadcrumb__root">{appConfig.shortName}</span>

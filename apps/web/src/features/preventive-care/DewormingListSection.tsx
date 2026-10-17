@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { Badge } from '../../components/ui/Badge';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import { ResourceError, PaginationControls } from '../shared/ResourceFeedback';
 import {
   administeredByDisplay,
@@ -95,7 +96,7 @@ function DewormingRow({
           </div>
         </dl>
         <span className="preventive-list-row__arrow" aria-hidden="true">
-          →
+          <EasyvetIcon name="arrow-right" size={16} />
         </span>
       </div>
       {deworming.parentEncounterStatus === 'VOIDED' ? (

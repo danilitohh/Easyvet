@@ -2,14 +2,20 @@ import type { SVGProps } from 'react';
 
 export type EasyvetIconName =
   | 'activity'
+  | 'arrow-left'
   | 'arrow-down'
+  | 'arrow-right'
   | 'arrow-up-right'
   | 'bar-chart'
   | 'calendar'
   | 'calendar-heart'
   | 'check'
+  | 'chevron-left'
+  | 'chevron-right'
   | 'clipboard-heart'
+  | 'close'
   | 'heart-pulse'
+  | 'menu'
   | 'package'
   | 'paw'
   | 'receipt'
@@ -26,11 +32,25 @@ function IconPaths({ name }: Pick<EasyvetIconProps, 'name'>) {
   switch (name) {
     case 'activity':
       return <path d="M3 12h4l2-5 4 10 2-5h6" />;
+    case 'arrow-left':
+      return (
+        <>
+          <path d="M19 12H5" />
+          <path d="m11 18-6-6 6-6" />
+        </>
+      );
     case 'arrow-down':
       return (
         <>
           <path d="M12 4v15" />
           <path d="m6 13 6 6 6-6" />
+        </>
+      );
+    case 'arrow-right':
+      return (
+        <>
+          <path d="M5 12h14" />
+          <path d="m13 6 6 6-6 6" />
         </>
       );
     case 'arrow-up-right':
@@ -70,12 +90,23 @@ function IconPaths({ name }: Pick<EasyvetIconProps, 'name'>) {
       );
     case 'check':
       return <path d="m5 12 4 4L19 6" />;
+    case 'chevron-left':
+      return <path d="m15 18-6-6 6-6" />;
+    case 'chevron-right':
+      return <path d="m9 18 6-6-6-6" />;
     case 'clipboard-heart':
       return (
         <>
           <rect x="5" y="4.5" width="14" height="17" rx="2" />
           <path d="M9 4.5V3h6v1.5" />
           <path d="M12 17.5s-3.2-1.9-3.2-4a1.8 1.8 0 0 1 3.2-1.1 1.8 1.8 0 0 1 3.2 1.1c0 2.1-3.2 4-3.2 4Z" />
+        </>
+      );
+    case 'close':
+      return (
+        <>
+          <path d="m6 6 12 12" />
+          <path d="m18 6-12 12" />
         </>
       );
     case 'heart-pulse':
@@ -87,6 +118,14 @@ function IconPaths({ name }: Pick<EasyvetIconProps, 'name'>) {
           />
           <path d="M12 20.1s-7.1-4.2-7.1-9.2a4.15 4.15 0 0 1 7.1-2.86A4.15 4.15 0 0 1 19.1 10.9c0 5-7.1 9.2-7.1 9.2Z" />
           <path d="M3 12h3l1.4-2.5 2.2 5 1.8-3.2 1.5 2.7H21" />
+        </>
+      );
+    case 'menu':
+      return (
+        <>
+          <path d="M4 7h16" />
+          <path d="M4 12h16" />
+          <path d="M4 17h16" />
         </>
       );
     case 'package':

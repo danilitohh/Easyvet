@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { ClinicalFollowUpSummary } from '@veterinary-saas/contracts';
 import { Badge } from '../../components/ui/Badge';
+import { EasyvetIcon } from '../../components/icons/EasyvetIcon';
 import { dueState, formatFollowUpLocal } from './followUpViewUtils';
 
 // A compact row centralizes the safe summary used by queues, history, and the dashboard.
@@ -46,7 +47,7 @@ export function FollowUpSummaryRow({
         <small>{item.assignedMember?.displayName ?? 'Sin asignar'}</small>
       </span>
       <span aria-hidden="true" className="follow-up-row__arrow">
-        ↗
+        <EasyvetIcon name="arrow-up-right" size={16} />
       </span>
     </Link>
   );

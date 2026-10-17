@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { EasyvetIcon } from '../icons/EasyvetIcon';
 
 type ModalProps = {
   open: boolean;
@@ -104,7 +105,7 @@ export function Modal({ open, title, description, eyebrow, onClose, children }: 
             aria-label="Cerrar diálogo"
             onClick={onClose}
           >
-            ×
+            <EasyvetIcon name="close" size={18} />
           </button>
         </div>
         <div className="modal__body">{children}</div>

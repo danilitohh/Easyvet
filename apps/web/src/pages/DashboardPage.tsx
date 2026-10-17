@@ -4,6 +4,7 @@ import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { PageHeader } from '../components/ui/PageHeader';
+import { EasyvetIcon } from '../components/icons/EasyvetIcon';
 import { useCan } from '../auth/useCan';
 import { PERMISSION } from '../auth/permissions';
 import { useAuth } from '../contexts/useAuth';
@@ -109,42 +110,42 @@ export function DashboardPage() {
           {canReadPatients ? (
             <Link className="quick-card" to="/pacientes">
               <span className="quick-card__icon" aria-hidden="true">
-                ●
+                <EasyvetIcon name="paw" size={20} />
               </span>
               <span>
                 <strong>Explorar pacientes</strong>
                 <small>Consulta pacientes de la organización activa.</small>
               </span>
               <span className="quick-card__arrow" aria-hidden="true">
-                ↗
+                <EasyvetIcon name="arrow-up-right" size={16} />
               </span>
             </Link>
           ) : null}
           {canReadInventory ? (
             <Link className="quick-card" to="/inventario">
               <span className="quick-card__icon" aria-hidden="true">
-                ▥
+                <EasyvetIcon name="package" size={20} />
               </span>
               <span>
                 <strong>Revisar inventario</strong>
                 <small>Catálogo, existencias, lotes y movimientos por sede.</small>
               </span>
               <span className="quick-card__arrow" aria-hidden="true">
-                ↗
+                <EasyvetIcon name="arrow-up-right" size={16} />
               </span>
             </Link>
           ) : null}
           {canReadReports ? (
             <Link className="quick-card" to="/informes">
               <span className="quick-card__icon" aria-hidden="true">
-                ▦
+                <EasyvetIcon name="bar-chart" size={20} />
               </span>
               <span>
                 <strong>Ver informes</strong>
                 <small>Indicadores filtrados por permiso y periodo.</small>
               </span>
               <span className="quick-card__arrow" aria-hidden="true">
-                ↗
+                <EasyvetIcon name="arrow-up-right" size={16} />
               </span>
             </Link>
           ) : null}
