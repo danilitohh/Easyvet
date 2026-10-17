@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GroomingVisit } from '@veterinary-saas/contracts';
 import { PERMISSION } from '../../auth/permissions';
+import { findUnlabeledFormControls, findUnnamedActions } from '../../test/accessibility';
 import { GroomingFormPage } from './GroomingFormPage';
 import { GroomingQueuePage } from './GroomingQueuePage';
 import { GroomingVisitDetailPage } from './GroomingVisitDetailPage';
@@ -211,6 +212,13 @@ beforeEach(() => {
 });
 
 describe('grooming frontend', () => {
+  it('keeps the grooming form controls and actions accessible', () => {
+    const { container } = renderRoute(`/peluqueria/nueva?patientId=${ids.patient}`);
+
+    expect(findUnlabeledFormControls(container)).toEqual([]);
+    expect(findUnnamedActions(container)).toEqual([]);
+  });
+
   it('shows queue records as plain text and submits operational filters', async () => {
     const unsafeNote = '<script>alert(1)</script>\nPerro tranquilo';
     mocks.visit = visit({ serviceSummary: unsafeNote });

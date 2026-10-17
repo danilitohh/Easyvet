@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PrescriptionDetail } from '@veterinary-saas/contracts';
 import { ApiError } from '../../services/apiClient';
+import { findUnlabeledFormControls, findUnnamedActions } from '../../test/accessibility';
 import { PrescriptionDetailPage } from './PrescriptionDetailPage';
 import { PrescriptionFormPage } from './PrescriptionFormPage';
 
@@ -348,6 +349,15 @@ beforeEach(() => {
 });
 
 describe('PrescriptionFormPage operations', () => {
+  it('keeps prescription form controls and actions accessible', async () => {
+    const { container } = renderCreate();
+
+    await screen.findByRole('heading', { name: 'Nueva prescripción' });
+
+    expect(findUnlabeledFormControls(container)).toEqual([]);
+    expect(findUnnamedActions(container)).toEqual([]);
+  });
+
   it('uses the contextual route and never asks for a second patient or encounter', async () => {
     renderCreate();
     expect(await screen.findByRole('heading', { name: 'Nueva prescripción' })).toBeInTheDocument();

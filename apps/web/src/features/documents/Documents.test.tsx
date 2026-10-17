@@ -10,6 +10,7 @@ import { DocumentsPage } from './DocumentsPage';
 import { ConsentDetailPage } from './ConsentDetailPage';
 import { ConsentFormPage } from './ConsentFormPage';
 import { PublicSignaturePage } from './PublicSignaturePage';
+import { findUnlabeledFormControls, findUnnamedActions } from '../../test/accessibility';
 
 const ids = vi.hoisted(() => ({
   organization: '10000000-0000-4000-8000-000000000001',
@@ -258,6 +259,13 @@ beforeEach(() => {
 });
 
 describe('documents and consent frontend', () => {
+  it('keeps the consent form controls and actions accessible', () => {
+    const { container } = renderConsentForm();
+
+    expect(findUnlabeledFormControls(container)).toEqual([]);
+    expect(findUnnamedActions(container)).toEqual([]);
+  });
+
   it('lists and uploads a PDF through the private multipart flow', async () => {
     renderDocuments();
 

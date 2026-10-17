@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { findUnlabeledFormControls, findUnnamedActions } from '../../test/accessibility';
 import { SaleFormPage } from './SaleFormPage';
 
 const mocks = vi.hoisted(() => ({
@@ -84,5 +85,18 @@ describe('SaleFormPage customer selectors', () => {
 
     expect(screen.getByLabelText('Buscar paciente')).toHaveValue('Luna');
     expect(screen.getByRole('navigation', { name: 'Paginación de pacientes' })).toBeInTheDocument();
+  });
+
+  it('keeps the sale form controls and actions accessible', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/ventas/nueva']}>
+        <Routes>
+          <Route path="/ventas/nueva" element={<SaleFormPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(findUnlabeledFormControls(container)).toEqual([]);
+    expect(findUnnamedActions(container)).toEqual([]);
   });
 });
