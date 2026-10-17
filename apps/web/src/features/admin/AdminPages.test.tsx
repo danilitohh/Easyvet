@@ -14,6 +14,7 @@ import { adminApi } from './adminApi';
 import { MemberCreatePage, UsersListPage } from './UsersPages';
 import { ReportsPage } from './ReportsPage';
 import { SettingsPage } from './SettingsPage';
+import { findUnnamedActions, findUnlabeledFormControls } from '../../test/accessibility';
 
 const mocks = vi.hoisted(() => ({ permissions: {} as Record<string, boolean> }));
 
@@ -107,6 +108,13 @@ describe('Fase 10 administration pages', () => {
       'reports.commercial.read': true,
       'reports.inventory.read': true,
     };
+  });
+
+  it('keeps the member creation form controls and actions accessible', () => {
+    const view = renderWithAuth(<MemberCreatePage />);
+
+    expect(findUnlabeledFormControls(view.container)).toEqual([]);
+    expect(findUnnamedActions(view.container)).toEqual([]);
   });
 
   it('shows a new account temporary password once in an in-memory creation dialog', async () => {
@@ -281,6 +289,28 @@ describe('Fase 10 administration pages', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Comercial' }));
     expect(screen.getByLabelText('Moneda predeterminada')).toHaveValue('COP');
     expect(screen.queryByLabelText(/Número siguiente de factura/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps organization settings controls and tabs accessible', async () => {
+    vi.mocked(adminApi.organizationSettings).mockResolvedValue({
+      id: organizationNorth,
+      name: 'Norte',
+      slug: 'norte',
+      status: 'ACTIVE',
+      timezone: 'America/Bogota',
+      locale: 'es-CO',
+      currencyCode: 'COP',
+    });
+    vi.mocked(adminApi.commercialSettings).mockResolvedValue({
+      currencyCode: 'COP',
+      invoicePrefix: 'EV',
+    });
+    vi.mocked(adminApi.listLocations).mockResolvedValue([]);
+    const view = renderWithAuth(<SettingsPage />);
+
+    await screen.findByRole('tab', { name: 'General' });
+    expect(findUnlabeledFormControls(view.container)).toEqual([]);
+    expect(findUnnamedActions(view.container)).toEqual([]);
   });
 
   it('shows only permitted report tabs and requests a bounded operational range', async () => {

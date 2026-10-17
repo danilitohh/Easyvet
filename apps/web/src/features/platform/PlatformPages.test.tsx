@@ -10,6 +10,7 @@ import {
   PlatformSubscriptionsPage,
 } from './PlatformPages';
 import { platformApi } from './platformApi';
+import { findUnnamedActions, findUnlabeledFormControls } from '../../test/accessibility';
 
 vi.mock('./platformApi', () => ({
   platformApi: {
@@ -136,6 +137,14 @@ describe('PlatformActivityPage', () => {
         expect.anything(),
       ),
     );
+  });
+
+  it('keeps activity filters and pagination actions accessible', async () => {
+    const view = render(<PlatformActivityPage />);
+
+    await screen.findByText('Clínica Central · ACTIVE → SUSPENDED');
+    expect(findUnlabeledFormControls(view.container)).toEqual([]);
+    expect(findUnnamedActions(view.container)).toEqual([]);
   });
 });
 
