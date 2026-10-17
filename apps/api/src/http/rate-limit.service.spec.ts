@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Environment } from '../config/env';
+import { DatabaseSecurityContext } from '../infrastructure/database/database-security-context';
 import { PrismaService } from '../infrastructure/database/prisma.service';
 import { RateLimitService } from './rate-limit.service';
 
@@ -10,7 +11,7 @@ describe('RateLimitService', () => {
   const config = {
     get: jest.fn().mockReturnValue('postgresql://runtime-secret@localhost/easyvet'),
   } as unknown as ConfigService<Environment, true>;
-  const service = new RateLimitService(prisma, config);
+  const service = new RateLimitService(prisma, config, new DatabaseSecurityContext());
 
   beforeEach(() => {
     jest.clearAllMocks();
