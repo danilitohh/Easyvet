@@ -49,4 +49,28 @@ describe('Modal', () => {
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(closeButton).toHaveFocus();
   });
+
+  it('gives each mounted dialog unique labelled-by and described-by references', () => {
+    render(
+      <>
+        <Modal open onClose={() => undefined} title="First" description="First description">
+          <p>First body</p>
+        </Modal>
+        <Modal open onClose={() => undefined} title="Second" description="Second description">
+          <p>Second body</p>
+        </Modal>
+      </>,
+    );
+
+    const dialogs = screen.getAllByRole('dialog');
+    const labelledBy = dialogs.map((dialog) => dialog.getAttribute('aria-labelledby'));
+    const describedBy = dialogs.map((dialog) => dialog.getAttribute('aria-describedby'));
+
+    expect(new Set(labelledBy).size).toBe(2);
+    expect(new Set(describedBy).size).toBe(2);
+    for (const dialog of dialogs) {
+      expect(document.getElementById(dialog.getAttribute('aria-labelledby')!)).toBeInTheDocument();
+      expect(document.getElementById(dialog.getAttribute('aria-describedby')!)).toBeInTheDocument();
+    }
+  });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 type ModalProps = {
   open: boolean;
@@ -15,6 +15,8 @@ export function Modal({ open, title, description, eyebrow, onClose, children }: 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
+  const titleId = useId();
+  const descriptionId = useId();
 
   onCloseRef.current = onClose;
 
@@ -86,14 +88,14 @@ export function Modal({ open, title, description, eyebrow, onClose, children }: 
         className="modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
-        aria-describedby={description ? 'modal-description' : undefined}
+        aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
       >
         <div className="modal__header">
           <div>
             {eyebrow ? <p className="section-kicker">{eyebrow}</p> : null}
-            <h2 id="modal-title">{title}</h2>
-            {description ? <p id="modal-description">{description}</p> : null}
+            <h2 id={titleId}>{title}</h2>
+            {description ? <p id={descriptionId}>{description}</p> : null}
           </div>
           <button
             ref={closeButtonRef}
