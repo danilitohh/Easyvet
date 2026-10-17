@@ -23,6 +23,9 @@ describe('SecurityHeadersMiddleware', () => {
 
     expect(setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
     expect(setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
+    expect(setHeader).toHaveBeenCalledWith('Cross-Origin-Resource-Policy', 'same-origin');
+    expect(setHeader).toHaveBeenCalledWith('X-DNS-Prefetch-Control', 'off');
+    expect(setHeader).toHaveBeenCalledWith('X-Permitted-Cross-Domain-Policies', 'none');
     expect(setHeader).toHaveBeenCalledWith('Referrer-Policy', 'strict-origin-when-cross-origin');
     expect(setHeader).toHaveBeenCalledWith(
       'Content-Security-Policy',

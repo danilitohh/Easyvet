@@ -15,6 +15,9 @@ export class SecurityHeadersMiddleware {
   use(_request: Request, response: Response, next: NextFunction): void {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('X-Frame-Options', 'DENY');
+    response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+    response.setHeader('X-DNS-Prefetch-Control', 'off');
+    response.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
     response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     response.setHeader(
       'Content-Security-Policy',
