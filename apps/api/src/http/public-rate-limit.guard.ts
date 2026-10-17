@@ -15,6 +15,9 @@ import { RateLimitService } from './rate-limit.service';
 type PublicRequest = Request<{ token?: string }, unknown, unknown> &
   Partial<Pick<AuthenticatedRequest, 'auth'>>;
 
+const DEFAULT_AUTHENTICATED_LIMIT = 600;
+const DEFAULT_AUTHENTICATED_WINDOW_MS = 15 * 60_000;
+
 @Injectable()
 export class PublicRateLimitGuard implements CanActivate {
   constructor(
@@ -27,9 +30,21 @@ export class PublicRateLimitGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (!rules?.length) return true;
-
     const request = context.switchToHttp().getRequest<PublicRequest>();
+    if (!rules?.length) {
+      const userId = request.auth?.user.id;
+      if (!userId || process.env.NODE_ENV === 'test') return true;
+      const result = await this.limits.consume(
+        'api.authenticated.user',
+        userId,
+        DEFAULT_AUTHENTICATED_LIMIT,
+        DEFAULT_AUTHENTICATED_WINDOW_MS,
+      );
+      if (!result.limited) return true;
+      this.setRetryAfter(context, result.retryAfterSeconds);
+      throw this.rateLimited();
+    }
+
     for (const rule of rules) {
       const identity = this.identityFor(rule.identity, request);
       if (process.env.NODE_ENV === 'test') continue;
@@ -39,17 +54,25 @@ export class PublicRateLimitGuard implements CanActivate {
           : await this.limits.consume(rule.name, identity, rule.limit, rule.windowMs, rule.blockMs);
       if (!result.limited) continue;
 
-      const response = context.switchToHttp().getResponse<Response>();
-      response.setHeader('Retry-After', String(result.retryAfterSeconds));
-      throw new HttpException(
-        {
-          code: 'RATE_LIMITED',
-          message: 'Demasiadas solicitudes. Intenta de nuevo más tarde.',
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      this.setRetryAfter(context, result.retryAfterSeconds);
+      throw this.rateLimited();
     }
     return true;
+  }
+
+  private setRetryAfter(context: ExecutionContext, retryAfterSeconds: number): void {
+    const response = context.switchToHttp().getResponse<Response>();
+    response.setHeader('Retry-After', String(retryAfterSeconds));
+  }
+
+  private rateLimited(): HttpException {
+    return new HttpException(
+      {
+        code: 'RATE_LIMITED',
+        message: 'Demasiadas solicitudes. Intenta de nuevo más tarde.',
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
   }
 
   private identityFor(identityType: RateLimitRule['identity'], request: PublicRequest): string {

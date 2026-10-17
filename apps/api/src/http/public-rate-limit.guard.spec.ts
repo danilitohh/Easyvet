@@ -119,6 +119,15 @@ describe('PublicRateLimitGuard', () => {
     );
   });
 
+  it('applies a bounded default quota to authenticated endpoints without a custom policy', async () => {
+    request.auth = { user: { id: 'user-456' } };
+    reflector.getAllAndOverride.mockReturnValue(undefined);
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+
+    expect(consume).toHaveBeenCalledWith('api.authenticated.user', 'user-456', 600, 15 * 60_000);
+  });
+
   it('fails closed if a per-user rule runs without an authenticated principal', async () => {
     reflector.getAllAndOverride.mockReturnValue([
       { ...rule, name: 'auth.change-password.user', identity: 'user' },
