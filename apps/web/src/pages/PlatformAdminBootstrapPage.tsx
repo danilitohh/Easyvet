@@ -71,8 +71,8 @@ export function PlatformAdminBootstrapPage() {
       {created ? (
         <div className="auth-form__success" role="status">
           <p>
-            Por seguridad, elimina PLATFORM_ADMIN_BOOTSTRAP_SECRET de Vercel después de confirmar el
-            acceso.
+            Por seguridad, elimina la clave privada de configuración de Vercel después de confirmar
+            el acceso.
           </p>
           <Link to="/login">Ir a iniciar sesión</Link>
         </div>

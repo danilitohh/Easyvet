@@ -42,6 +42,12 @@ export default [
     },
   },
   {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     files: ['apps/web/src/**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooks,
