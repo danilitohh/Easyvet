@@ -10,7 +10,7 @@ de infraestructura o datos sensibles.
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | Web Analytics                | Vercel Dashboard → Analytics muestra Web Analytics habilitado para el plan Hobby. La consulta de pageviews para producción respondió correctamente con `visitors: 0` y `pageviews: 0` para 2026-10-15 a 2026-10-17.  | Verificado              |
 | Consentimiento de analítica  | El cliente solo monta `@vercel/analytics` cuando la aplicación está en producción y la persona ha aceptado la analítica opcional. La sanitización elimina query strings, hashes, IDs UUID y rutas públicas de firma. | Verificado en `42c815c` |
-| Despliegue                   | El deployment asociado a `d4cd38b` está en estado Ready y la URL canónica responde `200`.                                                                                                                            | Verificado              |
+| Despliegue                   | El deployment de producción asociado al commit `6284a20` (`test: cover Realtime tenant switching`) quedó en estado `READY`; la URL canónica responde `200`.                                                          | Verificado              |
 | Asesor de seguridad Supabase | La consulta del asesor de seguridad del proyecto `iykzaqtcewnxgrmlbinz` devolvió `lints: []` el 2026-10-17.                                                                                                          | Verificado              |
 | Realtime tenant              | La migración de broadcasts terminó correctamente tras un intento revertido; existe la política privada esperada en `realtime.messages` y hay 40 triggers de cambio tenant instalados en tablas públicas.             | Verificado estructural  |
 | Storage privado              | El bucket `easyvet-clinical-documents` existe como privado, con límite de 10 MB y MIME PDF/PNG/JPEG; no tiene políticas públicas y el acceso se mantiene server-side.                                                | Verificado estructural  |
@@ -100,3 +100,14 @@ cobertura. Es una lista de candidatos, no una orden para crear índices en
 bloque: la siguiente fase debe priorizar consultas reales, planes `EXPLAIN`,
 latencias y tráfico representativo, porque agregar 137 índices también aumenta
 el coste de escritura y mantenimiento.
+
+## Smoke test público no destructivo
+
+El comando `npm run test:production:smoke` ejecuta únicamente solicitudes `GET`
+contra `/`, `/login`, `/api/v1/health` y `/api/v1/health/ready`. No inicia
+sesión, no envía datos y no realiza mutaciones. El 2026-10-17 pasó contra
+`https://easyvet.vercel.app` verificando HTTP 200, contenido HTML, CSP,
+`X-Content-Type-Options`, `X-Frame-Options`, HSTS, política de referencia,
+`Cache-Control: no-store`, `X-Request-ID` y la dependencia de base de datos en
+el readiness check. La URL se puede sustituir de forma explícita con
+`EASYVET_SMOKE_ORIGIN` para validar otro entorno.
