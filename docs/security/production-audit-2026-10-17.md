@@ -12,6 +12,17 @@ de infraestructura o datos sensibles.
 | Consentimiento de analítica | El cliente solo monta `@vercel/analytics` cuando la aplicación está en producción y la persona ha aceptado la analítica opcional. La sanitización elimina query strings, hashes, IDs UUID y rutas públicas de firma. | Verificado en `42c815c` |
 | Despliegue | El último despliegue asociado a `42c815c` está en estado Ready y la URL canónica responde `200`. | Verificado previamente |
 
+## Auditoría de catálogo Supabase
+
+La consulta de solo lectura ejecutada el 2026-10-17 devolvió 48 tablas
+públicas de aplicación; las 48 tienen RLS habilitado y forzado. Los roles
+`anon` y `authenticated` tienen 0 grants directos de `SELECT` sobre esas
+tablas. Esto confirma que el acceso directo de clientes está cerrado en la
+base de datos.
+
+La misma auditoría confirmó que `postgres` no es superusuario, pero sí tiene
+`rolbypassrls = true`, y que el rol runtime dedicado `veterinary` aún no existe.
+
 ## Riesgo crítico aún abierto
 
 El endpoint protegido de postura de base de datos reportó el rol `postgres` con
