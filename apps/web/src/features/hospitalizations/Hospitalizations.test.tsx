@@ -1,21 +1,65 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { HospitalizationFormPage } from './HospitalizationFormPage';
 import { HospitalizationListPage } from './HospitalizationListPage';
 import { defaultDischargeDateTime } from './hospitalizationDateUtils';
+import { findUnnamedActions, findUnlabeledFormControls } from '../../test/accessibility';
 
-const mocks = vi.hoisted(() => ({ canRead: true, canCreate: true, resource: null as unknown }));
+const mocks = vi.hoisted(() => ({
+  canRead: true,
+  canCreate: true,
+  resource: null as unknown,
+  parentEncounter: null as unknown,
+  hospitalizationResource: null as unknown,
+  create: vi.fn(),
+}));
 
-vi.mock('../../auth/useCan', () => ({ useCan: () => mocks.canRead }));
+vi.mock('../../auth/useCan', () => ({
+  useCan: (permission: string) =>
+    permission === 'hospitalizations.read' ? mocks.canRead : mocks.canCreate,
+}));
+vi.mock('../../contexts/useAuth', () => ({
+  useAuth: () => ({
+    activeMembership: {
+      id: '55555555-5555-4555-8555-555555555555',
+      organization: { id: '66666666-6666-4666-8666-666666666666' },
+    },
+  }),
+}));
 vi.mock('../clinical/useClinical', () => ({
   useClinicalOrganization: () => ({
     data: { timezone: 'America/Bogota' },
     loading: false,
     error: null,
+    reload: vi.fn(),
+  }),
+  useClinicalEncounter: () => mocks.parentEncounter,
+  useClinicalPractitioners: () => ({
+    data: {
+      data: [
+        {
+          membershipId: '55555555-5555-4555-8555-555555555555',
+          displayName: 'Dra. QA',
+          profileConfigured: true,
+        },
+      ],
+      page: 1,
+      pageSize: 50,
+      total: 1,
+    },
+    loading: false,
+    error: null,
+    reload: vi.fn(),
   }),
 }));
 vi.mock('../shared/useClinicalDomainResource', () => ({
   useHospitalizationListResource: () => mocks.resource as never,
+  useHospitalizationResource: () => mocks.hospitalizationResource as never,
+  useClinicalMutationGuard: () => ({ signal: () => undefined, isCurrent: () => true }),
+}));
+vi.mock('./hospitalizationsApi', () => ({
+  hospitalizationsApi: { create: mocks.create, update: vi.fn() },
 }));
 
 const base = {
@@ -50,6 +94,27 @@ function renderPage() {
   );
 }
 
+function renderForm() {
+  return render(
+    <MemoryRouter
+      initialEntries={[
+        '/pacientes/' +
+          base.patientId +
+          '/historia/encuentros/' +
+          base.clinicalEncounterId +
+          '/hospitalizacion/nueva',
+      ]}
+    >
+      <Routes>
+        <Route
+          path="/pacientes/:patientId/historia/encuentros/:encounterId/hospitalizacion/nueva"
+          element={<HospitalizationFormPage mode="create" />}
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe('hospitalization frontend', () => {
   beforeEach(() => {
     mocks.canRead = true;
@@ -71,6 +136,19 @@ describe('hospitalization frontend', () => {
       },
       reload: vi.fn(),
     };
+    mocks.parentEncounter = {
+      loading: false,
+      error: null,
+      reload: vi.fn(),
+      data: { id: base.clinicalEncounterId, status: 'DRAFT', patient: { status: 'ACTIVE' } },
+    };
+    mocks.hospitalizationResource = {
+      loading: false,
+      error: null,
+      reload: vi.fn(),
+      data: null,
+    };
+    mocks.create.mockReset();
   });
 
   it('renders lifecycle labels and semantic history links', () => {
@@ -102,5 +180,11 @@ describe('hospitalization frontend', () => {
     expect(
       defaultDischargeDateTime(null, 'America/Bogota', new Date('2026-09-22T17:00:00.000Z')),
     ).toBe('2026-09-22T12:00');
+  });
+
+  it('keeps the hospitalization form controls accessible', () => {
+    const view = renderForm();
+    expect(findUnlabeledFormControls(view.container)).toEqual([]);
+    expect(findUnnamedActions(view.container)).toEqual([]);
   });
 });

@@ -9,6 +9,7 @@ import { ApiError } from '../../services/apiClient';
 import { DiagnosticOrderDetailPage } from './DiagnosticOrderDetailPage';
 import { DiagnosticOrderFormPage } from './DiagnosticOrderFormPage';
 import { DiagnosticOrderListPage } from './DiagnosticOrderListPage';
+import { findUnnamedActions, findUnlabeledFormControls } from '../../test/accessibility';
 
 const ids = vi.hoisted(() => ({
   organization: '10000000-0000-4000-8000-000000000010',
@@ -398,6 +399,19 @@ describe('diagnostic orders frontend', () => {
     await waitFor(() => expect(screen.getByLabelText('Nombre del examen')).toHaveValue(''));
     expect(screen.getByLabelText('Motivo')).toHaveValue('');
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it('keeps diagnostic create and edit form controls accessible', async () => {
+    const createView = renderCreateForm();
+    await screen.findByLabelText('Nombre del examen');
+    expect(findUnlabeledFormControls(createView.container)).toEqual([]);
+    expect(findUnnamedActions(createView.container)).toEqual([]);
+    createView.unmount();
+
+    const editView = renderEditForm();
+    await screen.findByLabelText('Nombre del examen');
+    expect(findUnlabeledFormControls(editView.container)).toEqual([]);
+    expect(findUnnamedActions(editView.container)).toEqual([]);
   });
 
   it('treats a detail deep link under a different patient as not found', () => {
