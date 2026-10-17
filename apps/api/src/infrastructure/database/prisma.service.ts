@@ -14,19 +14,17 @@ function scopedClient(security: DatabaseSecurityContext) {
   return Prisma.defineExtension((client) =>
     client.$extends({
       query: {
-        $allModels: {
-          async $allOperations({ args, query }) {
-            const scope = scopeValues(security);
-            const [, result] = await client.$transaction([
-              client.$executeRaw`
-                SELECT
-                  set_config('app.easyvet_context', ${scope.mode}, TRUE),
-                  set_config('app.easyvet_organization_id', ${scope.organizationId}, TRUE)
-              `,
-              query(args),
-            ]);
-            return result;
-          },
+        $allOperations: async ({ args, query }) => {
+          const scope = scopeValues(security);
+          const [, result] = await client.$transaction([
+            client.$executeRaw`
+              SELECT
+                set_config('app.easyvet_context', ${scope.mode}, TRUE),
+                set_config('app.easyvet_organization_id', ${scope.organizationId}, TRUE)
+            `,
+            query(args),
+          ]);
+          return result;
         },
       },
     }),
