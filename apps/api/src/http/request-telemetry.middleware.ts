@@ -2,6 +2,7 @@ import { Injectable, Logger, type NestMiddleware } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NextFunction, Request, Response } from 'express';
 import type { Environment } from '../config/env';
+import { REQUEST_ID_HEADER, validRequestId } from './request-id.middleware';
 
 const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const LONG_IDENTIFIER_SEGMENT = /^[A-Za-z0-9_-]{16,}$/;
@@ -15,6 +16,15 @@ function normalizePathSegment(segment: string): string {
     return ':param';
   }
   return segment.length > 64 ? ':param' : segment;
+}
+
+function safeRequestId(request: Request, response: Response): string {
+  const responseId =
+    typeof response.getHeader === 'function' ? response.getHeader(REQUEST_ID_HEADER) : undefined;
+  if (validRequestId(responseId)) return responseId;
+
+  const incoming = request.header('x-request-id');
+  return validRequestId(incoming) ? incoming : 'missing';
 }
 
 /**
@@ -45,7 +55,7 @@ export class RequestTelemetryMiddleware implements NestMiddleware {
 
       this.logger.warn({
         event: 'slow_request',
-        requestId: request.header('x-request-id') ?? 'missing',
+        requestId: safeRequestId(request, response),
         method: request.method,
         path: safeRequestPath(request),
         statusCode: response.statusCode,

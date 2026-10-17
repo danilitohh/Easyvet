@@ -28,8 +28,10 @@ contiene solo:
 La ruta se obtiene de la plantilla de Express cuando está disponible. En caso
 contrario, los segmentos que parecen UUID, números o identificadores largos se
 reemplazan por `:param`, y se elimina cualquier query string o fragmento.
-Nunca se registran cuerpos, cookies, headers completos, query strings, tokens,
-correos, nombres de pacientes, tenant ids ni valores clínicos.
+El `requestId` se toma primero del header de respuesta generado y validado por
+`RequestIdMiddleware`; un header entrante inválido no se copia al log. Nunca se
+registran cuerpos, cookies, headers completos, query strings, tokens, correos,
+nombres de pacientes, tenant ids ni valores clínicos.
 
 ## Límites conocidos
 

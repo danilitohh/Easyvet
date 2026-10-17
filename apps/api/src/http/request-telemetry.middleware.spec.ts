@@ -15,6 +15,7 @@ describe('RequestTelemetryMiddleware', () => {
     const response = {
       statusCode: 200,
       once: jest.fn((_event: string, handler: () => void) => finishHandlers.push(handler)),
+      getHeader: jest.fn().mockReturnValue('request-123'),
     } as unknown as Response;
     const next = jest.fn() as NextFunction;
     const config = new ConfigService({ SLOW_REQUEST_LOG_MS: thresholdMs });
@@ -71,5 +72,28 @@ describe('RequestTelemetryMiddleware', () => {
     } as Request;
 
     expect(safeRequestPath(request)).toBe('/api/v1/patients/:id');
+  });
+
+  it('does not log an arbitrary incoming request id', () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { finishHandlers, request, response } = setup(100);
+    Object.defineProperty(request, 'header', {
+      value: jest.fn().mockReturnValue('patient@example.com'),
+    });
+    Object.defineProperty(response, 'getHeader', {
+      value: jest.fn().mockReturnValue(undefined),
+    });
+    const startedAt = process.hrtime.bigint();
+    while (Number(process.hrtime.bigint() - startedAt) / 1_000_000 < 110) {
+      // Allow the monotonic clock to advance without sleeping in the test.
+    }
+
+    finishHandlers[0]?.();
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'slow_request', requestId: 'missing' }),
+    );
+    expect(JSON.stringify(warn.mock.calls[0])).not.toContain('patient@example.com');
+    warn.mockRestore();
   });
 });
