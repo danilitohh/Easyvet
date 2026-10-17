@@ -26,6 +26,11 @@ página, no como un modal que capture el teclado. La ventana de preferencias sí
 mantiene su propio recorrido de foco y está cubierta por
 `apps/web/src/components/privacy/PrivacyConsent.test.tsx`.
 
+En el deployment `dpl_GnWSMfDMotRb4XBF6un8yepm5XEn` (`fb50075`), el banner
+mostró las acciones independientes `Rechazar`, `Aceptar analítica` y
+`Guardar preferencias`. La aceptación explícita quedó cubierta además por la
+prueba de componente `PrivacyConsent.test.tsx`.
+
 ## Alcance y límites
 
 Esta evidencia valida la composición de `/login` en un viewport de escritorio
