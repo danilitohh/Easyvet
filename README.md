@@ -108,4 +108,4 @@ Fuera de los correos transaccionales para activación de cuenta y recuperación 
 
 ## Seguridad de datos
 
-Use exclusivamente bases locales dedicadas `easyvet_dev` y `easyvet_test` para desarrollo y pruebas. Nunca copie datos reales de propietarios, pacientes, historias clínicas o finanzas al seed o a QA. No incluya `.env`, contraseñas, tokens ni archivos de documentos en Git. El estado de seguridad y los avisos de dependencias están en [revisión de seguridad V1](docs/security/v1-security-review.md).
+Use exclusivamente bases locales dedicadas `easyvet_dev` y `easyvet_test` para desarrollo y pruebas. Nunca copie datos reales de propietarios, pacientes, historias clínicas o finanzas al seed o a QA. No incluya `.env`, contraseñas, tokens ni archivos de documentos en Git. El estado de seguridad y los avisos de dependencias están en [revisión de seguridad V1](docs/security/v1-security-review.md). La trazabilidad de las instrucciones globales está en la [matriz de requisitos globales](docs/security/global-requirements-matrix-2026-10-17.md).

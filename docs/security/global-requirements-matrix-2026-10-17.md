@@ -1,0 +1,87 @@
+# Easyvet — matriz de requisitos globales (2026-10-17)
+
+Esta matriz traduce las instrucciones globales del proyecto a evidencia del
+checkout y del entorno desplegado. No es una certificación legal, de seguridad
+ni de accesibilidad. Un requisito queda `VERIFICADO` solo cuando existe una
+prueba o comprobación reproducible; `PARCIAL` indica que hay implementación
+con límites conocidos; `PENDIENTE` requiere una decisión, dato o control
+externo que no debe inventarse.
+
+## Diseño, rutas y organización
+
+| Área                         | Estado     | Evidencia y límite                                                                                                                                                                                                                                                              |
+| ---------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Recursos visuales y marca    | PARCIAL    | La marca y los iconos se integran desde `apps/web/src/components/brand` y `apps/web/src/components/icons`; la dirección visual usa React Bits/Kokonut y HeroUI está declarado en `apps/web/package.json`. La revisión visual exhaustiva por viewport no se repite en esta fase. |
+| Centrado, foco y composición | PARCIAL    | Existen tokens y reglas de foco en `apps/web/src/styles`, además de componentes compartidos para botones, formularios, modales y navegación. No se afirma que cada ruta cumpla WCAG sin una auditoría visual completa.                                                          |
+| Separación por rutas         | VERIFICADO | `apps/web/src/app/App.tsx` define rutas SPA y `docs/release/v1-readiness.md` mantiene la matriz de módulos; la API conserva la autorización aunque se visite una URL manualmente.                                                                                               |
+| Seguimiento de trabajo       | PARCIAL    | Las fases y evidencias se registran en `docs/`, pero no hay un issue tracker externo conectado en este checkout.                                                                                                                                                                |
+
+## Legalidad, consentimiento y confianza
+
+| Área                                       | Estado     | Evidencia y límite                                                                                                                                                                                                                                    |
+| ------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Privacidad, términos, cookies y reembolsos | PARCIAL    | `apps/web/src/pages/LegalPage.tsx` expone las páginas y `PrivacyConsent.tsx` gestiona aceptar, rechazar y preferencias. Colombia es la jurisdicción indicada; la identidad legal, razón social, NIT, dirección y correo de soporte siguen pendientes. |
+| Regla comercial                            | PARCIAL    | La regla indicada es “sin reembolsos, sujeto a la ley aplicable”; precios, impuestos y descuento anual siguen por definir. No se publican datos inventados.                                                                                           |
+| Consentimiento en formularios              | VERIFICADO | Registro y formularios relevantes muestran consentimiento; los DTOs del servidor usan validación estricta y el registro enlaza privacidad/términos.                                                                                                   |
+| Reseñas y afirmaciones comerciales         | VERIFICADO | No se encontró un mecanismo que presente testimonios verificables inexistentes como reales; la landing describe capacidades del producto sin datos de clientes inventados.                                                                            |
+| Datos del negocio                          | PENDIENTE  | Faltan datos legales y canal formal de soporte proporcionados por el propietario; requiere revisión profesional antes de activar comercialmente las suscripciones.                                                                                    |
+
+## Analítica y servicios externos
+
+| Área                             | Estado     | Evidencia y límite                                                                                                                                                                       |
+| -------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Analítica con consentimiento     | VERIFICADO | `apps/web/src/contexts/PrivacyConsentContext.tsx` y `apps/web/src/services/analytics.ts` montan analítica solo tras consentimiento y sanitizan rutas, query, hash, UUID y firma pública. |
+| Minimización de datos analíticos | VERIFICADO | El filtro descarta rutas públicas de firma y evita enviar tokens o identificadores de recursos; no se incluyen credenciales en eventos.                                                  |
+| Revisión de SDK externos         | PARCIAL    | Vercel Analytics, Supabase, HeroUI, React Bits/Kokonut y dependencias están identificados; quedan por revisar periódicamente cambios de proveedor, licencias y transferencias.           |
+
+## Accesibilidad y contenido
+
+| Área                                  | Estado     | Evidencia y límite                                                                                                                                                                                         |
+| ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Semántica, labels y estados           | PARCIAL    | Hay `FormField`, labels asociados, `aria-live`, estados `alert/status`, navegación etiquetada y foco visible en componentes compartidos. La cobertura es representativa, no una certificación WCAG 2.2 AA. |
+| Contraste                             | VERIFICADO | `apps/web/src/styles/accessibility-colors.test.ts` comprueba tokens de contraste WCAG AA en superficies principales.                                                                                       |
+| Texto alternativo                     | PARCIAL    | Las imágenes decorativas usan `alt=""` y los enlaces de marca tienen nombre accesible; falta un recorrido automatizado de todas las rutas y estados.                                                       |
+| Teclado, modales y objetivos táctiles | PARCIAL    | `Modal.test.tsx` cubre foco y cierre, y existen estilos `:focus-visible`; falta una prueba automatizada de recorrido completo por cada módulo.                                                             |
+
+## Seguridad, datos y multi-tenant
+
+| Área                                 | Estado                       | Evidencia y límite                                                                                                                                                                                                                                       |
+| ------------------------------------ | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Secretos y frontera cliente/servidor | VERIFICADO                   | `scripts/verify-web-bundle.mjs` bloquea marcadores server-only; `npm run build` confirmó 10 marcadores revisados. No se comparten secretos en esta matriz.                                                                                               |
+| Autenticación y sesiones             | VERIFICADO                   | Argon2id, cookies HttpOnly/SameSite/Secure en producción, tokens almacenados como hash, expiración, logout y revocación están cubiertos por `apps/api/src/auth` y sus pruebas.                                                                           |
+| Autorización server-side             | VERIFICADO                   | Guards, permisos y contexto de tenant viven en `apps/api/src/authorization`; el frontend no es la frontera de seguridad.                                                                                                                                 |
+| Aislamiento multi-tenant y RLS       | VERIFICADO estructural       | `prisma.service.ts`, la migración `20261017090000_add_tenant_rls_context` y `docs/security/tenant-rls-rollout-2026-10-17.md` documentan contexto transaccional y RLS forzado. La prueba negativa completa con dos tenants en producción sigue pendiente. |
+| Rate limiting                        | VERIFICADO en código/pruebas | Auth, bootstrap, recuperación, realtime, firma pública, documentos y readiness tienen políticas en `apps/api/src/http` y controladores; los tests de política cubren las rutas públicas.                                                                 |
+| Validación y asignación masiva       | VERIFICADO                   | `ValidationPipe` usa whitelist, rechazo de propiedades no permitidas y transformación; los DTOs definen límites de longitud/tipo.                                                                                                                        |
+| Archivos privados                    | VERIFICADO estructural       | Storage privado, MIME/magic bytes, límites y respuestas no-store/nosniff están cubiertos por `apps/api/src/storage` y `documents`; la escritura remota sintética aún está desactivada por defecto.                                                       |
+| Headers y HTTPS                      | VERIFICADO en producción     | `vercel.json`, `SecurityHeadersMiddleware` y el smoke `scripts/production-smoke.mjs` comprueban CSP, HSTS, frame/type/referrer policies y `request-id`.                                                                                                  |
+| Dependencias                         | VERIFICADO para producción   | `npm audit --omit=dev` reporta 0 vulnerabilidades de producción; el árbol de tooling mantiene 19 moderadas y no se ejecutó un upgrade major forzado.                                                                                                     |
+
+## Pruebas, observabilidad y escalabilidad
+
+| Área                       | Estado                  | Evidencia y límite                                                                                                                                                                                                                       |
+| -------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Regresión unit/componentes | VERIFICADO              | La última ejecución pasó API 336 tests y web 417 tests; `npm run lint`, `npm run typecheck` y `npm run build` también pasaron.                                                                                                           |
+| CI                         | VERIFICADO parcialmente | `.github/workflows/ci.yml` ejecuta lint, typecheck, tests, build, audit, RLS, integración PostgreSQL y baseline de rendimiento. El `format:check` global existente no es un gate válido hoy: falla en 229 archivos heredados/artefactos. |
+| Observabilidad             | PARCIAL                 | Hay `request-id`, logging de errores con redacción y health/readiness; faltan métricas operativas y alertas de negocio configuradas en el proveedor.                                                                                     |
+| Baseline de rendimiento    | VERIFICADO local/CI     | `performance-baseline.integration.spec.ts` cubre 10/100/1.000 filas, paginación, límite de respuesta, consultas constantes y ausencia de N+1 en una base efímera.                                                                        |
+| Rendimiento de producción  | PENDIENTE               | Supabase reportó 137 candidatos de FK sin índice; no se crean índices en bloque sin planes, tráfico y latencias reales. No hay prueba autorizada de carga/concurrencia productiva.                                                       |
+| Backups y recuperación     | PENDIENTE               | `docs/operations/backup-recovery.md` documenta el procedimiento, pero el plan efectivo, retención, RPO/RTO y restauración controlada no están verificados.                                                                               |
+
+## Estado de cierre
+
+La aplicación tiene una base V1 funcional y con controles importantes
+verificados, pero esta auditoría no autoriza todavía una afirmación de
+cumplimiento comercial o de producción completa. Los siguientes controles
+requieren datos del propietario o una autorización/ventana operativa concreta:
+
+1. completar los datos legales y la revisión profesional;
+2. confirmar backups, retención, RPO/RTO y ejecutar una restauración controlada;
+3. ejecutar, si se autoriza expresamente, el smoke sintético remoto de Storage;
+4. medir carga/concurrencia y priorizar índices con evidencia;
+5. realizar una revisión independiente de seguridad/pentest;
+6. repetir una prueba negativa autenticada de aislamiento en el entorno de producción.
+
+No se ejecutaron escrituras remotas, migraciones nuevas, restauraciones,
+`npm audit fix --force`, pruebas ofensivas ni cambios destructivos durante la
+elaboración de esta matriz.
