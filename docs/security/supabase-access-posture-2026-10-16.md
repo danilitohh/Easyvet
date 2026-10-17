@@ -42,3 +42,14 @@ La vista `information_schema.schema_privileges` no existe en la instancia consul
 - La [Ley 1480 de 2011](https://www1.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=44306), modificada para comercio electrónico por la [Ley 2439 de 2024](https://www.funcionpublica.gov.co/eva/gestornormativo/norma_pdf.php?i=257116), contempla información precontractual y reglas de retracto/devolución que dependen del contrato y del momento de inicio del servicio. La regla comercial indicada por el propietario (“sin reembolsos, sujeto a ley”) no debe convertirse en una exclusión absoluta: condiciones y excepciones requieren revisión jurídica colombiana.
 
 La publicación de política de privacidad, términos, cookies y condiciones de cancelación/reembolso sigue pendiente de los datos del responsable y revisión profesional; estas referencias no constituyen una determinación de cumplimiento.
+
+## Actualización posterior (2026-10-17)
+
+La verificación protegida de producción confirmó que Prisma usa `veterinary`,
+sin superusuario ni `BYPASSRLS`, y que el rollout de contexto por tenant está
+aplicado. El deployment ejecutó `prisma migrate deploy` sin migraciones
+pendientes y `/api/v1/health/ready` respondió `database: ok`.
+
+La consola de Storage confirmó el bucket privado
+`easyvet-clinical-documents` con límite de 10 MB y tipos PDF/PNG/JPEG. No se
+subieron ni eliminaron objetos durante esta comprobación.

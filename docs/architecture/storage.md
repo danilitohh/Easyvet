@@ -57,3 +57,15 @@ La compensación es best-effort: un outage simultáneo del proveedor durante la
 compensación puede dejar un objeto huérfano que requerirá reconciliación operativa.
 Malware scanning, retención automática, lifecycle de bucket, cifrado gestionado,
 reconciliación y signed URLs quedan como decisiones de infraestructura posteriores.
+
+## Verificación de producción (2026-10-17)
+
+La consola de Supabase mostró el bucket `easyvet-clinical-documents` existente,
+privado, con límite de 10 MB y tipos permitidos `application/pdf`, `image/png` y
+`image/jpeg`. El panel de políticas mostró cero políticas para ese bucket y cero
+políticas generales en `storage.objects`/`storage.buckets`, consistente con el
+modelo de acceso exclusivo del adaptador server-side mediante service role.
+
+Esta comprobación fue de solo lectura: no se subió, descargó ni eliminó ningún
+objeto. La prueba end-to-end con un archivo sintético sigue pendiente de una
+autorización explícita para escribir y limpiar un objeto temporal en Production.

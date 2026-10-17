@@ -66,6 +66,12 @@ ninguna pendiente. Después de publicar la corrección de contexto `system`,
 `{"status":"ok","dependencies":{"database":"ok"}}`. El error RLS previo de
 `api_rate_limit_buckets` no reapareció en la comprobación posterior.
 
+La revisión de solo lectura en Supabase confirmó que el bucket
+`easyvet-clinical-documents` existe, es privado, limita los archivos a 10 MB y
+acepta únicamente PDF/PNG/JPEG. El panel mostró cero políticas de Storage; esto
+es coherente con el acceso exclusivo del backend mediante service role. No se
+realizó una escritura de prueba.
+
 ## Pendientes fuera de este control
 
 - Prueba real autorizada de carga y descarga de un archivo sintético en Storage.
