@@ -1,7 +1,9 @@
+import type { EasyvetIconName } from '../components/icons/EasyvetIcon';
+
 export type NavigationItem = {
   label: string;
   path: string;
-  icon: string;
+  icon: EasyvetIconName;
   description: string;
 };
 
@@ -18,19 +20,19 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
       {
         label: 'Dashboard',
         path: '/dashboard',
-        icon: '⌂',
+        icon: 'bar-chart',
         description: 'Vista general de la operación.',
       },
       {
         label: 'Agenda',
         path: '/agenda',
-        icon: '◷',
+        icon: 'calendar',
         description: 'Agenda y disponibilidad futura.',
       },
       {
         label: 'Disponibilidad',
         path: '/agenda/disponibilidad',
-        icon: '▦',
+        icon: 'calendar-heart',
         description: 'Horarios recurrentes por sede y profesional.',
       },
     ],
@@ -41,19 +43,19 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
       {
         label: 'Pacientes',
         path: '/pacientes',
-        icon: '●',
+        icon: 'paw',
         description: 'Registro clínico de pacientes.',
       },
       {
         label: 'Propietarios',
         path: '/propietarios',
-        icon: '○',
+        icon: 'users',
         description: 'Personas responsables de pacientes.',
       },
       {
         label: 'Seguimientos',
         path: '/seguimientos',
-        icon: '◷',
+        icon: 'check',
         description: 'Tareas clínicas y recordatorios internos.',
       },
     ],
@@ -64,7 +66,7 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
       {
         label: 'Peluquería',
         path: '/peluqueria',
-        icon: '✂',
+        icon: 'sparkle',
         description: 'Servicios de peluquería y spa.',
       },
     ],
@@ -75,17 +77,17 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
       {
         label: 'Inventario',
         path: '/inventario',
-        icon: '▥',
+        icon: 'package',
         description: 'Productos y existencias.',
       },
-      { label: 'Ventas', path: '/ventas', icon: '↗', description: 'Ventas y pedidos.' },
+      { label: 'Ventas', path: '/ventas', icon: 'receipt', description: 'Ventas y pedidos.' },
       {
         label: 'Facturación',
         path: '/facturacion',
-        icon: '▧',
+        icon: 'receipt',
         description: 'Documentos de venta.',
       },
-      { label: 'Caja', path: '/caja', icon: '◒', description: 'Movimientos y cierres.' },
+      { label: 'Caja', path: '/caja', icon: 'bar-chart', description: 'Movimientos y cierres.' },
     ],
   },
   {
@@ -94,19 +96,19 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
       {
         label: 'Informes',
         path: '/informes',
-        icon: '▦',
+        icon: 'activity',
         description: 'Indicadores agregados según tu rol.',
       },
       {
         label: 'Usuarios',
         path: '/usuarios',
-        icon: '♙',
+        icon: 'users',
         description: 'Accesos y roles del personal de esta organización.',
       },
       {
         label: 'Configuración',
         path: '/configuracion',
-        icon: '⚙',
+        icon: 'settings',
         description: 'Datos de la organización, sedes y valores comerciales.',
       },
     ],
@@ -121,7 +123,7 @@ export function getRouteMeta(pathname: string): NavigationItem {
     return {
       label: 'Perfil profesional',
       path: '/perfil/profesional',
-      icon: '♙',
+      icon: 'users',
       description: 'Identidad clínica de la organización activa.',
     };
   }
@@ -131,7 +133,7 @@ export function getRouteMeta(pathname: string): NavigationItem {
     ) ?? {
       label: 'Página no encontrada',
       path: pathname,
-      icon: '?',
+      icon: 'sparkle',
       description: 'La ruta solicitada no existe.',
     }
   );

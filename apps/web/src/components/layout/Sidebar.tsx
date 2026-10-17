@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { BrandMark } from '../brand/BrandMark';
+import { EasyvetIcon } from '../icons/EasyvetIcon';
 import { NAVIGATION_GROUPS } from '../../data/navigation';
 import { appConfig } from '../../config/app';
 import { useCan } from '../../auth/useCan';
@@ -112,7 +113,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
                   onClick={onClose}
                 >
                   <span className="nav-item__icon" aria-hidden="true">
-                    {item.icon}
+                    <EasyvetIcon name={item.icon} size={18} />
                   </span>
                   <span className="nav-item__label">{item.label}</span>
                 </NavLink>
@@ -124,7 +125,7 @@ export function Sidebar({ open, collapsed, onClose, onToggleCollapse }: SidebarP
         <div className="sidebar__bottom">
           <NavLink className="nav-item nav-item--utility" to="/health" onClick={onClose}>
             <span className="nav-item__icon" aria-hidden="true">
-              ◉
+              <EasyvetIcon name="heart-pulse" size={18} />
             </span>
             <span className="nav-item__label">Estado técnico</span>
           </NavLink>

@@ -13,7 +13,9 @@ export type EasyvetIconName =
   | 'package'
   | 'paw'
   | 'receipt'
-  | 'sparkle';
+  | 'settings'
+  | 'sparkle'
+  | 'users';
 
 type EasyvetIconProps = SVGProps<SVGSVGElement> & {
   name: EasyvetIconName;
@@ -118,8 +120,23 @@ function IconPaths({ name }: Pick<EasyvetIconProps, 'name'>) {
           <path d="M8.5 8h7M8.5 12h7M8.5 16h4" />
         </>
       );
+    case 'settings':
+      return (
+        <>
+          <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" />
+          <path d="m19.4 15 .1.1a1.8 1.8 0 0 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a1.8 1.8 0 0 1-3.6 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a1.8 1.8 0 0 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-1.3-3.1h-.2a1.8 1.8 0 0 1 0-3.6h.2a1.8 1.8 0 0 0 1.3-3.1l-.1-.1a1.8 1.8 0 0 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3.1-1.3v-.2a1.8 1.8 0 0 1 3.6 0v.2a1.8 1.8 0 0 0 3.1 1.3l.1-.1a1.8 1.8 0 0 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 1.3 3.1h.2a1.8 1.8 0 0 1 0 3.6h-.2a1.8 1.8 0 0 0-1.3 3.1Z" />
+        </>
+      );
     case 'sparkle':
       return <path d="m12 3 1.7 6.3L20 11l-6.3 1.7L12 19l-1.7-6.3L4 11l6.3-1.7L12 3Z" />;
+    case 'users':
+      return (
+        <>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3.5 20c.5-3.3 2.3-5 5.5-5s5 1.7 5.5 5" />
+          <path d="M16 5.2a3 3 0 0 1 0 5.6M17 15.2c2.2.5 3.4 2.1 3.8 4.8" />
+        </>
+      );
   }
 }
 

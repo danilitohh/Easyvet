@@ -80,7 +80,7 @@ describe('role-aware navigation', () => {
     render(
       <MemoryRouter>
         <AppHeader
-          route={{ label: 'Dashboard', path: '/dashboard', icon: '⌂', description: '' }}
+          route={{ label: 'Dashboard', path: '/dashboard', icon: 'bar-chart', description: '' }}
           onOpenMenu={() => undefined}
         />
       </MemoryRouter>,

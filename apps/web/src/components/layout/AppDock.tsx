@@ -2,13 +2,24 @@ import { useLocation } from 'react-router-dom';
 import { PERMISSION } from '../../auth/permissions';
 import { useCan } from '../../auth/useCan';
 import { Dock, type DockItem } from '../reactbits/Dock';
+import { EasyvetIcon } from '../icons/EasyvetIcon';
 
 const dockRoutes = [
-  { href: '/dashboard', label: 'Inicio', icon: '⌂' },
-  { href: '/agenda', label: 'Agenda', icon: '◷', permission: PERMISSION.APPOINTMENTS_READ },
-  { href: '/pacientes', label: 'Pacientes', icon: '◌', permission: PERMISSION.PATIENTS_READ },
-  { href: '/inventario', label: 'Inventario', icon: '▥', permission: PERMISSION.INVENTORY_READ },
-  { href: '/informes', label: 'Informes', icon: '▤', permission: PERMISSION.REPORTS_OPERATIONAL },
+  { href: '/dashboard', label: 'Inicio', icon: 'bar-chart' },
+  { href: '/agenda', label: 'Agenda', icon: 'calendar', permission: PERMISSION.APPOINTMENTS_READ },
+  { href: '/pacientes', label: 'Pacientes', icon: 'paw', permission: PERMISSION.PATIENTS_READ },
+  {
+    href: '/inventario',
+    label: 'Inventario',
+    icon: 'package',
+    permission: PERMISSION.INVENTORY_READ,
+  },
+  {
+    href: '/informes',
+    label: 'Informes',
+    icon: 'activity',
+    permission: PERMISSION.REPORTS_OPERATIONAL,
+  },
 ] as const;
 
 function isDockRouteActive(pathname: string, href: string) {
@@ -41,7 +52,7 @@ export function AppDock() {
     .map((item) => ({
       href: item.href,
       label: item.label,
-      icon: item.icon,
+      icon: <EasyvetIcon name={item.icon} size={18} />,
       active: isDockRouteActive(pathname, item.href),
     }));
 

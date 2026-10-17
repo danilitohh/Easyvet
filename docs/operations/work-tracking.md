@@ -38,6 +38,7 @@ decisiones del propietario ni del proveedor.
 - Composición de controles 2026-10-17 — `accessibility-controls.test.ts` protege el centrado de botones e iconos compartidos; lint, typecheck, 779 pruebas y build pasaron localmente. CI #151 y el deployment `c481ed3` quedaron exitosos/READY.
 - Smoke público ampliado 2026-10-17 — `production-smoke.mjs` verifica diez rutas públicas, headers de seguridad, health/readiness y disponibilidad de base de datos mediante solicitudes GET sin mutaciones.
 - Semántica de recursos visuales 2026-10-17 — `accessibility-assets.test.ts` protege `alt` explícito en imágenes JSX y mantiene la marca/iconos SVG decorativos ocultos para tecnología asistiva; el gate local pasó con 780 pruebas ejecutadas/omitidas contabilizadas y build correcto.
+- Navegación visual 2026-10-17 — la barra lateral y el dock operativo dejaron de usar glifos Unicode y ahora renderizan la familia SVG propia de Easyvet (`EasyvetIcon`), con una regresión que impide volver a introducir glifos; los iconos permanecen centrados y sin fondos decorativos individuales.
 - Hardening de observabilidad — `RequestTelemetryMiddleware` solo registra IDs de solicitud validados y tiene regresión contra headers arbitrarios.
 - CI-01 — el run remoto #151 pasó los tres jobs sobre `c481ed3` después de actualizar la evidencia de deployment.
 - Revisión responsive pública 2026-10-17 — ocho rutas móviles auditadas; el orbe decorativo overflow quedó identificado y marcado como `aria-hidden`.
