@@ -28,12 +28,13 @@ decisiones del propietario ni del proveedor.
 | OPS-01  | Alta      | Backups y recuperación                          | Bloqueado por proveedor/decisión    | Faltan plan contratado, retención, RPO/RTO, copia de Storage y entorno de restauración | Registro de configuración y restauración controlada en entorno separado |
 | PERF-01 | Alta      | Rendimiento de producción                       | Bloqueado por autorización          | Requiere tráfico/benchmark aprobado y plan reversible para índices                     | Planes de consulta, benchmark 10/100/1.000 y decisión documentada       |
 | OBS-01  | Media     | Métricas y alertas del proveedor                | Bloqueado por configuración externa | Vercel/Supabase y retención operativa aún no confirmados                               | Alertas probadas, sin secretos en eventos y runbook actualizado         |
-| A11Y-01 | Media     | Revisión visual por viewport                    | En curso                            | Automatización cubre semántica y foco; falta recorrido manual completo                 | Checklist por ruta/viewport, contraste y foco documentados              |
+| A11Y-01 | Media     | Revisión visual por viewport                    | En curso                            | Las ocho rutas públicas ya tienen evidencia responsive móvil; falta recorrido manual completo de rutas autenticadas, contraste y foco | Checklist por ruta/viewport, contraste y foco documentados              |
 | EXT-01  | Media     | Revisión contractual de servicios externos      | Recurrente                          | Cambia con proveedores, subprocesadores, regiones y licencias                          | Inventario actualizado y revisión fechada antes de cada release         |
 | CI-01   | Baja      | Confirmar evidencia del run remoto más reciente | Recurrente                          | El run documentado puede quedar atrás de `main`                                        | Run exitoso sobre el commit publicado y matriz actualizada              |
 
 ## Fases cerradas recientes
 
+- Revisión responsive pública 2026-10-17 — ocho rutas móviles auditadas; el orbe decorativo overflow quedó identificado y marcado como `aria-hidden`.
 - `f661fc8` — evidencia visual de producción y trazabilidad del deployment final.
 - `3cf573a` — corrección del solapamiento entre acceso y consentimiento de privacidad.
 - `d1fbc70` — pruebas de teclado, foco, modales y preferencias de privacidad.
