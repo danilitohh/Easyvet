@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { PrivacyConsentProvider } from '../../contexts/PrivacyConsentContext';
@@ -19,7 +19,7 @@ describe('PrivacyConsent', () => {
 
   it('requires an explicit choice before enabling analytics', () => {
     renderConsent();
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Tú decides qué medimos' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox')).not.toBeChecked();
     fireEvent.click(screen.getByRole('button', { name: 'Guardar preferencias' }));
     expect(screen.getByRole('button', { name: 'Privacidad' })).toBeInTheDocument();
@@ -33,5 +33,19 @@ describe('PrivacyConsent', () => {
     expect(window.localStorage.getItem('easyvet.analytics-consent')).toBe('granted');
     fireEvent.click(screen.getByRole('button', { name: 'Privacidad' }));
     expect(screen.getByRole('checkbox')).toBeChecked();
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+  });
+
+  it('moves focus into preferences and restores it when closed with Escape', async () => {
+    renderConsent();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar preferencias' }));
+
+    const preferencesButton = screen.getByRole('button', { name: 'Privacidad' });
+    preferencesButton.focus();
+    fireEvent.click(preferencesButton);
+    expect(screen.getByRole('link', { name: 'Leer la política de cookies' })).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Privacidad' })).toHaveFocus());
   });
 });
