@@ -1,17 +1,19 @@
 # Easyvet — evidencia de Supabase Advisors (2026-10-17)
 
-Esta nota registra una consulta visual de solo lectura en el proyecto de
-producción `supabase-champagne-ball`, sin ejecutar SQL, migraciones ni acciones
-del panel.
+Esta nota registra consultas de solo lectura en el proyecto de producción
+`supabase-champagne-ball`, mediante el conector autorizado y sin ejecutar SQL,
+migraciones ni acciones del panel.
 
 ## Resultado observado
 
-- **Security Advisor:** 0 errores, 0 advertencias y 0 sugerencias visibles.
-- **Performance Advisor:** 0 errores, 48 advertencias y 231 sugerencias.
-- Las advertencias visibles son de tipo **Auth RLS Initialization Plan** y
-  señalan políticas de tablas públicas que usan `current_setting()` o
-  funciones de autenticación en expresiones RLS que podrían reevaluarse por
-  fila.
+- **Security Advisor:** 0 lints reportados por la consulta del conector.
+- **Performance Advisor:** 137 claves foráneas sin índice de cobertura, 48
+  advertencias **Auth RLS Initialization Plan** y 94 índices sin uso observado.
+- Las advertencias de RLS señalan políticas de tablas públicas que usan
+  `current_setting()` o funciones de autenticación en expresiones RLS que
+  podrían reevaluarse por fila. Los avisos de índices son señales para medir,
+  no instrucciones para crear o eliminar índices en bloque.
+- Referencias oficiales: [claves foráneas sin índice](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys), [RLS initplan](https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan) e [índices sin uso](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index).
 - La consulta de metadatos del SQL Editor reportó 48 tablas públicas de
   aplicación con RLS habilitado y forzado, sin lectura directa para los roles
   `anon` y `authenticated`.
