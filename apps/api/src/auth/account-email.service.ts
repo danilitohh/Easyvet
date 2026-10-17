@@ -63,7 +63,8 @@ export class AccountEmailService {
     const apiKey = this.config.get('RESEND_API_KEY', { infer: true });
     const from = this.config.get('RESEND_FROM_EMAIL', { infer: true });
     if (!apiKey || !from) {
-      this.logger.log(`Local account action link: ${message.link}`);
+      // Action links contain bearer tokens; never write them to logs, even in local environments.
+      this.logger.warn('Account email provider is not configured; action link omitted from logs.');
       return;
     }
 
