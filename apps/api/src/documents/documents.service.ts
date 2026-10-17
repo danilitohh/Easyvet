@@ -75,6 +75,35 @@ type PdfSource = {
   evidenceSha256?: string | undefined;
 };
 
+const documentMetadataSelect = {
+  id: true,
+  patientId: true,
+  clinicalEncounterId: true,
+  origin: true,
+  status: true,
+  documentType: true,
+  title: true,
+  originalFileName: true,
+  sourceType: true,
+  sourceId: true,
+  sourceVersion: true,
+  mimeType: true,
+  sizeBytes: true,
+  sha256: true,
+  voidReason: true,
+  voidedAt: true,
+  createdAt: true,
+} satisfies Prisma.ClinicalDocumentSelect;
+
+const documentDownloadSelect = {
+  ...documentMetadataSelect,
+  storageKey: true,
+} satisfies Prisma.ClinicalDocumentSelect;
+
+type DocumentMetadataRecord = Prisma.ClinicalDocumentGetPayload<{
+  select: typeof documentMetadataSelect;
+}>;
+
 // Documents own immutable files and metadata; source domains remain authoritative for clinical state.
 @Injectable()
 export class DocumentsService {
@@ -106,6 +135,7 @@ export class DocumentsService {
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.clinicalDocument.findMany({
         where,
+        select: documentMetadataSelect,
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         skip: (page - 1) * pageSize,
         take: Math.min(pageSize, 100),
@@ -133,6 +163,7 @@ export class DocumentsService {
     this.requirePermission(tenant, 'documents.read');
     const document = await this.prisma.clinicalDocument.findFirst({
       where: { id: documentId, organizationId: tenant.organizationId },
+      select: documentMetadataSelect,
     });
     if (!document)
       throw new NotFoundException({ code: 'DOCUMENT_NOT_FOUND', message: 'Document not found' });
@@ -155,6 +186,7 @@ export class DocumentsService {
     this.requirePermission(tenant, 'documents.read');
     const document = await this.prisma.clinicalDocument.findFirst({
       where: { id: documentId, organizationId: tenant.organizationId },
+      select: documentDownloadSelect,
     });
     if (!document)
       throw new NotFoundException({ code: 'DOCUMENT_NOT_FOUND', message: 'Document not found' });
@@ -235,6 +267,7 @@ export class DocumentsService {
             sourceId,
             sourceVersion: source.sourceVersion,
           },
+          select: documentMetadataSelect,
         });
         if (existing) return existing;
 
@@ -249,6 +282,7 @@ export class DocumentsService {
         const bytes = await renderClinicalPdf(pdfInput);
         await this.storage.put(storedKey, bytes, 'application/pdf');
         const row = await tx.clinicalDocument.create({
+          select: documentMetadataSelect,
           data: {
             id,
             organizationId: tenant.organizationId,
@@ -406,6 +440,7 @@ export class DocumentsService {
         stored = true;
         await this.storage.put(storageKey, file.buffer, file.mimetype);
         const created = await tx.clinicalDocument.create({
+          select: documentMetadataSelect,
           data: {
             id,
             organizationId: tenant.organizationId,
@@ -480,6 +515,7 @@ export class DocumentsService {
       }
       const updated = await tx.clinicalDocument.findFirstOrThrow({
         where: { id: documentId, organizationId: tenant.organizationId },
+        select: documentMetadataSelect,
       });
       await tx.clinicalAuditEvent.create({
         data: {
@@ -933,7 +969,7 @@ export class DocumentsService {
 }
 
 // Derives metadata from the stored byte stream so browser or multipart hashes are never trusted.
-function toMetadata(document: Prisma.ClinicalDocumentGetPayload<object>): DocumentMetadata {
+function toMetadata(document: DocumentMetadataRecord): DocumentMetadata {
   return {
     id: document.id,
     patientId: document.patientId,

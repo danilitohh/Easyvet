@@ -253,8 +253,11 @@ describe('documents service', () => {
 
     await expect(service.download(TENANT, DOCUMENT_ID)).rejects.toBeInstanceOf(NotFoundException);
     expect(storage.get).not.toHaveBeenCalled();
-    expect(prisma.clinicalDocument.findFirst).toHaveBeenCalledWith({
-      where: { id: DOCUMENT_ID, organizationId: ORGANIZATION_ID },
-    });
+    expect(prisma.clinicalDocument.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: DOCUMENT_ID, organizationId: ORGANIZATION_ID },
+        select: expect.objectContaining({ storageKey: true, sha256: true }),
+      }),
+    );
   });
 });
