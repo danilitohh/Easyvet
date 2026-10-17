@@ -39,4 +39,36 @@ describe('environment storage configuration', () => {
       'Local file storage is not persistent or writable on Vercel',
     );
   });
+
+  it('requires HTTPS for public and storage URLs in production', () => {
+    expect(() =>
+      validateEnvironment({
+        ...base,
+        NODE_ENV: 'production',
+        APP_ORIGIN: 'http://easyvet.example',
+      }),
+    ).toThrow('APP_ORIGIN must use HTTPS in production');
+
+    expect(() =>
+      validateEnvironment({
+        ...base,
+        NODE_ENV: 'production',
+        VERCEL: '1',
+        SUPABASE_URL: 'http://project.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'server-only-test-secret',
+      }),
+    ).toThrow('SUPABASE_URL must use HTTPS in production');
+
+    expect(() =>
+      validateEnvironment({
+        ...base,
+        NODE_ENV: 'production',
+        STORAGE_DRIVER: 's3',
+        STORAGE_S3_ENDPOINT: 'http://storage.example',
+        STORAGE_S3_BUCKET: 'easyvet',
+        STORAGE_S3_ACCESS_KEY: 'test-access-key',
+        STORAGE_S3_SECRET_KEY: 'test-secret-key',
+      }),
+    ).toThrow('STORAGE_S3_ENDPOINT must use HTTPS in production');
+  });
 });

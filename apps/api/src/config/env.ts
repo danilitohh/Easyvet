@@ -53,6 +53,29 @@ export const environmentSchema = z
     SIGNATURE_REQUEST_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),
   })
   .superRefine((value, context) => {
+    if (value.NODE_ENV === 'production') {
+      for (const [key, rawUrl] of [
+        ['APP_ORIGIN', value.APP_ORIGIN],
+        ['SUPABASE_URL', value.SUPABASE_URL],
+        ['STORAGE_S3_ENDPOINT', value.STORAGE_S3_ENDPOINT],
+      ] as const) {
+        if (!rawUrl) continue;
+        let protocol: string;
+        try {
+          protocol = new URL(rawUrl).protocol;
+        } catch {
+          continue;
+        }
+        if (protocol !== 'https:') {
+          context.addIssue({
+            code: 'custom',
+            path: [key],
+            message: `${key} must use HTTPS in production`,
+          });
+        }
+      }
+    }
+
     if (value.STORAGE_DRIVER === 'supabase') {
       for (const key of ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'] as const) {
         if (!value[key]) {
