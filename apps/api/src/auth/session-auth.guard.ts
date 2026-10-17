@@ -11,6 +11,7 @@ import { IS_PUBLIC_KEY } from '../authorization/public.decorator';
 import { SessionCookieService } from './session-cookie.service';
 import { SessionsService } from './sessions.service';
 import { PASSWORD_CHANGE_ALLOWED_KEY } from '../authorization/password-change-allowed.decorator';
+import { DatabaseSecurityContext } from '../infrastructure/database/database-security-context';
 
 // Authenticates the request only; tenant authorization and permissions belong to Fase 3C.
 @Injectable()
@@ -19,9 +20,11 @@ export class SessionAuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly cookies: SessionCookieService,
     private readonly sessions: SessionsService,
+    private readonly databaseSecurity: DatabaseSecurityContext,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    this.databaseSecurity.enterSystem();
     if (
       this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
         context.getHandler(),

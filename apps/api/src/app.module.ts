@@ -32,6 +32,7 @@ import { GroomingModule } from './grooming/grooming.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { CommercialModule } from './commercial/commercial.module';
 import { ReportsModule } from './reports/reports.module';
+import { DatabaseSecurityMiddleware } from './infrastructure/database/database-security.middleware';
 
 @Module({
   imports: [
@@ -73,7 +74,13 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     // Use path-to-regexp's named wildcard syntax so Nest avoids a legacy route conversion warning.
     consumer
-      .apply(RequestIdMiddleware, SecurityHeadersMiddleware, cookieParser(), CsrfOriginMiddleware)
+      .apply(
+        DatabaseSecurityMiddleware,
+        RequestIdMiddleware,
+        SecurityHeadersMiddleware,
+        cookieParser(),
+        CsrfOriginMiddleware,
+      )
       .forRoutes('{*path}');
   }
 }
