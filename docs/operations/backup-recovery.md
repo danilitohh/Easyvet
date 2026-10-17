@@ -10,6 +10,11 @@ en la cuenta. No contiene credenciales ni exportaciones de datos clínicos.
   el rol dedicado `veterinary`.
 - El bucket `easyvet-clinical-documents` es privado y sus objetos se sirven
   únicamente desde el backend.
+- En la revisión de solo lectura del panel de Supabase del 2026-10-17, el
+  proyecto aparece en el plan **Free**. El panel indica que ese plan no
+  incluye respaldos programados; la recuperación Point-in-Time aparece como
+  un complemento del plan Pro. Esto es evidencia de la cuenta en esa fecha,
+  no una garantía comercial permanente del proveedor.
 - No se ha ejecutado una restauración real ni se ha confirmado en la cuenta el
   plan, la retención, el rango PITR o el RPO/RTO contratado.
 - Las copias de la base de datos de Supabase no contienen los bytes de los
