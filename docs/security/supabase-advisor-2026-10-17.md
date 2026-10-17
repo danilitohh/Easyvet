@@ -39,3 +39,21 @@ Antes de crear una migración, hace falta:
 El resultado no se interpreta como una vulnerabilidad ni como autorización para
 modificar producción. Los avisos de rendimiento quedan pendientes con su
 alcance y evidencia delimitados.
+
+## Intento de benchmark read-only
+
+Se abrió un SQL Editor temporal y se intentó ejecutar, dentro de una
+transacción con `ROLLBACK`, un `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` sobre
+`public.owners` con un contexto `tenant` sintético y un identificador de
+organización inexistente. El benchmark no es válido porque la conexión del
+editor no puede asumir los roles de runtime ni tiene permisos equivalentes:
+
+- `SET LOCAL ROLE veterinary` fue rechazado con `permission denied to set role`.
+- `SET LOCAL ROLE authenticated` llegó a la consulta, pero fue rechazado con
+  `permission denied for schema public`.
+
+No se concedieron permisos, no se modificaron políticas y no se expusieron
+filas clínicas. Por tanto, no se reporta un tiempo de ejecución ni se afirma
+que el aviso tenga un impacto medido. Para comparar la política actual con una
+variante optimizada todavía hace falta una base efímera o una conexión de
+pruebas con permisos controlados y datos sintéticos representativos.
