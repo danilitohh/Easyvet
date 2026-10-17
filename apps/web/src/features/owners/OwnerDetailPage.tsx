@@ -56,9 +56,20 @@ export function OwnerDetailPage() {
       </Card>
     );
   }
-  if (error) return <ResourceError error={error} onRetry={reload} />;
-  if (!owner) {
-    return <ResourceError error={new ApiError('Resource not found', 404, 'RESOURCE_NOT_FOUND')} />;
+  if (error || !owner) {
+    return (
+      <div className="page-stack">
+        <PageHeader
+          eyebrow="Propietario"
+          title="Detalle del propietario"
+          description="Consulta de un propietario dentro de la organización activa."
+        />
+        <ResourceError
+          error={error ?? new ApiError('Resource not found', 404, 'RESOURCE_NOT_FOUND')}
+          {...(error ? { onRetry: reload } : {})}
+        />
+      </div>
+    );
   }
 
   return (

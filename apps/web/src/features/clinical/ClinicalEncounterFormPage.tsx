@@ -246,17 +246,32 @@ export function ClinicalEncounterFormPage({ mode }: { mode: 'create' | 'edit' })
 
   if (!patientId) return <ResourceError error={new ApiError('Paciente no encontrado', 404)} />;
   const requiredPatientId = patientId;
+  const formTitle = mode === 'create' ? 'Nueva consulta' : 'Editar consulta';
+  const formDescription =
+    mode === 'create'
+      ? 'Prepara un borrador clínico para el paciente seleccionado.'
+      : 'Actualiza únicamente los campos permitidos del borrador clínico.';
   if (loading)
     return (
-      <div className="page-stack">
+      <div className="page-stack clinical-page">
+        <PageHeader eyebrow="Historia clínica" title={formTitle} description={formDescription} />
         <LoadingState label={mode === 'create' ? 'Preparando borrador' : 'Cargando borrador'} />
       </div>
     );
-  if (organization.error)
-    return <ResourceError error={organization.error} onRetry={organization.reload} />;
-  if (patient.error) return <ResourceError error={patient.error} onRetry={patient.reload} />;
-  if (mode === 'edit' && encounter.error)
-    return <ResourceError error={encounter.error} onRetry={encounter.reload} />;
+  if (organization.error || patient.error || (mode === 'edit' && encounter.error)) {
+    const resourceError = organization.error ?? patient.error ?? encounter.error;
+    const reload = organization.error
+      ? organization.reload
+      : patient.error
+        ? patient.reload
+        : encounter.reload;
+    return (
+      <div className="page-stack clinical-page">
+        <PageHeader eyebrow="Historia clínica" title={formTitle} description={formDescription} />
+        <ResourceError error={resourceError} onRetry={reload} />
+      </div>
+    );
+  }
   if (!patient.patient)
     return <ResourceError error={new ApiError('Paciente no encontrado', 404)} />;
   if (mode === 'create' && patient.patient.status !== 'ACTIVE') {

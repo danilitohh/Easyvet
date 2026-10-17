@@ -706,6 +706,11 @@ export function FollowUpDetailPage() {
   if (state.error)
     return (
       <div className="page-stack">
+        <PageHeader
+          eyebrow="Seguimiento clínico"
+          title="Detalle del seguimiento"
+          description="Consulta del seguimiento dentro de la organización activa."
+        />
         <Alert tone="error" role="alert">
           El seguimiento no está disponible en esta organización.{' '}
           <Button as={Link} to="/seguimientos" variant="secondary">

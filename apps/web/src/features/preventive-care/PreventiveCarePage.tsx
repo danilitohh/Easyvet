@@ -38,10 +38,20 @@ export function PreventiveCarePage() {
       </div>
     );
   }
-  if (organization.error)
-    return <ResourceError error={organization.error} onRetry={organization.reload} />;
-  if (canReadPatients && patient.error)
-    return <ResourceError error={patient.error} onRetry={patient.reload} />;
+  if (organization.error || (canReadPatients && patient.error)) {
+    const resourceError = organization.error ?? patient.error;
+    const reload = organization.error ? organization.reload : patient.reload;
+    return (
+      <div className="page-stack clinical-page preventive-page">
+        <PageHeader
+          eyebrow="Historia clínica"
+          title="Cuidado preventivo"
+          description="Consulta histórica de vacunaciones y desparasitaciones."
+        />
+        <ResourceError error={resourceError} onRetry={reload} />
+      </div>
+    );
+  }
 
   return (
     <div className="page-stack clinical-page preventive-page">

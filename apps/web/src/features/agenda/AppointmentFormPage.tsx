@@ -224,6 +224,30 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
   }, [form.assignedMembershipId, form.clinicLocationId, form.date, form.durationMinutes, mode]);
   const slots = useAgendaAvailableSlots(slotInput);
 
+  if (organization.error) {
+    return (
+      <div className="page-stack agenda-form-page">
+        <PageHeader
+          eyebrow="Agenda · Programación"
+          title={titleFor(mode)}
+          description={descriptionFor(mode, organization.data?.timezone ?? 'zona local')}
+        />
+        <ResourceError error={organization.error} onRetry={organization.reload} />
+      </div>
+    );
+  }
+  if (references.error) {
+    return (
+      <div className="page-stack agenda-form-page">
+        <PageHeader
+          eyebrow="Agenda · Programación"
+          title={titleFor(mode)}
+          description={descriptionFor(mode, organization.data?.timezone ?? 'zona local')}
+        />
+        <ResourceError error={references.error} onRetry={references.reload} />
+      </div>
+    );
+  }
   if (organization.loading || !organization.data || references.loading) {
     return (
       <Card className="resource-card">
@@ -239,7 +263,16 @@ export function AppointmentFormPage({ mode }: { mode: AppointmentFormMode }) {
     );
   }
   if (mode !== 'create' && appointmentState.error) {
-    return <ResourceError error={appointmentState.error} onRetry={appointmentState.reload} />;
+    return (
+      <div className="page-stack agenda-form-page">
+        <PageHeader
+          eyebrow="Agenda · Programación"
+          title={titleFor(mode)}
+          description={descriptionFor(mode, organization.data.timezone)}
+        />
+        <ResourceError error={appointmentState.error} onRetry={appointmentState.reload} />
+      </div>
+    );
   }
   if (mode !== 'create' && !currentAppointment) {
     return (

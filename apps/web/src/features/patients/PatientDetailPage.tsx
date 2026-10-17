@@ -70,9 +70,21 @@ export function PatientDetailPage() {
         </div>
       </Card>
     );
-  if (error) return <ResourceError error={error} onRetry={reload} />;
-  if (!patient)
-    return <ResourceError error={new ApiError('Resource not found', 404, 'RESOURCE_NOT_FOUND')} />;
+  if (error || !patient) {
+    return (
+      <div className="page-stack">
+        <PageHeader
+          eyebrow="Ficha del paciente"
+          title="Detalle del paciente"
+          description="Consulta de un paciente dentro de la organización activa."
+        />
+        <ResourceError
+          error={error ?? new ApiError('Resource not found', 404, 'RESOURCE_NOT_FOUND')}
+          {...(error ? { onRetry: reload } : {})}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="page-stack">

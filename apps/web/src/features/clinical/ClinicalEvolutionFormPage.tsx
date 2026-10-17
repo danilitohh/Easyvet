@@ -67,21 +67,35 @@ export function ClinicalEvolutionFormPage() {
     patient.loading ||
     record.loading ||
     (Boolean(encounterId) && encounter.loading);
+  const formTitle = 'Nueva evolución clínica';
+  const formDescription = 'Añade una nota clínica append-only al historial del paciente.';
 
   if (!patientId) return <ResourceError error={new ApiError('Paciente no encontrado', 404)} />;
   const requiredPatientId = patientId;
   if (loading) {
     return (
-      <div className="page-stack">
+      <div className="page-stack clinical-page">
+        <PageHeader eyebrow="Historia clínica" title={formTitle} description={formDescription} />
         <LoadingState label="Preparando evolución clínica" />
       </div>
     );
   }
-  if (organization.error)
-    return <ResourceError error={organization.error} onRetry={organization.reload} />;
-  if (patient.error) return <ResourceError error={patient.error} onRetry={patient.reload} />;
-  if (record.error) return <ResourceError error={record.error} onRetry={record.reload} />;
-  if (encounter.error) return <ResourceError error={encounter.error} onRetry={encounter.reload} />;
+  if (organization.error || patient.error || record.error || encounter.error) {
+    const resourceError = organization.error ?? patient.error ?? record.error ?? encounter.error;
+    const reload = organization.error
+      ? organization.reload
+      : patient.error
+        ? patient.reload
+        : record.error
+          ? record.reload
+          : encounter.reload;
+    return (
+      <div className="page-stack clinical-page">
+        <PageHeader eyebrow="Historia clínica" title={formTitle} description={formDescription} />
+        <ResourceError error={resourceError} onRetry={reload} />
+      </div>
+    );
+  }
   if (!patient.patient)
     return <ResourceError error={new ApiError('Paciente no encontrado', 404)} />;
   if (patient.patient.status !== 'ACTIVE') {

@@ -328,8 +328,23 @@ export function ClinicalHistoryPage() {
       </div>
     );
   }
-  if (recordState.error)
-    return <ResourceError error={recordState.error} onRetry={recordState.reload} />;
+  if (recordState.error) {
+    return (
+      <div className="page-stack clinical-page">
+        <PageHeader
+          eyebrow="Historia clínica"
+          title="Historia clínica"
+          description="Lectura segura del registro clínico del paciente."
+          action={
+            <Button as={Link} to={`/pacientes/${patientId}`} variant="secondary">
+              Volver al paciente
+            </Button>
+          }
+        />
+        <ResourceError error={recordState.error} onRetry={recordState.reload} />
+      </div>
+    );
+  }
   if (!recordState.record) {
     return (
       <div className="page-stack">

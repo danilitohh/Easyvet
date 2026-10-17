@@ -110,12 +110,22 @@ export function GroomingVisitDetailPage() {
   if (visitState.error)
     return (
       <div className="page-stack">
+        <PageHeader
+          eyebrow="Peluquería · Servicio operativo"
+          title="Detalle de la atención"
+          description="Consulta de la atención dentro de la organización activa."
+        />
         <ResourceError error={visitState.error} onRetry={visitState.reload} />
       </div>
     );
   if (!visit)
     return (
       <div className="page-stack">
+        <PageHeader
+          eyebrow="Peluquería · Servicio operativo"
+          title="Detalle de la atención"
+          description="Consulta de la atención dentro de la organización activa."
+        />
         <Alert tone="warning" role="status">
           No se encontró la atención solicitada.
         </Alert>

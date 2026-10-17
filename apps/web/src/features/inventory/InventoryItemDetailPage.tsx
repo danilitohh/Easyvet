@@ -142,6 +142,11 @@ function InventoryItemDetail({ itemId }: { itemId: string }) {
   if (detail.error) {
     return (
       <div className="page-stack inventory-page">
+        <PageHeader
+          eyebrow="Inventario · Detalle"
+          title="Detalle del artículo"
+          description="Consulta del artículo dentro de la organización activa."
+        />
         <ResourceError
           error={detail.error}
           fallback="No fue posible cargar el artículo."
