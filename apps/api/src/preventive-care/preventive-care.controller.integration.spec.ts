@@ -317,6 +317,9 @@ describeDatabase('preventive care API', () => {
     await practitioner
       .post(`/api/v1/vaccinations/${draft.body.id}/finalize`)
       .send({ expectedVersion: 2 })
+      .expect((response) => {
+        if (response.status !== 201) console.error('vaccination finalize response', response.body);
+      })
       .expect(201)
       .expect(({ body }) => {
         expect(body.status).toBe('FINALIZED');
@@ -369,6 +372,9 @@ describeDatabase('preventive care API', () => {
     await practitioner
       .post(`/api/v1/dewormings/${draft.body.id}/finalize`)
       .send({ expectedVersion: 3 })
+      .expect((response) => {
+        if (response.status !== 201) console.error('deworming finalize response', response.body);
+      })
       .expect(201);
     const finalized = await practitioner.get(`/api/v1/dewormings/${draft.body.id}`).expect(200);
     expect(finalized.body.administeredByDisplayNameSnapshot).toBe('Clinical Assistant QA');
@@ -417,6 +423,10 @@ describeDatabase('preventive care API', () => {
         .post(`/api/v1/vaccinations/${draft.body.id}/finalize`)
         .send({ expectedVersion: 2 }),
     ]);
+    console.error(
+      'vaccination race finalize responses',
+      raceFinalizeResponses.map((response) => ({ status: response.status, body: response.body })),
+    );
     expect(raceFinalizeResponses.map((response) => response.status).sort()).toEqual([201, 409]);
     const foreignEncounter = await createEncounter({
       organization: foreignOrganizationId,
