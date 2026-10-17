@@ -6,11 +6,14 @@ de infraestructura o datos sensibles.
 
 ## Controles verificados
 
-| Control                     | Evidencia                                                                                                                                                                                                            | Estado                  |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Web Analytics               | Vercel Dashboard → Analytics muestra Web Analytics habilitado para el plan Hobby. La consulta de pageviews para producción respondió correctamente con `visitors: 0` y `pageviews: 0` para 2026-10-15 a 2026-10-17.  | Verificado              |
-| Consentimiento de analítica | El cliente solo monta `@vercel/analytics` cuando la aplicación está en producción y la persona ha aceptado la analítica opcional. La sanitización elimina query strings, hashes, IDs UUID y rutas públicas de firma. | Verificado en `42c815c` |
-| Despliegue                  | El deployment asociado a `d4cd38b` está en estado Ready y la URL canónica responde `200`.                                                                                                                            | Verificado              |
+| Control                      | Evidencia                                                                                                                                                                                                            | Estado                  |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Web Analytics                | Vercel Dashboard → Analytics muestra Web Analytics habilitado para el plan Hobby. La consulta de pageviews para producción respondió correctamente con `visitors: 0` y `pageviews: 0` para 2026-10-15 a 2026-10-17.  | Verificado              |
+| Consentimiento de analítica  | El cliente solo monta `@vercel/analytics` cuando la aplicación está en producción y la persona ha aceptado la analítica opcional. La sanitización elimina query strings, hashes, IDs UUID y rutas públicas de firma. | Verificado en `42c815c` |
+| Despliegue                   | El deployment asociado a `d4cd38b` está en estado Ready y la URL canónica responde `200`.                                                                                                                            | Verificado              |
+| Asesor de seguridad Supabase | La consulta del asesor de seguridad del proyecto `iykzaqtcewnxgrmlbinz` devolvió `lints: []` el 2026-10-17.                                                                                                          | Verificado              |
+| Realtime tenant              | La migración de broadcasts terminó correctamente tras un intento revertido; existe la política privada esperada en `realtime.messages` y hay 40 triggers de cambio tenant instalados en tablas públicas.             | Verificado estructural  |
+| Storage privado              | El bucket `easyvet-clinical-documents` existe como privado, con límite de 10 MB y MIME PDF/PNG/JPEG; no tiene políticas públicas y el acceso se mantiene server-side.                                                | Verificado estructural  |
 
 ## Actualización posterior: rol runtime corregido
 
@@ -72,9 +75,21 @@ acepta únicamente PDF/PNG/JPEG. El panel mostró cero políticas de Storage; es
 es coherente con el acceso exclusivo del backend mediante service role. No se
 realizó una escritura de prueba.
 
+La verificación SQL posterior confirmó que la migración de Realtime tiene un
+registro finalizado y otro intento anterior revertido, que la política de
+`realtime.messages` está instalada y que existen 40 triggers
+`easyvet_realtime_organization_change`. Esto prueba la instalación estructural,
+no una entrega de broadcast extremo a extremo en un navegador autenticado.
+
 ## Pendientes fuera de este control
 
 - Prueba real autorizada de carga y descarga de un archivo sintético en Storage.
 - Verificación de proveedor de correo, backups y recuperación.
 - Pruebas de rendimiento con volúmenes representativos.
 - Datos legales reales y revisión profesional antes del lanzamiento comercial.
+
+El asesor de rendimiento de Supabase reportó 137 claves foráneas sin índice de
+cobertura. Es una lista de candidatos, no una orden para crear índices en
+bloque: la siguiente fase debe priorizar consultas reales, planes `EXPLAIN`,
+latencias y tráfico representativo, porque agregar 137 índices también aumenta
+el coste de escritura y mantenimiento.
