@@ -1,4 +1,4 @@
-import { ArgumentsHost, HttpException, NotFoundException } from '@nestjs/common';
+import { ArgumentsHost, HttpException, Logger, NotFoundException } from '@nestjs/common';
 import { describe, expect, it, jest } from '@jest/globals';
 import type { Request, Response } from 'express';
 import { ApiExceptionFilter } from './api-exception.filter';
@@ -102,5 +102,45 @@ describe('ApiExceptionFilter', () => {
     expect(JSON.stringify(responseBody.mock.calls)).not.toContain('private connection');
     expect(JSON.stringify(responseBody.mock.calls)).not.toContain('DATABASE_URL');
     expect(JSON.stringify(responseBody.mock.calls)).not.toContain('PRIVATE_DATABASE_FAILURE');
+  });
+
+  it('redacts secret-shaped values from internal error logs', () => {
+    const response = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      getHeader: jest.fn().mockReturnValue('request-999'),
+    };
+    const request = {
+      method: 'POST',
+      originalUrl: '/api/v1/auth/login',
+      path: '/api/v1/auth/login',
+    };
+    const host = {
+      switchToHttp: () => ({
+        getResponse: () => response as unknown as Response,
+        getRequest: () => request as unknown as Request,
+      }),
+    } as unknown as ArgumentsHost;
+    const error = new Error(
+      'provider failed password:plain-password token="bearer-token" apiKey=service-key Authorization: Bearer auth-token',
+    );
+    const logSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+    new ApiExceptionFilter().catch(error, host);
+
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Internal server error' }),
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message:
+          'provider failed password:[redacted] token=[redacted] apiKey=[redacted] Authorization: [redacted]',
+      }),
+    );
+    expect(JSON.stringify(logSpy.mock.calls)).not.toContain('plain-password');
+    expect(JSON.stringify(logSpy.mock.calls)).not.toContain('bearer-token');
+    expect(JSON.stringify(logSpy.mock.calls)).not.toContain('service-key');
+    expect(JSON.stringify(logSpy.mock.calls)).not.toContain('auth-token');
+    logSpy.mockRestore();
   });
 });

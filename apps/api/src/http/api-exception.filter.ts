@@ -16,6 +16,16 @@ interface ErrorBody {
   requestId: string;
 }
 
+const SENSITIVE_ASSIGNMENT =
+  /(\b(?:password|secret|token|api[_-]?key|authorization|cookie|dsn|database[_-]?url)(?:[_-][a-z0-9]+)*\b\s*[:=]\s*)("[^"]*"|'[^']*'|Bearer\s+[^\s,}]+|[^\s,}]+)/gi;
+
+function redactSensitiveText(value: string): string {
+  return value
+    .replace(SENSITIVE_ASSIGNMENT, '$1[redacted]')
+    .replace(/\bBearer\s+[^\s,}]+/gi, 'Bearer [redacted]')
+    .replace(/\b(?:postgres(?:ql)?|mysql):\/\/\S+/gi, '[redacted database URL]');
+}
+
 // Error responses omit query values and redact the bearer token used by public signing routes.
 function responsePath(request: Request): string {
   const path = request.originalUrl.split('?', 1)[0] || request.path;
@@ -65,9 +75,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       typeof exception.code === 'string'
         ? exception.code
         : undefined;
-    const message = error?.message
-      .replace(/\b(?:postgres(?:ql)?|mysql):\/\/\S+/gi, '[redacted database URL]')
-      .replace(/(password|secret|token)=\S+/gi, '$1=[redacted]');
+    const message = error?.message ? redactSensitiveText(error.message) : undefined;
 
     this.logger.error({
       requestId,
