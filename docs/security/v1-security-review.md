@@ -18,37 +18,26 @@ Revisión de código y configuración en el cierre V1, con suites unitarias/de i
 - **Analítica y consentimiento:** Vercel Web Analytics solo se monta en producción después de una elección explícita del usuario; la preferencia se guarda localmente. Un filtro `beforeSend` elimina query/hash, neutraliza UUIDs y descarta rutas públicas de firma para no enviar tokens o identificadores de recursos.
 - **Integridad:** auditorías, movimientos de inventario y caja, pagos, facturas e históricos comerciales tienen triggers append-only/no-truncate o ciclos de vida compensatorios según dominio.
 
-## Avisos de dependencias al 2026-10-16
+## Auditoría de dependencias — 2026-10-17
 
-Después de sustituir `ts-jest` por `@swc/jest`, la comprobación actual reporta 19
-vulnerabilidades moderadas y ninguna alta o crítica; `npm audit --omit=dev` reporta
-0 vulnerabilidades. Las 19 moderadas pertenecen a la cadena de pruebas de Jest/Istanbul
-(`sprintf-js` → `argparse`/`js-yaml`/`babel-plugin-istanbul`) y no están en el árbol de
-producción. `ts-jest` ya no forma parte de las dependencias.
-
-La cadena de pruebas se mantiene aislada de runtime, se ejecuta solo con fixtures y
-datos locales controlados, y no se aplicó `npm audit fix --force` porque proponía
-cambios incompatibles de versiones. Debe reevaluarse cuando exista una actualización
-compatible de Jest/Istanbul o un reemplazo seguro de esa cadena transitiva.
-
-## Actualización verificable — 2026-10-17
-
-La comprobación repetida en el checkout actual confirmó:
+La comprobación ejecutada en el checkout actual confirmó:
 
 - `npm audit --omit=dev`: **0 vulnerabilidades** en las dependencias de producción;
-- `npm audit`: **19 moderadas**, todas dentro del árbol de pruebas Jest/Istanbul;
-- no hay hallazgos `high` o `critical` en el árbol completo;
-- el workflow de CI mantiene ambas barreras: bloquea producción desde `moderate` y
-  reporta cualquier advisory `high` o superior del árbol completo.
+- `npm audit`: **19 vulnerabilidades moderadas** en la cadena de pruebas
+  Jest/Istanbul (`sprintf-js` y dependencias transitivas), sin hallazgos altos o
+  críticos;
+- el arreglo automático disponible propone un cambio mayor de Jest, por lo que
+  no se ejecutó `npm audit fix --force` ni se modificó el lockfile.
 
-No se modificó el lockfile ni se ejecutó un downgrade mayor para eliminar avisos
-exclusivos de desarrollo. Esta evidencia no sustituye la reevaluación periódica de
-dependencias.
+La cadena afectada es de desarrollo y no forma parte del árbol de producción,
+pero debe reevaluarse cuando exista una actualización compatible. Esta evidencia
+es puntual y no sustituye la revisión de procedencia, licencias y cambios de
+dependencias antes de cada lanzamiento.
 
 ## Límites de la revisión
 
 - No hubo pentest independiente ni escaneo profundo ejecutable en este entorno.
 - El adaptador remoto S3 no se conectó a un servicio real; almacenamiento local sí se usó en smoke.
 - El runtime compilado se probó localmente contra la base de desarrollo; no se probó despliegue productivo, proxy TLS, rotación externa de secretos ni infraestructura real.
-- Las vulnerabilidades moderadas restantes están restringidas a tooling de pruebas; el árbol de producción no tiene hallazgos de severidad alta.
+- El árbol de producción no reporta vulnerabilidades; el árbol completo mantiene 19 moderadas de tooling de pruebas. Deben conservarse las barreras de CI y repetir la comprobación cuando cambie el lockfile.
 - No se incluyeron secretos ni hashes de credenciales en este documento.
