@@ -7,7 +7,11 @@ import { RateLimitService } from './rate-limit.service';
 
 describe('RateLimitService', () => {
   const queryRaw = jest.fn<(...args: unknown[]) => Promise<unknown[]>>();
-  const prisma = { $queryRaw: queryRaw } as unknown as PrismaService;
+  const executeRaw = jest.fn<(...args: unknown[]) => Promise<unknown>>();
+  const transaction = jest.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+    callback({ $queryRaw: queryRaw, $executeRaw: executeRaw }),
+  );
+  const prisma = { $queryRaw: queryRaw, $transaction: transaction } as unknown as PrismaService;
   const config = {
     get: jest.fn().mockReturnValue('postgresql://runtime-secret@localhost/easyvet'),
   } as unknown as ConfigService<Environment, true>;
@@ -16,6 +20,7 @@ describe('RateLimitService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     queryRaw.mockResolvedValue([{ request_count: 1, blocked_until: null }]);
+    executeRaw.mockResolvedValue(1);
   });
 
   it('stores only a keyed digest of request identities in the shared database bucket', async () => {

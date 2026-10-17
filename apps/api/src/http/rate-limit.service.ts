@@ -23,8 +23,8 @@ export class RateLimitService {
   }
 
   async check(name: string, identity: string): Promise<{ limited: boolean; retryAfterSeconds: number }> {
-    return this.databaseSecurity.runSystem(async () => {
-      const rows = await this.prisma.$queryRaw<Array<{ blocked_until: Date | null }>>`
+    return this.withSystemScope(async (tx) => {
+      const rows = await tx.$queryRaw<Array<{ blocked_until: Date | null }>>`
         SELECT blocked_until
         FROM api_rate_limit_buckets
         WHERE key_hash = ${this.keyHash(name, identity)}
@@ -38,8 +38,8 @@ export class RateLimitService {
   }
 
   async clear(name: string, identity: string): Promise<void> {
-    await this.databaseSecurity.runSystem(
-      () => this.prisma.$executeRaw`
+    await this.withSystemScope(
+      (tx) => tx.$executeRaw`
         DELETE FROM api_rate_limit_buckets WHERE key_hash = ${this.keyHash(name, identity)}
       `,
     );
@@ -52,13 +52,13 @@ export class RateLimitService {
     windowMs: number,
     blockMs = windowMs,
   ): Promise<{ limited: boolean; retryAfterSeconds: number }> {
-    return this.databaseSecurity.runSystem(async () => {
+    return this.withSystemScope(async (tx) => {
       const now = new Date();
       const windowExpiresAt = new Date(now.getTime() + windowMs);
       const blockedUntil = new Date(now.getTime() + blockMs);
       const keyHash = this.keyHash(name, identity);
 
-      const rows = await this.prisma.$queryRaw<RateLimitBucketResult[]>`
+      const rows = await tx.$queryRaw<RateLimitBucketResult[]>`
         WITH stale AS (
           SELECT ctid
           FROM api_rate_limit_buckets
@@ -106,6 +106,19 @@ export class RateLimitService {
         : 0;
       return { limited: retryAfterSeconds > 0, retryAfterSeconds };
     });
+  }
+
+  private withSystemScope<T>(operation: (tx: PrismaService) => Promise<T>): Promise<T> {
+    return this.databaseSecurity.runSystem(() =>
+      this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          SELECT
+            set_config('app.easyvet_context', 'system', TRUE),
+            set_config('app.easyvet_organization_id', '', TRUE)
+        `;
+        return operation(tx as PrismaService);
+      }),
+    );
   }
 
   private keyHash(name: string, identity: string): string {
