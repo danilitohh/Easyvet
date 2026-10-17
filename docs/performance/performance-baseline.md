@@ -11,8 +11,9 @@ La prueba verifica:
 
 - que `total` representa el número real de filas de la organización;
 - que la respuesta nunca supera `pageSize = 20`;
-- que una consulta de lista ejecuta dos operaciones de base de datos: una para
-  los datos y otra para el total, sin consultas N+1;
+- que una consulta de lista ejecuta tres operaciones constantes de base de
+  datos: página, relación agrupada de propietarios y total, sin consultas
+  N+1;
 - el tiempo transcurrido local como evidencia de referencia, sin convertirlo
   en una métrica de producción.
 

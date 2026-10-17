@@ -97,7 +97,9 @@ describePerformance('patient list performance baseline', () => {
     expect(result.total).toBe(rowCount);
     expect(result.items).toHaveLength(Math.min(rowCount, PAGE_SIZE));
     expect(result.items.length).toBeLessThanOrEqual(PAGE_SIZE);
-    expect(queryCount).toBe(2);
+    // Prisma loads the selected Owner relation in one batched query, so the
+    // list has three constant queries: page, related owners and total count.
+    expect(queryCount).toBe(3);
 
     console.info(
       JSON.stringify({
