@@ -45,4 +45,17 @@ describe('accessible shared controls', () => {
     expect(styles).toMatch(/button:focus-visible[\s\S]*?outline:\s*3px/);
     expect(styles).toMatch(/a:focus-visible[\s\S]*?outline:\s*3px/);
   });
+
+  it('centers content in shared buttons and icon controls', () => {
+    const styles = readFileSync(join(process.cwd(), 'src/styles/index.css'), 'utf8');
+    const buttonStyles = readStyleBlock(styles, '.button');
+    const iconButtonStyles = readStyleBlock(styles, '.icon-button');
+
+    expect(buttonStyles).toMatch(/display:\s*inline-flex/);
+    expect(buttonStyles).toMatch(/align-items:\s*center/);
+    expect(buttonStyles).toMatch(/justify-content:\s*center/);
+    expect(buttonStyles).toMatch(/line-height:\s*1/);
+    expect(iconButtonStyles).toMatch(/display:\s*inline-grid/);
+    expect(iconButtonStyles).toMatch(/place-items:\s*center/);
+  });
 });
