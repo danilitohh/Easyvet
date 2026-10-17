@@ -34,6 +34,8 @@ decisiones del propietario ni del proveedor.
 
 ## Fases cerradas recientes
 
+- `f661fc8` — evidencia visual de producción y trazabilidad del deployment final.
+- `3cf573a` — corrección del solapamiento entre acceso y consentimiento de privacidad.
 - `d1fbc70` — pruebas de teclado, foco, modales y preferencias de privacidad.
 - `bd61915` — estados de carga/error accesibles en rutas clínicas y de detalle.
 - `6c3d8c7` — límites de cobertura de accesibilidad documentados.

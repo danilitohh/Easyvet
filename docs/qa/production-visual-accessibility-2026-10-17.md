@@ -4,7 +4,9 @@
 
 Se recargó directamente `https://easyvet.vercel.app/login` después de que el
 deployment `dpl_2qMDmUWY1QgrewqQTEnLe8yUhjg2`, asociado al commit `3cf573a`,
-quedara en estado `READY` en Vercel.
+quedara en estado `READY` en Vercel. Después del commit de documentación,
+el deployment final `dpl_9hczBJ4DEQoLRF3VLvaknAVhsz1V` (`f661fc8`) también
+quedó `READY` y se repitió la comprobación sobre el alias de producción.
 
 En un viewport de aproximadamente 1035 × 954 px se inspeccionaron la tarjeta
 de acceso y el aviso de consentimiento de privacidad:
