@@ -51,6 +51,29 @@ El responsable de la cuenta debe registrar, sin compartir secretos:
 Esta revisión debe hacerse al menos antes de cada lanzamiento importante y
 después de cambiar el plan o la infraestructura.
 
+## Smoke test remoto de Storage
+
+El repositorio incluye un smoke test sintético, **desactivado por defecto**, en
+`apps/api/src/storage/supabase-storage.remote.spec.ts`. No forma parte de CI y
+no se ejecutó contra la cuenta de producción durante esta fase. Solo se activa
+cuando el operador define las dos variables de confirmación siguientes, además
+de las credenciales del entorno objetivo:
+
+```sh
+RUN_REMOTE_STORAGE_TESTS=1 \
+REMOTE_STORAGE_TEST_CONFIRM=EASYVET_REMOTE_STORAGE_SYNTHETIC_OK \
+SUPABASE_URL=<url-del-entorno> \
+SUPABASE_SERVICE_ROLE_KEY=<secreto-del-entorno> \
+SUPABASE_STORAGE_BUCKET=easyvet-clinical-documents \
+npm run test:storage:remote --workspace @veterinary-saas/api
+```
+
+El test genera una clave UUID bajo el prefijo de una organización sintética,
+sube un PDF de prueba, verifica existencia y bytes, y elimina únicamente esa
+clave. No usa datos clínicos ni sustituye la prueba de autorización tenant del
+API. Debe ejecutarse primero en un proyecto temporal o entorno aprobado y su
+resultado debe registrarse sin compartir credenciales.
+
 ## Preparación antes de una recuperación
 
 1. Declarar el incidente, responsable y hora de inicio. No borrar, truncar ni

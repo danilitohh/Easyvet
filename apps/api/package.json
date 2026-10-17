@@ -9,7 +9,8 @@
     "start:prod": "node dist/src/main.js",
     "lint": "eslint src test nest-cli.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand"
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand",
+    "test:storage:remote": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --runTestsByPath src/storage/supabase-storage.remote.spec.ts"
   },
   "engines": {
     "node": "24.x"
