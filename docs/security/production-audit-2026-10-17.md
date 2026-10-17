@@ -52,10 +52,13 @@ El riesgo de que el runtime de Prisma usara `postgres` con
 `veterinary`, sin superusuario ni bypass. La contraseña no se registra en el
 repositorio ni en esta auditoría.
 
-Permanece como riesgo separado el aislamiento RLS por tenant: la política
-server-side actual es amplia y la API sigue siendo la frontera principal. Debe
-probarse un contexto de organización por transacción antes de convertir esa
-política en predicados RLS tenant-aware.
+La migración `20261017090000_add_tenant_rls_context` ya reemplazó la política
+amplia por predicados RLS tenant-aware y el contexto se establece por transacción
+antes de las operaciones Prisma. Permanece como riesgo separado la prueba
+negativa end-to-end con dos tenants y el rol runtime de producción; la API sigue
+siendo la frontera principal y RLS funciona como defensa adicional. La evidencia
+del rollout está en
+[`tenant-rls-rollout-2026-10-17.md`](tenant-rls-rollout-2026-10-17.md).
 
 Las migraciones deben continuar usando `POSTGRES_URL_NON_POOLING`, separado de
 la conexión runtime.

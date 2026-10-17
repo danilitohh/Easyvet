@@ -21,16 +21,16 @@ existentes.
 
 La verificación de catálogo posterior a la migración confirmó:
 
-| Control | Resultado |
-| --- | --- |
-| Rol runtime | `veterinary` |
-| `rolsuper` | `false` |
-| `rolbypassrls` | `false` |
-| `rolcanlogin` | `true` |
-| `rolcreaterole` | `false` |
-| `rolcreatedb` | `false` |
-| Tablas públicas de aplicación con RLS | 48 |
-| Tablas públicas de aplicación con RLS forzado | 48 |
+| Control                                       | Resultado    |
+| --------------------------------------------- | ------------ |
+| Rol runtime                                   | `veterinary` |
+| `rolsuper`                                    | `false`      |
+| `rolbypassrls`                                | `false`      |
+| `rolcanlogin`                                 | `true`       |
+| `rolcreaterole`                               | `false`      |
+| `rolcreatedb`                                 | `false`      |
+| Tablas públicas de aplicación con RLS         | 48           |
+| Tablas públicas de aplicación con RLS forzado | 48           |
 
 La migración no modifica una contraseña existente si el rol ya estaba creado:
 verifica sus atributos y falla de forma segura si son incompatibles. También
@@ -65,6 +65,15 @@ La siguiente fase de seguridad debe diseñar y probar un contexto de organizaci�
 por transacción con dos tenants antes de sustituir esa política amplia por
 políticas RLS tenant-aware. No se debe eliminar el acceso del runtime ni cambiar
 la política en producción sin esas pruebas.
+
+## Actualización posterior
+
+La fase descrita arriba fue completada después mediante la migración
+`20261017090000_add_tenant_rls_context`. El contexto por transacción y los
+predicados tenant-aware quedaron aplicados y verificados en el despliegue
+posterior. Este documento conserva el estado de la remediación del rol; el
+detalle del rollout y la prueba de integración de dos tenants están en
+[`tenant-rls-rollout-2026-10-17.md`](tenant-rls-rollout-2026-10-17.md).
 
 ## Evidencia técnica versionada
 
