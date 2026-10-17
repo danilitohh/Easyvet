@@ -27,6 +27,24 @@ const clinicLoadingRoutes = [
   ['/agenda/disponibilidad', 'Cargando disponibilidad'],
 ] as const;
 
+const clinicSecondaryRoutes = [
+  '/usuarios/nuevo',
+  '/usuarios/44444444-4444-4444-8444-444444444444',
+  '/inventario/nuevo',
+  '/ventas/nueva',
+  '/ventas/66666666-6666-4666-8666-666666666666',
+  '/peluqueria/nueva',
+  '/agenda/citas/99999999-9999-4999-8999-999999999999',
+  '/propietarios/nuevo',
+  '/pacientes/nuevo',
+  '/pacientes/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/historia/documentos',
+  '/pacientes/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/historia/consentimientos',
+  '/pacientes/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/historia/procedimientos',
+  '/pacientes/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/historia/hospitalizaciones',
+  '/pacientes/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/historia/diagnosticos',
+  '/pacientes/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/historia/prescripciones',
+] as const;
+
 const clinicContext = {
   ...defaultContext,
   activeMembership: {
@@ -112,6 +130,35 @@ describe('clinic route accessibility smoke', () => {
 
       const main = await screen.findByRole('main', undefined, { timeout: 15_000 });
       await within(main).findByRole('status', { name: label });
+    },
+    15_000,
+  );
+
+  it.each(clinicSecondaryRoutes)(
+    'keeps secondary clinic route %s accessible when remote data is unavailable',
+    async (path) => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('isolated accessibility test')));
+      renderClinicRoute(path);
+
+      const main = await screen.findByRole('main', undefined, { timeout: 15_000 });
+      const headings = await within(main).findAllByRole('heading', undefined, {
+        timeout: 15_000,
+      });
+      const levelOneHeadings = headings.filter((element) => element.tagName === 'H1');
+      const missingControlLabels = Array.from(main.querySelectorAll('a, button')).filter(
+        (element) => !hasAccessibleLabel(element),
+      );
+      const missingFieldLabels = Array.from(
+        main.querySelectorAll('input, select, textarea'),
+      ).filter((element) => !hasAccessibleLabel(element));
+      const missingImageAlt = Array.from(main.querySelectorAll('img')).filter(
+        (element) => !element.hasAttribute('alt'),
+      );
+
+      expect(levelOneHeadings).toHaveLength(1);
+      expect(missingControlLabels).toEqual([]);
+      expect(missingFieldLabels).toEqual([]);
+      expect(missingImageAlt).toEqual([]);
     },
     15_000,
   );
