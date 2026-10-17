@@ -9,11 +9,41 @@ import {
 } from './auth.types';
 import { permissionsForRole } from '../authorization/permissions';
 
-type SessionWithContext = Prisma.SessionGetPayload<{
-  include: {
-    user: true;
-    activeMembership: { include: { organization: true } };
-  };
+const membershipContextSelect = {
+  id: true,
+  role: true,
+  clinicalRole: true,
+  status: true,
+  organization: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      status: true,
+    },
+  },
+} satisfies Prisma.MembershipSelect;
+
+const sessionContextSelect = {
+  id: true,
+  activeMembershipId: true,
+  expiresAt: true,
+  revokedAt: true,
+  user: {
+    select: {
+      id: true,
+      email: true,
+      status: true,
+      platformRole: true,
+      mustChangePassword: true,
+    },
+  },
+  activeMembership: { select: membershipContextSelect },
+} satisfies Prisma.SessionSelect;
+
+type SessionWithContext = Prisma.SessionGetPayload<{ select: typeof sessionContextSelect }>;
+type MembershipWithContext = Prisma.MembershipGetPayload<{
+  select: typeof membershipContextSelect;
 }>;
 
 // Owns opaque session tokens, lifecycle checks, and explicit organization context switching.
@@ -52,7 +82,7 @@ export class SessionsService {
         status: MembershipStatus.ACTIVE,
         organization: { status: OrganizationStatus.ACTIVE },
       },
-      include: { organization: true },
+      select: membershipContextSelect,
       orderBy: { createdAt: 'asc' },
     });
 
@@ -110,10 +140,7 @@ export class SessionsService {
   ): Promise<AuthenticatedRequestContext | null> {
     const session = await this.prisma.session.findUnique({
       where,
-      include: {
-        user: true,
-        activeMembership: { include: { organization: true } },
-      },
+      select: sessionContextSelect,
     });
 
     if (!session || !this.isSessionUsable(session)) {
@@ -171,9 +198,7 @@ export class SessionsService {
     };
   }
 
-  private toMembership(
-    membership: Prisma.MembershipGetPayload<{ include: { organization: true } }>,
-  ): AuthenticatedMembership {
+  private toMembership(membership: MembershipWithContext): AuthenticatedMembership {
     return {
       id: membership.id,
       role: membership.role,
