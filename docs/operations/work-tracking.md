@@ -34,6 +34,7 @@ decisiones del propietario ni del proveedor.
 
 ## Fases cerradas recientes
 
+- Revisión de dependencias 2026-10-17 — producción sin vulnerabilidades reportadas; el tooling mantiene 19 entradas moderadas transitivas y npm solo propone un downgrade mayor de Jest, por lo que no se aplicó un cambio inseguro.
 - Hardening de observabilidad — `RequestTelemetryMiddleware` solo registra IDs de solicitud validados y tiene regresión contra headers arbitrarios.
 - CI-01 — el run remoto #143 pasó los tres jobs sobre `62652ff` después de actualizar la evidencia de deployment.
 - Revisión responsive pública 2026-10-17 — ocho rutas móviles auditadas; el orbe decorativo overflow quedó identificado y marcado como `aria-hidden`.

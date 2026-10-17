@@ -2,7 +2,7 @@
 
 ## Revisión vigente
 
-Actualizado el 16 de octubre de 2026 contra el lockfile del monorepo. Los
+Actualizado el 17 de octubre de 2026 contra el lockfile del monorepo. Los
 resultados describen advisories conocidos por npm para ese árbol; no sustituyen
 la revisión de licencias, procedencia ni una prueba dinámica de alcanzabilidad.
 
@@ -19,10 +19,10 @@ la revisión de licencias, procedencia ni una prueba dinámica de alcanzabilidad
 
 ## Resultados de `npm audit`
 
-| Comando (16 oct 2026)                         | Resultado             | Interpretación                                                                       |
-| --------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
-| `npm audit --omit=dev --audit-level=moderate` | 0 vulnerabilidades    | npm no reportó advisories en las dependencias de producción del lockfile.            |
-| `npm audit --audit-level=moderate`            | 20 entradas moderadas | Son rutas transitivas repetidas de un solo advisory, no veinte advisories distintos. |
+| Comando (17 oct 2026)                         | Resultado             | Interpretación                                                                           |
+| --------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------- |
+| `npm audit --omit=dev --audit-level=moderate` | 0 vulnerabilidades    | npm no reportó advisories en las dependencias de producción del lockfile.                |
+| `npm audit --audit-level=moderate`            | 19 entradas moderadas | Son rutas transitivas repetidas de un solo advisory, no diecinueve advisories distintos. |
 
 La cadena afectada está en tooling de pruebas:
 `ts-jest@29.4.15` → `@jest/transform@30.5.2` → `babel-plugin-istanbul` →
@@ -31,10 +31,11 @@ La cadena afectada está en tooling de pruebas:
 
 El [advisory GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c)
 afecta `sprintf-js` hasta 1.1.3 inclusive y no lista versión corregida al
-momento de la revisión. npm propone downgrades incompatibles de Jest/ts-jest;
-no se ejecutó `npm audit fix --force` ni se agregó un override para ocultar la
-alerta. No se encontró una ruta desde una petición del API al código afectado;
-esto es una evaluación estática, no una demostración de seguridad dinámica.
+momento de la revisión. La metadata de npm propone `jest@25.0.0`, que sería un
+downgrade mayor desde Jest 30; no se ejecutó `npm audit fix --force` ni se
+agregó un override para ocultar la alerta. No se encontró una ruta desde una
+petición del API al código afectado; esto es una evaluación estática, no una
+demostración de seguridad dinámica.
 
 ## Estado de la instalación local
 
