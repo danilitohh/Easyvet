@@ -84,7 +84,11 @@ no una entrega de broadcast extremo a extremo en un navegador autenticado.
 ## Pendientes fuera de este control
 
 - Prueba real autorizada de carga y descarga de un archivo sintético en Storage.
-- Verificación de proveedor de correo, backups y recuperación.
+- Verificación de proveedor de correo y una restauración controlada. El
+  procedimiento y los límites conocidos están documentados en
+  [`docs/operations/backup-recovery.md`](../operations/backup-recovery.md);
+  todavía no se ha probado contra producción ni se han confirmado el plan, la
+  retención o el RPO/RTO de la cuenta.
 - Prueba de carga autorizada con usuarios/concurrencia y volúmenes representativos; ya existe un baseline automatizado y no destructivo para listas paginadas sobre PostgreSQL efímero en CI.
 - Datos legales reales y revisión profesional antes del lanzamiento comercial.
 
