@@ -456,12 +456,13 @@ describeDatabase('real authentication and sessions', () => {
     });
   });
 
-  it('isolates locations by tenant and ignores organizationId query injection', async () => {
+  it('isolates locations by tenant and rejects organizationId query injection', async () => {
     const agent = request.agent(app.getHttpServer());
     await login(singleUser.email, agent);
-    const list = await agent
+    await agent
       .get(`/api/v1/organization/locations?organizationId=${organizationSouthId}`)
-      .expect(200);
+      .expect(400);
+    const list = await agent.get('/api/v1/organization/locations').expect(200);
     expect(list.body.data).toHaveLength(1);
     expect(list.body.data[0].id).toBe(locationNorthId);
     expect(list.body.pagination).toMatchObject({ page: 1, pageSize: 100, total: 1, totalPages: 1 });
