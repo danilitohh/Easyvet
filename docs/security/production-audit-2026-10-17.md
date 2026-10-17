@@ -85,7 +85,7 @@ no una entrega de broadcast extremo a extremo en un navegador autenticado.
 
 - Prueba real autorizada de carga y descarga de un archivo sintético en Storage.
 - Verificación de proveedor de correo, backups y recuperación.
-- Pruebas de rendimiento con volúmenes representativos.
+- Prueba de carga autorizada con usuarios/concurrencia y volúmenes representativos; ya existe un baseline automatizado y no destructivo para listas paginadas sobre PostgreSQL efímero en CI.
 - Datos legales reales y revisión profesional antes del lanzamiento comercial.
 
 El asesor de rendimiento de Supabase reportó 137 claves foráneas sin índice de

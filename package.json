@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "typecheck": "npm run build --workspace @veterinary-saas/config && npm run build --workspace @veterinary-saas/contracts && npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "test:perf": "cross-env RUN_DB_TESTS=1 RUN_PERF_TESTS=1 npm run test --workspace @veterinary-saas/api -- --runTestsByPath src/infrastructure/database/performance-baseline.integration.spec.ts",
     "test:db": "cross-env RUN_DB_TESTS=1 DATABASE_URL=postgresql://veterinary:veterinary_dev_only@localhost:5432/easyvet_test?options=-c%20app.easyvet_context%3Dsystem DATABASE_URL_TEST=postgresql://veterinary:veterinary_dev_only@localhost:5432/easyvet_test?options=-c%20app.easyvet_context%3Dsystem npm run test --workspace @veterinary-saas/api",
     "test:all": "npm test && npm run test:db",
     "prisma:generate": "prisma generate",
