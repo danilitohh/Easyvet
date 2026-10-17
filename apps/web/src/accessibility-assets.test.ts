@@ -25,4 +25,13 @@ describe('accessible image markup', () => {
 
     expect(missingAlt).toEqual([]);
   });
+
+  it('keeps decorative brand and source-owned icons hidden from assistive technology', () => {
+    const brandMark = readFileSync(join(process.cwd(), 'src/components/brand/BrandMark.tsx'), 'utf8');
+    const icon = readFileSync(join(process.cwd(), 'src/components/icons/EasyvetIcon.tsx'), 'utf8');
+
+    expect(brandMark).toMatch(/<span[^>]*aria-hidden="true"/);
+    expect(brandMark).toMatch(/<img[^>]*alt=""/);
+    expect(icon).toMatch(/<svg[\s\S]*aria-hidden="true"/);
+  });
 });
