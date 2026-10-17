@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "apps/web/src/accessibility-assets.test.ts"
+        ],
+        "createdAt": "2026-10-17T17:36:54.332Z",
+        "reason": "False positive: this literal is a regex fixture used to audit JSX img tags; it is not rendered markup. The source images already provide explicit alt attributes."
+      }
+    ]
+  }
+}

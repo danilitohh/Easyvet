@@ -36,12 +36,12 @@ externo que no debe inventarse.
 
 ## Accesibilidad y contenido
 
-| Área                                  | Estado     | Evidencia y límite                                                                                                                                                                                         |
-| ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Semántica, labels y estados           | PARCIAL    | Hay `FormField`, labels asociados, `aria-live`, estados `alert/status`, navegación etiquetada y foco visible en componentes compartidos. La cobertura es representativa, no una certificación WCAG 2.2 AA. |
-| Contraste                             | VERIFICADO | `apps/web/src/styles/accessibility-colors.test.ts` comprueba tokens de contraste WCAG AA en superficies principales.                                                                                       |
-| Texto alternativo                     | PARCIAL    | Las imágenes decorativas usan `alt=""` y los enlaces de marca tienen nombre accesible; falta un recorrido automatizado de todas las rutas y estados.                                                       |
-| Teclado, modales y objetivos táctiles | PARCIAL    | `Modal.test.tsx` cubre foco y cierre, y existen estilos `:focus-visible`; falta una prueba automatizada de recorrido completo por cada módulo.                                                             |
+| Área                                  | Estado     | Evidencia y límite                                                                                                                                                                                                                     |
+| ------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Semántica, labels y estados           | PARCIAL    | Hay `FormField`, labels asociados, `aria-live`, estados `alert/status`, navegación etiquetada y foco visible en componentes compartidos. La cobertura es representativa, no una certificación WCAG 2.2 AA.                             |
+| Contraste                             | VERIFICADO | `apps/web/src/styles/accessibility-colors.test.ts` comprueba tokens de contraste WCAG AA en superficies principales.                                                                                                                   |
+| Texto alternativo                     | PARCIAL    | Las imágenes decorativas usan `alt=""`, los enlaces de marca tienen nombre accesible y `apps/web/src/accessibility-assets.test.ts` evita agregar imágenes JSX sin `alt`; falta un recorrido automatizado de todas las rutas y estados. |
+| Teclado, modales y objetivos táctiles | PARCIAL    | `Modal.test.tsx` cubre foco y cierre, y existen estilos `:focus-visible`; falta una prueba automatizada de recorrido completo por cada módulo.                                                                                         |
 
 ## Seguridad, datos y multi-tenant
 
