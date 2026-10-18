@@ -18,38 +18,44 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     let clientPromise: Promise<SupabaseClient> | undefined;
     let cachedToken:
       { value: string; refreshAt: number; organizationId: string | undefined } | undefined;
+    const getAccessToken = async () => {
+      if (
+        cachedToken &&
+        cachedToken.organizationId === organizationIdRef.current &&
+        Date.now() < cachedToken.refreshAt
+      ) {
+        return cachedToken.value;
+      }
+
+      const response = await fetch(`${appConfig.apiBaseUrl}/auth/realtime-token`, {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) throw new Error(`Realtime authorization failed (${response.status})`);
+      const payload = (await response.json()) as { accessToken?: unknown };
+      if (typeof payload.accessToken !== 'string') {
+        throw new Error('Realtime authorization token is missing');
+      }
+      cachedToken = {
+        value: payload.accessToken,
+        refreshAt: Date.now() + 4 * 60_000,
+        organizationId: organizationIdRef.current,
+      };
+      return cachedToken.value;
+    };
+
     return () => {
       if (!url || !key) return Promise.resolve(null);
       clientPromise ??= import('@supabase/supabase-js').then(({ createClient }) =>
         createClient(url, key, {
           auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
-          accessToken: async () => {
-            if (
-              cachedToken &&
-              cachedToken.organizationId === organizationIdRef.current &&
-              Date.now() < cachedToken.refreshAt
-            ) {
-              return cachedToken.value;
-            }
-            const response = await fetch(`${appConfig.apiBaseUrl}/auth/realtime-token`, {
-              credentials: 'include',
-              headers: { Accept: 'application/json' },
-            });
-            if (!response.ok) throw new Error(`Realtime authorization failed (${response.status})`);
-            const payload = (await response.json()) as { accessToken?: unknown };
-            if (typeof payload.accessToken !== 'string') {
-              throw new Error('Realtime authorization token is missing');
-            }
-            cachedToken = {
-              value: payload.accessToken,
-              refreshAt: Date.now() + 4 * 60_000,
-              organizationId: organizationIdRef.current,
-            };
-            return cachedToken.value;
-          },
+          accessToken: getAccessToken,
         }),
       );
-      return clientPromise;
+      return clientPromise.then(async (client) => {
+        client.realtime.setAuth(await getAccessToken());
+        return client;
+      });
     };
   }, []);
 

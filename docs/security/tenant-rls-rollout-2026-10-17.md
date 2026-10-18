@@ -27,24 +27,31 @@ reportó 43 migraciones encontradas y ninguna pendiente.
 
 ## Evidencia local
 
-| Comprobación                      | Resultado                                                                |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `npm run lint`                    | Correcto                                                                 |
-| `npm run typecheck`               | Correcto                                                                 |
-| `npm run build`                   | Correcto                                                                 |
-| Pruebas nuevas de contexto/Prisma | 5 correctas                                                              |
-| Suite API local                   | 40 suites correctas; 17 suites DB omitidas por falta de PostgreSQL local |
-| Suite web local                   | 47 archivos y 414 pruebas correctas                                      |
-| `prisma validate`                 | Correcto con una URL PostgreSQL temporal de validación                   |
-| Vercel `prisma migrate deploy`    | 43 migraciones encontradas; ninguna pendiente                            |
-| `GET /api/v1/health/ready`        | HTTP 200; `database: ok`                                                 |
-| Integración RLS local (2026-10-18) | 43 migraciones aplicadas en PostgreSQL temporal; 1/1 prueba de dos tenants correcta con el rol runtime `veterinary` seguro |
+| Comprobación                              | Resultado                                                                                                                               |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run lint`                            | Correcto                                                                                                                                |
+| `npm run typecheck`                       | Correcto                                                                                                                                |
+| `npm run build`                           | Correcto                                                                                                                                |
+| Pruebas nuevas de contexto/Prisma         | 5 correctas                                                                                                                             |
+| Suite API local                           | 40 suites correctas; 17 suites DB omitidas por falta de PostgreSQL local                                                                |
+| Suite web local                           | 47 archivos y 414 pruebas correctas                                                                                                     |
+| `prisma validate`                         | Correcto con una URL PostgreSQL temporal de validación                                                                                  |
+| Vercel `prisma migrate deploy`            | 43 migraciones encontradas; ninguna pendiente                                                                                           |
+| `GET /api/v1/health/ready`                | HTTP 200; `database: ok`                                                                                                                |
+| Integración RLS local (2026-10-18)        | 43 migraciones aplicadas en PostgreSQL temporal; 1/1 prueba de dos tenants correcta con el rol runtime `veterinary` seguro              |
+| Integración de autenticación (2026-10-18) | `auth.controller.integration.spec.ts`: 54/54 pruebas correctas con sesiones y organizaciones sintéticas                                 |
+| Token y cliente Realtime (2026-10-18)     | `realtime-token.service.spec.ts`: 2/2; `RealtimeContext.test.tsx`: 4/4; token y canal privado ligados a la organización activa          |
+| Realtime local (2026-10-18)               | Dos canales privados sintéticos se suscribieron con tokens de sus organizaciones; cada uno recibió 1 evento propio y 0 eventos cruzados |
 
 La integración RLS local con dos tenants pasó usando datos sintéticos y el rol
 runtime `veterinary` sin privilegios peligrosos. Los contenedores temporales
 `easyvet-tenant-test-pg` y `easyvet-tenant-test-pg2` fueron eliminados después
-de la prueba. La prueba autenticada completa contra dos sesiones y la
-verificación de Realtime siguen siendo controles separados antes del lanzamiento.
+de la prueba. La prueba autenticada completa con dos sesiones y dos
+organizaciones sintéticas pasó 54/54. El token Realtime y el cliente web
+pasaron sus pruebas de alcance por organización. La verificación en el stack
+local de Supabase Realtime también pasó: dos canales privados recibieron solo
+el evento de su propia organización. La conexión contra el servicio Realtime
+administrado sigue pendiente de staging o de la comprobación preproducción.
 
 ## Cierre de la autorización y controles restantes
 
@@ -53,7 +60,6 @@ recibida y el deployment quedó `READY`. El endpoint público de readiness
 respondió HTTP 200 con `database: ok`; los logs del build confirmaron que no
 había migraciones pendientes.
 
-Continúa como control operativo independiente la prueba autorizada con dos
-sesiones autenticadas y dos tenants, además de la verificación de Realtime. No
-se debe interpretar el readiness ni esta integración RLS aislada como sustitutos
-de esa prueba negativa completa.
+Continúa como control operativo independiente la verificación aislada del
+servicio Realtime administrado. No se debe interpretar el readiness ni las
+pruebas locales como una certificación de la conexión externa.

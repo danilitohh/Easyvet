@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   auth: { status: 'unauthenticated' as string, activeMembership: null as unknown },
   createClient: vi.fn(),
   fetch: vi.fn(),
+  setAuth: vi.fn(),
   channelFactory: vi.fn(),
   channel: {
     on: vi.fn(),
@@ -35,6 +36,10 @@ describe('RealtimeProvider', () => {
     vi.stubGlobal('fetch', mocks.fetch);
     mocks.auth.status = 'unauthenticated';
     mocks.auth.activeMembership = null;
+    mocks.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ accessToken: 'signed-token' }),
+    });
     mocks.channelFactory.mockReturnValue(mocks.channel);
     mocks.channel.on.mockReturnValue(mocks.channel);
     mocks.channel.subscribe.mockImplementation((callback: (status: string) => void) => {
@@ -44,6 +49,7 @@ describe('RealtimeProvider', () => {
     mocks.createClient.mockReturnValue({
       channel: mocks.channelFactory,
       removeChannel: mocks.removeChannel,
+      realtime: { setAuth: mocks.setAuth },
     });
   });
 
@@ -70,6 +76,7 @@ describe('RealtimeProvider', () => {
 
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('connected'));
     expect(mocks.createClient).toHaveBeenCalledTimes(1);
+    expect(mocks.setAuth).toHaveBeenCalledWith('signed-token');
     expect(mocks.createClient).toHaveBeenCalledWith(
       'https://project.supabase.co',
       'test-publishable-key',
