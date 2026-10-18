@@ -30,7 +30,7 @@ decisiones del propietario ni del proveedor.
 | OBS-01  | Media     | Métricas y alertas del proveedor                | Bloqueado por configuración externa | Vercel/Supabase y retención operativa aún no confirmados                                                                              | Alertas probadas, sin secretos en eventos y runbook actualizado         |
 | A11Y-01 | Media     | Revisión visual por viewport                    | En curso                            | Las ocho rutas públicas ya tienen evidencia responsive móvil; falta recorrido manual completo de rutas autenticadas, contraste y foco | Checklist por ruta/viewport, contraste y foco documentados              |
 | EXT-01  | Media     | Revisión contractual de servicios externos      | Recurrente                          | Cambia con proveedores, subprocesadores, regiones y licencias                                                                         | Inventario actualizado y revisión fechada antes de cada release         |
-| CI-01   | Baja      | Confirmar evidencia del run remoto más reciente | Cerrado en `ba1faf6`                | Reabrir después de cada cambio publicado si el run más reciente no termina correctamente                                              | Run #158 exitoso sobre `main` y matriz actualizada                      |
+| CI-01   | Baja      | Confirmar evidencia del run remoto más reciente | Cerrado en `d4b51a2`                | Reabrir después de cada cambio publicado si el run más reciente no termina correctamente                                              | Run #159 exitoso sobre `main` y matriz actualizada                      |
 
 ## Fases cerradas recientes
 
@@ -41,7 +41,7 @@ decisiones del propietario ni del proveedor.
 - Navegación visual 2026-10-17 — la barra lateral y el dock operativo dejaron de usar glifos Unicode y ahora renderizan la familia SVG propia de Easyvet (`EasyvetIcon`), con una regresión que impide volver a introducir glifos; los iconos permanecen centrados y sin fondos decorativos individuales. CI #156 y el deployment `2d709cf` quedaron exitosos/READY.
 - Iconografía transversal 2026-10-17 — menú móvil, cierre de modales, colapsado de la barra lateral, calendario, accesos rápidos, navegación de detalle y filas operativas ahora usan `EasyvetIcon` en lugar de glifos Unicode; los contenedores mantienen alineación flex/grid centrada y sin cajas individuales. Lint, typecheck, 781 pruebas activas, build con 10 marcadores de secretos, smoke de 10 rutas y `git diff --check` pasaron localmente. La revisión visual manual completa de todas las rutas autenticadas sigue siendo el límite de A11Y-01.
 - Hardening de observabilidad — `RequestTelemetryMiddleware` solo registra IDs de solicitud validados y tiene regresión contra headers arbitrarios.
-- CI-01 — el run remoto #158 pasó correctamente sobre `ba1faf6` después de actualizar la evidencia de Supabase Advisors.
+- CI-01 — el run remoto #159 pasó correctamente sobre `d4b51a2` después de actualizar la evidencia de CI.
 - Revisión responsive pública 2026-10-17 — ocho rutas móviles auditadas; el orbe decorativo overflow quedó identificado y marcado como `aria-hidden`.
 - `f661fc8` — evidencia visual de producción y trazabilidad del deployment final.
 - `3cf573a` — corrección del solapamiento entre acceso y consentimiento de privacidad.
