@@ -35,6 +35,7 @@ decisiones del propietario ni del proveedor.
 ## Fases cerradas recientes
 
 - Revisión de dependencias 2026-10-17 — producción sin vulnerabilidades reportadas; el tooling mantiene 19 entradas moderadas transitivas y npm solo propone un downgrade mayor de Jest, por lo que no se aplicó un cambio inseguro.
+- Reverificación de dependencias 2026-10-18 — `npm audit --omit=dev --audit-level=moderate --json` confirmó 0 vulnerabilidades en 291 dependencias de producción; no se ejecutó `audit fix` ni se modificó el lockfile.
 - Composición de controles 2026-10-17 — `accessibility-controls.test.ts` protege el centrado de botones e iconos compartidos; lint, typecheck, 779 pruebas y build pasaron localmente. CI #151 y el deployment `c481ed3` quedaron exitosos/READY.
 - Smoke público ampliado 2026-10-17 — `production-smoke.mjs` verifica diez rutas públicas, headers de seguridad, health/readiness y disponibilidad de base de datos mediante solicitudes GET sin mutaciones.
 - Semántica de recursos visuales 2026-10-17 — `accessibility-assets.test.ts` protege `alt` explícito en imágenes JSX y mantiene la marca/iconos SVG decorativos ocultos para tecnología asistiva; el gate local pasó con 780 pruebas ejecutadas/omitidas contabilizadas y build correcto.

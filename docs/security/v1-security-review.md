@@ -34,6 +34,13 @@ pero debe reevaluarse cuando exista una actualización compatible. Esta evidenci
 es puntual y no sustituye la revisión de procedencia, licencias y cambios de
 dependencias antes de cada lanzamiento.
 
+## Reverificación de producción — 2026-10-18
+
+`npm audit --omit=dev --audit-level=moderate --json` volvió a reportar **0
+vulnerabilidades** en las 291 dependencias de producción auditadas: 0
+informativas, bajas, moderadas, altas o críticas. No se ejecutó `npm audit
+fix`, no se modificó `package-lock.json` y no se alteró el árbol de desarrollo.
+
 ## Límites de la revisión
 
 - No hubo pentest independiente ni escaneo profundo ejecutable en este entorno.
