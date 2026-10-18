@@ -46,8 +46,9 @@ nombres de pacientes, tenant ids ni valores clínicos.
 ## Verificación externa 2026-10-18
 
 Supabase respondió `ACTIVE_HEALTHY` y su Security Advisor no reportó lints de
-seguridad. La cuenta Vercel conectada para esta revisión devolvió `403
-forbidden` al consultar el proyecto Easyvet por alcance de equipo; por eso no
-se afirma que las métricas, alertas o la retención de logs de Vercel estén
-configuradas. Se requiere reautorizar el equipo correcto o aportar una ventana
-de acceso de lectura para cerrar esta verificación.
+seguridad. La cuenta Vercel correcta es `danilitohhhh@gmail.com`, equipo
+`danilo-258d`, proyecto `easyvet`; el último deployment consultado está en
+estado `READY`. En el periodo consultado se observaron 4 pageviews y 1
+visitante. Los eventos personalizados requieren Pro o Enterprise,
+Observability Plus no está habilitado y no hay log drains configurados. La
+retención exacta y las alertas de Vercel siguen sin estar verificadas.

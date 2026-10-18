@@ -58,7 +58,8 @@ sin revisar sus derechos de uso.
   retirarse para reducir superficie operativa.
 
 La verificación operativa del 2026-10-18 confirmó que el proyecto Supabase
-está `ACTIVE_HEALTHY` y sin lints de seguridad. La consulta del proyecto
-Vercel quedó bloqueada por `403 forbidden` del alcance de equipo conectado; no
-se configuraron alertas ni se afirmó una retención de logs sin evidencia de la
-cuenta correcta.
+está `ACTIVE_HEALTHY` y sin lints de seguridad. En Vercel, la cuenta correcta
+`danilitohhhh@gmail.com` y el equipo `danilo-258d` exponen el proyecto `easyvet`
+con deployment `READY`, pero el plan Hobby no permite eventos personalizados,
+Observability Plus no está habilitado y no hay log drains. Retención y alertas
+siguen pendientes de configuración y verificación.
