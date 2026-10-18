@@ -38,10 +38,13 @@ reportó 43 migraciones encontradas y ninguna pendiente.
 | `prisma validate`                 | Correcto con una URL PostgreSQL temporal de validación                   |
 | Vercel `prisma migrate deploy`    | 43 migraciones encontradas; ninguna pendiente                            |
 | `GET /api/v1/health/ready`        | HTTP 200; `database: ok`                                                 |
+| Integración RLS local (2026-10-18) | 43 migraciones aplicadas en PostgreSQL temporal; 1/1 prueba de dos tenants correcta con el rol runtime `veterinary` seguro |
 
-La prueba real de PostgreSQL con dos tenants debe mantenerse en el job
-`database-integration` de CI y repetirse con el rol runtime de producción antes
-de cambios posteriores en estas políticas.
+La integración RLS local con dos tenants pasó usando datos sintéticos y el rol
+runtime `veterinary` sin privilegios peligrosos. Los contenedores temporales
+`easyvet-tenant-test-pg` y `easyvet-tenant-test-pg2` fueron eliminados después
+de la prueba. La prueba autenticada completa contra dos sesiones y la
+verificación de Realtime siguen siendo controles separados antes del lanzamiento.
 
 ## Cierre de la autorización y controles restantes
 
@@ -51,5 +54,6 @@ respondió HTTP 200 con `database: ok`; los logs del build confirmaron que no
 había migraciones pendientes.
 
 Continúa como control operativo independiente la prueba autorizada con dos
-tenants usando datos sintéticos y el rol runtime de producción. No se debe
-interpretar el readiness como sustituto de esa prueba negativa completa.
+sesiones autenticadas y dos tenants, además de la verificación de Realtime. No
+se debe interpretar el readiness ni esta integración RLS aislada como sustitutos
+de esa prueba negativa completa.

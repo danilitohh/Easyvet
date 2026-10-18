@@ -21,9 +21,10 @@
 - La vista protegida `GET /api/v1/platform/database-posture`, consultada después del rollout con la sesión del super admin, confirmó que Prisma usa el rol runtime `veterinary`, con `bypassesRowLevelSecurity: false` y `superuser: false`. La consulta del editor SQL es una evidencia separada y no representa el rol de Vercel.
 - La migración de defensa en profundidad fuerza RLS en las tablas públicas de aplicación y el contexto por transacción está aplicado en Production. Las operaciones globales de rate limit usan explícitamente el scope `system`; el readiness productivo respondió correctamente después de esta corrección.
 - No se ejecutó Strix ni una prueba de penetración: la herramienta usa payloads que pueden cambiar datos y requiere autorización específica. Este informe no es una certificación de seguridad.
+- El 2026-10-18 se aplicaron las 43 migraciones en un PostgreSQL temporal y la prueba de integración `tenant-rls.integration.spec.ts` pasó 1/1: cada scope solo expuso filas de su organización y una escritura cruzada fue rechazada. El rol local `veterinary` se configuró sin superusuario, `CREATEDB`, `CREATEROLE`, `REPLICATION` ni `BYPASSRLS`; los contenedores se eliminaron al finalizar.
 
 ## Resultado y siguiente control
 
 En la revisión estática no se confirmó un bypass cross-tenant en las rutas y patrones examinados. Los filtros server-side, las restricciones relacionales y el RLS con contexto por transacción ofrecen controles complementarios. El bypass del runtime productivo quedó eliminado para `veterinary`; aun así, el aislamiento completo debe mantenerse cubierto por la prueba negativa con dos tenants y por regresiones de cada módulo.
 
-El siguiente control seguro es repetir esa prueba con datos sintéticos y el rol runtime de producción. No se deben modificar políticas ni conceder acceso directo a clientes para satisfacer los avisos del asesor.
+El siguiente control seguro es repetir la verificación con dos sesiones autenticadas y revisar el canal Realtime con datos sintéticos. No se deben modificar políticas ni conceder acceso directo a clientes para satisfacer los avisos del asesor.
