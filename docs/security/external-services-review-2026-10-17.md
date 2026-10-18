@@ -63,3 +63,22 @@ está `ACTIVE_HEALTHY` y sin lints de seguridad. En Vercel, la cuenta correcta
 con deployment `READY`, pero el plan Hobby no permite eventos personalizados,
 Observability Plus no está habilitado y no hay log drains. Retención y alertas
 siguen pendientes de configuración y verificación.
+
+## Fuentes contractuales consultadas
+
+- [Vercel DPA](https://vercel.com/legal/dpa): Vercel indica procesamiento
+  principal en Estados Unidos, transferencias a otras ubicaciones de Vercel o
+  subprocesadores, y una lista de subprocesadores mantenida por el proveedor.
+- [Supabase DPA](https://supabase.com/legal/customer-resources/data-processing-addendum),
+  [subprocesadores](https://supabase.com/legal/customer-resources/subprocessor-list)
+  y [residencia y transferencias](https://supabase.com/legal/privacy-resources/data-residency-and-transfers-faq):
+  el proyecto está en AWS `us-east-1`; el proveedor advierte que algunos
+  procesos pueden ocurrir fuera de la región seleccionada.
+- [Resend subprocesadores](https://resend.com/legal/subprocessors) y
+  [DPA](https://resend.com/legal/dpa): la lista incluye infraestructura y
+  proveedores ubicados en Estados Unidos y se actualiza periódicamente.
+- [AWS Service Terms](https://aws.amazon.com/service-terms/): aplican los
+  términos del servicio AWS y su DPA cuando AWS procesa datos del cliente.
+
+Esta revisión identifica fuentes y transferencias relevantes, pero no sustituye
+la revisión profesional de Colombia ni la aceptación contractual del titular.

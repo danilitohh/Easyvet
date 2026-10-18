@@ -20,6 +20,9 @@ en la cuenta. No contiene credenciales ni exportaciones de datos clínicos.
 - La retención efectiva, el rango PITR y el RPO/RTO contratado no están
   expuestos por la metadata conectada y no deben inferirse. No se ha ejecutado
   una restauración real ni se ha creado un entorno separado.
+- El bucket `easyvet-clinical-documents` existe, es privado, limita cada objeto
+  a 10 MiB y acepta PDF, PNG y JPEG. Esto confirma configuración, no una copia
+  externa ni una restauración de bytes.
 - Las copias de la base de datos de Supabase no contienen los bytes de los
   objetos de Storage; solo conservan metadatos. La recuperación de la base no
   recupera por sí sola archivos borrados.
@@ -60,6 +63,10 @@ En la verificación del 2026-10-18 no había ramas separadas y la metadata
 disponible no permitía confirmar retención, RPO/RTO ni copias de Storage. Crear
 una rama o ejecutar una restauración requiere confirmar el coste y el entorno
 objetivo antes de modificar infraestructura.
+
+Supabase cotiza una rama a **USD 0,01344 por hora** para esta organización
+(aproximadamente USD 9,68 por 30 días si permaneciera encendida). La rama no se
+creó porque requiere confirmación explícita del coste y del entorno de prueba.
 
 Esta revisión debe hacerse al menos antes de cada lanzamiento importante y
 después de cambiar el plan o la infraestructura.
