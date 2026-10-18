@@ -51,4 +51,19 @@ seguridad. La cuenta Vercel correcta es `danilitohhhh@gmail.com`, equipo
 estado `READY`. En el periodo consultado se observaron 4 pageviews y 1
 visitante. Los eventos personalizados requieren Pro o Enterprise,
 Observability Plus no está habilitado y no hay log drains configurados. La
-retención exacta y las alertas de Vercel siguen sin estar verificadas.
+consulta de logs de Supabase confirmó que el stream está disponible en modo de
+lectura y expone fuentes de infraestructura, PostgreSQL, storage y edge; no se
+alteraron datos ni configuración. La retención exacta y las alertas
+administradas de Vercel siguen sin estar disponibles para verificar en el plan
+actual.
+
+## Resultado de la fase de observabilidad — 2026-10-18
+
+- Verificado: proyecto y cuenta operativa de Vercel, deployment `READY` y
+  telemetría básica de pageviews.
+- Verificado: Supabase `ACTIVE_HEALTHY`, Security Advisor sin lints y stream de
+  logs consultable en solo lectura.
+- Parcial por plan: no hay Observability Plus, log drains, eventos
+  personalizados ni una política de retención/alertas administradas verificable
+  desde Hobby/Free.
+- No se habilitaron servicios de pago ni se añadieron credenciales nuevas.

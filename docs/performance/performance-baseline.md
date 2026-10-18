@@ -32,6 +32,20 @@ DATABASE_URL_TEST='postgresql://veterinary:veterinary_dev_only@localhost:5432/ea
 La suite elimina sus organizaciones, propietarios y pacientes al finalizar.
 No debe apuntarse a una base con datos reales.
 
+## Resultado reproducible — 2026-10-18
+
+En un PostgreSQL temporal con las 43 migraciones aplicadas, el benchmark pasó
+3/3 escenarios con el rol runtime `veterinary` sin `BYPASSRLS`:
+
+| Filas sembradas | Filas devueltas | Consultas | Tiempo local |
+| --------------: | --------------: | --------: | -----------: |
+|              10 |              10 |         3 |     68,73 ms |
+|             100 |              20 |         3 |     26,56 ms |
+|           1.000 |              20 |         3 |     12,77 ms |
+
+El contenedor temporal fue eliminado. Estos valores son una referencia local,
+no un SLA ni una medición de Supabase, Vercel, red, serverless o concurrencia.
+
 ## CI
 
 El workflow `CI` ejecuta este benchmark en un job separado con PostgreSQL
