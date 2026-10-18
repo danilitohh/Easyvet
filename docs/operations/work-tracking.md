@@ -42,6 +42,7 @@ decisiones del propietario ni del proveedor.
 - Iconografía transversal 2026-10-17 — menú móvil, cierre de modales, colapsado de la barra lateral, calendario, accesos rápidos, navegación de detalle y filas operativas ahora usan `EasyvetIcon` en lugar de glifos Unicode; los contenedores mantienen alineación flex/grid centrada y sin cajas individuales. Lint, typecheck, 781 pruebas activas, build con 10 marcadores de secretos, smoke de 10 rutas y `git diff --check` pasaron localmente. La revisión visual manual completa de todas las rutas autenticadas sigue siendo el límite de A11Y-01.
 - Hardening de observabilidad — `RequestTelemetryMiddleware` solo registra IDs de solicitud validados y tiene regresión contra headers arbitrarios.
 - CI-01 — el run remoto #159 pasó correctamente sobre `d4b51a2` después de actualizar la evidencia de CI.
+- CI-01 — el run remoto #160 pasó correctamente sobre `52aab59` después de actualizar la evidencia del smoke público.
 - Revisión responsive pública 2026-10-17 — ocho rutas móviles auditadas; el orbe decorativo overflow quedó identificado y marcado como `aria-hidden`.
 - `f661fc8` — evidencia visual de producción y trazabilidad del deployment final.
 - `3cf573a` — corrección del solapamiento entre acceso y consentimiento de privacidad.
