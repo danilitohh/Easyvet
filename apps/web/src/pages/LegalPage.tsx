@@ -17,7 +17,7 @@ const documents = {
         title: 'Estado de este documento',
         paragraphs: [
           'Borrador informativo para Colombia. Antes de comercializar el servicio se deben completar los datos legales y realizar una revisión profesional específica para el tratamiento de datos personales.',
-          'Responsable, razón social, NIT, dirección y correo de soporte: pendientes de completar.',
+          'Responsable, razón social, NIT y dirección: pendientes de completar. Correo de soporte informado: danilitohhh@gmail.com.',
         ],
       },
       {
@@ -38,7 +38,7 @@ const documents = {
       {
         title: 'Derechos, conservación y solicitudes',
         paragraphs: [
-          'Las personas pueden solicitar información, actualización, corrección, revocatoria u otros derechos aplicables mediante el canal de soporte que deberá completarse antes del lanzamiento comercial.',
+          'Las personas pueden solicitar información, actualización, corrección, revocatoria u otros derechos aplicables mediante danilitohhh@gmail.com. El canal y los plazos formales deberán revisarse antes del lanzamiento comercial.',
           'El plazo exacto de conservación, eliminación y atención de solicitudes está pendiente de definición documentada. Se conservarán los datos solo durante el tiempo necesario para la finalidad aplicable, obligaciones legales y defensa de derechos.',
         ],
       },
@@ -52,7 +52,7 @@ const documents = {
       {
         title: 'Estado y datos del proveedor',
         paragraphs: [
-          'Borrador informativo para Colombia. La identidad legal, razón social, NIT, dirección y correo de soporte están pendientes de completar y requieren revisión profesional antes de publicar una versión comercial.',
+          'Borrador informativo para Colombia. La identidad legal, razón social, NIT y dirección están pendientes de completar. El correo de soporte informado es danilitohhh@gmail.com. Todo requiere revisión profesional antes de publicar una versión comercial.',
         ],
       },
       {
@@ -99,7 +99,7 @@ const documents = {
       {
         title: 'Configuración pendiente',
         paragraphs: [
-          'El responsable, el canal de soporte y el inventario final de cookies deberán completarse antes del lanzamiento comercial. Este documento no pretende sustituir una revisión legal de la jurisdicción aplicable.',
+          'El responsable, la identidad legal, la dirección y el inventario final de cookies deberán completarse antes del lanzamiento comercial. Para soporte se informó danilitohhh@gmail.com. Este documento no pretende sustituir una revisión legal de la jurisdicción aplicable.',
         ],
       },
     ],
@@ -124,7 +124,7 @@ const documents = {
       {
         title: 'Datos pendientes',
         paragraphs: [
-          'La identidad legal, razón social, NIT, dirección, correo de soporte, precios, impuestos y canal formal de solicitudes están pendientes de completar. Se requiere revisión profesional antes de activar suscripciones pagas.',
+          'La identidad legal, razón social, NIT, dirección, precios, impuestos y canal formal de solicitudes están pendientes de completar. El correo informado para soporte es danilitohhh@gmail.com. Se requiere revisión profesional antes de activar suscripciones pagas.',
         ],
       },
     ],

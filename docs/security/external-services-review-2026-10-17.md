@@ -56,3 +56,9 @@ sin revisar sus derechos de uso.
 - configurar y verificar métricas/alertas de Vercel o del proveedor elegido;
 - confirmar si el adaptador S3 seguirá siendo necesario en producción o debe
   retirarse para reducir superficie operativa.
+
+La verificación operativa del 2026-10-18 confirmó que el proyecto Supabase
+está `ACTIVE_HEALTHY` y sin lints de seguridad. La consulta del proyecto
+Vercel quedó bloqueada por `403 forbidden` del alcance de equipo conectado; no
+se configuraron alertas ni se afirmó una retención de logs sin evidencia de la
+cuenta correcta.

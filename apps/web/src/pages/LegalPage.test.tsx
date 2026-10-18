@@ -19,14 +19,17 @@ describe('LegalPage', () => {
     expect(screen.getByRole('navigation', { name: 'Más información legal' })).toBeInTheDocument();
   });
 
-  it('keeps commercial and identity placeholders explicit until the owner supplies real data', () => {
+  it('keeps unknown identity data explicit and renders the supplied support email', () => {
     render(
       <MemoryRouter>
         <LegalPage document="terms" />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/identidad legal, razón social, NIT/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/identidad legal, razón social, NIT y dirección están pendientes/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/danilitohhh@gmail.com/i)).toBeInTheDocument();
     expect(screen.getByText(/precios, impuestos, descuento anual/i)).toBeInTheDocument();
     expect(screen.getByText(/sin reembolsos, sujeta a la ley colombiana/i)).toBeInTheDocument();
   });

@@ -42,3 +42,12 @@ nombres de pacientes, tenant ids ni valores clínicos.
 - No se deben usar logs como almacén de información clínica o credenciales.
 - Los cambios de umbral deben probarse en un entorno no productivo antes de
   aplicarse a producción.
+
+## Verificación externa 2026-10-18
+
+Supabase respondió `ACTIVE_HEALTHY` y su Security Advisor no reportó lints de
+seguridad. La cuenta Vercel conectada para esta revisión devolvió `403
+forbidden` al consultar el proyecto Easyvet por alcance de equipo; por eso no
+se afirma que las métricas, alertas o la retención de logs de Vercel estén
+configuradas. Se requiere reautorizar el equipo correcto o aportar una ventana
+de acceso de lectura para cerrar esta verificación.

@@ -10,19 +10,22 @@ en la cuenta. No contiene credenciales ni exportaciones de datos clínicos.
   el rol dedicado `veterinary`.
 - El bucket `easyvet-clinical-documents` es privado y sus objetos se sirven
   únicamente desde el backend.
-- En la revisión de solo lectura del panel de Supabase del 2026-10-17, el
-  proyecto aparece en el plan **Free**. El panel indica que ese plan no
-  incluye respaldos programados; la recuperación Point-in-Time aparece como
-  un complemento del plan Pro. Esto es evidencia de la cuenta en esa fecha,
-  no una garantía comercial permanente del proveedor.
-- No se ha ejecutado una restauración real ni se ha confirmado en la cuenta el
-  plan, la retención, el rango PITR o el RPO/RTO contratado.
+- La verificación de solo lectura del proyecto `iykzaqtcewnxgrmlbinz` del
+  2026-10-18 confirma estado `ACTIVE_HEALTHY`, región `us-east-1` y plan Free
+  en la cuenta Supabase conectada. El proyecto no tiene ramas de desarrollo.
+  La documentación oficial indica que los respaldos diarios y PITR pertenecen
+  a los planes pagos; para Free recomienda exportaciones periódicas mediante
+  la CLI. Esto es evidencia de la cuenta y documentación consultadas, no una
+  garantía comercial permanente del proveedor.
+- La retención efectiva, el rango PITR y el RPO/RTO contratado no están
+  expuestos por la metadata conectada y no deben inferirse. No se ha ejecutado
+  una restauración real ni se ha creado un entorno separado.
 - Las copias de la base de datos de Supabase no contienen los bytes de los
   objetos de Storage; solo conservan metadatos. La recuperación de la base no
   recupera por sí sola archivos borrados.
 
-Por tanto, el estado correcto es **procedimiento documentado, recuperación
-real pendiente de prueba controlada**.
+Por tanto, el estado correcto es **plan verificado como Free, procedimiento
+documentado y recuperación real pendiente de prueba controlada**.
 
 ## Alcance de una copia recuperable
 
@@ -52,6 +55,11 @@ El responsable de la cuenta debe registrar, sin compartir secretos:
 - último commit desplegado y última migración aplicada;
 - objetivo acordado de RPO y RTO. Si no existe una decisión comercial, dejar
   ambos como **pendiente**, no inferirlos.
+
+En la verificación del 2026-10-18 no había ramas separadas y la metadata
+disponible no permitía confirmar retención, RPO/RTO ni copias de Storage. Crear
+una rama o ejecutar una restauración requiere confirmar el coste y el entorno
+objetivo antes de modificar infraestructura.
 
 Esta revisión debe hacerse al menos antes de cada lanzamiento importante y
 después de cambiar el plan o la infraestructura.
