@@ -1,7 +1,9 @@
 # Easyvet — evidencia de Supabase Advisors (2026-10-17)
 
 Esta nota registra consultas de solo lectura en el proyecto de producción
-`supabase-champagne-ball`, mediante el conector autorizado. No se ejecutaron
+`supabase-champagne-ball`, mediante el conector autorizado. La última
+observación se obtuvo el 2026-10-17 a las 19:03 COT
+(2026-10-18T00:03:44Z). No se ejecutaron
 migraciones, concesiones, cambios de políticas ni acciones destructivas del
 panel.
 
