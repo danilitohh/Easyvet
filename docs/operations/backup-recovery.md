@@ -68,6 +68,20 @@ Supabase cotiza una rama a **USD 0,01344 por hora** para esta organización
 (aproximadamente USD 9,68 por 30 días si permaneciera encendida). La rama no se
 creó porque requiere confirmación explícita del coste y del entorno de prueba.
 
+## Decisión operativa vigente
+
+Por decisión del propietario, Easyvet continuará en el plan **Free** hasta que
+la aplicación genere ingresos suficientes para evaluar un upgrade. No se crearán
+ramas con coste, no se habilitará PITR de pago y no se tratará la ausencia de
+backups administrados como una garantía de recuperación.
+
+Mientras se mantenga esta decisión, la alternativa aprobada es preparar una
+copia manual fuera del repositorio: exportación de la base de datos con la CLI
+de Supabase, copia separada de los objetos privados de Storage y restauración en
+un destino seguro de prueba. La ejecución sigue pendiente porque requiere
+credenciales de servicio y un destino aprobado; no se deben descargar datos
+clínicos reales al equipo local ni almacenar secretos en Git.
+
 Esta revisión debe hacerse al menos antes de cada lanzamiento importante y
 después de cambiar el plan o la infraestructura.
 
