@@ -29,7 +29,7 @@ decisiones del propietario ni del proveedor.
 | PERF-01 | Alta      | Rendimiento de producción                       | Parcial                                                | Benchmark sintético local 10/100/1.000 pasó 3/3 con máximo 3 consultas constantes y límite de 20 filas; falta benchmark productivo autorizado y decisión reversible sobre índices                                                                                                              | Planes de consulta, benchmark 10/100/1.000 y decisión documentada             |
 | OBS-01  | Media     | Métricas y alertas del proveedor                | Parcial por plan/configuración                         | Cuenta/proyecto y deployment `READY` verificados; 4 pageviews/1 visitante; Supabase `ACTIVE_HEALTHY` y logs consultables en solo lectura. Eventos personalizados requieren Pro/Enterprise, Observability Plus no está habilitado y no hay drains; retención y alertas administradas pendientes | Alertas probadas, sin secretos en eventos y runbook actualizado               |
 | A11Y-01 | Media     | Revisión visual por viewport                    | En curso                                               | Las ocho rutas públicas ya tienen evidencia responsive móvil; falta recorrido manual completo de rutas autenticadas, contraste y foco                                                                                                                                                          | Checklist por ruta/viewport, contraste y foco documentados                    |
-| EXT-01  | Media     | Revisión contractual de servicios externos      | Recurrente                                             | Cambia con proveedores, subprocesadores, regiones y licencias                                                                                                                                                                                                                                  | Inventario actualizado y revisión fechada antes de cada release               |
+| EXT-01  | Media     | Revisión contractual de servicios externos      | Parcial                                                | Inventario, región Supabase, transferencias y fuentes oficiales de Vercel/Supabase/Resend/AWS documentados. Resend y AWS son flujos condicionales/no activos hoy. Faltan aceptación contractual del titular, confirmación del plan concreto y revisión profesional para Colombia; repetir antes de cada release relevante | Inventario actualizado y revisión fechada antes de cada release               |
 | CI-01   | Baja      | Confirmar evidencia del run remoto más reciente | Cerrado en `d4b51a2`                                   | Reabrir después de cada cambio publicado si el run más reciente no termina correctamente                                                                                                                                                                                                       | Run #159 exitoso sobre `main` y matriz actualizada                            |
 
 ## Fases cerradas recientes
@@ -56,6 +56,11 @@ decisiones del propietario ni del proveedor.
 - CI-01 — el run remoto #159 pasó correctamente sobre `d4b51a2` después de actualizar la evidencia de CI.
 - CI-01 — el run remoto #160 pasó correctamente sobre `52aab59` después de actualizar la evidencia del smoke público.
 - Revisión responsive pública 2026-10-17 — ocho rutas móviles auditadas; el orbe decorativo overflow quedó identificado y marcado como `aria-hidden`.
+- Revisión contractual de proveedores 2026-10-18 — DPA, subprocesadores,
+  regiones y transferencias de Vercel, Supabase, Resend y AWS consultados en
+  fuentes oficiales. Supabase se verificó en `us-east-1`; Resend no está
+  configurado y S3 no es el Storage activo. La aceptación contractual y la
+  revisión profesional colombiana siguen pendientes.
 - `f661fc8` — evidencia visual de producción y trazabilidad del deployment final.
 - `3cf573a` — corrección del solapamiento entre acceso y consentimiento de privacidad.
 - `d1fbc70` — pruebas de teclado, foco, modales y preferencias de privacidad.

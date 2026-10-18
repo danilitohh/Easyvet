@@ -64,6 +64,36 @@ con deployment `READY`, pero el plan Hobby no permite eventos personalizados,
 Observability Plus no está habilitado y no hay log drains. Retención y alertas
 siguen pendientes de configuración y verificación.
 
+## Resultado contractual operativo — 2026-10-18
+
+La consulta de las fuentes oficiales dejó verificadas estas condiciones, sin
+interpretarlas como una aceptación contractual ni como una certificación legal:
+
+- **Vercel:** su DPA describe procesamiento principal en Estados Unidos,
+  transferencias a otras ubicaciones donde Vercel o sus subprocesadores operan,
+  y responsabilidad del cliente sobre avisos, consentimientos y copias propias.
+  La lista de subprocesadores se mantiene fuera del repositorio y puede cambiar.
+- **Supabase:** el proyecto actual está alojado en AWS `us-east-1`. La DPA y la
+  guía de residencia indican que base de datos, Auth, Storage y copias se
+  mantienen principalmente en la región elegida, pero soporte, telemetría,
+  registros, CDN y subprocesadores pueden implicar procesamiento fuera de ella.
+  La lista de subprocesadores también puede cambiar.
+- **Resend:** la DPA y la lista vigente identifican operaciones principales y
+  varios subprocesadores en Estados Unidos. Resend sigue sin estar configurado
+  en Easyvet, por lo que no hay una transferencia activa de correos de la
+  aplicación en este momento; si se activa, deberá añadirse al aviso de
+  privacidad y revisarse antes de enviar datos reales.
+- **AWS S3:** los Service Terms incorporan la DPA de AWS cuando se procesan
+  datos del cliente. El adaptador S3 existe como alternativa técnica, pero no
+  está seleccionado para el Storage actual de producción; por eso AWS queda
+  como proveedor condicional, no como flujo activo verificado.
+
+La parte técnica de inventario, región observada y fuentes quedó documentada.
+La fase permanece **parcial** porque todavía faltan: aceptación expresa de los
+acuerdos por el titular, revisión profesional para Colombia, confirmación de la
+configuración contractual del plan concreto y una revisión recurrente cuando
+cambien proveedores, subprocesadores, regiones o versiones.
+
 ## Fuentes contractuales consultadas
 
 - [Vercel DPA](https://vercel.com/legal/dpa): Vercel indica procesamiento
