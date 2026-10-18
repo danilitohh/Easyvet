@@ -82,6 +82,21 @@ un destino seguro de prueba. La ejecución sigue pendiente porque requiere
 credenciales de servicio y un destino aprobado; no se deben descargar datos
 clínicos reales al equipo local ni almacenar secretos en Git.
 
+## Puerta antes del lanzamiento real
+
+La revisión completa queda programada como requisito previo a registrar la
+primera clínica o almacenar datos clínicos reales. En ese momento se debe:
+
+1. confirmar nuevamente el plan, el volumen de datos y el estado del bucket;
+2. generar una copia manual de la base de datos;
+3. copiar los objetos de Storage a un destino seguro, si ya existen;
+4. restaurar datos sintéticos en un entorno separado;
+5. comprobar autenticación, RLS, documentos privados y Realtime;
+6. registrar el RPO/RTO aceptado y el resultado antes de abrir el servicio.
+
+Hasta superar esta puerta, el riesgo se mantiene bajo porque las tablas clínicas
+y el bucket no contienen datos operativos reales.
+
 Esta revisión debe hacerse al menos antes de cada lanzamiento importante y
 después de cambiar el plan o la infraestructura.
 
