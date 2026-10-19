@@ -21,7 +21,7 @@ describe('PrivacyConsent', () => {
     renderConsent();
     expect(screen.getByRole('region', { name: 'Tú decides qué medimos' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox')).not.toBeChecked();
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar preferencias' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
     expect(screen.getByRole('button', { name: 'Privacidad' })).toBeInTheDocument();
     expect(window.localStorage.getItem('easyvet.analytics-consent')).toBe('denied');
   });
@@ -29,7 +29,7 @@ describe('PrivacyConsent', () => {
   it('stores an explicit opt-in and allows reopening preferences', () => {
     renderConsent();
     fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar preferencias' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Aceptar analítica' }));
     expect(window.localStorage.getItem('easyvet.analytics-consent')).toBe('granted');
     fireEvent.click(screen.getByRole('button', { name: 'Privacidad' }));
     expect(screen.getByRole('checkbox')).toBeChecked();
@@ -46,7 +46,7 @@ describe('PrivacyConsent', () => {
 
   it('moves focus into preferences and restores it when closed with Escape', async () => {
     renderConsent();
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar preferencias' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
 
     const preferencesButton = screen.getByRole('button', { name: 'Privacidad' });
     preferencesButton.focus();
@@ -59,7 +59,7 @@ describe('PrivacyConsent', () => {
 
   it('keeps keyboard focus inside the preferences dialog', () => {
     renderConsent();
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar preferencias' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
     const preferencesButton = screen.getByRole('button', { name: 'Privacidad' });
     fireEvent.click(preferencesButton);
 

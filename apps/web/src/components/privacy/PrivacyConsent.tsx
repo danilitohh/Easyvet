@@ -153,16 +153,18 @@ export function PrivacyConsent() {
             </>
           )}
           {preferencesOpen && (
-            <Button variant="ghost" type="button" onClick={closePreferences}>
-              Cancelar
-            </Button>
+            <>
+              <Button variant="ghost" type="button" onClick={closePreferences}>
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={() => saveAnalyticsConsent(analyticsEnabled ? 'granted' : 'denied')}
+              >
+                Guardar preferencias
+              </Button>
+            </>
           )}
-          <Button
-            type="button"
-            onClick={() => saveAnalyticsConsent(analyticsEnabled ? 'granted' : 'denied')}
-          >
-            Guardar preferencias
-          </Button>
         </div>
       </div>
     </aside>
