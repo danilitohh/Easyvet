@@ -83,8 +83,8 @@ export class AccountEmailService {
         from,
         to: [message.to],
         subject: message.subject,
-        html: `<div style="margin:0;background:#f3f3f3;padding:40px 16px;font-family:Arial,sans-serif;color:#0a0808"><div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #dfe2e7;border-radius:20px;padding:36px"><p style="margin:0 0 18px;color:#0735d9;font-size:12px;font-weight:700;letter-spacing:2px">EASYVET</p><h1 style="margin:0 0 14px;font-size:25px;letter-spacing:-1px">${heading}</h1><p style="margin:0 0 28px;color:#626b7a;font-size:15px;line-height:1.7">${body}</p><a href="${link}" style="display:inline-block;border-radius:12px;background:#01229e;padding:14px 20px;color:#fff;font-size:14px;font-weight:700;text-decoration:none">${action}</a><p style="margin:24px 0 0;color:#7c8490;font-size:12px;line-height:1.6">${expiration}</p><p style="margin:18px 0 0;color:#7c8490;font-size:11px;line-height:1.6">Si el botón no funciona, copia este enlace en tu navegador:<br><a style="color:#0735d9;overflow-wrap:anywhere" href="${link}">${link}</a></p></div></div>`,
-        text: `${message.heading}\n\n${message.body}\n\n${message.action}: ${message.link}\n\n${message.expiration}`,
+        html: renderAccountEmailHtml({ ...message, link, heading, body, expiration, action }),
+        text: renderAccountEmailText(message),
       }),
     });
 
@@ -96,6 +96,74 @@ export class AccountEmailService {
       });
     }
   }
+}
+
+type AccountEmailMessage = {
+  subject: string;
+  heading: string;
+  body: string;
+  link: string;
+  action: string;
+  expiration: string;
+};
+
+function renderAccountEmailHtml(
+  message: AccountEmailMessage & {
+    link: string;
+    heading: string;
+    body: string;
+    action: string;
+    expiration: string;
+  },
+): string {
+  return `<!doctype html>
+<html lang="es">
+  <body style="margin:0;background:#eef3fb;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#101522">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${message.heading}. ${message.expiration}</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;border-collapse:collapse">
+            <tr>
+              <td style="padding:4px 8px 22px">
+                <p style="margin:0;color:#123a9e;font-size:14px;font-weight:800;letter-spacing:2.5px">EASYVET</p>
+                <p style="margin:7px 0 0;color:#68748a;font-size:12px;line-height:1.4">Gestión veterinaria más clara</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#ffffff;border:1px solid #d7e0ef;border-radius:24px;padding:38px 34px 32px;box-shadow:0 16px 42px rgba(34,58,112,.12)">
+                <p style="margin:0 0 14px;color:#0a43d8;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase">SEGURIDAD DE TU CUENTA</p>
+                <h1 style="margin:0 0 14px;color:#111522;font-size:30px;line-height:1.12;letter-spacing:-.8px;font-weight:700">${message.heading}</h1>
+                <p style="margin:0;color:#5f6c80;font-size:16px;line-height:1.65">${message.body}</p>
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:28px 0">
+                  <tr>
+                    <td align="center">
+                      <a href="${message.link}" style="display:inline-block;background:#082eb8;border-radius:14px;padding:15px 24px;color:#ffffff;font-size:15px;font-weight:700;line-height:1.2;text-decoration:none">${message.action} &nbsp;↗</a>
+                    </td>
+                  </tr>
+                </table>
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background:#f4f7fd;border:1px solid #e0e7f3;border-radius:14px">
+                  <tr>
+                    <td style="padding:15px 16px;color:#44536b;font-size:13px;line-height:1.55"><strong style="color:#192943">Tiempo limitado</strong><br>${message.expiration}</td>
+                  </tr>
+                </table>
+                <p style="margin:25px 0 0;color:#7a8597;font-size:12px;line-height:1.65">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                <p style="margin:7px 0 0;font-size:12px;line-height:1.55;overflow-wrap:anywhere;word-break:break-word"><a href="${message.link}" style="color:#0a43d8;text-decoration:underline">${message.link}</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 8px 0;color:#7a8597;font-size:11px;line-height:1.6;text-align:center">Este mensaje fue enviado automáticamente por Easyvet. Si no solicitaste este cambio, puedes ignorarlo.</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function renderAccountEmailText(message: AccountEmailMessage): string {
+  return `${message.heading}\n\n${message.body}\n\n${message.action}: ${message.link}\n\n${message.expiration}\n\nSi no solicitaste este cambio, puedes ignorar este mensaje.`;
 }
 
 function escapeHtml(value: string): string {
