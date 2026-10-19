@@ -14,6 +14,7 @@ type AuthPageLayoutProps = {
   backTo?: string;
   backLabel?: string;
   wideCard?: boolean;
+  pageClassName?: string;
   children: ReactNode;
 };
 
@@ -34,10 +35,11 @@ export function AuthPageLayout({
   backTo = '/',
   backLabel = 'Volver al inicio',
   wideCard = false,
+  pageClassName,
   children,
 }: AuthPageLayoutProps) {
   return (
-    <main className="auth-page">
+    <main className={['auth-page', pageClassName ?? ''].filter(Boolean).join(' ')}>
       <div className="auth-page__ambient auth-page__ambient--one" aria-hidden="true" />
       <div className="auth-page__ambient auth-page__ambient--two" aria-hidden="true" />
       <Link className="auth-page__brand" to="/" aria-label="Easyvet, inicio">

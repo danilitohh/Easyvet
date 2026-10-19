@@ -1520,6 +1520,82 @@ select.input {
   font-size: 0.88rem;
   line-height: 1.6;
 }
+
+/* The login is the highest-frequency auth surface: give it a quieter, more
+   deliberate hierarchy without changing the shared registration flows. */
+.auth-page--login {
+  background:
+    radial-gradient(circle at 8% 22%, rgb(44 195 178 / 14%), transparent 25rem),
+    radial-gradient(circle at 92% 82%, rgb(7 53 217 / 15%), transparent 30rem),
+    linear-gradient(135deg, #f8fcff 0%, var(--color-canvas) 52%, #edf1ff 100%);
+}
+.auth-page--login .auth-page__layout {
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.7fr);
+  gap: clamp(64px, 9vw, 148px);
+}
+.auth-page--login .auth-welcome {
+  max-width: 570px;
+}
+.auth-page--login .auth-welcome__mark {
+  margin-top: 36px;
+  margin-bottom: 16px;
+}
+.auth-page--login .auth-welcome__description {
+  max-width: 475px;
+  font-size: 0.98rem;
+}
+.auth-page--login .auth-welcome__highlights {
+  margin-top: 42px;
+}
+.auth-page--login .auth-card {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 460px);
+  border-color: rgb(196 207 245 / 82%);
+  border-radius: 26px;
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 97%), rgb(246 249 255 / 91%)),
+    var(--color-surface);
+  box-shadow:
+    0 30px 80px rgb(33 44 96 / 17%),
+    0 6px 18px rgb(33 44 96 / 7%);
+}
+.auth-page--login .auth-card::before {
+  position: absolute;
+  top: 0;
+  right: 28px;
+  left: 28px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--color-brand), #2cc3b2, transparent);
+  content: '';
+  opacity: 0.72;
+}
+.auth-page--login .auth-card h2 {
+  max-width: 280px;
+  margin-top: 14px;
+  font-size: clamp(2.2rem, 4vw, 3.05rem);
+  line-height: 0.98;
+}
+.auth-page--login .auth-card__intro {
+  max-width: 330px;
+  margin-bottom: 28px;
+}
+.auth-page--login .auth-card form {
+  gap: 17px;
+}
+.auth-page--login .auth-form__utility {
+  margin-top: -2px;
+}
+.auth-page--login .login-submit {
+  min-height: 54px;
+  margin-top: 2px;
+}
+.auth-page--login .auth-form__switch {
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(181 190 204 / 52%);
+}
 .auth-card form,
 .organization-list {
   display: grid;
@@ -1751,6 +1827,16 @@ select.input {
     text-align: left;
   }
   .auth-card {
+    width: min(100%, 500px);
+  }
+  .auth-page--login .auth-page__layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 48px;
+  }
+  .auth-page--login .auth-welcome {
+    max-width: 640px;
+  }
+  .auth-page--login .auth-card {
     width: min(100%, 500px);
   }
 }

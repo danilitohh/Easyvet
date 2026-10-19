@@ -59,6 +59,7 @@ export function LoginPage() {
       cardEyebrow="Acceso seguro"
       cardTitle="Bienvenido de nuevo"
       cardDescription="Ingresa para continuar con la operación de tu clínica."
+      pageClassName="auth-page--login"
     >
       <form onSubmit={handleSubmit} noValidate>
         <FormField label="Correo" htmlFor="login-email">
